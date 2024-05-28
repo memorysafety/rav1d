@@ -2689,7 +2689,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 * cmp::min(t_dim.w as usize, 8)
                                 * 4;
                             let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
-                            cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                            cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                             cf = &mut *cf_guard;
                             ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
                             let cbi_idx =
@@ -3130,7 +3130,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let p = (t.frame_thread.pass & 1) as usize;
                                 let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
                                 let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
-                                cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
                                 ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
                                 let cbi_idx =
@@ -4082,7 +4082,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let p = t.frame_thread.pass & 1;
                                 let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
                                 let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
-                                cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
                                 ts.frame_thread[p as usize]
                                     .cf
