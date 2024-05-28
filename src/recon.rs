@@ -2874,9 +2874,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         edge_offset,
                         bd,
                     );
+                    let uv_dst = &cur_data[1 + pl];
+                    let uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(
+                        4 * ((t.b.x >> ss_hor) as isize
+                            + (t.b.y >> ss_ver) as isize * uv_dst.pixel_stride::<BD>()),
+                    );
                     f.dsp.ipred.cfl_pred[m as usize].call(
-                        uv_dst[pl],
-                        stride,
+                        uv_dst,
+                        uv_dst_offset,
                         edge_array,
                         edge_offset,
                         uv_t_dim.w as c_int * 4,

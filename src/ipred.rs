@@ -126,7 +126,7 @@ impl cfl_ac::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
@@ -134,14 +134,15 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
-    topleft_off: usize,
+    _topleft_off: usize,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl cfl_pred::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
         width: c_int,
@@ -150,20 +151,26 @@ impl cfl_pred::Fn {
         alpha: c_int,
         bd: BD,
     ) {
-        let dst = dst.cast();
-        let topleft = topleft.as_ptr().add(topleft_off).cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let stride = dst.stride();
+        let topleft = topleft[topleft_off..].as_ptr().cast();
         let bd = bd.into_c();
-        self.get()(
-            dst,
-            stride,
-            topleft,
-            width,
-            height,
-            ac,
-            alpha,
-            bd,
-            topleft_off,
-        )
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn cfl_pred` is safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_ptr,
+                stride,
+                topleft,
+                width,
+                height,
+                ac,
+                alpha,
+                bd,
+                topleft_off,
+                dst,
+            )
+        }
     }
 }
 
@@ -254,9 +261,9 @@ unsafe fn splat_dc<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn cfl_pred<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+fn cfl_pred<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     width: c_int,
     height: c_int,
     dc: c_int,
@@ -267,13 +274,13 @@ unsafe fn cfl_pred<BD: BitDepth>(
     let width = width as usize;
     let mut ac = &ac[..width * height as usize];
     for _ in 0..height {
-        let slice = slice::from_raw_parts_mut(dst, width);
+        let slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..width));
         for (x, dst) in slice.iter_mut().enumerate() {
             let diff = alpha * ac[x] as c_int;
             *dst = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
         }
         ac = &ac[width..];
-        dst = dst.offset(BD::pxstride(stride));
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
@@ -403,9 +410,13 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     );
 }
 
+/// # Safety
+///
+/// Must be called by [`cfl_pred::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -413,13 +424,20 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     alpha: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
+    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_pred::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `fn cfl_pred::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
-    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    // SAFETY: `fn cfl_pred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
+    let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     let dc: c_uint = dc_gen.call::<BD>(topleft, topleft_off, width, height);
     cfl_pred(
-        dst.cast(),
-        stride,
+        dst,
+        dst_offset,
         width,
         height,
         dc as c_int,
@@ -446,9 +464,13 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     splat_dc(dst.cast(), stride, width, height, dc, bd);
 }
 
+/// # Safety
+///
+/// Must be called by [`cfl_pred::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -456,10 +478,16 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     alpha: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
+    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_pred::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `fn cfl_pred::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
-    cfl_pred(dst.cast(), stride, width, height, dc, ac, alpha, bd);
+    cfl_pred(dst, dst_offset, width, height, dc, ac, alpha, bd);
 }
 
 unsafe fn ipred_v_rust<BD: BitDepth>(
