@@ -580,7 +580,13 @@ wrap_fn_ptr!(unsafe extern "C" fn filter(
 ) -> ());
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
+unsafe extern "C" fn cdef_filter_neon_erased<
+    BD: BitDepth,
+    const W: usize,
+    const H: usize,
+    const TMP_STRIDE: usize,
+    const TMP_LEN: usize,
+>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow2px<DynPixel>,
@@ -595,12 +601,21 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
 ) {
     use crate::src::align::Align16;
 
-    let mut tmp_buf = Align16([0; 200]);
-    let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
-    bd_fn!(padding::decl_fn, BD, cdef_padding8, neon).get()(
-        tmp, dst, stride, left, top, bottom, 8, edges,
-    );
-    bd_fn!(filter::decl_fn, BD, cdef_filter8, neon).get()(
+    let mut tmp_buf = Align16([0; TMP_LEN]);
+    let tmp = tmp_buf.0.as_mut_ptr().add(2 * TMP_STRIDE + 8);
+    let (padding, filter) = match W {
+        4 => (
+            bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
+            bd_fn!(filter::decl_fn, BD, cdef_filter4, neon),
+        ),
+        8 => (
+            bd_fn!(padding::decl_fn, BD, cdef_padding8, neon),
+            bd_fn!(filter::decl_fn, BD, cdef_filter8, neon),
+        ),
+        _ => unreachable!(),
+    };
+    padding.get()(tmp, dst, stride, left, top, bottom, H as c_int, edges);
+    filter.get()(
         dst,
         stride,
         tmp,
@@ -608,73 +623,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
         sec_strength,
         dir,
         damping,
-        8,
-        edges.bits() as usize,
-        bitdepth_max,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    let mut tmp_buf: [u16; 104] = [0; 104];
-    let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    bd_fn!(padding::decl_fn, BD, cdef_padding4, neon).get()(
-        tmp, dst, stride, left, top, bottom, 8, edges,
-    );
-    bd_fn!(filter::decl_fn, BD, cdef_filter4, neon).get()(
-        dst,
-        stride,
-        tmp,
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        8,
-        edges.bits() as usize,
-        bitdepth_max,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    let mut tmp_buf = [0; 104];
-    let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    bd_fn!(padding::decl_fn, BD, cdef_padding4, neon).get()(
-        tmp, dst, stride, left, top, bottom, 4, edges,
-    );
-    bd_fn!(filter::decl_fn, BD, cdef_filter4, neon).get()(
-        dst,
-        stride,
-        tmp,
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        4,
+        H as c_int,
         edges.bits() as usize,
         bitdepth_max,
     );
@@ -756,9 +705,9 @@ impl Rav1dCdefDSPContext {
         }
 
         self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_find_dir, neon);
-        self.fb[0] = cdef::Fn::new(cdef_filter_8x8_neon_erased::<BD>);
-        self.fb[1] = cdef::Fn::new(cdef_filter_4x8_neon_erased::<BD>);
-        self.fb[2] = cdef::Fn::new(cdef_filter_4x4_neon_erased::<BD>);
+        self.fb[0] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 8, 8, 16, { 12 * 16 + 8 }>);
+        self.fb[1] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 4, 8, 8, { 12 * 8 + 8 }>);
+        self.fb[2] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 4, 4, 8, { 12 * 8 + 8 }>);
 
         self
     }
