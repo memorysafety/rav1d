@@ -396,10 +396,12 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
-            let mut hmask: [u32; 4] = [0; 4];
+            let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
                 hmask[0] = mask[x][0][0].load(Ordering::Relaxed) as u32;
                 hmask[1] = mask[x][1][0].load(Ordering::Relaxed) as u32;
@@ -414,16 +416,15 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[1] = mask[x][1][1].load(Ordering::Relaxed) as u32;
                 hmask[2] = mask[x][2][1].load(Ordering::Relaxed) as u32;
             }
-            // hmask[3] = 0; already initialized above
-            f.dsp.lf.loop_filter_sb[0][0](
-                dst.as_mut_ptr().add(dst_offset + x * 4).cast(),
+            f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
+                dst.as_mut_ptr().add(dst_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
-                lvl[x..].as_ptr(),
+                &hmask,
+                &lvl[x..],
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
-                f.bitdepth_max,
+                bd,
             );
         }
     }
@@ -443,29 +444,30 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
-            let vmask: [u32; 4] = [
+            let vmask = [
                 mask[y as usize][0][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][0][1].load(Ordering::Relaxed) as u32) << 16,
                 mask[y as usize][1][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << 16,
                 mask[y as usize][2][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][2][1].load(Ordering::Relaxed) as u32) << 16,
-                0,
             ];
-            f.dsp.lf.loop_filter_sb[0][1](
-                dst.as_mut_ptr().add(dst_offset).cast(),
+            f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
+                dst.as_mut_ptr().add(dst_offset),
                 ls,
-                vmask.as_ptr(),
-                unaligned_lvl_slice(&lvl[0..], 1).as_ptr(),
+                &vmask,
+                unaligned_lvl_slice(&lvl[0..], 1),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
-                f.bitdepth_max,
+                bd,
             );
         }
         dst_offset = (dst_offset as isize + 4 * BD::pxstride(ls)) as usize;
@@ -488,6 +490,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     endy4: c_int,
     ss_ver: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
@@ -506,25 +510,25 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 hmask[1] = mask[x as usize][1][1].load(Ordering::Relaxed) as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
-            f.dsp.lf.loop_filter_sb[1][0](
-                u.as_mut_ptr().add(uv_offset + x * 4).cast(),
+            f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
+                u.as_mut_ptr().add(uv_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
-                unaligned_lvl_slice(&lvl[x as usize..], 2).as_ptr(),
+                &hmask,
+                unaligned_lvl_slice(&lvl[x as usize..], 2),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
-                f.bitdepth_max,
+                bd,
             );
-            f.dsp.lf.loop_filter_sb[1][0](
-                v.as_mut_ptr().add(uv_offset + x * 4).cast(),
+            f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
+                v.as_mut_ptr().add(uv_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
-                unaligned_lvl_slice(&lvl[x as usize..], 3).as_ptr(),
+                &hmask,
+                unaligned_lvl_slice(&lvl[x as usize..], 3),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
-                f.bitdepth_max,
+                bd,
             );
         }
     }
@@ -546,6 +550,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     endy4: c_int,
     ss_hor: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
     let mut off_l = uv_offset as ptrdiff_t;
 
     //                                 block1
@@ -560,25 +565,25 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                     | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << (16 >> ss_hor),
                 0,
             ];
-            f.dsp.lf.loop_filter_sb[1][1](
-                u.as_mut_ptr().offset(off_l).cast(),
+            f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
+                u.as_mut_ptr().offset(off_l),
                 ls,
-                vmask.as_ptr(),
-                unaligned_lvl_slice(&lvl[0..], 2).as_ptr(),
+                &vmask,
+                unaligned_lvl_slice(&lvl[0..], 2),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
-                f.bitdepth_max,
+                bd,
             );
-            f.dsp.lf.loop_filter_sb[1][1](
-                v.as_mut_ptr().offset(off_l).cast(),
+            f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
+                v.as_mut_ptr().offset(off_l),
                 ls,
-                vmask.as_ptr(),
-                unaligned_lvl_slice(&lvl[0..], 3).as_ptr(),
+                &vmask,
+                unaligned_lvl_slice(&lvl[0..], 3),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
-                f.bitdepth_max,
+                bd,
             );
         }
         off_l += 4 * BD::pxstride(ls);
