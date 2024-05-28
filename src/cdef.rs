@@ -13,6 +13,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ptr;
 
 #[cfg(all(
     feature = "asm",
@@ -37,7 +38,7 @@ bitflags! {
 wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: c_int,
@@ -58,7 +59,7 @@ impl cdef::Fn {
         &self,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<BD::Pixel>,
+        left: &[LeftPixelRow2px<BD::Pixel>; 8],
         top: *const BD::Pixel,
         bottom: *const BD::Pixel,
         pri_strength: c_int,
@@ -69,7 +70,7 @@ impl cdef::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let left = left.cast();
+        let left = ptr::from_ref(left).cast();
         let top = top.cast();
         let bottom = bottom.cast();
         let sec_strength = sec_strength as c_int;
@@ -147,7 +148,7 @@ unsafe fn padding<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    left: *const [BD::Pixel; 2],
+    left: &[LeftPixelRow2px<BD::Pixel>; 8],
     mut top: *const BD::Pixel,
     mut bottom: *const BD::Pixel,
     w: c_int,
@@ -213,7 +214,7 @@ unsafe fn padding<BD: BitDepth>(
         let mut x_0 = x_start;
         while x_0 < 0 {
             *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
-                (*left.offset(y_0 as isize))[(2 + x_0) as usize].as_::<i16>();
+                left[y_0 as usize][(2 + x_0) as usize].as_::<i16>();
             x_0 += 1;
         }
         y_0 += 1;
@@ -246,7 +247,7 @@ unsafe fn padding<BD: BitDepth>(
 unsafe fn cdef_filter_block_c<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    left: *const [BD::Pixel; 2],
+    left: &[LeftPixelRow2px<BD::Pixel>; 8],
     top: *const BD::Pixel,
     bottom: *const BD::Pixel,
     pri_strength: c_int,
@@ -400,7 +401,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
 unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: c_int,
@@ -411,7 +412,8 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     bitdepth_max: c_int,
 ) {
     let dst = dst.cast();
-    let left = left.cast();
+    // SAFETY: Reverse of cast in `cdef::Fn::call`.
+    let left = unsafe { &*left.cast() };
     let top = top.cast();
     let bottom = bottom.cast();
     let bd = BD::from_c(bitdepth_max);
@@ -558,7 +560,7 @@ wrap_fn_ptr!(unsafe extern "C" fn padding(
     tmp: *mut u16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     h: c_int,
@@ -589,7 +591,7 @@ unsafe extern "C" fn cdef_filter_neon_erased<
 >(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: c_int,

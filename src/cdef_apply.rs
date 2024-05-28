@@ -385,7 +385,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 f.dsp.cdef.fb[0].call::<BD>(
                                     bptrs[0],
                                     f.cur.stride[0],
-                                    lr_bak[bit as usize][0].as_mut_ptr(),
+                                    &lr_bak[bit as usize][0],
                                     top,
                                     bot,
                                     adj_y_pri_lvl,
@@ -400,7 +400,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             f.dsp.cdef.fb[0].call::<BD>(
                                 bptrs[0],
                                 f.cur.stride[0],
-                                (lr_bak[bit as usize][0]).as_mut_ptr(),
+                                &lr_bak[bit as usize][0],
                                 top,
                                 bot,
                                 0,
@@ -481,7 +481,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
                                     f.cur.stride[1],
-                                    lr_bak[bit as usize][pl].as_mut_ptr(),
+                                    &lr_bak[bit as usize][pl],
                                     top,
                                     bot,
                                     uv_pri_lvl.into(),
