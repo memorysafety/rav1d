@@ -725,7 +725,7 @@ unsafe fn mask_rust<BD: BitDepth>(
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
-    mut mask: *const u8,
+    mask: &[u8],
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
@@ -734,12 +734,12 @@ unsafe fn mask_rust<BD: BitDepth>(
     let dst_stride = BD::pxstride(dst_stride);
     let mut tmp1 = tmp1.as_slice();
     let mut tmp2 = tmp2.as_slice();
-    for _ in 0..h {
+    for y in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
             *dst = bd.iclip_pixel(
-                (tmp1[x] as i32 * *mask.offset(x as isize) as i32
-                    + tmp2[x] as i32 * (64 - *mask.offset(x as isize) as i32)
+                (tmp1[x] as i32 * mask[y * w + x] as i32
+                    + tmp2[x] as i32 * (64 - mask[y * w + x] as i32)
                     + rnd)
                     >> sh,
             );
@@ -747,7 +747,6 @@ unsafe fn mask_rust<BD: BitDepth>(
 
         tmp1 = &tmp1[w..];
         tmp2 = &tmp2[w..];
-        mask = mask.offset(w as isize);
         dst_ptr = dst_ptr.offset(dst_stride);
     }
 }
@@ -1385,7 +1384,7 @@ impl mask::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let mask = mask.as_ptr();
+        let mask = mask[..(w * h) as usize].as_ptr();
         let bd = bd.into_c();
         self.get()(dst, dst_stride, tmp1, tmp2, w, h, mask, bd)
     }
@@ -1870,6 +1869,9 @@ unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`mask::Fn::call`].
 unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
@@ -1880,16 +1882,13 @@ unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     mask: *const u8,
     bitdepth_max: i32,
 ) {
-    mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        BD::from_c(bitdepth_max),
-    )
+    let dst = dst.cast();
+    let w = w as usize;
+    let h = h as usize;
+    // SAFETY: Length sliced in `mask::Fn::call`.
+    let mask = unsafe { slice::from_raw_parts(mask, w * h) };
+    let bd = BD::from_c(bitdepth_max);
+    mask_rust(dst, dst_stride, tmp1, tmp2, w, h, mask, bd)
 }
 
 unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
