@@ -1898,7 +1898,7 @@ unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     mask_rust(dst, dst_offset, tmp1, tmp2, w, h, mask, bd)
 }
 
-unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
+unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1919,64 +1919,10 @@ unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
         h as usize,
         mask,
         sign != 0,
-        false,
-        false,
+        SS_HOR,
+        SS_VER,
         BD::from_c(bitdepth_max),
     )
-}
-
-unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    tmp1: &[i16; COMPINTER_LEN],
-    tmp2: &[i16; COMPINTER_LEN],
-    w: i32,
-    h: i32,
-    mask: &mut [u8; SEG_MASK_LEN],
-    sign: i32,
-    bitdepth_max: i32,
-) {
-    debug_assert!(sign == 1 || sign == 0);
-    w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        true,
-        false,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    tmp1: &[i16; COMPINTER_LEN],
-    tmp2: &[i16; COMPINTER_LEN],
-    w: i32,
-    h: i32,
-    mask: &mut [u8; SEG_MASK_LEN],
-    sign: i32,
-    bitdepth_max: i32,
-) {
-    debug_assert!(sign == 1 || sign == 0);
-    w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        true,
-        true,
-        BD::from_c(bitdepth_max),
-    );
 }
 
 /// # Safety
@@ -2176,9 +2122,9 @@ impl Rav1dMCDSPContext {
             w_avg: w_avg::Fn::new(w_avg_c_erased::<BD>),
             mask: mask::Fn::new(mask_c_erased::<BD>),
             w_mask: enum_map!(Rav1dPixelLayoutSubSampled => w_mask::Fn; match key {
-                I420 => w_mask::Fn::new(w_mask_420_c_erased::<BD>),
-                I422 => w_mask::Fn::new(w_mask_422_c_erased::<BD>),
-                I444 => w_mask::Fn::new(w_mask_444_c_erased::<BD>),
+                I420 => w_mask::Fn::new(w_mask_c_erased::<true, true, BD>),
+                I422 => w_mask::Fn::new(w_mask_c_erased::<true, false, BD>),
+                I444 => w_mask::Fn::new(w_mask_c_erased::<false, false, BD>),
             }),
             blend: blend::Fn::new(blend_c_erased::<BD>),
             blend_v: blend_dir::Fn::new(blend_v_c_erased::<BD>),
