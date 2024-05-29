@@ -13,6 +13,7 @@ use crate::src::enum_map::DefaultValue;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
+use crate::src::internal::SCRATCH_INTER_INTRA_BUF_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
@@ -23,6 +24,7 @@ use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::iter;
 use std::mem;
+use std::ptr;
 use std::slice;
 use to_method::To;
 
@@ -758,7 +760,7 @@ fn blend_px<BD: BitDepth>(a: BD::Pixel, b: BD::Pixel, m: u8) -> BD::Pixel {
 unsafe fn blend_rust<BD: BitDepth>(
     mut dst_ptr: *mut BD::Pixel,
     dst_stride: isize,
-    mut tmp: *const BD::Pixel,
+    tmp: &[BD::Pixel; SCRATCH_INTER_INTRA_BUF_LEN],
     w: usize,
     h: usize,
     mask: &[u8],
@@ -767,15 +769,10 @@ unsafe fn blend_rust<BD: BitDepth>(
     for y in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(
-                *dst_ptr.offset(x as isize),
-                *tmp.offset(x as isize),
-                mask[y * w + x],
-            )
+            *dst = blend_px::<BD>(*dst_ptr.offset(x as isize), tmp[y * w + x], mask[y * w + x])
         }
 
         dst_ptr = dst_ptr.offset(dst_stride);
-        tmp = tmp.offset(w as isize);
     }
 }
 
@@ -1429,7 +1426,7 @@ impl w_mask::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn blend(
     dst: *mut DynPixel,
     dst_stride: isize,
-    tmp: *const DynPixel,
+    tmp: *const [DynPixel; SCRATCH_INTER_INTRA_BUF_LEN],
     w: i32,
     h: i32,
     mask: *const u8,
@@ -1440,13 +1437,13 @@ impl blend::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: isize,
-        tmp: *const BD::Pixel,
+        tmp: &[BD::Pixel; SCRATCH_INTER_INTRA_BUF_LEN],
         w: i32,
         h: i32,
         mask: &[u8],
     ) {
         let dst = dst.cast();
-        let tmp = tmp.cast();
+        let tmp = ptr::from_ref(tmp).cast();
         let mask = mask[..(w * h) as usize].as_ptr();
         self.get()(dst, dst_stride, tmp, w, h, mask)
     }
@@ -1979,13 +1976,14 @@ unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
 unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
-    tmp: *const DynPixel,
+    tmp: *const [DynPixel; SCRATCH_INTER_INTRA_BUF_LEN],
     w: i32,
     h: i32,
     mask: *const u8,
 ) {
     let dst = dst.cast();
-    let tmp = tmp.cast();
+    // SAFETY: Reverse of cast in `blend::Fn::call`.
+    let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `blend::Fn::call`.

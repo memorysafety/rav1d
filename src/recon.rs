@@ -3625,14 +3625,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
-            f.dsp.mc.blend.call::<BD>(
-                dst,
-                f.cur.stride[0],
-                tmp.as_mut_ptr(),
-                bw4 * 4,
-                bh4 * 4,
-                ii_mask,
-            );
+            f.dsp
+                .mc
+                .blend
+                .call::<BD>(dst, f.cur.stride[0], tmp, bw4 * 4, bh4 * 4, ii_mask);
         }
 
         if has_chroma {
@@ -3935,7 +3931,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         f.dsp.mc.blend.call::<BD>(
                             uvdst,
                             f.cur.stride[1],
-                            tmp.as_mut_ptr(),
+                            tmp,
                             cbw4 * 4,
                             cbh4 * 4,
                             ii_mask,
