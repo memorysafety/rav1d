@@ -1312,35 +1312,35 @@ impl warp8x8t::Fn {
 }
 
 pub type avg_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    isize,
-    &[i16; COMPINTER_LEN],
-    &[i16; COMPINTER_LEN],
-    i32,
-    i32,
-    i32,
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
+    w: i32,
+    h: i32,
+    bitdepth_max: i32,
 ) -> ();
 
 pub type w_avg_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    isize,
-    &[i16; COMPINTER_LEN],
-    &[i16; COMPINTER_LEN],
-    i32,
-    i32,
-    i32,
-    i32,
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
+    w: i32,
+    h: i32,
+    weight: i32,
+    bitdepth_max: i32,
 ) -> ();
 
 pub type mask_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    isize,
-    &[i16; COMPINTER_LEN],
-    &[i16; COMPINTER_LEN],
-    i32,
-    i32,
-    *const u8,
-    i32,
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
+    w: i32,
+    h: i32,
+    mask: *const u8,
+    bitdepth_max: i32,
 ) -> ();
 
 wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
@@ -1374,11 +1374,22 @@ impl w_mask::Fn {
     }
 }
 
-pub type blend_fn =
-    unsafe extern "C" fn(*mut DynPixel, isize, *const DynPixel, i32, i32, *const u8) -> ();
+pub type blend_fn = unsafe extern "C" fn(
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    tmp: *const DynPixel,
+    w: i32,
+    h: i32,
+    mask: *const u8,
+) -> ();
 
-pub type blend_dir_fn =
-    unsafe extern "C" fn(*mut DynPixel, isize, *const [DynPixel; SCRATCH_LAP_LEN], i32, i32) -> ();
+pub type blend_dir_fn = unsafe extern "C" fn(
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    tmp: *const [DynPixel; SCRATCH_LAP_LEN],
+    w: i32,
+    h: i32,
+) -> ();
 
 wrap_fn_ptr!(pub unsafe extern "C" fn emu_edge(
     bw: isize,
@@ -1422,16 +1433,16 @@ impl emu_edge::Fn {
 }
 
 pub type resize_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    isize,
-    *const DynPixel,
-    isize,
-    i32,
-    i32,
-    i32,
-    i32,
-    i32,
-    i32,
+    dst: *mut DynPixel,
+    dst_stride: isize,
+    src: *const DynPixel,
+    src_stride: isize,
+    dst_w: i32,
+    h: i32,
+    src_w: i32,
+    dx: i32,
+    mx: i32,
+    bitdepth_max: i32,
 ) -> ();
 
 pub struct Rav1dMCDSPContext {
