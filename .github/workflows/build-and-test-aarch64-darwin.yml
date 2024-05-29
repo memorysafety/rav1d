@@ -40,7 +40,15 @@ jobs:
             -r ./target/${{ matrix.build.name }}/dav1d \
             -s ./target/${{ matrix.build.name }}/seek_stress \
             -t ${{ matrix.build.timeout_multiplier }}
-        # release tests run quickly so also cover the frame delay cases
+        # release tests run quickly so we test negative strides and frame delays
+      - name: test release build with negative stride
+        if: ${{ matrix.build.name == 'release' }}
+        run: |
+          .github/workflows/test.sh \
+            -r ./target/release/dav1d \
+            -s ./target/release/seek_stress \
+            -t ${{ matrix.build.timeout_multiplier }} \
+            -n
       - name: test release build with frame delay of 1
         if: ${{ matrix.build.name == 'release' }}
         run: |

@@ -18,9 +18,10 @@ jobs:
           # debug build with optimizations to catch overflows with optimized assembly routines
           {name: "opt-dev", flags: "--profile opt-dev", timeout_multiplier: 3}
         ]
-        # Test with threads and framedelay
-        framedelay: [
+        # Test with negative strides, threads and framedelay
+        variant: [
           "",
+          "-n",
           "-f 1",
           "-f 2"
         ]
@@ -64,15 +65,15 @@ jobs:
               -r target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d \
               -s target/${{ matrix.target }}/${{ matrix.build.name }}/seek_stress \
               -t ${{ matrix.build.timeout_multiplier }} \
-              ${{ matrix.framedelay }}
+              ${{ matrix.variant }}
       - name: copy log files
         if: ${{ !cancelled() }}
         run: |
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
-        # don't upload artifacts for tests w/framedelay to keep names unique
-        if: ${{ !cancelled() && matrix.framedelay == '' }}
+        # don't upload artifacts for all the test variants to keep names unique
+        if: ${{ !cancelled() && matrix.variant == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: meson-test-logs-${{ matrix.target }}-${{ matrix.build.name }}
