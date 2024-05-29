@@ -1444,10 +1444,11 @@ impl blend::Fn {
         tmp: *const BD::Pixel,
         w: i32,
         h: i32,
-        mask: *const u8,
+        mask: &[u8],
     ) {
         let dst = dst.cast();
         let tmp = tmp.cast();
+        let mask = mask.as_ptr();
         self.get()(dst, dst_stride, tmp, w, h, mask)
     }
 }

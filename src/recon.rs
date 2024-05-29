@@ -3631,7 +3631,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 tmp.as_mut_ptr(),
                 bw4 * 4,
                 bh4 * 4,
-                ii_mask.as_ptr(),
+                ii_mask,
             );
         }
 
@@ -3938,7 +3938,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             tmp.as_mut_ptr(),
                             cbw4 * 4,
                             cbh4 * 4,
-                            ii_mask.as_ptr(),
+                            ii_mask,
                         );
                     }
                 }
