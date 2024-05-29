@@ -467,7 +467,7 @@ macro_rules! bpc_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[allow(unused)]
 macro_rules! fn_identity {
     (fn $name:ident) => {
         $name
@@ -483,5 +483,5 @@ pub(crate) use bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 pub(crate) use bpc_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[allow(unused)]
 pub(crate) use fn_identity;

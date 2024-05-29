@@ -1516,7 +1516,7 @@ impl emu_edge::Fn {
     }
 }
 
-pub type resize_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     dst: *mut DynPixel,
     dst_stride: isize,
     src: *const DynPixel,
@@ -1527,7 +1527,30 @@ pub type resize_fn = unsafe extern "C" fn(
     dx: i32,
     mx: i32,
     bitdepth_max: i32,
-) -> ();
+) -> ());
+
+impl resize::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: isize,
+        src: *const BD::Pixel,
+        src_stride: isize,
+        dst_w: i32,
+        h: i32,
+        src_w: i32,
+        dx: i32,
+        mx: i32,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let src = src.cast();
+        let bd = bd.into_c();
+        self.get()(
+            dst, dst_stride, src, src_stride, dst_w, h, src_w, dx, mx, bd,
+        )
+    }
+}
 
 pub struct Rav1dMCDSPContext {
     pub mc: enum_map_ty!(Filter2d, mc::Fn),
@@ -1544,7 +1567,7 @@ pub struct Rav1dMCDSPContext {
     pub warp8x8: warp8x8::Fn,
     pub warp8x8t: warp8x8t::Fn,
     pub emu_edge: emu_edge::Fn,
-    pub resize: resize_fn,
+    pub resize: resize::Fn,
 }
 
 macro_rules! filter_fns {
@@ -2083,53 +2106,6 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-macro_rules! decl_fn {
-    (resize, $name:ident) => {
-        pub(crate) fn $name(
-            dst: *mut DynPixel,
-            dst_stride: isize,
-            src: *const DynPixel,
-            src_stride: isize,
-            dst_w: i32,
-            h: i32,
-            src_w: i32,
-            dx: i32,
-            mx: i32,
-            bitdepth_max: i32,
-        );
-    };
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-macro_rules! decl_fns {
-    ($fn_kind:ident, $name:ident, $asm:ident) => {
-        paste::paste! {
-            #[cfg(feature = "bitdepth_8")]
-            decl_fn!($fn_kind, [<$name _8bpc_ $asm>]);
-            #[cfg(feature = "bitdepth_16")]
-            decl_fn!($fn_kind, [<$name _16bpc_ $asm>]);
-        }
-    };
-
-    ($fn_kind:ident, $name:ident) => {
-        decl_fns!($fn_kind, $name, sse2);
-        decl_fns!($fn_kind, $name, ssse3);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($fn_kind, $name, avx2);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($fn_kind, $name, avx512icl);
-    };
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[allow(dead_code)] // Macro invocations generate more fn declarations than are actually used.
-extern "C" {
-    decl_fns!(resize, dav1d_resize);
-}
-
 impl Rav1dMCDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
         Self {
@@ -2195,7 +2171,7 @@ impl Rav1dMCDSPContext {
             warp8x8: warp8x8::Fn::new(warp_affine_8x8_c_erased::<BD>),
             warp8x8t: warp8x8t::Fn::new(warp_affine_8x8t_c_erased::<BD>),
             emu_edge: emu_edge::Fn::new(emu_edge_c_erased::<BD>),
-            resize: resize_c_erased::<BD>,
+            resize: resize::Fn::new(resize_c_erased::<BD>),
         }
     }
 
@@ -2293,7 +2269,7 @@ impl Rav1dMCDSPContext {
         self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, ssse3);
         self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, ssse3);
         self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, ssse3);
-        self.resize = bd_fn!(BD, resize, ssse3);
+        self.resize = bd_fn!(resize::decl_fn, BD, resize, ssse3);
 
         if !flags.contains(CpuFlags::SSE41) {
             return self;
@@ -2375,7 +2351,7 @@ impl Rav1dMCDSPContext {
             self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, avx2);
             self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, avx2);
             self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, avx2);
-            self.resize = bd_fn!(BD, resize, avx2);
+            self.resize = bd_fn!(resize::decl_fn, BD, resize, avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
@@ -2421,7 +2397,7 @@ impl Rav1dMCDSPContext {
             self.blend_h = bd_fn!(blend_dir::decl_fn, BD, blend_h, avx512icl);
 
             if !flags.contains(CpuFlags::SLOW_GATHER) {
-                self.resize = bd_fn!(BD, resize, avx512icl);
+                self.resize = bd_fn!(resize::decl_fn, BD, resize, avx512icl);
                 self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, avx512icl);
                 self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, avx512icl);
             }

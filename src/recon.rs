@@ -4366,6 +4366,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
     let cur_data = &f.cur.data.as_ref().unwrap().data;
     let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
 
@@ -4408,17 +4409,17 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let src_w = 4 * f.bw + ss_hor >> ss_hor;
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
-        (f.dsp.mc.resize)(
-            dst.cast(),
+        f.dsp.mc.resize.call::<BD>(
+            dst,
             dst_stride,
-            src.cast(),
+            src,
             src_stride,
             dst_w,
             cmp::min(img_h, h_end) + h_start,
             src_w,
             f.resize_step[(pl != 0) as usize],
             f.resize_start[(pl != 0) as usize],
-            f.bitdepth_max,
+            bd,
         );
     }
 }
