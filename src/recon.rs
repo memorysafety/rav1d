@@ -3378,14 +3378,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let mut mask = &[][..];
         match comp_inter_type {
             CompInterType::Avg => {
-                (f.dsp.mc.avg)(
-                    dst.cast(),
+                f.dsp.mc.avg.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             CompInterType::WeightedAvg => {
@@ -3483,14 +3483,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                 match comp_inter_type {
                     CompInterType::Avg => {
-                        (f.dsp.mc.avg)(
-                            uvdst.cast(),
+                        f.dsp.mc.avg.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                     CompInterType::WeightedAvg => {

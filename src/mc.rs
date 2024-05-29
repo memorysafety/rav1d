@@ -1311,7 +1311,7 @@ impl warp8x8t::Fn {
     }
 }
 
-pub type avg_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn avg(
     dst: *mut DynPixel,
     dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1319,7 +1319,24 @@ pub type avg_fn = unsafe extern "C" fn(
     w: i32,
     h: i32,
     bitdepth_max: i32,
-) -> ();
+) -> ());
+
+impl avg::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: isize,
+        tmp1: &[i16; COMPINTER_LEN],
+        tmp2: &[i16; COMPINTER_LEN],
+        w: i32,
+        h: i32,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, tmp1, tmp2, w, h, bd)
+    }
+}
 
 pub type w_avg_fn = unsafe extern "C" fn(
     dst: *mut DynPixel,
@@ -1450,7 +1467,7 @@ pub struct Rav1dMCDSPContext {
     pub mc_scaled: enum_map_ty!(Filter2d, mc_scaled::Fn),
     pub mct: enum_map_ty!(Filter2d, mct::Fn),
     pub mct_scaled: enum_map_ty!(Filter2d, mct_scaled::Fn),
-    pub avg: avg_fn,
+    pub avg: avg::Fn,
     pub w_avg: w_avg_fn,
     pub mask: mask_fn,
     pub w_mask: enum_map_ty!(Rav1dPixelLayoutSubSampled, w_mask::Fn),
@@ -2004,18 +2021,6 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 macro_rules! decl_fn {
-    (avg, $name:ident) => {
-        fn $name(
-            dst: *mut DynPixel,
-            dst_stride: isize,
-            tmp1: &[i16; COMPINTER_LEN],
-            tmp2: &[i16; COMPINTER_LEN],
-            w: i32,
-            h: i32,
-            bitdepth_max: i32,
-        );
-    };
-
     (w_avg, $name:ident) => {
         fn $name(
             dst: *mut DynPixel,
@@ -2108,7 +2113,6 @@ macro_rules! decl_fns {
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[allow(dead_code)] // Macro invocations generate more fn declarations than are actually used.
 extern "C" {
-    decl_fns!(avg, dav1d_avg);
     decl_fns!(w_avg, dav1d_w_avg);
     decl_fns!(mask, dav1d_mask);
     decl_fns!(blend, dav1d_blend);
@@ -2120,7 +2124,6 @@ extern "C" {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
-    decl_fns!(avg, dav1d_avg, neon);
     decl_fns!(w_avg, dav1d_w_avg, neon);
     decl_fns!(mask, dav1d_mask, neon);
     decl_fns!(blend, dav1d_blend, neon);
@@ -2179,7 +2182,7 @@ impl Rav1dMCDSPContext {
                 SmoothSharp8Tap => mct_scaled::Fn::new(prep_8tap_smooth_sharp_scaled_c_erased::<BD>),
                 Bilinear => mct_scaled::Fn::new(prep_bilin_scaled_c_erased::<BD>),
             }),
-            avg: avg_c_erased::<BD>,
+            avg: avg::Fn::new(avg_c_erased::<BD>),
             w_avg: w_avg_c_erased::<BD>,
             mask: mask_c_erased::<BD>,
             w_mask: enum_map!(Rav1dPixelLayoutSubSampled => w_mask::Fn; match key {
@@ -2275,7 +2278,7 @@ impl Rav1dMCDSPContext {
             Bilinear => bd_fn!(mct_scaled::decl_fn, BD, prep_bilin_scaled, ssse3),
         });
 
-        self.avg = bd_fn!(BD, avg, ssse3);
+        self.avg = bd_fn!(avg::decl_fn, BD, avg, ssse3);
         self.w_avg = bd_fn!(BD, w_avg, ssse3);
         self.mask = bd_fn!(BD, mask, ssse3);
 
@@ -2357,7 +2360,7 @@ impl Rav1dMCDSPContext {
                 Bilinear => bd_fn!(mct_scaled::decl_fn, BD, prep_bilin_scaled, avx2),
             });
 
-            self.avg = bd_fn!(BD, avg, avx2);
+            self.avg = bd_fn!(avg::decl_fn, BD, avg, avx2);
             self.w_avg = bd_fn!(BD, w_avg, avx2);
             self.mask = bd_fn!(BD, mask, avx2);
 
@@ -2404,7 +2407,7 @@ impl Rav1dMCDSPContext {
                 Bilinear => bd_fn!(mct::decl_fn, BD, prep_bilin, avx512icl),
             });
 
-            self.avg = bd_fn!(BD, avg, avx512icl);
+            self.avg = bd_fn!(avg::decl_fn, BD, avg, avx512icl);
             self.w_avg = bd_fn!(BD, w_avg, avx512icl);
             self.mask = bd_fn!(BD, mask, avx512icl);
 
@@ -2460,7 +2463,7 @@ impl Rav1dMCDSPContext {
             Bilinear => bd_fn!(mct::decl_fn, BD, prep_bilin, neon),
         });
 
-        self.avg = bd_fn!(BD, avg, neon);
+        self.avg = bd_fn!(avg::decl_fn, BD, avg, neon);
         self.w_avg = bd_fn!(BD, w_avg, neon);
         self.mask = bd_fn!(BD, mask, neon);
         self.blend = bd_fn!(BD, blend, neon);
