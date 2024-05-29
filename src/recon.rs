@@ -3377,8 +3377,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         match comp_inter_type {
             CompInterType::Avg => {
                 f.dsp.mc.avg.call::<BD>(
-                    dst,
-                    f.cur.stride[0],
+                    y_dst,
+                    y_dst_offset,
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
@@ -3390,8 +3390,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 jnt_weight =
                     f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
                 f.dsp.mc.w_avg.call::<BD>(
-                    dst,
-                    f.cur.stride[0],
+                    y_dst,
+                    y_dst_offset,
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
@@ -3480,12 +3480,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
                 let uv_dst = &cur_data[1 + pl];
                 let uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(uvdstoff);
-                let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                 match comp_inter_type {
                     CompInterType::Avg => {
                         f.dsp.mc.avg.call::<BD>(
-                            uvdst,
-                            f.cur.stride[1],
+                            uv_dst,
+                            uv_dst_offset,
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
@@ -3495,8 +3494,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                     CompInterType::WeightedAvg => {
                         f.dsp.mc.w_avg.call::<BD>(
-                            uvdst,
-                            f.cur.stride[1],
+                            uv_dst,
+                            uv_dst_offset,
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
