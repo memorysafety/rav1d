@@ -3402,8 +3402,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             CompInterType::Seg => {
                 f.dsp.mc.w_mask[chr_layout_idx_w_mask].call(
-                    dst,
-                    f.cur.stride[0],
+                    y_dst,
+                    y_dst_offset,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
