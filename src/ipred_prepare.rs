@@ -117,6 +117,49 @@ static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED
     b
 };
 
+/// Luma intra edge preparation.
+///
+/// `x`/`y`/`start`/`w`/`h` are in luma block (4px) units:
+///
+/// - `x` and `y` are the absolute block positions in the image;
+/// - `start`/`w`/`h` are the *dependent tile* boundary positions.
+///   In practice, `start` is the horizontal tile start,
+///   `w` is the horizontal tile end,
+///   the vertical tile start is assumed to be `0`,
+///   and `h` is the vertical image end.
+///
+/// `edge_flags` signals which edges are available
+/// for this transform-block inside the given partition,
+/// as well as for the partition inside the superblock structure.
+///
+/// `dst` and `stride` are pointers to the top/left position of the current block,
+/// and can be used to locate the top, left, top/left, top/right,
+/// and bottom/left edge pointers also.
+///
+/// `angle` is the `angle_delta` `[-3..3]` on input,
+/// and the absolute angle on output.
+///
+/// `mode` is the intra prediction mode as coded in the bitstream.
+/// The return value is this same mode,
+/// converted to an index in the DSP functions.
+///
+/// `tw`/`th` are the size of the transform block in block (4px) units.
+///
+/// `topleft_out` is a pointer to scratch memory
+/// that will be filled with the edge pixels.
+/// The memory array should have space to be indexed
+/// in the `-2 * w..=2 * w` range, in the following order:
+///
+/// - `[0]` will be the top/left edge pixel
+/// - `[1..w]` will be the top edge pixels (`1` being left-most, `w` being right-most)
+/// - `[w + 1..2 * w]` will be the top/right edge pixels
+/// - `[-1..-w]` will be the left edge pixels (`-1` being top-most, `-w` being bottom-most)
+/// - `[-w - 1..-2 * w]` will be the bottom/left edge pixels
+///
+/// Each edge may remain uninitialized if it is not used by the returned mode index.
+/// If edges are not available (because the edge position
+/// is outside the tile dimensions or because edge_flags indicates lack of edge availability),
+/// they will be extended from nearby edges as defined by the AV1 spec.
 pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
     have_left: bool,
