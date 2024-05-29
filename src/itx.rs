@@ -3,8 +3,10 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::DefaultValue;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::itx_1d::rav1d_inv_adst16_1d_c;
 use crate::src::itx_1d::rav1d_inv_adst4_1d_c;
 use crate::src::itx_1d::rav1d_inv_adst8_1d_c;
@@ -80,9 +82,9 @@ use crate::include::common::bitdepth::bpc_fn;
 pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int);
 
 #[inline(never)]
-unsafe fn inv_txfm_add<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+fn inv_txfm_add<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     coeff: &mut [BD::Coef],
     eob: c_int,
     w: usize,
@@ -112,10 +114,11 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
         dc = dc + rnd >> shift;
         dc = dc * 181 + 128 + 2048 >> 12;
         for _ in 0..h {
-            for x in 0..w {
-                *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + dc);
+            let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
+            for dst in dst_slice {
+                *dst = bd.iclip_pixel((*dst).as_::<i32>() + dc);
             }
-            dst = dst.offset(BD::pxstride(stride));
+            dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
         }
         return;
     }
@@ -168,16 +171,17 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
     }
 
     for y in 0..h {
-        for x in 0..w {
-            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (tmp[y * w + x] + 8 >> 4));
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            *dst = bd.iclip_pixel((*dst).as_::<i32>() + (tmp[y * w + x] + 8 >> 4));
         }
-        dst = dst.offset(BD::pxstride(stride));
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
-unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    dst_offset: usize,
     coeff: &mut [BD::Coef],
     eob: c_int,
     bd: BD,
@@ -232,7 +236,7 @@ unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType
         V_ADST => (Adst, Identity),
         V_FLIPADST => (FlipAdst, Identity),
         WHT_WHT if (W, H) == (4, 4) => {
-            return inv_txfm_add_wht_wht_4x4_rust(dst, stride, coeff, bd)
+            return inv_txfm_add_wht_wht_4x4_rust(dst, dst_offset, coeff, bd)
         }
         _ => unreachable!(),
     };
@@ -263,7 +267,7 @@ unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType
 
     inv_txfm_add(
         dst,
-        stride,
+        dst_offset,
         coeff,
         eob,
         W,
@@ -279,49 +283,59 @@ unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType
 /// # Safety
 ///
 /// Must be called by [`itxfm::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn inv_txfm_add_c_erased<
     const W: usize,
     const H: usize,
     const TYPE: TxfmType,
     BD: BitDepth,
 >(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     coeff: *mut DynCoef,
     eob: c_int,
     bitdepth_max: c_int,
     coeff_len: u16,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    let dst = dst.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `itxfm::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `itxfm::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
     // SAFETY: `fn itxfm::Fn::call` passes `coeff.len()` as `coeff_len`.
     let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len.into()) };
     let bd = BD::from_c(bitdepth_max);
-    inv_txfm_add_rust::<W, H, TYPE, BD>(dst, stride, coeff, eob, bd)
+    inv_txfm_add_rust::<W, H, TYPE, BD>(dst, dst_offset, coeff, eob, bd)
 }
 
 wrap_fn_ptr!(unsafe extern "C" fn itxfm(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: ptrdiff_t,
     coeff: *mut DynCoef,
     eob: c_int,
     bitdepth_max: c_int,
     _coeff_len: u16,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl itxfm::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: ptrdiff_t,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         coeff: &mut [BD::Coef],
         eob: c_int,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_stride = dst.stride();
         let coeff_len = coeff.len() as u16;
         let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, coeff, eob, bd, coeff_len)
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn inv_txfm_add_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, coeff, eob, bd, coeff_len, dst) }
     }
 }
 
@@ -329,9 +343,9 @@ pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm::Fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
 
-unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     coeff: &mut [BD::Coef],
     bd: BD,
 ) {
@@ -356,10 +370,11 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     }
 
     for y in 0..H {
-        for x in 0..W {
-            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + tmp[y * W + x]);
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..W));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            *dst = bd.iclip_pixel((*dst).as_::<i32>() + tmp[y * W + x]);
         }
-        dst = dst.offset(BD::pxstride(stride));
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
