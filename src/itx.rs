@@ -21,6 +21,7 @@ use crate::src::itx_1d::rav1d_inv_identity32_1d_c;
 use crate::src::itx_1d::rav1d_inv_identity4_1d_c;
 use crate::src::itx_1d::rav1d_inv_identity8_1d_c;
 use crate::src::itx_1d::rav1d_inv_wht4_1d_c;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -573,6 +574,33 @@ macro_rules! assign_itx16_fn {
     }};
 }
 
+const fn resolve_tx(w: usize, h: usize) -> TxfmSize {
+    match (w, h) {
+        // square
+        (4, 4) => TX_4X4,
+        (8, 8) => TX_8X8,
+        (16, 16) => TX_16X16,
+        (32, 32) => TX_32X32,
+        (64, 64) => TX_64X64,
+        // rect
+        (4, 8) => RTX_4X8,
+        (8, 4) => RTX_8X4,
+        (8, 16) => RTX_8X16,
+        (16, 8) => RTX_16X8,
+        (16, 32) => RTX_16X32,
+        (32, 16) => RTX_32X16,
+        (32, 64) => RTX_32X64,
+        (64, 32) => RTX_64X32,
+        (4, 16) => RTX_4X16,
+        (16, 4) => RTX_16X4,
+        (8, 32) => RTX_8X32,
+        (32, 8) => RTX_32X8,
+        (16, 64) => RTX_16X64,
+        (64, 16) => RTX_64X16,
+        _ => unreachable!(),
+    }
+}
+
 macro_rules! assign_itx_all_fn {
     ($c:expr, $BD:ty, $w:expr, $h:expr, $tx:expr, $type:expr) => {{
         $c.itxfm_add[$tx as usize][$type as usize] =
@@ -582,61 +610,23 @@ macro_rules! assign_itx_all_fn {
 
 macro_rules! assign_itx_all_fn64 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
-        use paste::paste;
-
-        let tx = paste! { [<TX_ $w X $h>] };
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_DCT);
-    }};
-
-    ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
-        use paste::paste;
-
-        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        let tx = resolve_tx($w, $h);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_DCT);
     }};
 }
 
 macro_rules! assign_itx_all_fn32 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
-        use paste::paste;
-
         assign_itx_all_fn64!($c, BD, $w, $h);
-        let tx = paste! { [<TX_ $w X $h>] };
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, IDTX);
-    }};
-
-    ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
-        use paste::paste;
-
-        assign_itx_all_fn64!($c, BD, $w, $h, $pfx);
-        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        let tx = resolve_tx($w, $h);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, IDTX);
     }};
 }
 
 macro_rules! assign_itx_all_fn16 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
-        use paste::paste;
-
         assign_itx_all_fn32!($c, BD, $w, $h);
-        let tx = paste! { [<TX_ $w X $h>] };
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_ADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_DCT);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_ADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_FLIPADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_ADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_FLIPADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_DCT);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_FLIPADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_DCT);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_DCT);
-    }};
-
-    ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
-        use paste::paste;
-
-        assign_itx_all_fn32!($c, BD, $w, $h, $pfx);
-        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        let tx = resolve_tx($w, $h);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_ADST);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_DCT);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_ADST);
@@ -652,21 +642,8 @@ macro_rules! assign_itx_all_fn16 {
 
 macro_rules! assign_itx_all_fn84 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
-        use paste::paste;
-
         assign_itx_all_fn16!($c, BD, $w, $h);
-        let tx = paste! { [<TX_ $w X $h>] };
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_FLIPADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_FLIPADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_ADST);
-        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_ADST);
-    }};
-
-    ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
-        use paste::paste;
-
-        assign_itx_all_fn16!($c, BD, $w, $h, $pfx);
-        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        let tx = resolve_tx($w, $h);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, H_FLIPADST);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, V_FLIPADST);
         assign_itx_all_fn!($c, $BD, $w, $h, tx, H_ADST);
@@ -685,25 +662,25 @@ impl Rav1dInvTxfmDSPContext {
 
         #[rustfmt::skip]
         const fn assign<BD: BitDepth>(mut c: Rav1dInvTxfmDSPContext) -> Rav1dInvTxfmDSPContext {
-            assign_itx_all_fn84!(c, BD,  4,  4   );
-            assign_itx_all_fn84!(c, BD,  4,  8, R);
-            assign_itx_all_fn84!(c, BD,  4, 16, R);
-            assign_itx_all_fn84!(c, BD,  8,  4, R);
-            assign_itx_all_fn84!(c, BD,  8,  8   );
-            assign_itx_all_fn84!(c, BD,  8, 16, R);
-            assign_itx_all_fn32!(c, BD,  8, 32, R);
-            assign_itx_all_fn84!(c, BD, 16,  4, R);
-            assign_itx_all_fn84!(c, BD, 16,  8, R);
-            assign_itx_all_fn16!(c, BD, 16, 16   );
-            assign_itx_all_fn32!(c, BD, 16, 32, R);
-            assign_itx_all_fn64!(c, BD, 16, 64, R);
-            assign_itx_all_fn32!(c, BD, 32,  8, R);
-            assign_itx_all_fn32!(c, BD, 32, 16, R);
-            assign_itx_all_fn32!(c, BD, 32, 32   );
-            assign_itx_all_fn64!(c, BD, 32, 64, R);
-            assign_itx_all_fn64!(c, BD, 64, 16, R);
-            assign_itx_all_fn64!(c, BD, 64, 32, R);
-            assign_itx_all_fn64!(c, BD, 64, 64   );
+            assign_itx_all_fn84!(c, BD,  4,  4);
+            assign_itx_all_fn84!(c, BD,  4,  8);
+            assign_itx_all_fn84!(c, BD,  4, 16);
+            assign_itx_all_fn84!(c, BD,  8,  4);
+            assign_itx_all_fn84!(c, BD,  8,  8);
+            assign_itx_all_fn84!(c, BD,  8, 16);
+            assign_itx_all_fn32!(c, BD,  8, 32);
+            assign_itx_all_fn84!(c, BD, 16,  4);
+            assign_itx_all_fn84!(c, BD, 16,  8);
+            assign_itx_all_fn16!(c, BD, 16, 16);
+            assign_itx_all_fn32!(c, BD, 16, 32);
+            assign_itx_all_fn64!(c, BD, 16, 64);
+            assign_itx_all_fn32!(c, BD, 32,  8);
+            assign_itx_all_fn32!(c, BD, 32, 16);
+            assign_itx_all_fn32!(c, BD, 32, 32);
+            assign_itx_all_fn64!(c, BD, 32, 64);
+            assign_itx_all_fn64!(c, BD, 64, 16);
+            assign_itx_all_fn64!(c, BD, 64, 32);
+            assign_itx_all_fn64!(c, BD, 64, 64);
 
             c
         }
