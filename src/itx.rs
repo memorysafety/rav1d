@@ -139,7 +139,7 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
 
-    let mut tmp = [0; 64 * 64]; // Should be `W * H`.
+    let mut tmp = [0; 64 * 64];
     let mut c = &mut tmp[..];
     for y in 0..sh {
         if is_rect2 {
@@ -233,6 +233,9 @@ unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType
         H_FLIPADST => (Identity, FlipAdst),
         V_ADST => (Adst, Identity),
         V_FLIPADST => (FlipAdst, Identity),
+        WHT_WHT if (W, H) == (4, 4) => {
+            return inv_txfm_add_wht_wht_4x4_rust(dst, stride, coeff, bd)
+        }
         _ => unreachable!(),
     };
 
@@ -321,27 +324,10 @@ pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm::Fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
 
-pub(crate) unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    coeff: *mut DynCoef,
-    eob: c_int,
-    bitdepth_max: c_int,
-) {
-    inv_txfm_add_wht_wht_4x4_rust::<BD>(
-        dst.cast(),
-        stride,
-        coeff.cast(),
-        eob,
-        BD::from_c(bitdepth_max),
-    );
-}
-
 unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
-    _eob: c_int,
     bd: BD,
 ) {
     const H: usize = 4;
@@ -644,6 +630,10 @@ impl Rav1dInvTxfmDSPContext {
             assign!(DCT_DCT);
         }
 
+        if W == 4 && H == 4 {
+            assign!(WHT_WHT);
+        }
+
         self
     }
 
@@ -651,9 +641,6 @@ impl Rav1dInvTxfmDSPContext {
         let mut c = Self {
             itxfm_add: [[itxfm::Fn::DEFAULT; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
         };
-
-        c.itxfm_add[TX_4X4 as usize][WHT_WHT as usize] =
-            itxfm::Fn::new(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
 
         c = c.assign::<4, 4, BD>();
         c = c.assign::<4, 8, BD>();
