@@ -83,7 +83,7 @@ pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_
 unsafe fn inv_txfm_add<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    coeff: *mut BD::Coef,
+    coeff: &mut [BD::Coef],
     eob: c_int,
     w: usize,
     h: usize,
@@ -103,8 +103,6 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
     let rnd = 1 << shift >> 1;
 
     if eob < has_dc_only as c_int {
-        let coeff = slice::from_raw_parts_mut(coeff, 1);
-
         let mut dc = coeff[0].as_::<c_int>();
         coeff[0] = 0.as_();
         if is_rect2 {
@@ -125,7 +123,7 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
     let sh = cmp::min(h, 32);
     let sw = cmp::min(w, 32);
 
-    let coeff = slice::from_raw_parts_mut(coeff, sh * sw);
+    let coeff = &mut coeff[..sh * sw];
 
     let row_clip_min;
     let col_clip_min;
@@ -180,7 +178,7 @@ unsafe fn inv_txfm_add<BD: BitDepth>(
 unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    coeff: *mut BD::Coef,
+    coeff: &mut [BD::Coef],
     eob: c_int,
     bd: BD,
 ) {
@@ -278,6 +276,9 @@ unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`itxfm::Fn::call`].
 unsafe extern "C" fn inv_txfm_add_c_erased<
     const W: usize,
     const H: usize,
@@ -289,9 +290,11 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
     coeff: *mut DynCoef,
     eob: c_int,
     bitdepth_max: c_int,
+    coeff_len: u16,
 ) {
     let dst = dst.cast();
-    let coeff = coeff.cast();
+    // SAFETY: `fn itxfm::Fn::call` passes `coeff.len()` as `coeff_len`.
+    let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len.into()) };
     let bd = BD::from_c(bitdepth_max);
     inv_txfm_add_rust::<W, H, TYPE, BD>(dst, stride, coeff, eob, bd)
 }
@@ -302,6 +305,7 @@ wrap_fn_ptr!(unsafe extern "C" fn itxfm(
     coeff: *mut DynCoef,
     eob: c_int,
     bitdepth_max: c_int,
+    _coeff_len: u16,
 ) -> ());
 
 impl itxfm::Fn {
@@ -314,9 +318,10 @@ impl itxfm::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
+        let coeff_len = coeff.len() as u16;
         let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, coeff, eob, bd)
+        self.get()(dst, dst_stride, coeff, eob, bd, coeff_len)
     }
 }
 
@@ -327,13 +332,13 @@ pub struct Rav1dInvTxfmDSPContext {
 unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    coeff: *mut BD::Coef,
+    coeff: &mut [BD::Coef],
     bd: BD,
 ) {
     const H: usize = 4;
     const W: usize = 4;
 
-    let coeff = slice::from_raw_parts_mut(coeff, W * H);
+    let coeff = &mut coeff[..W * H];
 
     let mut tmp = [0; W * H];
     let mut c = &mut tmp[..];
