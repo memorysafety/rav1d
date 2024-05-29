@@ -971,12 +971,13 @@ impl AlPal {
 }
 
 pub const COMPINTER_LEN: usize = 128 * 128;
+pub const SEG_MASK_LEN: usize = 128 * 128;
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
 pub struct ScratchCompinter {
     pub compinter: [[i16; COMPINTER_LEN]; 2],
-    pub seg_mask: [u8; 128 * 128],
+    pub seg_mask: [u8; SEG_MASK_LEN],
 }
 
 // Larger of the two between `ScratchCompinter` and `[BD::Pixel; 128 * 32]`.
