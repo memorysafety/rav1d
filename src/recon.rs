@@ -3627,10 +3627,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
-            (f.dsp.mc.blend)(
-                dst.cast(),
+            f.dsp.mc.blend.call::<BD>(
+                dst,
                 f.cur.stride[0],
-                tmp.as_mut_ptr().cast(),
+                tmp.as_mut_ptr(),
                 bw4 * 4,
                 bh4 * 4,
                 ii_mask.as_ptr(),
@@ -3934,10 +3934,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             0,
                             bd,
                         );
-                        (f.dsp.mc.blend)(
-                            uvdst.cast(),
+                        f.dsp.mc.blend.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
-                            tmp.as_mut_ptr().cast(),
+                            tmp.as_mut_ptr(),
                             cbw4 * 4,
                             cbh4 * 4,
                             ii_mask.as_ptr(),
