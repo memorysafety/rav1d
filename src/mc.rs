@@ -1909,19 +1909,14 @@ unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD:
     sign: i32,
     bitdepth_max: i32,
 ) {
+    let dst = dst.cast();
+    let w = w as usize;
+    let h = h as usize;
     debug_assert!(sign == 1 || sign == 0);
+    let sign = sign != 0;
+    let bd = BD::from_c(bitdepth_max);
     w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        SS_HOR,
-        SS_VER,
-        BD::from_c(bitdepth_max),
+        dst, dst_stride, tmp1, tmp2, w, h, mask, sign, SS_HOR, SS_VER, bd,
     )
 }
 
