@@ -731,21 +731,18 @@ fn mask_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let sh = intermediate_bits + 6;
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
-    let mut tmp1 = tmp1.as_slice();
-    let mut tmp2 = tmp2.as_slice();
+    let tmp1 = &tmp1[..w * h];
+    let tmp2 = &tmp2[..w * h];
     for y in 0..h {
         let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
         for (x, dst) in dst_slice.iter_mut().enumerate() {
             *dst = bd.iclip_pixel(
-                (tmp1[x] as i32 * mask[y * w + x] as i32
-                    + tmp2[x] as i32 * (64 - mask[y * w + x] as i32)
+                (tmp1[y * w + x] as i32 * mask[y * w + x] as i32
+                    + tmp2[y * w + x] as i32 * (64 - mask[y * w + x] as i32)
                     + rnd)
                     >> sh,
             );
         }
-
-        tmp1 = &tmp1[w..];
-        tmp2 = &tmp2[w..];
         dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
