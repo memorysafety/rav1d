@@ -3417,8 +3417,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             CompInterType::Wedge => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
                 f.dsp.mc.mask.call::<BD>(
-                    dst,
-                    f.cur.stride[0],
+                    y_dst,
+                    y_dst_offset,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
@@ -3478,6 +3478,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                 }
 
+                let uv_dst = &cur_data[1 + pl];
+                let uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(uvdstoff);
                 let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                 match comp_inter_type {
                     CompInterType::Avg => {
@@ -3505,8 +3507,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
                         f.dsp.mc.mask.call::<BD>(
-                            uvdst,
-                            f.cur.stride[1],
+                            uv_dst,
+                            uv_dst_offset,
                             &tmp[inter.nd.one_d.mask_sign() as usize],
                             &tmp[!inter.nd.one_d.mask_sign() as usize],
                             bw4 * 4 >> ss_hor,
