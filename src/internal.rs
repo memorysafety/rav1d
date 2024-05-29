@@ -1039,9 +1039,9 @@ impl ScratchLevelsPal {
 
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
-pub struct ScratchInterintraBuf([u8; 64 * 64 * 2]);
+pub struct ScratchInterIntraBuf([u8; 64 * 64 * 2]);
 
-impl ScratchInterintraBuf {
+impl ScratchInterIntraBuf {
     pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 64 * 64] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
@@ -1076,7 +1076,7 @@ impl ScratchPalBuf {
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct ScratchInterIntraEdgePal {
-    pub interintra: ScratchInterintraBuf,
+    pub interintra: ScratchInterIntraBuf,
     pub edge: ScratchEdgeBuf,
     pub pal: ScratchPalBuf,
 
