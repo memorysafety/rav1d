@@ -10,6 +10,7 @@ jobs:
       matrix:
         build: [
           {name: "release", cargo_flags: "--release",  timeout_multiplier: 1},
+          {name: "release-no-asm", cargo_flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16", timeout_multiplier: 1},
           {name: "debug", cargo_flags: "", timeout_multiplier: 3},
         ]
     runs-on: macos-14
@@ -37,12 +38,12 @@ jobs:
       - name: test ${{ matrix.build.name }} build without frame delay
         run: |
           .github/workflows/test.sh \
-            -r ./target/${{ matrix.build.name }}/dav1d \
-            -s ./target/${{ matrix.build.name }}/seek_stress \
+            -r ./target/${{ startsWith(matrix.build.name, 'release') && 'release' || matrix.build.name }}/dav1d \
+            -s ./target/${{ startsWith(matrix.build.name, 'release') && 'release' || matrix.build.name }}/seek_stress \
             -t ${{ matrix.build.timeout_multiplier }}
         # release tests run quickly so we test negative strides and frame delays
       - name: test release build with negative stride
-        if: ${{ matrix.build.name == 'release' }}
+        if: ${{ startsWith(matrix.build.name, 'release') }}
         run: |
           .github/workflows/test.sh \
             -r ./target/release/dav1d \
@@ -50,7 +51,7 @@ jobs:
             -t ${{ matrix.build.timeout_multiplier }} \
             -n
       - name: test release build with frame delay of 1
-        if: ${{ matrix.build.name == 'release' }}
+        if: ${{ startsWith(matrix.build.name, 'release') }}
         run: |
           .github/workflows/test.sh \
             -r ./target/release/dav1d \
@@ -58,7 +59,7 @@ jobs:
             -t ${{ matrix.build.timeout_multiplier }} \
             -f 1
       - name: test release build with frame delay of 2
-        if: ${{ matrix.build.name == 'release' }}
+        if: ${{ startsWith(matrix.build.name, 'release') }}
         run: |
           .github/workflows/test.sh \
             -r ./target/release/dav1d \

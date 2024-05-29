@@ -689,13 +689,11 @@ fn fgy_32x32xn_rust<BD: BitDepth>(
         static W: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
         let src_row_y = |y| {
-            let row = (src.pixel_offset::<BD>() + src_row_offset)
-                .wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
+            let row = src_row_offset.wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
             src.slice::<BD, _>((row + bx.., ..bw))
         };
         let dst_row_y = |y| {
-            let row = (dst.pixel_offset::<BD>() + dst_row_offset)
-                .wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
+            let row = dst_row_offset.wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
             dst.slice_mut::<BD, _>((row + bx.., ..bw))
         };
 
@@ -835,18 +833,16 @@ fn fguv_32x32xn_rust<BD: BitDepth>(
         static W: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
         let luma_row_uv = |y| {
-            let row = (luma.pixel_offset::<BD>() + luma_row_offset)
-                .wrapping_add_signed((y << sy) as isize * luma.pixel_stride::<BD>());
+            let row =
+                luma_row_offset.wrapping_add_signed((y << sy) as isize * luma.pixel_stride::<BD>());
             luma.slice::<BD, _>((row + (bx << sx).., ..bw << sx))
         };
         let src_row_uv = |y| {
-            let row = (src.pixel_offset::<BD>() + src_row_offset)
-                .wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
+            let row = src_row_offset.wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
             src.slice::<BD, _>((row + bx.., ..bw))
         };
         let dst_row_uv = |y| {
-            let row = (dst.pixel_offset::<BD>() + dst_row_offset)
-                .wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
+            let row = dst_row_offset.wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
             dst.slice_mut::<BD, _>((row + bx.., ..bw))
         };
 
