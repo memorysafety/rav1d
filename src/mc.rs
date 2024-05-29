@@ -15,6 +15,7 @@ use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::internal::SCRATCH_INTER_INTRA_BUF_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
+use crate::src::internal::SEG_MASK_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
@@ -819,14 +820,14 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: bool,
     ss_hor: bool,
     ss_ver: bool,
     bd: BD,
 ) {
     let dst_stride = BD::pxstride(dst_stride);
-    let mut mask = slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
+    let mut mask = &mut mask[..(w >> ss_hor as usize) * (h >> ss_ver as usize)];
     let sign = sign as u8;
 
     // store mask at 2x2 resolution, i.e. store 2x1 sum for even rows,
@@ -1397,7 +1398,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
 ) -> ());
@@ -1411,7 +1412,7 @@ impl w_mask::Fn {
         tmp2: &[i16; COMPINTER_LEN],
         w: i32,
         h: i32,
-        mask: *mut u8,
+        mask: &mut [u8; SEG_MASK_LEN],
         sign: i32,
         bd: BD,
     ) {
@@ -1904,7 +1905,7 @@ unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
 ) {
@@ -1931,7 +1932,7 @@ unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
 ) {
@@ -1958,7 +1959,7 @@ unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
 ) {

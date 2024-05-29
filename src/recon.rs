@@ -3408,7 +3408,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
-                    seg_mask.as_mut_ptr(),
+                    seg_mask,
                     inter.nd.one_d.mask_sign() as c_int,
                     bd,
                 );
