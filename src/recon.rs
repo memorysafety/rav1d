@@ -2291,11 +2291,10 @@ unsafe fn obmc<BD: BitDepth>(
                     dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
-                (f.dsp.mc.blend_h)(
-                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize)
-                        .cast(),
+                f.dsp.mc.blend_h.call::<BD>(
+                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize),
                     dst.stride(),
-                    lap.as_ptr().cast(),
+                    lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );
@@ -2338,14 +2337,13 @@ unsafe fn obmc<BD: BitDepth>(
                     dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
-                (f.dsp.mc.blend_v)(
+                f.dsp.mc.blend_v.call::<BD>(
                     dst.as_mut_ptr_at::<BD>(
                         dst_offset
                             .wrapping_add_signed((y * v_mul) as isize * dst.pixel_stride::<BD>()),
-                    )
-                    .cast(),
+                    ),
                     dst.stride(),
-                    lap.as_ptr().cast(),
+                    lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );
