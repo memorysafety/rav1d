@@ -761,22 +761,21 @@ unsafe fn blend_rust<BD: BitDepth>(
     mut tmp: *const BD::Pixel,
     w: usize,
     h: usize,
-    mut mask: *const u8,
+    mask: &[u8],
 ) {
     let dst_stride = BD::pxstride(dst_stride);
-    for _ in 0..h {
+    for y in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
             *dst = blend_px::<BD>(
                 *dst_ptr.offset(x as isize),
                 *tmp.offset(x as isize),
-                *mask.offset(x as isize),
+                mask[y * w + x],
             )
         }
 
         dst_ptr = dst_ptr.offset(dst_stride);
         tmp = tmp.offset(w as isize);
-        mask = mask.offset(w as isize);
     }
 }
 
@@ -1448,7 +1447,7 @@ impl blend::Fn {
     ) {
         let dst = dst.cast();
         let tmp = tmp.cast();
-        let mask = mask.as_ptr();
+        let mask = mask[..(w * h) as usize].as_ptr();
         self.get()(dst, dst_stride, tmp, w, h, mask)
     }
 }
@@ -1974,6 +1973,9 @@ unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     );
 }
 
+/// # Safety
+///
+/// Must be called by [`blend::Fn::call`].
 unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
@@ -1982,14 +1984,13 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     h: i32,
     mask: *const u8,
 ) {
-    blend_rust::<BD>(
-        dst.cast(),
-        dst_stride,
-        tmp.cast(),
-        w as usize,
-        h as usize,
-        mask,
-    )
+    let dst = dst.cast();
+    let tmp = tmp.cast();
+    let w = w as usize;
+    let h = h as usize;
+    // SAFETY: Length sliced in `blend::Fn::call`.
+    let mask = unsafe { slice::from_raw_parts(mask, w * h) };
+    blend_rust::<BD>(dst, dst_stride, tmp, w, h, mask)
 }
 
 unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
