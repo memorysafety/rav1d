@@ -1041,11 +1041,11 @@ pub const SCRATCH_INTER_INTRA_BUF_LEN: usize = 64 * 64;
 
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
-pub struct ScratchInterIntraBuf([u8; SCRATCH_INTER_INTRA_BUF_LEN * 2]);
+pub struct ScratchInterIntraBuf([u16; SCRATCH_INTER_INTRA_BUF_LEN * 2]);
 
 impl ScratchInterIntraBuf {
     pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; SCRATCH_INTER_INTRA_BUF_LEN] {
-        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+        FromBytes::mut_from_prefix(AsBytes::as_bytes_mut(&mut self.0)).unwrap()
     }
 }
 
