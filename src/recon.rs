@@ -3423,7 +3423,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
-                    mask.as_ptr(),
+                    mask,
                     bd,
                 );
                 if has_chroma {
@@ -3511,7 +3511,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &tmp[!inter.nd.one_d.mask_sign() as usize],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
-                            mask.as_ptr(),
+                            mask,
                             bd,
                         );
                     }

@@ -1381,10 +1381,11 @@ impl mask::Fn {
         tmp2: &[i16; COMPINTER_LEN],
         w: i32,
         h: i32,
-        mask: *const u8,
+        mask: &[u8],
         bd: BD,
     ) {
         let dst = dst.cast();
+        let mask = mask.as_ptr();
         let bd = bd.into_c();
         self.get()(dst, dst_stride, tmp1, tmp2, w, h, mask, bd)
     }
