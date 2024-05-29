@@ -784,7 +784,7 @@ fn get_upsample(wh: c_int, angle: c_int, is_sm: bool) -> bool {
 fn upsample_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
     hsz: c_int,
-    in_0: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    r#in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     in_off: usize,
     from: c_int,
     to: c_int,
@@ -792,10 +792,10 @@ fn upsample_edge<BD: BitDepth>(
 ) {
     static kernel: [i8; 4] = [-1, 9, 9, -1];
     for i in 0..hsz - 1 {
-        out[(i * 2) as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
+        out[(i * 2) as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
         let mut s = 0;
         for j in 0..4 {
-            s += in_0[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
+            s += r#in[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
                 .as_::<c_int>()
                 * kernel[j as usize] as c_int;
         }
@@ -803,7 +803,7 @@ fn upsample_edge<BD: BitDepth>(
             iclip(s + 8 >> 4, 0, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
     }
     let i = hsz - 1;
-    out[(i * 2) as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
+    out[(i * 2) as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
 }
 
 unsafe fn ipred_z1_rust<BD: BitDepth>(
