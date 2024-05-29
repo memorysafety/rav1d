@@ -3391,15 +3391,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             CompInterType::WeightedAvg => {
                 jnt_weight =
                     f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
-                (f.dsp.mc.w_avg)(
-                    dst.cast(),
+                f.dsp.mc.w_avg.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
                     jnt_weight,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             CompInterType::Seg => {
@@ -3494,15 +3494,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::WeightedAvg => {
-                        (f.dsp.mc.w_avg)(
-                            uvdst.cast(),
+                        f.dsp.mc.w_avg.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             jnt_weight,
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
