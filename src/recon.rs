@@ -3418,15 +3418,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             CompInterType::Wedge => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
-                (f.dsp.mc.mask)(
-                    dst.cast(),
+                f.dsp.mc.mask.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
                     mask.as_ptr(),
-                    f.bitdepth_max,
+                    bd,
                 );
                 if has_chroma {
                     mask = dav1d_wedge_masks[bs as usize][chr_layout_idx]
@@ -3506,15 +3506,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
-                        (f.dsp.mc.mask)(
-                            uvdst.cast(),
+                        f.dsp.mc.mask.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[inter.nd.one_d.mask_sign() as usize],
                             &tmp[!inter.nd.one_d.mask_sign() as usize],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             mask.as_ptr(),
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                 }
