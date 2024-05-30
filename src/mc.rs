@@ -1471,12 +1471,12 @@ impl blend_dir::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: isize,
-        tmp: *const [BD::Pixel; SCRATCH_LAP_LEN],
+        tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
         w: i32,
         h: i32,
     ) {
         let dst = dst.cast();
-        let tmp = tmp.cast();
+        let tmp = ptr::from_ref(tmp).cast();
         self.get()(dst, dst_stride, tmp, w, h)
     }
 }
@@ -1971,6 +1971,9 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     blend_rust::<BD>(dst, dst_offset, tmp, w, h, mask)
 }
 
+/// # Safety
+///
+/// Must be called by [`blend_dir::Fn::call`].
 unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
@@ -1978,9 +1981,16 @@ unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     w: i32,
     h: i32,
 ) {
-    blend_v_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
+    let dst = dst.cast();
+    let tmp = unsafe { &*tmp.cast() };
+    let w = w as usize;
+    let h = h as usize;
+    blend_v_rust::<BD>(dst, dst_stride, tmp, w, h)
 }
 
+/// # Safety
+///
+/// Must be called by [`blend_dir::Fn::call`].
 unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
@@ -1988,7 +1998,11 @@ unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     w: i32,
     h: i32,
 ) {
-    blend_h_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
+    let dst = dst.cast();
+    let tmp = unsafe { &*tmp.cast() };
+    let w = w as usize;
+    let h = h as usize;
+    blend_h_rust::<BD>(dst, dst_stride, tmp, w, h)
 }
 
 unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
