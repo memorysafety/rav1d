@@ -8,6 +8,7 @@ use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
+use crate::src::disjoint_mut::DisjointMutGuard;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -18,7 +19,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
 use crate::src::tables::dav1d_block_dimensions;
-use std::array;
 use std::cmp;
 use std::marker::PhantomData;
 use std::mem;
@@ -469,26 +469,34 @@ impl Rav1dRefmvsDSPContext {
     ) {
         let start = (b4.y as usize & 31) + 5;
         let bx4 = b4.x as usize;
-        let mut r: [_; 37] = array::from_fn(|i| {
-            if i < start {
-                return None;
+
+        type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
+        const NONE: Option<Guard> = None;
+
+        let mut r_guards = [NONE; 37];
+        let mut r_ptrs = [ptr::null_mut(); 37];
+
+        let r_indices = &rt.r[start..][..bh4];
+        let r_guards = &mut r_guards[start..][..bh4];
+        let r_ptrs = &mut r_ptrs[start..][..bh4];
+
+        for i in 0..bh4 {
+            let ri = r_indices[i];
+            if ri < rf.r.len() {
+                // This is the range that will actually be accessed,
+                // but `splat_mv` expects a pointer offset `bx4` backwards.
+                r_guards[i] = Some(rf.r.index_mut((ri + bx4.., ..bw4)));
             }
-            let ri = rt.r[i];
-            if ri > rf.r.len() {
-                return None;
-            }
-            // This is the range that will actually be accessed,
-            // but `splat_mv` expects a pointer offset `bx4` backwards.
-            Some(rf.r.index_mut(ri + bx4..ri + bx4 + bw4))
-        });
-        let mut r: [_; 37] = array::from_fn(|i| {
-            r[i].as_mut()
+        }
+        for i in 0..bh4 {
+            r_ptrs[i] = r_guards[i]
+                .as_mut()
                 // SAFETY: The pointer stays within bounds of the owning allocation. See comment
                 // on `index_mut` above.
                 .map(|r| unsafe { r.as_mut_ptr().offset(-(bx4 as isize)) })
                 .unwrap_or_else(ptr::null_mut)
-        });
-        let rr = &mut r[start..][..bh4];
+        }
+        let rr = r_ptrs;
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
