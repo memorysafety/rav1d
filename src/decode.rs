@@ -864,7 +864,6 @@ fn read_vartx_tree(
     }
 }
 
-#[inline]
 fn get_prev_frame_segid(
     frame_hdr: &Rav1dFrameHeader,
     b: Bxy,
