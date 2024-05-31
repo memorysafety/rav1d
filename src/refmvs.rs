@@ -22,6 +22,7 @@ use crate::src::tables::dav1d_block_dimensions;
 use std::cmp;
 use std::marker::PhantomData;
 use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr;
 use zerocopy::FromZeroes;
 
@@ -467,36 +468,50 @@ impl Rav1dRefmvsDSPContext {
         bw4: usize,
         bh4: usize,
     ) {
-        let start = (b4.y as usize & 31) + 5;
+        let offset = (b4.y as usize & 31) + 5;
+        let len = bh4;
         let bx4 = b4.x as usize;
 
         type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
-        const NONE: Option<Guard> = None;
+        const UNINIT_GUARD: MaybeUninit<Guard> = MaybeUninit::uninit();
+        const UNINIT_PTR: MaybeUninit<*mut refmvs_block> = MaybeUninit::uninit();
 
-        let mut r_guards = [NONE; 37];
-        let mut r_ptrs = [ptr::null_mut(); 37];
+        let mut r_guards = [UNINIT_GUARD; 37];
+        let mut r_ptrs = [UNINIT_PTR; 37];
 
-        let r_indices = &rt.r[start..][..bh4];
-        let r_guards = &mut r_guards[start..][..bh4];
-        let r_ptrs = &mut r_ptrs[start..][..bh4];
+        let r_indices = &rt.r[offset..][..len];
+        // SAFETY: `r_guards[i]` will be initialized if `r_ptrs[i]` is non-null.
+        let r_guards = &mut r_guards[offset..][..len];
+        // SAFETY: This `r_ptrs` slice will be fully initialized.
+        let r_ptrs = &mut r_ptrs[offset..][..len];
 
-        for i in 0..bh4 {
+        for i in 0..len {
             let ri = r_indices[i];
             if ri < rf.r.len() {
                 // This is the range that will actually be accessed,
                 // but `splat_mv` expects a pointer offset `bx4` backwards.
-                r_guards[i] = Some(rf.r.index_mut((ri + bx4.., ..bw4)));
+                r_guards[i].write(rf.r.index_mut((ri + bx4.., ..bw4)));
+                let guard = unsafe { r_guards[i].assume_init_mut() };
+                let ptr = unsafe { guard.as_mut_ptr().offset(-(bx4 as isize)) };
+                r_ptrs[i].write(ptr);
+            } else {
+                r_ptrs[i].write(ptr::null_mut());
             }
         }
-        for i in 0..bh4 {
-            r_ptrs[i] = r_guards[i]
-                .as_mut()
-                // SAFETY: The pointer stays within bounds of the owning allocation. See comment
-                // on `index_mut` above.
-                .map(|r| unsafe { r.as_mut_ptr().offset(-(bx4 as isize)) })
-                .unwrap_or_else(ptr::null_mut)
+
+        /// # Safety
+        ///
+        /// `slice` must be initialized.
+        // TODO use `MaybeUninit::slice_assume_init_mut` once `#![feature(maybe_uninit_slice)]` is stabilized.
+        unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T] {
+            // SAFETY: `slice` is already initialized and `MaybeUninit` is `#[repr(transparent)]`.
+            unsafe { &mut *(ptr::from_mut(slice) as *mut [T]) }
         }
-        let rr = r_ptrs;
+
+        // SAFETY: The `r_ptrs` slice is fully initialized by the above loop.
+        let r_ptrs = unsafe { slice_assume_init_mut(r_ptrs) };
+
+        let rr = r_ptrs.as_mut_ptr();
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
@@ -505,8 +520,17 @@ impl Rav1dRefmvsDSPContext {
         // each pointer in `rr` is non-null and points to at least `bx4 + bw4`
         // elements, which is what will be accessed in `splat_mv`. For the Rust
         // fallback function we pass the length of `rr` directly.
-        unsafe {
-            (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4);
+        unsafe { (self.splat_mv)(rr, rmv, bx4, bw4, bh4) };
+
+        if mem::needs_drop::<Guard>() {
+            for i in 0..len {
+                let ptr = r_ptrs[i];
+                if ptr.is_null() {
+                    continue;
+                }
+                // SAFETY: `r_guards[i]` is initialized iff `r_ptrs[i]` is non-null.
+                unsafe { r_guards[i].assume_init_drop() };
+            }
         }
     }
 }
