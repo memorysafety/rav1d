@@ -516,10 +516,9 @@ impl Rav1dRefmvsDSPContext {
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
 
-        // SAFETY: Unsafe asm call. `rr` is at least `bh4` elements long, and
-        // each pointer in `rr` is non-null and points to at least `bx4 + bw4`
-        // elements, which is what will be accessed in `splat_mv`. For the Rust
-        // fallback function we pass the length of `rr` directly.
+        // SAFETY: Unsafe asm call. `rr` is `bh4` elements long,
+        // and each ptr in `rr` points to at least `bx4 + bw4` elements,
+        // which is what will be accessed in `splat_mv`.
         unsafe { (self.splat_mv)(rr, rmv, bx4, bw4, bh4) };
 
         if mem::needs_drop::<Guard>() {
