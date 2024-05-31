@@ -58,3 +58,7 @@ opt-level = 1
 [profile.release]
 codegen-units = 1
 panic = "abort"
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
