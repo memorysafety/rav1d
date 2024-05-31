@@ -2292,8 +2292,8 @@ unsafe fn obmc<BD: BitDepth>(
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_h.call::<BD>(
-                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize),
-                    dst.stride(),
+                    dst,
+                    dst_offset + (x * h_mul) as usize,
                     lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
@@ -2338,11 +2338,8 @@ unsafe fn obmc<BD: BitDepth>(
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_v.call::<BD>(
-                    dst.as_mut_ptr_at::<BD>(
-                        dst_offset
-                            .wrapping_add_signed((y * v_mul) as isize * dst.pixel_stride::<BD>()),
-                    ),
-                    dst.stride(),
+                    dst,
+                    dst_offset.wrapping_add_signed((y * v_mul) as isize * dst.pixel_stride::<BD>()),
                     lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
