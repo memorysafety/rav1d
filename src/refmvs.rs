@@ -490,8 +490,11 @@ impl Rav1dRefmvsDSPContext {
             if ri < rf.r.len() {
                 // This is the range that will actually be accessed,
                 // but `splat_mv` expects a pointer offset `bx4` backwards.
-                r_guards[i].write(rf.r.index_mut((ri + bx4.., ..bw4)));
+                let guard = rf.r.index_mut((ri + bx4.., ..bw4));
+                r_guards[i].write(guard);
+                // SAFETY: We just initialized it directly above.
                 let guard = unsafe { r_guards[i].assume_init_mut() };
+                // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
                 let ptr = unsafe { guard.as_mut_ptr().offset(-(bx4 as isize)) };
                 r_ptrs[i].write(ptr);
             } else {
