@@ -33,7 +33,6 @@ extern "C" {
         bx4: i32,
         bw4: i32,
         bh4: i32,
-        _rr_len: usize,
     );
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
@@ -72,7 +71,6 @@ extern "C" {
         bx4: i32,
         bw4: i32,
         bh4: i32,
-        _rr_len: usize,
     );
     fn dav1d_splat_mv_avx2(
         rr: *mut *mut refmvs_block,
@@ -80,7 +78,6 @@ extern "C" {
         bx4: i32,
         bw4: i32,
         bh4: i32,
-        _rr_len: usize,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -118,7 +115,6 @@ extern "C" {
         bx4: i32,
         bw4: i32,
         bh4: i32,
-        _rr_len: usize,
     );
 }
 
@@ -308,8 +304,6 @@ pub type splat_mv_fn = unsafe extern "C" fn(
     bx4: i32,
     bw4: i32,
     bh4: i32,
-    // Extra args, unused by asm.F
-    rr_len: usize,
 ) -> ();
 
 pub struct Rav1dRefmvsDSPContext {
@@ -504,7 +498,7 @@ impl Rav1dRefmvsDSPContext {
         // elements, which is what will be accessed in `splat_mv`. For the Rust
         // fallback function we pass the length of `rr` directly.
         unsafe {
-            (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4, rr.len());
+            (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4);
         }
     }
 }
@@ -1722,14 +1716,13 @@ unsafe extern "C" fn splat_mv_rust(
     bx4: i32,
     bw4: i32,
     bh4: i32,
-    rr_len: usize,
 ) {
     let rmv = &*rmv;
     let rmv = rmv.0;
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
 
-    // Safety: `rr` and `rr_len` are the raw parts of a slice in [`Dav1dRefmvsDSPContext::splat_mv`].
-    let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
+    // SAFETY `rr` is sliced to `[..bh4]` in `Rav1dRefmvsDSPContext::splat_mv`.
+    let rr = unsafe { std::slice::from_raw_parts_mut(rr, bh4) };
 
     for r in &mut rr[..bh4] {
         std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv)
