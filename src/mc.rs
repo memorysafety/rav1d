@@ -773,14 +773,13 @@ fn blend_v_rust<BD: BitDepth>(
     h: usize,
 ) {
     let mask = &dav1d_obmc_masks.0[w..];
-    let mut tmp = tmp.as_slice();
-    for _ in 0..h {
+    let tmp = &tmp[..w * h];
+    for y in 0..h {
         let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w * 3 >> 2));
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, tmp[x], mask[x])
+            *dst = blend_px::<BD>(*dst, tmp[y * w + x], mask[x])
         }
         dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
-        tmp = &tmp[w..];
     }
 }
 
@@ -793,14 +792,13 @@ fn blend_h_rust<BD: BitDepth>(
 ) {
     let mask = &dav1d_obmc_masks.0[h..];
     let h = h * 3 >> 2;
-    let mut tmp = tmp.as_slice();
+    let tmp = &tmp[..w * h];
     for y in 0..h {
         let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, tmp[x], mask[y]);
+            *dst = blend_px::<BD>(*dst, tmp[y * w + x], mask[y]);
         }
         dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
-        tmp = &tmp[w..];
     }
 }
 
