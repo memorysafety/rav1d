@@ -500,7 +500,7 @@ fn get_lo_ctx(
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }
 
-unsafe fn decode_coefs<BD: BitDepth>(
+fn decode_coefs<BD: BitDepth>(
     f: &Rav1dFrameData,
     ts: usize,
     ts_c: &mut Rav1dTileStateContext,
