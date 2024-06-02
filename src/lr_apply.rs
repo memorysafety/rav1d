@@ -38,6 +38,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
     lr: Av1RestorationUnit,
     mut edges: LrEdgeFlags,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -96,22 +98,20 @@ unsafe fn lr_stripe<BD: BitDepth>(
         // SAFETY: Access to lr_line_buf here is unchecked, as we may need to
         // pass an out-of-bounds pointer to this function which is then indexed
         // back into bounds.
-        lr_fn(
-            p.data.as_mut_ptr_at::<BD>(p.offset).cast(),
+        lr_fn.call::<BD>(
+            p.data.as_mut_ptr_at::<BD>(p.offset),
             stride,
-            left.as_ptr().cast(),
+            left.as_ptr(),
             // NOTE: The calculated pointer may point to before the beginning of
             // `lr_line_buf`, so we must use `.wrapping_offset` here.
             // `.wrapping_offset` is needed since `.offset` requires the pointer is in bounds,
             // which `.wrapping_offset` does not, and delays that requirement to when the pointer is dereferenced
-            (f.lf.lr_line_buf.as_mut_ptr() as *const BD::Pixel)
-                .wrapping_offset(lpf_offset)
-                .cast(),
+            (f.lf.lr_line_buf.as_mut_ptr() as *const BD::Pixel).wrapping_offset(lpf_offset),
             unit_w,
             stripe_h,
             &mut params,
             edges,
-            f.bitdepth_max,
+            bd,
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;

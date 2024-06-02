@@ -8,6 +8,7 @@ use crate::include::common::intops::iclip;
 use crate::src::cpu::CpuFlags;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -33,6 +34,9 @@ use libc::intptr_t;
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bd_fn;
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::bpc_fn;
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 extern "C" {
@@ -125,17 +129,7 @@ impl LooprestorationParams {
     }
 }
 
-/// Although the spec applies restoration filters over 4x4 blocks,
-/// they can be applied to a bigger surface.
-///
-/// * `w` is constrained by the restoration unit size (`w <= 256`).
-/// * `h` is constrained by the stripe height (`h <= 64`).
-///
-/// The filter functions are allowed to do
-/// aligned writes past the right edge of the buffer,
-/// aligned up to the minimum loop restoration unit size
-/// (which is 32 pixels for subsampled chroma and 64 pixels for luma).
-pub type looprestorationfilter_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
@@ -145,35 +139,42 @@ pub type looprestorationfilter_fn = unsafe extern "C" fn(
     params: *const LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-) -> ();
+) -> ());
 
-pub struct Rav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
+impl loop_restoration_filter::Fn {
+    /// Although the spec applies restoration filters over 4x4 blocks,
+    /// they can be applied to a bigger surface.
+    ///
+    /// * `w` is constrained by the restoration unit size (`w <= 256`).
+    /// * `h` is constrained by the stripe height (`h <= 64`).
+    ///
+    /// The filter functions are allowed to do
+    /// aligned writes past the right edge of the buffer,
+    /// aligned up to the minimum loop restoration unit size
+    /// (which is 32 pixels for subsampled chroma and 64 pixels for luma).
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: ptrdiff_t,
+        left: *const LeftPixelRow<BD::Pixel>,
+        lpf: *const BD::Pixel,
+        w: c_int,
+        h: c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, left, lpf, w, h, params, edges, bd)
+    }
 }
 
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
-macro_rules! decl_looprestorationfilter_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                dst: *mut DynPixel,
-                dst_stride: ptrdiff_t,
-                left: *const LeftPixelRow<DynPixel>,
-                lpf: *const DynPixel,
-                w: c_int,
-                h: c_int,
-                params: *const LooprestorationParams,
-                edges: LrEdgeFlags,
-                bitdepth_max: c_int,
-            );
-        }
-
-        $name
-    }};
+pub struct Rav1dLoopRestorationDSPContext {
+    pub wiener: [loop_restoration_filter::Fn; 2],
+    pub sgr: [loop_restoration_filter::Fn; 3],
 }
 
 // 256 * 1.5 + 3 + 3 = 390
@@ -3432,11 +3433,11 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 impl Rav1dLoopRestorationDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
         Self {
-            wiener: [wiener_c_erased::<BD>; 2],
+            wiener: [loop_restoration_filter::Fn::new(wiener_c_erased::<BD>); 2],
             sgr: [
-                sgr_5x5_c_erased::<BD>,
-                sgr_3x3_c_erased::<BD>,
-                sgr_mix_c_erased::<BD>,
+                loop_restoration_filter::Fn::new(sgr_5x5_c_erased::<BD>),
+                loop_restoration_filter::Fn::new(sgr_3x3_c_erased::<BD>),
+                loop_restoration_filter::Fn::new(sgr_mix_c_erased::<BD>),
             ],
         }
     }
@@ -3449,21 +3450,21 @@ impl Rav1dLoopRestorationDSPContext {
         }
 
         if let BPC::BPC8 = BD::BPC {
-            self.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
-            self.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
+            self.wiener[0] = bpc_fn!(loop_restoration_filter::decl_fn, 8 bpc, wiener_filter7, sse2);
+            self.wiener[1] = bpc_fn!(loop_restoration_filter::decl_fn, 8 bpc, wiener_filter5, sse2);
         };
 
         if !flags.contains(CpuFlags::SSSE3) {
             return self;
         }
 
-        self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, ssse3);
-        self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, ssse3);
+        self.wiener[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter7, ssse3);
+        self.wiener[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter5, ssse3);
 
         if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
-            self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, ssse3);
-            self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, ssse3);
-            self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, ssse3);
+            self.sgr[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_5x5, ssse3);
+            self.sgr[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_3x3, ssse3);
+            self.sgr[2] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_mix, ssse3);
         }
 
         #[cfg(target_arch = "x86_64")]
@@ -3472,32 +3473,52 @@ impl Rav1dLoopRestorationDSPContext {
                 return self;
             }
 
-            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx2);
-            self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, avx2);
+            self.wiener[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter7, avx2);
+            self.wiener[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter5, avx2);
 
             if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
-                self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx2);
-                self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx2);
-                self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx2);
+                self.sgr[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_5x5, avx2);
+                self.sgr[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_3x3, avx2);
+                self.sgr[2] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_mix, avx2);
             }
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
             }
 
-            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx512icl);
+            self.wiener[0] = bd_fn!(
+                loop_restoration_filter::decl_fn,
+                BD,
+                wiener_filter7,
+                avx512icl
+            );
             self.wiener[1] = match BD::BPC {
                 // With VNNI we don't need a 5-tap version.
                 BPC::BPC8 => self.wiener[0],
                 BPC::BPC16 => {
-                    decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx512icl)
+                    bpc_fn!(loop_restoration_filter::decl_fn, 16 bpc, wiener_filter5, avx512icl)
                 }
             };
 
             if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
-                self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx512icl);
-                self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx512icl);
-                self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx512icl);
+                self.sgr[0] = bd_fn!(
+                    loop_restoration_filter::decl_fn,
+                    BD,
+                    sgr_filter_5x5,
+                    avx512icl
+                );
+                self.sgr[1] = bd_fn!(
+                    loop_restoration_filter::decl_fn,
+                    BD,
+                    sgr_filter_3x3,
+                    avx512icl
+                );
+                self.sgr[2] = bd_fn!(
+                    loop_restoration_filter::decl_fn,
+                    BD,
+                    sgr_filter_mix,
+                    avx512icl
+                );
             }
         }
 
@@ -3513,20 +3534,20 @@ impl Rav1dLoopRestorationDSPContext {
 
         #[cfg(target_arch = "aarch64")]
         {
-            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, neon);
-            self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, neon);
+            self.wiener[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter7, neon);
+            self.wiener[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter5, neon);
         }
 
         #[cfg(target_arch = "arm")]
         {
-            self.wiener[0] = wiener_filter_neon_erased::<BD>;
-            self.wiener[1] = wiener_filter_neon_erased::<BD>;
+            self.wiener[0] = loop_restoration_filter::Fn::new(wiener_filter_neon_erased::<BD>);
+            self.wiener[1] = loop_restoration_filter::Fn::new(wiener_filter_neon_erased::<BD>);
         }
 
         if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
-            self.sgr[0] = sgr_filter_5x5_neon_erased::<BD>;
-            self.sgr[1] = sgr_filter_3x3_neon_erased::<BD>;
-            self.sgr[2] = sgr_filter_mix_neon_erased::<BD>;
+            self.sgr[0] = loop_restoration_filter::Fn::new(sgr_filter_5x5_neon_erased::<BD>);
+            self.sgr[1] = loop_restoration_filter::Fn::new(sgr_filter_3x3_neon_erased::<BD>);
+            self.sgr[2] = loop_restoration_filter::Fn::new(sgr_filter_mix_neon_erased::<BD>);
         }
 
         self
