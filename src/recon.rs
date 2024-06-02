@@ -189,7 +189,7 @@ pub(crate) type read_pal_plane_fn = fn(
     by4: usize,
 ) -> u8; // `pal_sz`
 
-pub(crate) type read_pal_uv_fn = unsafe fn(
+pub(crate) type read_pal_uv_fn = fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
@@ -4629,7 +4629,7 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
 }
 
 /// Return `pal_sz[1]`.
-pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
+pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,

@@ -1850,11 +1850,7 @@ fn decode_b(
                 }
                 if use_uv_pal {
                     // see aomedia bug 2183 for why we use luma coordinates
-                    //
-                    // SAFETY: Function call with all safe args, will be marked safe.
-                    pal_sz[1] = unsafe {
-                        (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize)
-                    };
+                    pal_sz[1] = (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
         }
