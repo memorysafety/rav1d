@@ -549,6 +549,26 @@ impl From<Rav1dPicture> for Dav1dPicture {
     }
 }
 
+impl Rav1dPicture {
+    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset; 3] {
+        // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
+        // plane here to avoid having additional in-loop branches in various places.
+        // We never use those values, so it doesn't really matter what they point
+        // at, as long as the offsets are valid.
+        let layout = self.p.layout;
+        let has_chroma = layout != Rav1dPixelLayout::I400;
+        let data = &self.data.as_ref().unwrap().data;
+        array::from_fn(|i| {
+            let data = &data[has_chroma as usize * i];
+            let ss_ver = layout == Rav1dPixelLayout::I420 && i != 0;
+            let offset = data
+                .pixel_offset::<BD>()
+                .wrapping_add_signed(y as isize * data.pixel_stride::<BD>() >> ss_ver as u8);
+            Rav1dPictureDataComponentOffset { data, offset }
+        })
+    }
+}
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicAllocator {
