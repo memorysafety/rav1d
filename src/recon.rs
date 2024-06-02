@@ -101,6 +101,7 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
+use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -4235,39 +4236,24 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
         return;
     }
 
-    let cur_data = &f.cur.data.as_ref().unwrap().data;
-
     let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let p = [
-        cur_data[f.lf.p[0]]
-            .as_strided_mut_ptr::<BD>()
-            .offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        cur_data[f.lf.p[1]]
-            .as_strided_mut_ptr::<BD>()
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        cur_data[f.lf.p[2]]
-            .as_strided_mut_ptr::<BD>()
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-    ];
+    let p = f.cur.lf_offsets::<BD>(y);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let start = sby * sbsz;
     if sby != 0 {
-        let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let p_up = [
-            p[0].offset(-((8 * BD::pxstride(f.cur.stride[0])) as isize)),
-            p[1].offset(-((8 * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize)),
-            p[2].offset(-((8 * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize)),
-        ];
-        rav1d_cdef_brow::<BD>(c, tc, f, &p_up, prev_mask, start - 2, start, true, sby);
+        let p_up = array::from_fn(|i| {
+            let ss_ver = f.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
+            p[i] - ((8 * p[i].data.pixel_stride::<BD>()) >> ss_ver as u8)
+        });
+        rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby);
     }
 
     let n_blks = sbsz - 2 * ((sby + 1) < f.sbh) as c_int;
     let end = cmp::min(start + n_blks, f.bh);
-    rav1d_cdef_brow::<BD>(c, tc, f, &p, mask_offset, start, end, false, sby);
+    rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
