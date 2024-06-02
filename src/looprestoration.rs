@@ -126,15 +126,15 @@ impl LooprestorationParams {
 }
 
 pub type looprestorationfilter_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const LeftPixelRow<DynPixel>,
-    *const DynPixel,
-    c_int,
-    c_int,
-    *const LooprestorationParams,
-    LrEdgeFlags,
-    c_int,
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
+    w: c_int,
+    h: c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: c_int,
 ) -> ();
 
 pub struct Rav1dLoopRestorationDSPContext {
