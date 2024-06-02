@@ -1827,18 +1827,15 @@ fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts_c.msac.rng);
                 }
                 if use_y_pal {
-                    // SAFETY: Function call with all safe args, will be marked safe.
-                    pal_sz[0] = unsafe {
-                        (bd_fn.read_pal_plane)(
-                            t,
-                            f,
-                            ts_c,
-                            false,
-                            sz_ctx,
-                            bx4 as usize,
-                            by4 as usize,
-                        )
-                    };
+                    pal_sz[0] = (bd_fn.read_pal_plane)(
+                        t,
+                        f,
+                        ts_c,
+                        false,
+                        sz_ctx,
+                        bx4 as usize,
+                        by4 as usize,
+                    );
                 }
             }
 
