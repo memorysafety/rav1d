@@ -22,7 +22,7 @@ use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use std::ffi::c_void;
+use ::{std::ffi::c_void, std::ptr};
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::src::align::Align16;
@@ -705,8 +705,8 @@ fn selfguided_filter<BD: BitDepth>(
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
             for i in 0..w {
-                let a = B[i].as_::<c_int>() * 6 + (B[i - 1] + B[i + 1]).as_::<c_int>() * 5;
-                let b = A[i] * 6 + (A[i - 1] + A[i + 1]) * 5;
+                let a = B[i].as_::<c_int>() * 6 + (B[i as isize - 1] + B[i + 1]).as_::<c_int>() * 5;
+                let b = A[i] * 6 + (A[i as isize - 1] + A[i + 1]) * 5;
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
             dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
@@ -947,7 +947,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn rav1d_wiener_filter_h_neon<BD: BitDepth>(
     dst: &mut [i16],
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     fh: &[i16; 8],
@@ -1065,7 +1065,7 @@ unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
 unsafe fn wiener_filter_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
@@ -1130,7 +1130,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
 unsafe fn rav1d_sgr_box3_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     w: c_int,
@@ -1157,7 +1157,17 @@ unsafe fn rav1d_sgr_box3_h_neon<BD: BitDepth>(
     (match BD::BPC {
         BPC::BPC8 => asm_fn!(dav1d_sgr_box3_h_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_box3_h_16bpc_neon),
-    })(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges)
+    })(
+        sumsq,
+        sum,
+        left.map(|left| left.as_ptr().cast())
+            .unwrap_or_else(ptr::null),
+        src.cast(),
+        stride,
+        w,
+        h,
+        edges,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm")))]
@@ -1197,7 +1207,7 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
@@ -1217,12 +1227,12 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         .as_mut_ptr()
         .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
     let b: *mut i16 = sum;
-    rav1d_sgr_box3_h_neon::<BD>(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges);
+    rav1d_sgr_box3_h_neon::<BD>(sumsq, sum, Some(left), src, stride, w, h, edges);
     if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
         rav1d_sgr_box3_h_neon::<BD>(
             &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
             &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
-            0 as *const [BD::Pixel; 4],
+            None,
             lpf,
             stride,
             w,
@@ -1234,7 +1244,7 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         rav1d_sgr_box3_h_neon::<BD>(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
-            0 as *const [BD::Pixel; 4],
+            None,
             lpf.offset(6 * BD::pxstride(stride)),
             stride,
             w,
@@ -1251,7 +1261,7 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
 unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     w: c_int,
@@ -1278,7 +1288,17 @@ unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
     (match BD::BPC {
         BPC::BPC8 => asm_fn!(dav1d_sgr_box5_h_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_box5_h_16bpc_neon),
-    })(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges)
+    })(
+        sumsq,
+        sum,
+        left.map(|left| left.as_ptr().cast())
+            .unwrap_or_else(ptr::null),
+        src.cast(),
+        stride,
+        w,
+        h,
+        edges,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm")))]
@@ -1318,7 +1338,7 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
@@ -1338,16 +1358,16 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
         .as_mut_ptr()
         .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
     let b: *mut i16 = sum;
-    rav1d_sgr_box5_h_neon::<BD>(sumsq, sum, left, src, stride, w, h, edges);
+    rav1d_sgr_box5_h_neon::<BD>(sumsq, sum, Some(left), src, stride, w, h, edges);
     if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
         rav1d_sgr_box5_h_neon::<BD>(
             &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
             &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
-            0 as *const [BD::Pixel; 4],
+            None,
             lpf,
             stride,
             w,
-            2 as c_int,
+            2,
             edges,
         );
     }
@@ -1355,11 +1375,11 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
         rav1d_sgr_box5_h_neon::<BD>(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
-            0 as *const [BD::Pixel; 4],
+            None,
             lpf.offset(6 * BD::pxstride(stride)),
             stride,
             w,
-            2 as c_int,
+            2,
             edges,
         );
     }
@@ -1463,6 +1483,9 @@ unsafe fn rav1d_sgr_weighted2_neon<BD: BitDepth>(
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     p: *mut DynPixel,
@@ -1475,37 +1498,40 @@ unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_filter_5x5_neon(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let bd = BD::from_c(bitdepth_max);
+    let w = w as usize;
+    let h = h as usize;
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_filter_5x5_neon(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
+    let w = w as c_int;
+    let h = h as c_int;
+    let mut tmp = Align16([0; 64 * 384]);
     let sgr = params.sgr();
     rav1d_sgr_filter2_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s0, edges, bd);
     rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w0, bd);
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     p: *mut DynPixel,
@@ -1518,32 +1544,32 @@ unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_filter_3x3_neon(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_filter_3x3_neon(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
+    let w = w as c_int;
+    let h = h as c_int;
+    let mut tmp = Align16([0; 64 * 384]);
     let sgr = params.sgr();
     rav1d_sgr_filter1_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s1, edges, bd);
     rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w1, bd);
@@ -1577,7 +1603,7 @@ unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
 unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const LeftPixelRow<BD::Pixel>,
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1603,7 +1629,8 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
     bd_fn!(asm_fn, BD, sgr_box3_row_h, neon)(
         sumsq,
         sum,
-        left.cast(),
+        left.map(|left| left.as_ptr().cast())
+            .unwrap_or_else(ptr::null),
         src.cast(),
         w,
         edges,
@@ -1615,7 +1642,7 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
 unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const LeftPixelRow<BD::Pixel>,
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1641,7 +1668,8 @@ unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
     bd_fn!(asm_fn, BD, sgr_box5_row_h, neon)(
         sumsq,
         sum,
-        left.cast(),
+        left.map(|left| left.as_ptr().cast())
+            .unwrap_or_else(ptr::null),
         src.cast(),
         w,
         edges,
@@ -1655,7 +1683,7 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
     sum3: *mut i16,
     sumsq5: *mut i32,
     sum5: *mut i16,
-    left: *const LeftPixelRow<BD::Pixel>,
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1684,7 +1712,8 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
         sum3,
         sumsq5,
         sum5,
-        left.cast(),
+        left.map(|left| left.as_ptr().cast())
+            .unwrap_or_else(ptr::null),
         src.cast(),
         w,
         edges,
@@ -1919,7 +1948,7 @@ unsafe fn sgr_box3_hv_neon<BD: BitDepth>(
     sum: &mut [*mut i16; 3],
     AA: *mut i32,
     BB: *mut i16,
-    left: *const LeftPixelRow<BD::Pixel>,
+    left: Option<&[LeftPixelRow<BD::Pixel>]>,
     src: *const BD::Pixel,
     w: c_int,
     s: c_int,
@@ -2043,14 +2072,17 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
 unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const LeftPixelRow<BD::Pixel>,
+    mut left: &[LeftPixelRow<BD::Pixel>],
     mut lpf: *const BD::Pixel,
-    w: c_int,
-    mut h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    let w = w as c_int;
+    let mut h = h as c_int;
+
     let stride = BD::pxstride(stride);
 
     const BUF_STRIDE: usize = 384 + 16;
@@ -2094,32 +2126,16 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         sumsq_ptrs = sumsq_rows;
         sum_ptrs = sum_rows;
 
-        rav1d_sgr_box3_row_h_neon(
-            sumsq_rows[0],
-            sum_rows[0],
-            0 as *const LeftPixelRow<BD::Pixel>,
-            lpf,
-            w,
-            edges,
-            bd,
-        );
+        rav1d_sgr_box3_row_h_neon(sumsq_rows[0], sum_rows[0], None, lpf, w, edges, bd);
         lpf = lpf.offset(stride);
-        rav1d_sgr_box3_row_h_neon(
-            sumsq_rows[1],
-            sum_rows[1],
-            0 as *const LeftPixelRow<BD::Pixel>,
-            lpf,
-            w,
-            edges,
-            bd,
-        );
+        rav1d_sgr_box3_row_h_neon(sumsq_rows[1], sum_rows[1], None, lpf, w, edges, bd);
 
         sgr_box3_hv_neon(
             &mut sumsq_ptrs,
             &mut sum_ptrs,
             A_ptrs[2],
             B_ptrs[2],
-            left,
+            Some(left),
             src,
             w,
             sgr.s1 as c_int,
@@ -2127,7 +2143,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             bd,
         );
 
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
         rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
 
@@ -2140,14 +2156,14 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                left,
+                Some(left),
                 src,
                 w,
                 sgr.s1 as c_int,
                 edges,
                 bd,
             );
-            left = left.offset(1);
+            left = &left[1..];
             src = src.offset(stride);
             rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
 
@@ -2160,8 +2176,8 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         sumsq_ptrs = [sumsq_rows[0]; 3];
         sum_ptrs = [sum_rows[0]; 3];
 
-        rav1d_sgr_box3_row_h_neon(sumsq_rows[0], sum_rows[0], left, src, w, edges, bd);
-        left = left.offset(1);
+        rav1d_sgr_box3_row_h_neon(sumsq_rows[0], sum_rows[0], Some(left), src, w, edges, bd);
+        left = &left[1..];
         src = src.offset(stride);
 
         sgr_box3_vert_neon(
@@ -2187,14 +2203,14 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                left,
+                Some(left),
                 src,
                 w,
                 sgr.s1 as c_int,
                 edges,
                 bd,
             );
-            left = left.offset(1);
+            left = &left[1..];
             src = src.offset(stride);
             rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
 
@@ -2216,14 +2232,14 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             &mut sum_ptrs,
             A_ptrs[2],
             B_ptrs[2],
-            left,
+            Some(left),
             src,
             w,
             sgr.s1 as c_int,
             edges,
             bd,
         );
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
 
         sgr_finish1_neon(
@@ -2249,7 +2265,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                0 as *const LeftPixelRow<BD::Pixel>,
+                None,
                 lpf_bottom,
                 w,
                 sgr.s1 as c_int,
@@ -2273,7 +2289,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                0 as *const LeftPixelRow<BD::Pixel>,
+                None,
                 lpf_bottom,
                 w,
                 sgr.s1 as c_int,
@@ -2359,14 +2375,17 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const LeftPixelRow<BD::Pixel>,
+    mut left: &[LeftPixelRow<BD::Pixel>],
     mut lpf: *const BD::Pixel,
-    w: c_int,
-    mut h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    let w = w as c_int;
+    let mut h = h as c_int;
+
     let stride = BD::pxstride(stride);
 
     const BUF_STRIDE: usize = 384 + 16;
@@ -2413,37 +2432,21 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
         }
 
-        rav1d_sgr_box5_row_h_neon(
-            sumsq_rows[0],
-            sum_rows[0],
-            0 as *const LeftPixelRow<BD::Pixel>,
-            lpf,
-            w,
-            edges,
-            bd,
-        );
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[0], sum_rows[0], None, lpf, w, edges, bd);
         lpf = lpf.offset(stride);
-        rav1d_sgr_box5_row_h_neon(
-            sumsq_rows[1],
-            sum_rows[1],
-            0 as *const LeftPixelRow<BD::Pixel>,
-            lpf,
-            w,
-            edges,
-            bd,
-        );
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[1], sum_rows[1], None, lpf, w, edges, bd);
 
-        rav1d_sgr_box5_row_h_neon(sumsq_rows[2], sum_rows[2], left, src, w, edges, bd);
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[2], sum_rows[2], Some(left), src, w, edges, bd);
 
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
 
         h -= 1;
         if h <= 0 {
             track = Track::vert1;
         } else {
-            rav1d_sgr_box5_row_h_neon(sumsq_rows[3], sum_rows[3], left, src, w, edges, bd);
-            left = left.offset(1);
+            rav1d_sgr_box5_row_h_neon(sumsq_rows[3], sum_rows[3], Some(left), src, w, edges, bd);
+            left = &left[1..];
             src = src.offset(stride);
             sgr_box5_vert_neon(
                 &mut sumsq_ptrs,
@@ -2470,8 +2473,8 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
         sumsq_ptrs = [sumsq_rows[0]; 5];
         sum_ptrs = [sum_rows[0]; 5];
 
-        rav1d_sgr_box5_row_h_neon(sumsq_rows[0], sum_rows[0], left, src, w, edges, bd);
-        left = left.offset(1);
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[0], sum_rows[0], Some(left), src, w, edges, bd);
+        left = &left[1..];
         src = src.offset(stride);
 
         h -= 1;
@@ -2481,8 +2484,8 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             sumsq_ptrs[4] = sumsq_rows[1];
             sum_ptrs[4] = sum_rows[1];
 
-            rav1d_sgr_box5_row_h_neon(sumsq_rows[1], sum_rows[1], left, src, w, edges, bd);
-            left = left.offset(1);
+            rav1d_sgr_box5_row_h_neon(sumsq_rows[1], sum_rows[1], Some(left), src, w, edges, bd);
+            left = &left[1..];
             src = src.offset(stride);
 
             sgr_box5_vert_neon(
@@ -2505,16 +2508,32 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sum_ptrs[3] = sum_rows[2];
                 sum_ptrs[4] = sum_rows[3];
 
-                rav1d_sgr_box5_row_h_neon(sumsq_rows[2], sum_rows[2], left, src, w, edges, bd);
-                left = left.offset(1);
+                rav1d_sgr_box5_row_h_neon(
+                    sumsq_rows[2],
+                    sum_rows[2],
+                    Some(left),
+                    src,
+                    w,
+                    edges,
+                    bd,
+                );
+                left = &left[1..];
                 src = src.offset(stride);
 
                 h -= 1;
                 if h <= 0 {
                     track = Track::odd;
                 } else {
-                    rav1d_sgr_box5_row_h_neon(sumsq_rows[3], sum_rows[3], left, src, w, edges, bd);
-                    left = left.offset(1);
+                    rav1d_sgr_box5_row_h_neon(
+                        sumsq_rows[3],
+                        sum_rows[3],
+                        Some(left),
+                        src,
+                        w,
+                        edges,
+                        bd,
+                    );
+                    left = &left[1..];
                     src = src.offset(stride);
 
                     sgr_box5_vert_neon(
@@ -2555,16 +2574,16 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     // h > 0 can be true only if track == Track::main
     // The original C code uses goto statements and skips over this loop when h <= 0
     while h > 0 {
-        rav1d_sgr_box5_row_h_neon(sumsq_ptrs[3], sum_ptrs[3], left, src, w, edges, bd);
-        left = left.offset(1);
+        rav1d_sgr_box5_row_h_neon(sumsq_ptrs[3], sum_ptrs[3], Some(left), src, w, edges, bd);
+        left = &left[1..];
         src = src.offset(stride);
 
         h -= 1;
         if h <= 0 {
             track = Track::odd;
         } else {
-            rav1d_sgr_box5_row_h_neon(sumsq_ptrs[4], sum_ptrs[4], left, src, w, edges, bd);
-            left = left.offset(1);
+            rav1d_sgr_box5_row_h_neon(sumsq_ptrs[4], sum_ptrs[4], Some(left), src, w, edges, bd);
+            left = &left[1..];
             src = src.offset(stride);
 
             sgr_box5_vert_neon(
@@ -2596,25 +2615,9 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 
     match track {
         Track::main => {
-            rav1d_sgr_box5_row_h_neon(
-                sumsq_ptrs[3],
-                sum_ptrs[3],
-                0 as *const LeftPixelRow<BD::Pixel>,
-                lpf_bottom,
-                w,
-                edges,
-                bd,
-            );
+            rav1d_sgr_box5_row_h_neon(sumsq_ptrs[3], sum_ptrs[3], None, lpf_bottom, w, edges, bd);
             lpf_bottom = lpf_bottom.offset(stride);
-            rav1d_sgr_box5_row_h_neon(
-                sumsq_ptrs[4],
-                sum_ptrs[4],
-                0 as *const LeftPixelRow<BD::Pixel>,
-                lpf_bottom,
-                w,
-                edges,
-                bd,
-            );
+            rav1d_sgr_box5_row_h_neon(sumsq_ptrs[4], sum_ptrs[4], None, lpf_bottom, w, edges, bd);
         }
         Track::vert1 => {
             // Copy the last row as padding once
@@ -2721,14 +2724,17 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const LeftPixelRow<BD::Pixel>,
+    mut left: &[LeftPixelRow<BD::Pixel>],
     mut lpf: *const BD::Pixel,
-    w: c_int,
-    mut h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    let w = w as c_int;
+    let mut h = h as c_int;
+
     let stride = BD::pxstride(stride);
 
     const BUF_STRIDE: usize = 384 + 16;
@@ -2809,7 +2815,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[0],
             sumsq5_rows[0],
             sum5_rows[0],
-            0 as *const LeftPixelRow<BD::Pixel>,
+            None,
             lpf,
             w,
             edges,
@@ -2821,7 +2827,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[1],
             sumsq5_rows[1],
             sum5_rows[1],
-            0 as *const LeftPixelRow<BD::Pixel>,
+            None,
             lpf,
             w,
             edges,
@@ -2833,14 +2839,14 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[2],
             sumsq5_rows[2],
             sum5_rows[2],
-            left,
+            Some(left),
             src,
             w,
             edges,
             bd,
         );
 
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
 
         sgr_box3_vert_neon(
@@ -2863,13 +2869,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_rows[3],
                 sum5_rows[3],
-                left,
+                Some(left),
                 src,
                 w,
                 edges,
                 bd,
             );
-            left = left.offset(1);
+            left = &left[1..];
             src = src.offset(stride);
 
             sgr_box5_vert_neon(
@@ -2910,13 +2916,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[0],
             sumsq5_rows[0],
             sum5_rows[0],
-            left,
+            Some(left),
             src,
             w,
             edges,
             bd,
         );
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
 
         sgr_box3_vert_neon(
@@ -2945,13 +2951,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_rows[1],
                 sumsq5_rows[1],
                 sum5_rows[1],
-                left,
+                Some(left),
                 src,
                 w,
                 edges,
                 bd,
             );
-            left = left.offset(1);
+            left = &left[1..];
             src = src.offset(stride);
 
             sgr_box5_vert_neon(
@@ -2993,13 +2999,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                     sum3_rows[2],
                     sumsq5_rows[2],
                     sum5_rows[2],
-                    left,
+                    Some(left),
                     src,
                     w,
                     edges,
                     bd,
                 );
-                left = left.offset(1);
+                left = &left[1..];
                 src = src.offset(stride);
 
                 sgr_box3_vert_neon(
@@ -3022,13 +3028,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                         sum3_ptrs[2],
                         sumsq5_rows[3],
                         sum5_rows[3],
-                        left,
+                        Some(left),
                         src,
                         w,
                         edges,
                         bd,
                     );
-                    left = left.offset(1);
+                    left = &left[1..];
                     src = src.offset(stride);
 
                     sgr_box5_vert_neon(
@@ -3085,13 +3091,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_ptrs[2],
             sumsq5_ptrs[3],
             sum5_ptrs[3],
-            left,
+            Some(left),
             src,
             w,
             edges,
             bd,
         );
-        left = left.offset(1);
+        left = &left[1..];
         src = src.offset(stride);
 
         sgr_box3_vert_neon(
@@ -3114,13 +3120,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_ptrs[4],
                 sum5_ptrs[4],
-                left,
+                Some(left),
                 src,
                 w,
                 edges,
                 bd,
             );
-            left = left.offset(1);
+            left = &left[1..];
             src = src.offset(stride);
 
             sgr_box5_vert_neon(
@@ -3169,7 +3175,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_ptrs[3],
                 sum5_ptrs[3],
-                0 as *const LeftPixelRow<BD::Pixel>,
+                None,
                 lpf_bottom,
                 w,
                 edges,
@@ -3193,7 +3199,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_ptrs[4],
                 sum5_ptrs[4],
-                0 as *const LeftPixelRow<BD::Pixel>,
+                None,
                 lpf_bottom,
                 w,
                 edges,
@@ -3375,6 +3381,9 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     p: *mut DynPixel,
@@ -3387,31 +3396,31 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_filter_mix_neon(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let bd = BD::from_c(bitdepth_max);
+    let w = w as usize;
+    let h = h as usize;
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_filter_mix_neon(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    let w = w as c_int;
+    let h = h as c_int;
     let mut tmp1: Align16<[i16; 24576]> = Align16([0; 24576]);
     let mut tmp2: Align16<[i16; 24576]> = Align16([0; 24576]);
     let sgr = params.sgr();
