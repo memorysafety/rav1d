@@ -109,7 +109,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
             (f.lf.lr_line_buf.as_mut_ptr() as *const BD::Pixel).wrapping_offset(lpf_offset),
             unit_w,
             stripe_h,
-            &mut params,
+            &params,
             edges,
             bd,
         );

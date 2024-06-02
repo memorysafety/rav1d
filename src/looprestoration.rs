@@ -136,7 +136,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) -> ());
@@ -160,7 +160,7 @@ impl loop_restoration_filter::Fn {
         lpf: *const BD::Pixel,
         w: c_int,
         h: c_int,
-        params: *const LooprestorationParams,
+        params: &LooprestorationParams,
         edges: LrEdgeFlags,
         bd: BD,
     ) {
@@ -330,7 +330,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -342,7 +342,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
         lpf.cast(),
         w,
         h,
-        &*params,
+        params,
         edges,
         bd,
     )
@@ -739,7 +739,7 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -763,7 +763,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -778,7 +778,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     padding::<BD>(
         &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
     );
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
         &mut tmp,
@@ -808,7 +808,7 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -832,7 +832,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -842,7 +842,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     padding::<BD>(
         &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
     );
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
         &mut tmp,
@@ -872,7 +872,7 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -896,7 +896,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -907,7 +907,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     padding::<BD>(
         &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
     );
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     selfguided_filter(
         &mut dst0,
         &mut tmp,
@@ -1042,7 +1042,7 @@ unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -1067,11 +1067,11 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let filter = &(*params).filter;
+    let filter = &params.filter;
     let mut mid: Align16<[i16; 68 * 384]> = Align16([0; 68 * 384]);
     let mid_stride: c_int = w + 7 & !7;
     rav1d_wiener_filter_h_neon(
@@ -1469,7 +1469,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -1494,12 +1494,12 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
     let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     rav1d_sgr_filter2_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s0, edges, bd);
     rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w0, bd);
 }
@@ -1512,7 +1512,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -1537,12 +1537,12 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
     let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     rav1d_sgr_filter1_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s1, edges, bd);
     rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w1, bd);
 }
@@ -2045,7 +2045,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -2086,7 +2086,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     }
     let mut track = Track::main;
 
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
 
     if (edges & LR_HAVE_TOP) != 0 {
         sumsq_ptrs = sumsq_rows;
@@ -2361,7 +2361,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -2403,7 +2403,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     }
     let mut track = Track::main;
 
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
 
     if (edges & LR_HAVE_TOP) != 0 {
         for i in 0..5 {
@@ -2723,7 +2723,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -2799,7 +2799,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
         sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
     }
 
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
 
     if lr_have_top {
         rav1d_sgr_box35_row_h_neon(
@@ -3381,7 +3381,7 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     lpf: *const DynPixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
@@ -3406,13 +3406,13 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     lpf: *const BD::Pixel,
     w: c_int,
     h: c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
     let mut tmp1: Align16<[i16; 24576]> = Align16([0; 24576]);
     let mut tmp2: Align16<[i16; 24576]> = Align16([0; 24576]);
-    let sgr = (*params).sgr();
+    let sgr = params.sgr();
     rav1d_sgr_filter2_neon(&mut tmp1.0, dst, stride, left, lpf, w, h, sgr.s0, edges, bd);
     rav1d_sgr_filter1_neon(&mut tmp2.0, dst, stride, left, lpf, w, h, sgr.s1, edges, bd);
     let wt: [i16; 2] = [sgr.w0, sgr.w1];
