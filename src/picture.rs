@@ -245,6 +245,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
     content_light: Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     output_invisible_frames: bool,
+    max_spatial_id: u8,
     frame_flags: &Atomic<PictureFlags>,
     f: &mut Rav1dFrameData,
     bpc: u8,
@@ -272,7 +273,11 @@ pub(crate) fn rav1d_thread_picture_alloc(
         f.tiles[0].data.m.clone(),
     );
 
-    let flags_mask = if frame_hdr.show_frame != 0 || output_invisible_frames {
+    // Don't clear these flags from `c.frame_flags` if the frame is not going to be output.
+    // This way they will be added to the next visible frame too.
+    let flags_mask = if (frame_hdr.show_frame != 0 || output_invisible_frames)
+        && max_spatial_id == frame_hdr.spatial_id
+    {
         PictureFlags::empty()
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO

@@ -337,7 +337,7 @@ impl Rav1dPicture {
 unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut res = Ok(());
 
-    let r#in: *mut Rav1dThreadPicture = if c.all_layers || !c.max_spatial_id {
+    let r#in: *mut Rav1dThreadPicture = if c.all_layers || c.max_spatial_id == 0 {
         &mut c.out
     } else {
         &mut c.cache
@@ -349,7 +349,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     }
     let _ = mem::take(&mut *r#in);
 
-    if !c.all_layers && c.max_spatial_id && c.out.p.data.is_some() {
+    if !c.all_layers && c.max_spatial_id != 0 && c.out.p.data.is_some() {
         *r#in = mem::take(&mut c.out);
     }
     res
@@ -359,9 +359,9 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
     if c.cached_error.is_some() {
         return true;
     }
-    if !c.all_layers && c.max_spatial_id {
+    if !c.all_layers && c.max_spatial_id != 0 {
         if c.out.p.data.is_some() && c.cache.p.data.is_some() {
-            if c.max_spatial_id == (c.cache.p.frame_hdr.as_ref().unwrap().spatial_id != 0)
+            if c.max_spatial_id == c.cache.p.frame_hdr.as_ref().unwrap().spatial_id
                 || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return true;

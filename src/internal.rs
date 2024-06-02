@@ -407,7 +407,7 @@ pub struct Rav1dContext {
     pub(crate) operating_point: u8,
     pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
-    pub(crate) max_spatial_id: bool,
+    pub(crate) max_spatial_id: u8,
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: bool,
     pub(crate) output_invisible_frames: bool,
