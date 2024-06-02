@@ -15,6 +15,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
 use std::ops::Add;
+use std::slice;
 use to_method::To;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
@@ -165,7 +166,7 @@ impl loop_restoration_filter::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let left = left.as_ptr().cast();
+        let left = left[..h as usize].as_ptr().cast();
         let lpf = lpf.cast();
         let bd = bd.into_c();
         self.get()(dst, dst_stride, left, lpf, w, h, params, edges, bd)
@@ -187,12 +188,13 @@ unsafe fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     p: *const BD::Pixel,
     stride: isize,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     unit_w: usize,
     stripe_h: usize,
     edges: LrEdgeFlags,
 ) {
+    let left = &left[..stripe_h];
     assert!(stripe_h > 0);
     let stride = BD::pxstride(stride);
 
@@ -229,10 +231,10 @@ unsafe fn padding<BD: BitDepth>(
         BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w);
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w);
         if have_left {
-            let left = &(*left.offset(0))[1..];
+            let left = &left[0][1..];
             BD::pixel_copy(dst_l, left, 3);
-            BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], left, 3);
-            BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], left, 3);
+            BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], left, left.len());
+            BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], left, left.len());
         }
     }
 
@@ -274,10 +276,18 @@ unsafe fn padding<BD: BitDepth>(
             unit_w,
         );
         if have_left {
-            let left = &(*left.offset((stripe_h - 1) as isize))[1..];
-            BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], left, 3);
-            BD::pixel_copy(&mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..], left, 3);
-            BD::pixel_copy(&mut dst_tl[(stripe_h + 2) * REST_UNIT_STRIDE..], left, 3);
+            let left = &left[stripe_h - 1][1..];
+            BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], left, left.len());
+            BD::pixel_copy(
+                &mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..],
+                left,
+                left.len(),
+            );
+            BD::pixel_copy(
+                &mut dst_tl[(stripe_h + 2) * REST_UNIT_STRIDE..],
+                left,
+                left.len(),
+            );
         }
     }
 
@@ -316,13 +326,15 @@ unsafe fn padding<BD: BitDepth>(
         }
     } else {
         let dst = &mut dst[3 * REST_UNIT_STRIDE..];
-        let left = std::slice::from_raw_parts(left, stripe_h);
         for j in 0..stripe_h {
             BD::pixel_copy(&mut dst[j * REST_UNIT_STRIDE..], &left[j][1..], 3);
         }
     };
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     p: *mut DynPixel,
     stride: ptrdiff_t,
@@ -334,18 +346,15 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
     let bd = BD::from_c(bitdepth_max);
-    wiener_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        bd,
-    )
+    let w = w as usize;
+    let h = h as usize;
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    wiener_rust(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 // FIXME Could split into luma and chroma specific functions,
@@ -355,10 +364,10 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
 unsafe fn wiener_rust<BD: BitDepth>(
     p: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
@@ -367,9 +376,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
     // of padding above and below
     let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
-    padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
-    );
+    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
 
     // Values stored between horizontal and vertical filtering don't
     // fit in a u8.
@@ -383,9 +390,9 @@ unsafe fn wiener_rust<BD: BitDepth>(
     for (tmp, hor) in tmp
         .chunks_exact(REST_UNIT_STRIDE)
         .zip(hor.chunks_exact_mut(REST_UNIT_STRIDE))
-        .take((h + 6) as usize)
+        .take(h + 6)
     {
-        for i in 0..w as usize {
+        for i in 0..w {
             let mut sum = 1 << bitdepth + 6;
 
             if BD::BPC == BPC::BPC8 {
@@ -403,8 +410,8 @@ unsafe fn wiener_rust<BD: BitDepth>(
     let round_bits_v = 11 - (bitdepth == 12) as c_int * 2;
     let rounding_off_v = 1 << round_bits_v - 1;
     let round_offset = 1 << bitdepth + (round_bits_v - 1);
-    for j in 0..h as usize {
-        for i in 0..w as usize {
+    for j in 0..h {
+        for i in 0..w {
             let mut sum = -round_offset;
             let z = &hor[j * REST_UNIT_STRIDE + i..(j + 7) * REST_UNIT_STRIDE];
 
@@ -448,17 +455,17 @@ fn boxsum3<BD: BitDepth>(
     sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
 ) {
     // We skip the first row, as it is never used
     let src = &src[REST_UNIT_STRIDE..];
 
     // We skip the first and last columns, as they are never used
     for x in 1..w - 1 {
-        let mut sum_v = &mut sum[x as usize..];
-        let mut sumsq_v = &mut sumsq[x as usize..];
-        let mut s = &src[x as usize..];
+        let mut sum_v = &mut sum[x..];
+        let mut sumsq_v = &mut sumsq[x..];
+        let mut s = &src[x..];
         let mut a: c_int = s[0].as_();
         let mut a2 = a * a;
         let mut b: c_int = s[REST_UNIT_STRIDE].as_();
@@ -494,7 +501,7 @@ fn boxsum3<BD: BitDepth>(
 
         // We don't store the first column as it is never read and
         // we don't store the last 2 columns as they are never read
-        for x in 2..w as usize - 2 {
+        for x in 2..w - 2 {
             let c = sum[x + 1];
             let c2 = sumsq[x + 1];
             sum[x] = a + b + c;
@@ -540,10 +547,10 @@ fn boxsum5<BD: BitDepth>(
     sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
 ) {
-    for x in 0..w as usize {
+    for x in 0..w {
         let mut sum_v = &mut sum[x..];
         let mut sumsq_v = &mut sumsq[x..];
         let s = &src[x..];
@@ -592,7 +599,7 @@ fn boxsum5<BD: BitDepth>(
         let mut d = sum[3];
         let mut d2 = sumsq[3];
 
-        for x in 2..w as usize - 2 {
+        for x in 2..w - 2 {
             let e = sum[x + 2];
             let e2 = sumsq[x + 2];
             sum[x] = a + b + c + d + e;
@@ -616,8 +623,8 @@ fn selfguided_filter<BD: BitDepth>(
     dst: &mut [BD::Coef; 24576],
     src: &[BD::Pixel; 27300],
     _src_stride: ptrdiff_t,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     n: c_int,
     s: c_uint,
     bd: BD,
@@ -644,8 +651,8 @@ fn selfguided_filter<BD: BitDepth>(
 
     let mut AA = A.clone() - REST_UNIT_STRIDE;
     let mut BB = B.clone() - REST_UNIT_STRIDE;
-    for _ in (-1..h + 1).step_by(step as usize) {
-        for i in -1..w + 1 {
+    for _ in (-1..h as isize + 1).step_by(step as usize) {
+        for i in -1..w as isize + 1 {
             let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
             let b = BB[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
 
@@ -691,8 +698,7 @@ fn selfguided_filter<BD: BitDepth>(
             for i in 0..w {
                 let a = six_neighbors(&B, i as isize);
                 let b = six_neighbors(&A, i as isize);
-                dst[i as usize] =
-                    ((b - a * (src[i as usize]).as_::<c_int>() + (1 << 8)) >> 9).as_();
+                dst[i] = ((b - a * src[i].as_::<c_int>() + (1 << 8)) >> 9).as_();
             }
             dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
             src = &src[REST_UNIT_STRIDE..];
@@ -701,7 +707,7 @@ fn selfguided_filter<BD: BitDepth>(
             for i in 0..w {
                 let a = B[i].as_::<c_int>() * 6 + (B[i - 1] + B[i + 1]).as_::<c_int>() * 5;
                 let b = A[i] * 6 + (A[i - 1] + A[i + 1]) * 5;
-                dst[i as usize] = (b - a * (src[i as usize]).as_::<c_int>() + (1 << 7) >> 8).as_();
+                dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
             dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
             src = &src[REST_UNIT_STRIDE..];
@@ -714,7 +720,7 @@ fn selfguided_filter<BD: BitDepth>(
             for i in 0..w {
                 let a = six_neighbors(&B, i as isize);
                 let b = six_neighbors(&A, i as isize);
-                dst[i as usize] = (b - a * (src[i as usize]).as_::<c_int>() + (1 << 8) >> 9).as_();
+                dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
@@ -722,7 +728,7 @@ fn selfguided_filter<BD: BitDepth>(
             for i in 0..w {
                 let a = eight_neighbors(&B, i as isize);
                 let b = eight_neighbors(&A, i as isize);
-                dst[i as usize] = (b - a * (src[i as usize]).as_::<c_int>() + (1 << 8) >> 9).as_();
+                dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
             dst = &mut dst[384..];
             src = &src[REST_UNIT_STRIDE..];
@@ -732,6 +738,9 @@ fn selfguided_filter<BD: BitDepth>(
     };
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     p: *mut DynPixel,
     stride: ptrdiff_t,
@@ -743,26 +752,24 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_5x5_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_5x5_rust(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_5x5_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
@@ -775,9 +782,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     // maximum restoration width of 384 (256 * 1.5)
     let mut dst = [0.as_(); 64 * 384];
 
-    padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
-    );
+    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
@@ -793,7 +798,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     let w0 = sgr.w0 as c_int;
     for j in 0..h {
         for i in 0..w {
-            let v = w0 * dst[(j * 384 + i) as usize].as_::<c_int>();
+            let v = w0 * dst[j * 384 + i].as_::<c_int>();
             *p.offset(i as isize) =
                 bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
         }
@@ -801,6 +806,9 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     p: *mut DynPixel,
     stride: ptrdiff_t,
@@ -812,26 +820,24 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_3x3_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_3x3_rust(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_3x3_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
@@ -839,9 +845,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
     let mut dst = [0.as_(); 64 * 384];
 
-    padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
-    );
+    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
@@ -857,7 +861,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
         for i in 0..w {
-            let v = w1 * dst[(j * 384 + i) as usize].as_::<c_int>();
+            let v = w1 * dst[j * 384 + i].as_::<c_int>();
             *p.offset(i as isize) =
                 bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
         }
@@ -865,6 +869,9 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     p: *mut DynPixel,
     stride: ptrdiff_t,
@@ -876,26 +883,24 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    sgr_mix_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        BD::from_c(bitdepth_max),
-    )
+    let p = p.cast();
+    let left = left.cast();
+    let lpf = lpf.cast();
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+    let left = unsafe { slice::from_raw_parts(left, h) };
+    sgr_mix_rust(p, stride, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_mix_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
-    left: *const [BD::Pixel; 4],
+    left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
@@ -904,9 +909,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let mut dst0 = [0.as_(); 64 * 384];
     let mut dst1 = [0.as_(); 64 * 384];
 
-    padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
-    );
+    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst0,
@@ -933,8 +936,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
         for i in 0..w {
-            let v = w0 * dst0[(j * 384 + i) as usize].as_::<c_int>()
-                + w1 * dst1[(j * 384 + i) as usize].as_::<c_int>();
+            let v = w0 * dst0[j * 384 + i].as_::<c_int>() + w1 * dst1[j * 384 + i].as_::<c_int>();
             *p.offset(i as isize) =
                 bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
         }
