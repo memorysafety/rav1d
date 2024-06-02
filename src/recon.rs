@@ -106,7 +106,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitOr;
 use std::ptr;
-use std::slice;
 use std::sync::atomic::Ordering;
 
 impl Bxy {
@@ -4347,43 +4346,9 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     {
         return;
     }
-
-    let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
-
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let h = f.sr_cur.p.p.h + 127 & !127;
-    let pxstride = f.sr_cur.p.stride.map(BD::pxstride);
-    let plane_size = [h as isize * pxstride[0], h as isize * pxstride[1] >> ss_ver];
-    let offset = [
-        cmp::min(plane_size[0] - pxstride[0], 0),
-        cmp::min(plane_size[1] - pxstride[1], 0),
-    ];
-    let mut sr_p = [
-        slice::from_raw_parts_mut(
-            sr_cur_data[f.lf.sr_p[0]]
-                .as_strided_mut_ptr::<BD>()
-                .offset(offset[0]),
-            plane_size[0].unsigned_abs(),
-        ),
-        slice::from_raw_parts_mut(
-            sr_cur_data[f.lf.sr_p[1]]
-                .as_strided_mut_ptr::<BD>()
-                .offset(offset[1]),
-            plane_size[1].unsigned_abs(),
-        ),
-        slice::from_raw_parts_mut(
-            sr_cur_data[f.lf.sr_p[2]]
-                .as_strided_mut_ptr::<BD>()
-                .offset(offset[1]),
-            plane_size[1].unsigned_abs(),
-        ),
-    ];
-    let sr_p_offset = [
-        (y as isize * pxstride[0] - offset[0]) as usize,
-        ((y as isize * pxstride[1] >> ss_ver) - offset[1]) as usize,
-    ];
-    rav1d_lr_sbrow::<BD>(c, f, &mut sr_p, &sr_p_offset, sby);
+    let sr_p = f.sr_cur.p.lf_offsets::<BD>(y);
+    rav1d_lr_sbrow::<BD>(c, f, sr_p, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
@@ -4441,9 +4406,7 @@ pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut 
             let uv = &cur_data[pl];
             let uv_offset = uv.pixel_offset::<BD>().wrapping_add_signed(uv_off);
             BD::pixel_copy(
-                &mut f
-                    .ipred_edge
-                    .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
+                &mut f.ipred_edge.mut_slice_as((ipred_edge_off.., ..n)),
                 &uv.slice::<BD, _>((uv_offset.., ..n)),
                 n,
             );

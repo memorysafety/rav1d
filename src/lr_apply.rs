@@ -1,6 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
@@ -27,8 +28,7 @@ pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
-    p: &mut [BD::Pixel],
-    mut p_offset: usize,
+    mut p: Rav1dPictureDataComponentOffset,
     left: &[[BD::Pixel; 4]; 128 + 8],
     x: c_int,
     mut y: c_int,
@@ -97,7 +97,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         // pass an out-of-bounds pointer to this function which is then indexed
         // back into bounds.
         lr_fn(
-            p.as_mut_ptr().add(p_offset).cast(),
+            p.data.as_mut_ptr_at::<BD>(p.offset).cast(),
             stride,
             left.as_ptr().cast(),
             // NOTE: The calculated pointer may point to before the beginning of
@@ -115,7 +115,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;
-        p_offset = (p_offset as isize + stripe_h as isize * BD::pxstride(stride)) as usize;
+        p += stripe_h as isize * p.data.pixel_stride::<BD>();
         edges |= LR_HAVE_TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
@@ -128,36 +128,24 @@ unsafe fn lr_stripe<BD: BitDepth>(
 
 fn backup4xU<BD: BitDepth>(
     dst: &mut [[BD::Pixel; 4]; 128 + 8],
-    src: &[BD::Pixel],
-    src_offset: usize,
-    src_stride: ptrdiff_t,
+    src: Rav1dPictureDataComponentOffset,
     u: c_int,
 ) {
-    let abs_px_stride = BD::pxstride(src_stride.unsigned_abs());
-    if src_stride < 0 {
-        for (src, dst) in src[src_offset - (u - 1) as usize * abs_px_stride..]
-            .chunks(abs_px_stride)
-            .take(u as usize)
-            .rev()
-            .zip(&mut dst[..u as usize])
-        {
-            BD::pixel_copy(dst, src, 4);
-        }
-    } else {
-        for (src, dst) in src[src_offset..]
-            .chunks(abs_px_stride)
-            .zip(&mut dst[..u as usize])
-        {
-            BD::pixel_copy(dst, src, 4);
-        }
+    let u = u as usize;
+    let dst = &mut dst[..u];
+    for i in 0..u {
+        let dst = &mut dst[i];
+        let n = dst.len();
+        let src = src + (i as isize * src.data.pixel_stride::<BD>());
+        let src = &*src.data.slice::<BD, _>((src.offset.., ..n));
+        BD::pixel_copy(dst, src, n);
     }
 }
 
 unsafe fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
-    mut p: &mut [BD::Pixel],
-    p_offset: usize,
+    mut p: Rav1dPictureDataComponentOffset,
     y: c_int,
     w: c_int,
     h: c_int,
@@ -167,7 +155,6 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = chroma & (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
-    let p_stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let unit_size_log2 = frame_hdr.restoration.unit_size[(plane != 0) as usize];
     let unit_size = (1 as c_int) << unit_size_log2;
@@ -215,9 +202,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         if restore_next {
             backup4xU::<BD>(
                 &mut pre_lr_border[bit as usize],
-                &p[unit_size as usize - 4..],
-                p_offset,
-                p_stride,
+                p + (unit_size as usize - 4),
                 row_h - y,
             );
         }
@@ -226,7 +211,6 @@ unsafe fn lr_sbrow<BD: BitDepth>(
                 c,
                 f,
                 p,
-                p_offset,
                 &pre_lr_border[!bit as usize],
                 x,
                 y,
@@ -239,7 +223,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         }
         x = next_x;
         restore = restore_next;
-        p = &mut p[unit_size as usize..];
+        p += unit_size as usize;
         edges |= LR_HAVE_LEFT;
         bit = !bit;
     }
@@ -250,7 +234,6 @@ unsafe fn lr_sbrow<BD: BitDepth>(
             c,
             f,
             p,
-            p_offset,
             &pre_lr_border[!bit as usize],
             x,
             y,
@@ -266,12 +249,10 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
-    dst: &mut [&mut [BD::Pixel]; 3],
-    dst_offset: &[usize; 2],
+    dst: [Rav1dPictureDataComponentOffset; 3],
     sby: c_int,
 ) {
     let offset_y = 8 * (sby != 0) as c_int;
-    let dst_stride = &f.sr_cur.p.stride;
     let restore_planes = f.lf.restore_planes;
     let not_last = ((sby + 1) < f.sbh) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -284,8 +265,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         lr_sbrow::<BD>(
             c,
             f,
-            dst[0],
-            (dst_offset[0] as isize - offset_y as isize * BD::pxstride(dst_stride[0])) as usize,
+            dst[0] - (offset_y as isize * dst[0].data.pixel_stride::<BD>()),
             y_stripe,
             w,
             h,
@@ -306,9 +286,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                dst[1],
-                (dst_offset[1] as isize - offset_uv as isize * BD::pxstride(dst_stride[1]))
-                    as usize,
+                dst[1] - (offset_uv as isize * dst[1].data.pixel_stride::<BD>()),
                 y_stripe,
                 w,
                 h,
@@ -320,9 +298,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                dst[2],
-                (dst_offset[1] as isize - offset_uv as isize * BD::pxstride(dst_stride[1]))
-                    as usize,
+                dst[2] - (offset_uv as isize * dst[2].data.pixel_stride::<BD>()),
                 y_stripe,
                 w,
                 h,
