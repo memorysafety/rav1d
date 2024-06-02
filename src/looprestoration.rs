@@ -156,7 +156,7 @@ impl loop_restoration_filter::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: ptrdiff_t,
-        left: *const LeftPixelRow<BD::Pixel>,
+        left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
         w: c_int,
         h: c_int,
@@ -165,7 +165,7 @@ impl loop_restoration_filter::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let left = left.cast();
+        let left = left.as_ptr().cast();
         let lpf = lpf.cast();
         let bd = bd.into_c();
         self.get()(dst, dst_stride, left, lpf, w, h, params, edges, bd)
