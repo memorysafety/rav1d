@@ -170,7 +170,7 @@ pub(crate) type read_coef_blocks_fn = unsafe fn(
     &Av1Block,
 ) -> ();
 
-pub(crate) type copy_pal_block_fn = unsafe fn(
+pub(crate) type copy_pal_block_fn = fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     bx4: usize,
@@ -4377,7 +4377,7 @@ pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut 
     }
 }
 
-pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
+pub(crate) fn rav1d_copy_pal_block_y<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     bx4: usize,
@@ -4404,7 +4404,7 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
+pub(crate) fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     bx4: usize,

@@ -2076,17 +2076,7 @@ fn decode_b(
             },
         );
         if pal_sz[0] != 0 {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe {
-                (bd_fn.copy_pal_block_y)(
-                    t,
-                    f,
-                    bx4 as usize,
-                    by4 as usize,
-                    bw4 as usize,
-                    bh4 as usize,
-                )
-            };
+            (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
             CaseSet::<32, false>::many(
@@ -2098,17 +2088,14 @@ fn decode_b(
                 },
             );
             if pal_sz[1] != 0 {
-                // SAFEETY: Function call with all safe args, will be marked safe.
-                unsafe {
-                    (bd_fn.copy_pal_block_uv)(
-                        t,
-                        f,
-                        bx4 as usize,
-                        by4 as usize,
-                        bw4 as usize,
-                        bh4 as usize,
-                    );
-                }
+                (bd_fn.copy_pal_block_uv)(
+                    t,
+                    f,
+                    bx4 as usize,
+                    by4 as usize,
+                    bw4 as usize,
+                    bh4 as usize,
+                );
             }
         }
         let frame_hdr = f.frame_hdr();
