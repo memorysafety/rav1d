@@ -125,6 +125,16 @@ impl LooprestorationParams {
     }
 }
 
+/// Although the spec applies restoration filters over 4x4 blocks,
+/// they can be applied to a bigger surface.
+///
+/// * `w` is constrained by the restoration unit size (`w <= 256`).
+/// * `h` is constrained by the stripe height (`h <= 64`).
+///
+/// The filter functions are allowed to do
+/// aligned writes past the right edge of the buffer,
+/// aligned up to the minimum loop restoration unit size
+/// (which is 32 pixels for subsampled chroma and 64 pixels for luma).
 pub type looprestorationfilter_fn = unsafe extern "C" fn(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
