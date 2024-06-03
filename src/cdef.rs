@@ -164,7 +164,7 @@ unsafe fn padding<BD: BitDepth>(
             w + 4,
             2,
         );
-        y_start = 0;
+        y_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
         fill(
@@ -182,7 +182,7 @@ unsafe fn padding<BD: BitDepth>(
             2,
             y_end - y_start,
         );
-        x_start = 0;
+        x_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
         fill(
