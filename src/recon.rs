@@ -3625,14 +3625,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
-            f.dsp.mc.blend.call::<BD>(
-                dst,
-                f.cur.stride[0],
-                tmp.as_mut_ptr(),
-                bw4 * 4,
-                bh4 * 4,
-                ii_mask.as_ptr(),
-            );
+            f.dsp
+                .mc
+                .blend
+                .call::<BD>(y_dst, y_dst_offset, tmp, bw4 * 4, bh4 * 4, ii_mask);
         }
 
         if has_chroma {
@@ -3890,7 +3886,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         let uv_dst = &cur_data[1 + pl];
                         let uv_dst_offset =
                             uv_dst.pixel_offset::<BD>().wrapping_add_signed(uvdstoff);
-                        let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
                             let sby = t.b.y >> f.sb_shift;
                             let offset = (f.ipred_edge_off * (pl + 1)) as isize
@@ -3933,12 +3928,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             bd,
                         );
                         f.dsp.mc.blend.call::<BD>(
-                            uvdst,
-                            f.cur.stride[1],
-                            tmp.as_mut_ptr(),
+                            uv_dst,
+                            uv_dst_offset,
+                            tmp,
                             cbw4 * 4,
                             cbh4 * 4,
-                            ii_mask.as_ptr(),
+                            ii_mask,
                         );
                     }
                 }
