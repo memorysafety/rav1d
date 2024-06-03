@@ -454,7 +454,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         }
     }
     *variance = (best_cost - cost[best_dir ^ 4]) >> 10;
-    return best_dir as c_int;
+    best_dir as c_int
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
