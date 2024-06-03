@@ -263,23 +263,27 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     let vm = vmask[0] | vmask[1] | vmask[2];
     let mut y = 1u32;
     while vm & !y.wrapping_sub(1) != 0 {
-        if vm & y != 0 {
+        'block: {
+            if vm & y == 0 {
+                break 'block;
+            }
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0]
             } else {
                 (*l.offset(-1))[0]
             };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize];
-                let I = lut.0.i[L as usize];
-                let idx = if vmask[2] & y != 0 {
-                    2
-                } else {
-                    (vmask[1] & y != 0) as c_int
-                };
-                loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 << idx, bd);
+            if L == 0 {
+                break 'block;
             }
+            let H = L >> 4;
+            let E = lut.0.e[L as usize];
+            let I = lut.0.i[L as usize];
+            let idx = if vmask[2] & y != 0 {
+                2
+            } else {
+                (vmask[1] & y != 0) as c_int
+            };
+            loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 << idx, bd);
         }
         y <<= 1;
         dst = dst.offset(4 * BD::pxstride(stride));
@@ -316,23 +320,27 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     let vm = vmask[0] | vmask[1] | vmask[2];
     let mut x = 1u32;
     while vm & !x.wrapping_sub(1) != 0 {
-        if vm & x != 0 {
+        'block: {
+            if vm & x == 0 {
+                break 'block;
+            }
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0]
             } else {
                 (*l.sub(b4_stride))[0]
             };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize];
-                let I = lut.0.i[L as usize];
-                let idx = if vmask[2] & x != 0 {
-                    2
-                } else {
-                    (vmask[1] & x != 0) as c_int
-                };
-                loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 << idx, bd);
+            if L == 0 {
+                break 'block;
             }
+            let H = L >> 4;
+            let E = lut.0.e[L as usize];
+            let I = lut.0.i[L as usize];
+            let idx = if vmask[2] & x != 0 {
+                2
+            } else {
+                (vmask[1] & x != 0) as c_int
+            };
+            loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 << idx, bd);
         }
         x <<= 1;
         dst = dst.offset(4);
@@ -369,19 +377,23 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     let vm = vmask[0] | vmask[1];
     let mut y = 1u32;
     while vm & !y.wrapping_sub(1) != 0 {
-        if vm & y != 0 {
+        'block: {
+            if vm & y == 0 {
+                break 'block;
+            }
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0]
             } else {
                 (*l.offset(-1))[0]
             };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize];
-                let I = lut.0.i[L as usize];
-                let idx = (vmask[1] & y != 0) as c_int;
-                loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 + 2 * idx, bd);
+            if L == 0 {
+                break 'block;
             }
+            let H = L >> 4;
+            let E = lut.0.e[L as usize];
+            let I = lut.0.i[L as usize];
+            let idx = (vmask[1] & y != 0) as c_int;
+            loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 + 2 * idx, bd);
         }
         y <<= 1;
         dst = dst.offset(4 * BD::pxstride(stride));
@@ -418,19 +430,23 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
     let vm = vmask[0] | vmask[1];
     let mut x = 1u32;
     while vm & !x.wrapping_sub(1) != 0 {
-        if vm & x != 0 {
+        'block: {
+            if vm & x == 0 {
+                break 'block;
+            }
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0]
             } else {
                 (*l.sub(b4_stride))[0]
             };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize];
-                let I = lut.0.i[L as usize];
-                let idx = (vmask[1] & x != 0) as c_int;
-                loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 + 2 * idx, bd);
+            if L == 0 {
+                break 'block;
             }
+            let H = L >> 4;
+            let E = lut.0.e[L as usize];
+            let I = lut.0.i[L as usize];
+            let idx = (vmask[1] & x != 0) as c_int;
+            loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 + 2 * idx, bd);
         }
         x <<= 1;
         dst = dst.offset(4);
