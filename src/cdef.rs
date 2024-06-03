@@ -130,6 +130,8 @@ pub fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
 
 #[inline]
 pub unsafe fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
+    // Use a value that's a large positive number when interpreted as unsigned,
+    // and a large negative number when interpreted as signed.
     for _ in 0..h {
         for x in 0..w {
             *tmp.offset(x as isize) = i16::MIN;
@@ -150,6 +152,7 @@ unsafe fn padding<BD: BitDepth>(
     h: c_int,
     edges: CdefEdgeFlags,
 ) {
+    // Fill extended input buffer.
     let mut x_start = -2;
     let mut x_end = w + 2;
     let mut y_start = -2;
@@ -190,6 +193,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         x_end -= 2;
     }
+
     for y in y_start..0 {
         for x in x_start..x_end {
             *tmp.offset(x as isize + y as isize * tmp_stride) =
@@ -239,11 +243,13 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
 
     let tmp_stride = 12;
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
-    let mut tmp_buf = [0; 144];
+    let mut tmp_buf = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
     let mut tmp = tmp_buf.as_mut_ptr().offset(2 * tmp_stride).offset(2);
+
     padding::<BD>(
         tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
     );
+
     if pri_strength != 0 {
         let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
@@ -258,11 +264,12 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                     let mut min = px;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off1 = dav1d_cdef_directions[dir + 2][k] as c_int;
+                        let off1 = dav1d_cdef_directions[dir + 2][k] as c_int; // dir
                         let p0 = *tmp.offset((x + off1) as isize) as c_int;
                         let p1 = *tmp.offset((x - off1) as isize) as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
+                        // If `pri_tap_k == 4`, then it becomes 2, else it remains 3.
                         pri_tap_k = pri_tap_k & 3 | 2;
                         min = cmp::min(p0 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p0, max);
@@ -274,6 +281,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         let s1 = *tmp.offset((x - off2) as isize) as c_int;
                         let s2 = *tmp.offset((x + off3) as isize) as c_int;
                         let s3 = *tmp.offset((x - off3) as isize) as c_int;
+                        // `sec_tap` starts at 2 and becomes 1.
                         let sec_tap = 2 - k as c_int;
                         sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
@@ -296,6 +304,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                 tmp = tmp.offset(tmp_stride);
             }
         } else {
+            // pri_strength only
             for _ in 0..h {
                 for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
@@ -317,6 +326,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
             }
         }
     } else {
+        // sec_strength only
         let sec_shift = damping - sec_strength.ilog2() as c_int;
         for _ in 0..h {
             for x in 0..w {
@@ -399,9 +409,11 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     let mut partial_sum_hv = [[0; 8]; 2];
     let mut partial_sum_diag = [[0; 15]; 2];
     let mut partial_sum_alt = [[0; 11]; 4];
+
     for y in 0..8 {
         for x in 0..8 {
             let px = ((*img.offset(x as isize)).as_::<c_int>() >> bitdepth_min_8) - 128;
+
             partial_sum_diag[0][y + x] += px;
             partial_sum_alt[0][y + (x >> 1)] += px;
             partial_sum_hv[0][y] += px;
@@ -413,6 +425,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         }
         img = img.offset(BD::pxstride(stride));
     }
+
     let mut cost = [0; 8];
     for n in 0..8 {
         cost[2] += (partial_sum_hv[0][n] * partial_sum_hv[0][n]) as c_uint;
@@ -420,6 +433,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     }
     cost[2] *= 105;
     cost[6] *= 105;
+
     static div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
     for n in 0..7 {
         let d = div_table[n] as c_int;
@@ -432,6 +446,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     }
     cost[0] += (partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as c_uint;
     cost[4] += (partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint;
+
     for n in 0..4 {
         let cost_ptr = &mut *cost.as_mut_ptr().offset((n * 2 + 1) as isize) as *mut c_uint;
         for m in 0..5 {
@@ -445,6 +460,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
                 * d) as c_uint;
         }
     }
+
     let mut best_dir = 0;
     let mut best_cost = cost[0];
     for n in 0..8 {
@@ -453,6 +469,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
             best_dir = n;
         }
     }
+
     *variance = (best_cost - cost[best_dir ^ 4]) >> 10;
     best_dir as c_int
 }
