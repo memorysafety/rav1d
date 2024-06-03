@@ -88,22 +88,22 @@ unsafe fn loop_filter<BD: BitDepth>(
         let mut q5 = 0;
         let mut q6 = 0;
         let mut fm;
-        let mut flat8out = 0;
-        let mut flat8in = 0;
-        fm = ((p1 - p0).abs() <= I
+        let mut flat8out = false;
+        let mut flat8in = false;
+        fm = (p1 - p0).abs() <= I
             && (q1 - q0).abs() <= I
-            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E) as c_int;
+            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E;
         if wd > 4 {
             p2 = get_dst(-3);
             q2 = get_dst(2);
-            fm &= ((p2 - p1).abs() <= I && (q2 - q1).abs() <= I) as c_int;
+            fm &= (p2 - p1).abs() <= I && (q2 - q1).abs() <= I;
             if wd > 6 {
                 p3 = get_dst(-4);
                 q3 = get_dst(3);
-                fm &= ((p3 - p2).abs() <= I && (q3 - q2).abs() <= I) as c_int;
+                fm &= (p3 - p2).abs() <= I && (q3 - q2).abs() <= I;
             }
         }
-        if fm == 0 {
+        if !fm {
             continue;
         }
         if wd >= 16 {
@@ -113,23 +113,23 @@ unsafe fn loop_filter<BD: BitDepth>(
             q4 = get_dst(4);
             q5 = get_dst(5);
             q6 = get_dst(6);
-            flat8out = ((p6 - p0).abs() <= F
+            flat8out = (p6 - p0).abs() <= F
                 && (p5 - p0).abs() <= F
                 && (p4 - p0).abs() <= F
                 && (q4 - q0).abs() <= F
                 && (q5 - q0).abs() <= F
-                && (q6 - q0).abs() <= F) as c_int;
+                && (q6 - q0).abs() <= F;
         }
         if wd >= 6 {
-            flat8in = ((p2 - p0).abs() <= F
+            flat8in = (p2 - p0).abs() <= F
                 && (p1 - p0).abs() <= F
                 && (q1 - q0).abs() <= F
-                && (q2 - q0).abs() <= F) as c_int;
+                && (q2 - q0).abs() <= F;
         }
         if wd >= 8 {
-            flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as c_int;
+            flat8in &= (p3 - p0).abs() <= F && (q3 - q0).abs() <= F;
         }
-        if wd >= 16 && flat8out & flat8in != 0 {
+        if wd >= 16 && flat8out && flat8in {
             set_dst(
                 -6,
                 p6 + p6 + p6 + p6 + p6 + p6 * 2 + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0 + q0 + 8 >> 4,
@@ -178,20 +178,20 @@ unsafe fn loop_filter<BD: BitDepth>(
                 5,
                 p0 + q0 + q1 + q2 + q3 + q4 * 2 + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6 + q6 + 8 >> 4,
             );
-        } else if wd >= 8 && flat8in != 0 {
+        } else if wd >= 8 && flat8in {
             set_dst(-3, p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3);
             set_dst(-2, p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3);
             set_dst(-1, p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3);
             set_dst(0, p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3);
             set_dst(1, p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3);
             set_dst(2, p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3);
-        } else if wd == 6 && flat8in != 0 {
+        } else if wd == 6 && flat8in {
             set_dst(-2, p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3);
             set_dst(-1, p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3);
             set_dst(0, p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3);
             set_dst(1, p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3);
         } else {
-            let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
+            let hev = (p1 - p0).abs() > H || (q1 - q0).abs() > H;
 
             fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
                 iclip(
@@ -201,7 +201,7 @@ unsafe fn loop_filter<BD: BitDepth>(
                 )
             }
 
-            if hev != 0 {
+            if hev {
                 let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
                 f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
 
