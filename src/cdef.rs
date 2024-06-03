@@ -523,7 +523,7 @@ unsafe extern "C" fn cdef_filter_neon_erased<
     use crate::src::align::Align16;
 
     let mut tmp_buf = Align16([0; TMP_LEN]);
-    let tmp = tmp_buf.0.as_mut_ptr().add(2 * TMP_STRIDE + 8);
+    let tmp = tmp_buf.0[2 * TMP_STRIDE + 8..].as_mut_ptr();
     let (padding, filter) = match W {
         4 => (
             bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
