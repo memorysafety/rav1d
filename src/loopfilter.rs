@@ -10,6 +10,7 @@ use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
+use strum::FromRepr;
 
 #[cfg(all(
     feature = "asm",
@@ -234,43 +235,55 @@ unsafe fn loop_filter<BD: BitDepth>(
     }
 }
 
-unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: isize,
-    lut: &Align16<Av1FilterLUT>,
-    h: c_int,
-    bitdepth_max: c_int,
-) {
-    let dst = dst.cast();
-    let b4_stride = b4_stride as usize;
-    let bd = BD::from_c(bitdepth_max);
-    loop_filter_h_sb128y_rust(dst, stride, vmask, l, b4_stride, lut, h, bd)
+#[derive(FromRepr)]
+enum HV {
+    H,
+    V,
 }
 
-unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
+#[derive(FromRepr)]
+enum YUV {
+    Y,
+    UV,
+}
+
+unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
     b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
-    _h: c_int,
+    _wh: c_int,
     bd: BD,
 ) {
-    let vm = vmask[0] | vmask[1] | vmask[2];
-    let mut y = 1u32;
-    while vm & !y.wrapping_sub(1) != 0 {
+    let hv = HV::from_repr(HV).unwrap();
+    let yuv = YUV::from_repr(YUV).unwrap();
+
+    let stride = BD::pxstride(stride);
+    let (stridea, strideb) = match hv {
+        HV::H => (stride, 1),
+        HV::V => (1, stride),
+    };
+    let (b4_stridea, b4_strideb) = match hv {
+        HV::H => (b4_stride, 1),
+        HV::V => (1, b4_stride),
+    };
+
+    let vm = match yuv {
+        YUV::Y => vmask[0] | vmask[1] | vmask[2],
+        YUV::UV => vmask[0] | vmask[1],
+    };
+    let mut xy = 1u32;
+    while vm & !xy.wrapping_sub(1) != 0 {
         'block: {
-            if vm & y == 0 {
+            if vm & xy == 0 {
                 break 'block;
             }
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0]
             } else {
-                (*l.offset(-1))[0]
+                (*l.sub(b4_strideb))[0]
             };
             if L == 0 {
                 break 'block;
@@ -278,193 +291,65 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
             let H = L >> 4;
             let E = lut.0.e[L as usize];
             let I = lut.0.i[L as usize];
-            let idx = if vmask[2] & y != 0 {
-                2
-            } else {
-                (vmask[1] & y != 0) as c_int
+            let idx = match yuv {
+                YUV::Y => {
+                    let idx = if vmask[2] & xy != 0 {
+                        2
+                    } else {
+                        (vmask[1] & xy != 0) as c_int
+                    };
+                    4 << idx
+                }
+                YUV::UV => {
+                    let idx = (vmask[1] & xy != 0) as c_int;
+                    4 + 2 * idx
+                }
             };
-            loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 << idx, bd);
+            loop_filter(dst, E, I, H, stridea, strideb, idx, bd);
         }
-        y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.add(b4_stride);
+        xy <<= 1;
+        dst = dst.offset(4 * stridea);
+        l = l.add(b4_stridea);
     }
 }
 
-unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, const YUV: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
     b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
-    w: c_int,
+    wh: c_int,
     bitdepth_max: c_int,
 ) {
     let dst = dst.cast();
     let b4_stride = b4_stride as usize;
     let bd = BD::from_c(bitdepth_max);
-    loop_filter_v_sb128y_rust(dst, stride, vmask, l, b4_stride, lut, w, bd);
-}
-
-unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: usize,
-    lut: &Align16<Av1FilterLUT>,
-    _w: c_int,
-    bd: BD,
-) {
-    let vm = vmask[0] | vmask[1] | vmask[2];
-    let mut x = 1u32;
-    while vm & !x.wrapping_sub(1) != 0 {
-        'block: {
-            if vm & x == 0 {
-                break 'block;
-            }
-            let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0]
-            } else {
-                (*l.sub(b4_stride))[0]
-            };
-            if L == 0 {
-                break 'block;
-            }
-            let H = L >> 4;
-            let E = lut.0.e[L as usize];
-            let I = lut.0.i[L as usize];
-            let idx = if vmask[2] & x != 0 {
-                2
-            } else {
-                (vmask[1] & x != 0) as c_int
-            };
-            loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 << idx, bd);
-        }
-        x <<= 1;
-        dst = dst.offset(4);
-        l = l.offset(1);
-    }
-}
-
-unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: isize,
-    lut: &Align16<Av1FilterLUT>,
-    h: c_int,
-    bitdepth_max: c_int,
-) {
-    let dst = dst.cast();
-    let b4_stride = b4_stride as usize;
-    let bd = BD::from_c(bitdepth_max);
-    loop_filter_h_sb128uv_rust(dst, stride, vmask, l, b4_stride, lut, h, bd)
-}
-
-unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: usize,
-    lut: &Align16<Av1FilterLUT>,
-    _h: c_int,
-    bd: BD,
-) {
-    let vm = vmask[0] | vmask[1];
-    let mut y = 1u32;
-    while vm & !y.wrapping_sub(1) != 0 {
-        'block: {
-            if vm & y == 0 {
-                break 'block;
-            }
-            let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0]
-            } else {
-                (*l.offset(-1))[0]
-            };
-            if L == 0 {
-                break 'block;
-            }
-            let H = L >> 4;
-            let E = lut.0.e[L as usize];
-            let I = lut.0.i[L as usize];
-            let idx = (vmask[1] & y != 0) as c_int;
-            loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 + 2 * idx, bd);
-        }
-        y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.add(b4_stride);
-    }
-}
-
-unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: isize,
-    lut: &Align16<Av1FilterLUT>,
-    w: c_int,
-    bitdepth_max: c_int,
-) {
-    let dst = dst.cast();
-    let b4_stride = b4_stride as usize;
-    let bd = BD::from_c(bitdepth_max);
-    loop_filter_v_sb128uv_rust(dst, stride, vmask, l, b4_stride, lut, w, bd)
-}
-
-unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: usize,
-    lut: &Align16<Av1FilterLUT>,
-    _w: c_int,
-    bd: BD,
-) {
-    let vm = vmask[0] | vmask[1];
-    let mut x = 1u32;
-    while vm & !x.wrapping_sub(1) != 0 {
-        'block: {
-            if vm & x == 0 {
-                break 'block;
-            }
-            let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0]
-            } else {
-                (*l.sub(b4_stride))[0]
-            };
-            if L == 0 {
-                break 'block;
-            }
-            let H = L >> 4;
-            let E = lut.0.e[L as usize];
-            let I = lut.0.i[L as usize];
-            let idx = (vmask[1] & x != 0) as c_int;
-            loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 + 2 * idx, bd);
-        }
-        x <<= 1;
-        dst = dst.offset(4);
-        l = l.offset(1);
-    }
+    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, stride, vmask, l, b4_stride, lut, wh, bd)
 }
 
 impl Rav1dLoopFilterDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
+        use HV::*;
+        use YUV::*;
         Self {
             loop_filter_sb: [
                 [
-                    loopfilter_sb::Fn::new(loop_filter_h_sb128y_c_erased::<BD>),
-                    loopfilter_sb::Fn::new(loop_filter_v_sb128y_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { H as _ }, { Y as _ }>,
+                    ),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { V as _ }, { Y as _ }>,
+                    ),
                 ],
                 [
-                    loopfilter_sb::Fn::new(loop_filter_h_sb128uv_c_erased::<BD>),
-                    loopfilter_sb::Fn::new(loop_filter_v_sb128uv_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { H as _ }, { UV as _ }>,
+                    ),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { V as _ }, { UV as _ }>,
+                    ),
                 ],
             ],
         }
