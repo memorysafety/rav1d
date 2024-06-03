@@ -662,9 +662,9 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn avg_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
-    dst_stride: isize,
+fn avg_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
@@ -674,24 +674,22 @@ unsafe fn avg_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let sh = intermediate_bits + 1;
     let rnd = (1 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 2;
-    let dst_stride = BD::pxstride(dst_stride);
-    let mut tmp1 = tmp1.as_slice();
-    let mut tmp2 = tmp2.as_slice();
-    for _ in 0..h {
-        let dst = slice::from_raw_parts_mut(dst_ptr, w);
-        for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = bd.iclip_pixel(((tmp1[x] as i32 + tmp2[x] as i32 + rnd) >> sh).to::<i32>());
+    let tmp1 = &tmp1[..w * h];
+    let tmp2 = &tmp2[..w * h];
+    for y in 0..h {
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            *dst = bd.iclip_pixel(
+                ((tmp1[y * w + x] as i32 + tmp2[y * w + x] as i32 + rnd) >> sh).to::<i32>(),
+            );
         }
-
-        tmp1 = &tmp1[w..];
-        tmp2 = &tmp2[w..];
-        dst_ptr = dst_ptr.offset(dst_stride);
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
-unsafe fn w_avg_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
-    dst_stride: isize,
+fn w_avg_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
@@ -702,20 +700,17 @@ unsafe fn w_avg_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let sh = intermediate_bits + 4;
     let rnd = (8 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 16;
-    let dst_stride = BD::pxstride(dst_stride);
-    let mut tmp1 = tmp1.as_slice();
-    let mut tmp2 = tmp2.as_slice();
-    for _ in 0..h {
-        let dst = slice::from_raw_parts_mut(dst_ptr, w);
-        for (x, dst) in dst.iter_mut().enumerate() {
+    let tmp1 = &tmp1[..w * h];
+    let tmp2 = &tmp2[..w * h];
+    for y in 0..h {
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
             *dst = bd.iclip_pixel(
-                (tmp1[x] as i32 * weight + tmp2[x] as i32 * (16 - weight) + rnd) >> sh,
+                (tmp1[y * w + x] as i32 * weight + tmp2[y * w + x] as i32 * (16 - weight) + rnd)
+                    >> sh,
             );
         }
-
-        tmp1 = &tmp1[w..];
-        tmp2 = &tmp2[w..];
-        dst_ptr = dst_ptr.offset(dst_stride);
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
@@ -1301,34 +1296,38 @@ impl warp8x8t::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn avg(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
     bitdepth_max: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl avg::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         tmp1: &[i16; COMPINTER_LEN],
         tmp2: &[i16; COMPINTER_LEN],
         w: i32,
         h: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_stride = dst.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, tmp1, tmp2, w, h, bd)
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn avg_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, bd, dst) }
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn w_avg(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
@@ -1336,13 +1335,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn w_avg(
     h: i32,
     weight: i32,
     bitdepth_max: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl w_avg::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         tmp1: &[i16; COMPINTER_LEN],
         tmp2: &[i16; COMPINTER_LEN],
         w: i32,
@@ -1350,9 +1350,12 @@ impl w_avg::Fn {
         weight: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_stride = dst.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, tmp1, tmp2, w, h, weight, bd)
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn w_avg_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, weight, bd, dst) }
     }
 }
 
@@ -1831,46 +1834,55 @@ unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`avg::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+    dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
     bitdepth_max: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    avg_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        BD::from_c(bitdepth_max),
-    )
+    // SAFETY: Was passed as `FFISafe::new(_)` in `avg::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `avg::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    avg_rust(dst, dst_offset, tmp1, tmp2, w, h, bd)
 }
 
+/// # Safety
+///
+/// Must be called by [`w_avg::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+    dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
     weight: i32,
     bitdepth_max: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    w_avg_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        weight,
-        BD::from_c(bitdepth_max),
-    )
+    // SAFETY: Was passed as `FFISafe::new(_)` in `w_avg::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `w_avg::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let w = w as usize;
+    let h = h as usize;
+    let bd = BD::from_c(bitdepth_max);
+    w_avg_rust(dst, dst_offset, tmp1, tmp2, w, h, weight, bd)
 }
 
 /// # Safety
