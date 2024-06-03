@@ -69,17 +69,19 @@ unsafe fn loop_filter<BD: BitDepth>(
     H <<= bitdepth_min_8;
     for i in 0..4 {
         let dst = dst.offset(i * stridea);
-        let dst = |stride_index: isize| &mut *dst.offset(strideb * stride_index);
+        let dst = |stride_index| &mut *dst.offset(strideb * stride_index);
+        let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
+        let set_dst = |stride_index, value: i32| *dst(stride_index) = value.as_::<BD::Pixel>();
 
         let mut p6 = 0;
         let mut p5 = 0;
         let mut p4 = 0;
         let mut p3 = 0;
         let mut p2 = 0;
-        let p1 = (*dst(-2)).as_::<c_int>();
-        let p0 = (*dst(-1)).as_::<c_int>();
-        let q0 = (*dst(0)).as_::<c_int>();
-        let q1 = (*dst(1)).as_::<c_int>();
+        let p1 = get_dst(-2);
+        let p0 = get_dst(-1);
+        let q0 = get_dst(0);
+        let q1 = get_dst(1);
         let mut q2 = 0;
         let mut q3 = 0;
         let mut q4 = 0;
@@ -92,12 +94,12 @@ unsafe fn loop_filter<BD: BitDepth>(
             && (q1 - q0).abs() <= I
             && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E) as c_int;
         if wd > 4 {
-            p2 = (*dst(-3)).as_::<c_int>();
-            q2 = (*dst(2)).as_::<c_int>();
+            p2 = get_dst(-3);
+            q2 = get_dst(2);
             fm &= ((p2 - p1).abs() <= I && (q2 - q1).abs() <= I) as c_int;
             if wd > 6 {
-                p3 = (*dst(-4)).as_::<c_int>();
-                q3 = (*dst(3)).as_::<c_int>();
+                p3 = get_dst(-4);
+                q3 = get_dst(3);
                 fm &= ((p3 - p2).abs() <= I && (q3 - q2).abs() <= I) as c_int;
             }
         }
@@ -105,12 +107,12 @@ unsafe fn loop_filter<BD: BitDepth>(
             continue;
         }
         if wd >= 16 {
-            p6 = (*dst(-7)).as_::<c_int>();
-            p5 = (*dst(-6)).as_::<c_int>();
-            p4 = (*dst(-5)).as_::<c_int>();
-            q4 = (*dst(4)).as_::<c_int>();
-            q5 = (*dst(5)).as_::<c_int>();
-            q6 = (*dst(6)).as_::<c_int>();
+            p6 = get_dst(-7);
+            p5 = get_dst(-6);
+            p4 = get_dst(-5);
+            q4 = get_dst(4);
+            q5 = get_dst(5);
+            q6 = get_dst(6);
             flat8out = ((p6 - p0).abs() <= F
                 && (p5 - p0).abs() <= F
                 && (p4 - p0).abs() <= F
@@ -128,66 +130,66 @@ unsafe fn loop_filter<BD: BitDepth>(
             flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as c_int;
         }
         if wd >= 16 && flat8out & flat8in != 0 {
-            *dst(-6) =
-                (p6 + p6 + p6 + p6 + p6 + p6 * 2 + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0 + q0 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(-5) =
-                (p6 + p6 + p6 + p6 + p6 + p5 * 2 + p4 * 2 + p3 * 2 + p2 + p1 + p0 + q0 + q1 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(-4) =
-                (p6 + p6 + p6 + p6 + p5 + p4 * 2 + p3 * 2 + p2 * 2 + p1 + p0 + q0 + q1 + q2 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(-3) =
-                (p6 + p6 + p6 + p5 + p4 + p3 * 2 + p2 * 2 + p1 * 2 + p0 + q0 + q1 + q2 + q3 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(-2) =
-                (p6 + p6 + p5 + p4 + p3 + p2 * 2 + p1 * 2 + p0 * 2 + q0 + q1 + q2 + q3 + q4 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(-1) =
-                (p6 + p5 + p4 + p3 + p2 + p1 * 2 + p0 * 2 + q0 * 2 + q1 + q2 + q3 + q4 + q5 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(0) =
-                (p5 + p4 + p3 + p2 + p1 + p0 * 2 + q0 * 2 + q1 * 2 + q2 + q3 + q4 + q5 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(1) =
-                (p4 + p3 + p2 + p1 + p0 + q0 * 2 + q1 * 2 + q2 * 2 + q3 + q4 + q5 + q6 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(2) =
-                (p3 + p2 + p1 + p0 + q0 + q1 * 2 + q2 * 2 + q3 * 2 + q4 + q5 + q6 + q6 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(3) =
-                (p2 + p1 + p0 + q0 + q1 + q2 * 2 + q3 * 2 + q4 * 2 + q5 + q6 + q6 + q6 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(4) =
-                (p1 + p0 + q0 + q1 + q2 + q3 * 2 + q4 * 2 + q5 * 2 + q6 + q6 + q6 + q6 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            *dst(5) =
-                (p0 + q0 + q1 + q2 + q3 + q4 * 2 + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6 + q6 + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
+            set_dst(
+                -6,
+                p6 + p6 + p6 + p6 + p6 + p6 * 2 + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0 + q0 + 8 >> 4,
+            );
+            set_dst(
+                -5,
+                p6 + p6 + p6 + p6 + p6 + p5 * 2 + p4 * 2 + p3 * 2 + p2 + p1 + p0 + q0 + q1 + 8 >> 4,
+            );
+            set_dst(
+                -4,
+                p6 + p6 + p6 + p6 + p5 + p4 * 2 + p3 * 2 + p2 * 2 + p1 + p0 + q0 + q1 + q2 + 8 >> 4,
+            );
+            set_dst(
+                -3,
+                p6 + p6 + p6 + p5 + p4 + p3 * 2 + p2 * 2 + p1 * 2 + p0 + q0 + q1 + q2 + q3 + 8 >> 4,
+            );
+            set_dst(
+                -2,
+                p6 + p6 + p5 + p4 + p3 + p2 * 2 + p1 * 2 + p0 * 2 + q0 + q1 + q2 + q3 + q4 + 8 >> 4,
+            );
+            set_dst(
+                -1,
+                p6 + p5 + p4 + p3 + p2 + p1 * 2 + p0 * 2 + q0 * 2 + q1 + q2 + q3 + q4 + q5 + 8 >> 4,
+            );
+            set_dst(
+                0,
+                p5 + p4 + p3 + p2 + p1 + p0 * 2 + q0 * 2 + q1 * 2 + q2 + q3 + q4 + q5 + q6 + 8 >> 4,
+            );
+            set_dst(
+                1,
+                p4 + p3 + p2 + p1 + p0 + q0 * 2 + q1 * 2 + q2 * 2 + q3 + q4 + q5 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                2,
+                p3 + p2 + p1 + p0 + q0 + q1 * 2 + q2 * 2 + q3 * 2 + q4 + q5 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                3,
+                p2 + p1 + p0 + q0 + q1 + q2 * 2 + q3 * 2 + q4 * 2 + q5 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                4,
+                p1 + p0 + q0 + q1 + q2 + q3 * 2 + q4 * 2 + q5 * 2 + q6 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                5,
+                p0 + q0 + q1 + q2 + q3 + q4 * 2 + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
         } else if wd >= 8 && flat8in != 0 {
-            *dst(-3) = (p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(-2) = (p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(-1) = (p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(0) = (p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(1) = (p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(2) = (p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
+            set_dst(-3, p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3);
+            set_dst(-2, p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3);
+            set_dst(-1, p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3);
+            set_dst(0, p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3);
+            set_dst(1, p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3);
+            set_dst(2, p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3);
         } else if wd == 6 && flat8in != 0 {
-            *dst(-2) = (p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(-1) = (p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(0) = (p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-            *dst(1) = (p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3).as_::<BD::Pixel>();
+            set_dst(-2, p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3);
+            set_dst(-1, p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3);
+            set_dst(0, p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3);
+            set_dst(1, p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3);
         } else {
             let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
 
