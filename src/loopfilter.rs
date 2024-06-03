@@ -21,7 +21,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     stride: ptrdiff_t,
     mask: &[u32; 3],
     lvl: *const [u8; 4],
-    lvl_stride: ptrdiff_t,
+    b4_stride: ptrdiff_t,
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
@@ -34,15 +34,16 @@ impl loopfilter_sb::Fn {
         stride: ptrdiff_t,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
-        lvl_stride: ptrdiff_t,
+        b4_stride: usize,
         lut: &Align16<Av1FilterLUT>,
         w: c_int,
         bd: BD,
     ) {
         let dst = dst.cast();
         let lvl = lvl.as_ptr();
+        let b4_stride = b4_stride as isize;
         let bd = bd.into_c();
-        self.get()(dst, stride, mask, lvl, lvl_stride, lut, w, bd)
+        self.get()(dst, stride, mask, lvl, b4_stride, lut, w, bd)
     }
 }
 
@@ -382,21 +383,15 @@ unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     h: c_int,
     bitdepth_max: c_int,
 ) {
-    loop_filter_h_sb128y_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        h,
-        BD::from_c(bitdepth_max),
-    )
+    let dst = dst.cast();
+    let b4_stride = b4_stride as usize;
+    let bd = BD::from_c(bitdepth_max);
+    loop_filter_h_sb128y_rust(dst, stride, vmask, l, b4_stride, lut, h, bd)
 }
 
 unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
@@ -404,7 +399,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _h: c_int,
     bd: BD,
@@ -432,7 +427,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
         }
         y <<= 1;
         dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.offset(b4_stride);
+        l = l.add(b4_stride);
     }
 }
 
@@ -441,21 +436,15 @@ unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
 ) {
-    loop_filter_v_sb128y_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        w,
-        BD::from_c(bitdepth_max),
-    );
+    let dst = dst.cast();
+    let b4_stride = b4_stride as usize;
+    let bd = BD::from_c(bitdepth_max);
+    loop_filter_v_sb128y_rust(dst, stride, vmask, l, b4_stride, lut, w, bd);
 }
 
 unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
@@ -463,7 +452,7 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _w: c_int,
     bd: BD,
@@ -475,7 +464,7 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0] as c_int
             } else {
-                (*l.offset(-b4_stride))[0] as c_int
+                (*l.sub(b4_stride))[0] as c_int
             };
             if !(L == 0) {
                 let H = L >> 4;
@@ -500,21 +489,15 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     h: c_int,
     bitdepth_max: c_int,
 ) {
-    loop_filter_h_sb128uv_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        h,
-        BD::from_c(bitdepth_max),
-    )
+    let dst = dst.cast();
+    let b4_stride = b4_stride as usize;
+    let bd = BD::from_c(bitdepth_max);
+    loop_filter_h_sb128uv_rust(dst, stride, vmask, l, b4_stride, lut, h, bd)
 }
 
 unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
@@ -522,7 +505,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _h: c_int,
     bd: BD,
@@ -546,7 +529,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
         }
         y <<= 1;
         dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.offset(b4_stride);
+        l = l.add(b4_stride);
     }
 }
 
@@ -555,21 +538,15 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
 ) {
-    loop_filter_v_sb128uv_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        w,
-        BD::from_c(bitdepth_max),
-    )
+    let dst = dst.cast();
+    let b4_stride = b4_stride as usize;
+    let bd = BD::from_c(bitdepth_max);
+    loop_filter_v_sb128uv_rust(dst, stride, vmask, l, b4_stride, lut, w, bd)
 }
 
 unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
@@ -577,7 +554,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _w: c_int,
     bd: BD,
@@ -589,7 +566,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
             let L = if (*l.offset(0))[0] != 0 {
                 (*l.offset(0))[0] as c_int
             } else {
-                (*l.offset(-b4_stride))[0] as c_int
+                (*l.sub(b4_stride))[0] as c_int
             };
             if !(L == 0) {
                 let H = L >> 4;
