@@ -1785,9 +1785,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         "dq",
                     );
                 }
+                // Unsafely recompute from `dst` because `fn read_coef_tree` is recursive and used elsewhere.
+                // Once I make `fn read_coef_tree`, this will be removed.
+                let y_dst = &f.cur.data.as_ref().unwrap().data[0];
+                let y_dst_offset = dst.offset_from(y_dst.as_ptr::<BD>()) as usize;
                 f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(
-                    dst,
-                    f.cur.stride[0],
+                    y_dst,
+                    y_dst_offset,
                     cf,
                     eob,
                     bd,
@@ -2572,6 +2576,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             y = init_y;
             t.b.y += init_y;
             while y < sub_h4 {
+                let y_dst = &cur_data[0];
+                let mut y_dst_offset = y_dst.pixel_offset::<BD>().wrapping_add_signed(
+                    4 * (t.b.y as isize * y_dst.pixel_stride::<BD>()
+                        + t.b.x as isize
+                        + init_x as isize),
+                );
                 let mut dst = cur_data[0].as_strided_mut_ptr::<BD>().offset(
                     4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0])
                         + t.b.x as isize
@@ -2689,7 +2699,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 * cmp::min(t_dim.w as usize, 8)
                                 * 4;
                             let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
-                            cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                            cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                             cf = &mut *cf_guard;
                             ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
                             let cbi_idx =
@@ -2753,8 +2763,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                             f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize].call::<BD>(
-                                dst,
-                                f.cur.stride[0],
+                                y_dst,
+                                y_dst_offset,
                                 cf,
                                 eob,
                                 bd,
@@ -2779,6 +2789,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             },
                         );
                     }
+                    y_dst_offset += 4 * t_dim.w as usize;
                     dst = dst.add(4 * t_dim.w as usize);
                     x += t_dim.w as c_int;
                     t.b.x += t_dim.w as c_int;
@@ -2995,6 +3006,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 y = init_y >> ss_ver;
                 t.b.y += init_y;
                 while y < sub_ch4 {
+                    let uv_dst = &cur_data[1 + pl];
+                    let mut uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(
+                        4 * ((t.b.y >> ss_ver) as isize * uv_dst.pixel_stride::<BD>()
+                            + (t.b.x + init_x >> ss_hor) as isize),
+                    );
                     let mut dst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(
                         4 * ((t.b.y >> ss_ver) as isize * BD::pxstride(stride)
                             + (t.b.x + init_x >> ss_hor) as isize),
@@ -3130,7 +3146,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let p = (t.frame_thread.pass & 1) as usize;
                                 let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
                                 let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
-                                cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
                                 ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
                                 let cbi_idx =
@@ -3198,8 +3214,13 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
-                                    .call::<BD>(dst, stride, cf, eob, bd);
+                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
+                                    uv_dst,
+                                    uv_dst_offset,
+                                    cf,
+                                    eob,
+                                    bd,
+                                );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
                                         dst,
@@ -3220,6 +3241,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 },
                             );
                         }
+                        uv_dst_offset += uv_t_dim.w as usize * 4;
                         dst = dst.add(uv_t_dim.w as usize * 4);
                         x += uv_t_dim.w as c_int;
                         t.b.x += (uv_t_dim.w as c_int) << ss_hor;
@@ -4064,6 +4086,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             // chroma coefs and inverse transform
             if has_chroma {
                 for pl in 0..2 {
+                    let uv_dst = &cur_data[1 + pl];
+                    let mut uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(
+                        uvdstoff + (uv_dst.pixel_stride::<BD>() * init_y as isize * 4 >> ss_ver),
+                    );
                     let mut uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(
                         uvdstoff + (BD::pxstride(f.cur.stride[1]) * init_y as isize * 4 >> ss_ver),
                     );
@@ -4082,7 +4108,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let p = t.frame_thread.pass & 1;
                                 let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
                                 let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
-                                cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
                                 ts.frame_thread[p as usize]
                                     .cf
@@ -4154,8 +4180,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     );
                                 }
                                 f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
-                                    uvdst.add(4 * x as usize),
-                                    f.cur.stride[1],
+                                    uv_dst,
+                                    uv_dst_offset + 4 * x as usize,
                                     cf,
                                     eob,
                                     bd,
@@ -4173,6 +4199,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x += (uvtx.w as c_int) << ss_hor;
                             x += uvtx.w as c_int;
                         }
+                        uv_dst_offset = uv_dst_offset
+                            .wrapping_add_signed(uv_dst.pixel_stride::<BD>() * 4 * uvtx.h as isize);
                         uvdst = uvdst.offset(BD::pxstride(f.cur.stride[1]) * 4 * uvtx.h as isize);
                         t.b.x -= x << ss_hor;
                         t.b.y += (uvtx.h as c_int) << ss_ver;
