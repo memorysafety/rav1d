@@ -143,15 +143,17 @@ pub unsafe fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
 unsafe fn padding<BD: BitDepth>(
     mut tmp: *mut i16,
     tmp_stride: ptrdiff_t,
-    mut src: *const BD::Pixel,
+    src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    mut top: *const BD::Pixel,
-    mut bottom: *const BD::Pixel,
+    top: *const BD::Pixel,
+    bottom: *const BD::Pixel,
     w: c_int,
     h: c_int,
     edges: CdefEdgeFlags,
 ) {
+    let [mut src, mut top, mut bottom] = [src, top, bottom].map(|it| it.sub(2));
+
     // Fill extended input buffer.
     let mut x_start = -2 + 2;
     let mut x_end = w + 2 + 2;
@@ -193,7 +195,7 @@ unsafe fn padding<BD: BitDepth>(
     for y in y_start..2 {
         for x in x_start..x_end {
             *tmp.offset(x as isize + y as isize * tmp_stride) =
-                (*top.offset((x - 2) as isize)).as_::<i16>();
+                (*top.offset(x as isize)).as_::<i16>();
         }
         top = top.offset(BD::pxstride(src_stride));
     }
@@ -206,14 +208,14 @@ unsafe fn padding<BD: BitDepth>(
     tmp = tmp.offset(2 * tmp_stride);
     for y in 0..h {
         for x in if y < h { 2 } else { x_start }..x_end {
-            *tmp.offset(x as isize) = (*src.offset((x - 2) as isize)).as_::<i16>();
+            *tmp.offset(x as isize) = (*src.offset(x as isize)).as_::<i16>();
         }
         src = src.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride);
     }
     for _ in h + 2..y_end {
         for x in x_start..x_end {
-            *tmp.offset(x as isize) = (*bottom.offset((x - 2) as isize)).as_::<i16>();
+            *tmp.offset(x as isize) = (*bottom.offset(x as isize)).as_::<i16>();
         }
         bottom = bottom.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride);
