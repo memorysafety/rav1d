@@ -4,7 +4,6 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::ulog2;
 use crate::src::cpu::CpuFlags;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -266,9 +265,9 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     if pri_strength != 0 {
         let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
-        let pri_shift = cmp::max(0, damping - ulog2(pri_strength as c_uint));
+        let pri_shift = cmp::max(0, damping - pri_strength.ilog2() as c_int);
         if sec_strength != 0 {
-            let sec_shift = damping - ulog2(sec_strength as c_uint);
+            let sec_shift = damping - sec_strength.ilog2() as c_int;
             loop {
                 let mut x = 0;
                 while x < w {
@@ -352,8 +351,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
             }
         }
     } else {
-        assert!(sec_strength != 0);
-        let sec_shift = damping - ulog2(sec_strength as c_uint);
+        let sec_shift = damping - sec_strength.ilog2() as c_int;
         loop {
             let mut x = 0;
             while x < w {
