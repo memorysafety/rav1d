@@ -459,61 +459,47 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         img = img.offset(BD::pxstride(stride));
         y += 1;
     }
-    let mut cost = [0u32, 0, 0, 0, 0, 0, 0, 0];
+    let mut cost = [0, 0, 0, 0, 0, 0, 0, 0];
     let mut n = 0;
     while n < 8 {
-        cost[2] = (cost[2]).wrapping_add(
-            (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as c_uint,
-        );
-        cost[6] = (cost[6]).wrapping_add(
-            (partial_sum_hv[1][n as usize] * partial_sum_hv[1][n as usize]) as c_uint,
-        );
+        cost[2] += (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as c_uint;
+        cost[6] += (partial_sum_hv[1][n as usize] * partial_sum_hv[1][n as usize]) as c_uint;
         n += 1;
     }
-    cost[2] = (cost[2]).wrapping_mul(105);
-    cost[6] = (cost[6]).wrapping_mul(105);
+    cost[2] *= 105;
+    cost[6] *= 105;
     static div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
     let mut n = 0;
     while n < 7 {
         let d = div_table[n as usize] as c_int;
-        cost[0] = (cost[0]).wrapping_add(
-            ((partial_sum_diag[0][n as usize] * partial_sum_diag[0][n as usize]
-                + partial_sum_diag[0][(14 - n) as usize] * partial_sum_diag[0][(14 - n) as usize])
-                * d) as c_uint,
-        );
-        cost[4] = (cost[4]).wrapping_add(
-            ((partial_sum_diag[1][n as usize] * partial_sum_diag[1][n as usize]
-                + partial_sum_diag[1][(14 - n) as usize] * partial_sum_diag[1][(14 - n) as usize])
-                * d) as c_uint,
-        );
+        cost[0] += ((partial_sum_diag[0][n as usize] * partial_sum_diag[0][n as usize]
+            + partial_sum_diag[0][(14 - n) as usize] * partial_sum_diag[0][(14 - n) as usize])
+            * d) as c_uint;
+        cost[4] += ((partial_sum_diag[1][n as usize] * partial_sum_diag[1][n as usize]
+            + partial_sum_diag[1][(14 - n) as usize] * partial_sum_diag[1][(14 - n) as usize])
+            * d) as c_uint;
         n += 1;
     }
-    cost[0] =
-        (cost[0]).wrapping_add((partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as c_uint);
-    cost[4] =
-        (cost[4]).wrapping_add((partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint);
+    cost[0] += (partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as c_uint;
+    cost[4] += (partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint;
     let mut n = 0;
     while n < 4 {
         let cost_ptr = &mut *cost.as_mut_ptr().offset((n * 2 + 1) as isize) as *mut c_uint;
         let mut m = 0;
         while m < 5 {
-            *cost_ptr = (*cost_ptr).wrapping_add(
-                (partial_sum_alt[n as usize][(3 + m) as usize]
-                    * partial_sum_alt[n as usize][(3 + m) as usize]) as c_uint,
-            );
+            *cost_ptr += (partial_sum_alt[n as usize][(3 + m) as usize]
+                * partial_sum_alt[n as usize][(3 + m) as usize]) as c_uint;
             m += 1;
         }
-        *cost_ptr = (*cost_ptr).wrapping_mul(105);
+        *cost_ptr *= 105;
         let mut m = 0;
         while m < 3 {
             let d = div_table[(2 * m + 1) as usize] as c_int;
-            *cost_ptr = (*cost_ptr).wrapping_add(
-                ((partial_sum_alt[n as usize][m as usize]
-                    * partial_sum_alt[n as usize][m as usize]
-                    + partial_sum_alt[n as usize][(10 - m) as usize]
-                        * partial_sum_alt[n as usize][(10 - m) as usize])
-                    * d) as c_uint,
-            );
+            *cost_ptr += ((partial_sum_alt[n as usize][m as usize]
+                * partial_sum_alt[n as usize][m as usize]
+                + partial_sum_alt[n as usize][(10 - m) as usize]
+                    * partial_sum_alt[n as usize][(10 - m) as usize])
+                * d) as c_uint;
             m += 1;
         }
         n += 1;
@@ -528,7 +514,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         }
         n += 1;
     }
-    *variance = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
+    *variance = (best_cost - cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
     return best_dir;
 }
 
