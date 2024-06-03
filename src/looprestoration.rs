@@ -5,8 +5,10 @@ use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cpu::CpuFlags;
 use crate::src::cursor::CursorMut;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::tables::dav1d_sgr_x_by_x;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
@@ -131,7 +133,7 @@ impl LooprestorationParams {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -140,6 +142,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl loop_restoration_filter::Fn {
@@ -155,8 +158,7 @@ impl loop_restoration_filter::Fn {
     /// (which is 32 pixels for subsampled chroma and 64 pixels for luma).
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: ptrdiff_t,
+        dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
         w: c_int,
@@ -165,11 +167,13 @@ impl loop_restoration_filter::Fn {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
+        let dst_stride = dst.data.stride();
         let left = left[..h as usize].as_ptr().cast();
         let lpf = lpf.cast();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, left, lpf, w, h, params, edges, bd)
+        let dst = FFISafe::new(&dst);
+        self.get()(dst_ptr, dst_stride, left, lpf, w, h, params, edges, bd, dst)
     }
 }
 
@@ -186,8 +190,7 @@ const REST_UNIT_STRIDE: usize = 390;
 #[inline(never)]
 unsafe fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
-    p: *const BD::Pixel,
-    stride: isize,
+    p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     unit_w: usize,
@@ -196,7 +199,7 @@ unsafe fn padding<BD: BitDepth>(
 ) {
     let left = &left[..stripe_h];
     assert!(stripe_h > 0);
-    let stride = BD::pxstride(stride);
+    let stride = p.data.pixel_stride::<BD>();
 
     let [have_left, have_right, have_top, have_bottom] =
         [LR_HAVE_LEFT, LR_HAVE_RIGHT, LR_HAVE_TOP, LR_HAVE_BOTTOM]
@@ -206,7 +209,7 @@ unsafe fn padding<BD: BitDepth>(
     // Copy more pixels if we don't have to pad them
     let unit_w = unit_w + have_left_3 + have_right_3;
     let dst_l = &mut dst[3 - have_left_3..];
-    let p = p.offset(-(have_left_3 as isize));
+    let p = p - have_left_3;
     let lpf = lpf.offset(-(have_left_3 as isize));
     let abs_stride = stride.unsigned_abs();
 
@@ -226,7 +229,7 @@ unsafe fn padding<BD: BitDepth>(
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w);
     } else {
         // Pad with first row
-        let p = std::slice::from_raw_parts(p, unit_w);
+        let p = &*p.data.slice::<BD, _>((p.offset.., ..unit_w));
         BD::pixel_copy(dst_l, p, unit_w);
         BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w);
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w);
@@ -263,7 +266,8 @@ unsafe fn padding<BD: BitDepth>(
         );
     } else {
         // Pad with last row
-        let src = std::slice::from_raw_parts(p.offset((stripe_h - 1) as isize * stride), unit_w);
+        let src = p + ((stripe_h - 1) as isize * stride);
+        let src = &*src.data.slice::<BD, _>((src.offset.., ..unit_w));
         BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], src, unit_w);
         BD::pixel_copy(
             &mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..],
@@ -293,13 +297,11 @@ unsafe fn padding<BD: BitDepth>(
 
     // Inner UNIT_WxSTRIPE_H
     let len = unit_w - have_left_3;
-    let span = (stripe_h - 1) * abs_stride;
-    let p_offset = if stride < 0 { span } else { 0 };
-    let p = std::slice::from_raw_parts(p.sub(p_offset), have_left_3 + span + len);
     for j in 0..stripe_h {
+        let p = p + have_left_3 + (j as isize * stride);
         BD::pixel_copy(
             &mut dst_tl[j * REST_UNIT_STRIDE + have_left_3..],
-            &p[(p_offset as isize + j as isize * stride) as usize + have_left_3..],
+            &p.data.slice::<BD, _>((p.offset.., ..len)),
             len,
         );
     }
@@ -336,8 +338,8 @@ unsafe fn padding<BD: BitDepth>(
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
-    p: *mut DynPixel,
-    stride: ptrdiff_t,
+    _p_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
     w: c_int,
@@ -345,8 +347,10 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let p = p.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+    let p = *unsafe { FFISafe::get(p) };
     let left = left.cast();
     let lpf = lpf.cast();
     let bd = BD::from_c(bitdepth_max);
@@ -354,7 +358,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     let h = h as usize;
     // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
     let left = unsafe { slice::from_raw_parts(left, h) };
-    wiener_rust(p, stride, left, lpf, w, h, params, edges, bd)
+    wiener_rust(p, left, lpf, w, h, params, edges, bd)
 }
 
 // FIXME Could split into luma and chroma specific functions,
@@ -362,8 +366,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
 // FIXME Could implement a version that requires less temporary memory
 // (should be possible to implement with only 6 rows of temp storage)
 unsafe fn wiener_rust<BD: BitDepth>(
-    p: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: usize,
@@ -376,7 +379,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
     // of padding above and below
     let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(&mut tmp, p, left, lpf, w, h, edges);
 
     // Values stored between horizontal and vertical filtering don't
     // fit in a u8.
@@ -419,7 +422,8 @@ unsafe fn wiener_rust<BD: BitDepth>(
                 sum += z[k * REST_UNIT_STRIDE] as c_int * filter[1][k] as c_int;
             }
 
-            *p.offset(j as isize * BD::pxstride(stride) + i as isize) =
+            let p = p + (j as isize * p.data.pixel_stride::<BD>()) + i;
+            *p.data.index_mut::<BD>(p.offset) =
                 iclip(sum + rounding_off_v >> round_bits_v, 0, bd.into_c()).as_();
         }
     }
@@ -742,8 +746,8 @@ fn selfguided_filter<BD: BitDepth>(
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
-    p: *mut DynPixel,
-    stride: ptrdiff_t,
+    _p_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
     w: c_int,
@@ -751,8 +755,10 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let p = p.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+    let p = *unsafe { FFISafe::get(p) };
     let left = left.cast();
     let lpf = lpf.cast();
     let w = w as usize;
@@ -760,12 +766,11 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
     // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
     let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_5x5_rust(p, stride, left, lpf, w, h, params, edges, bd)
+    sgr_5x5_rust(p, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_5x5_rust<BD: BitDepth>(
-    mut p: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: usize,
@@ -782,7 +787,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     // maximum restoration width of 384 (256 * 1.5)
     let mut dst = [0.as_(); 64 * 384];
 
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(&mut tmp, p, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
@@ -797,12 +802,12 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 
     let w0 = sgr.w0 as c_int;
     for j in 0..h {
+        let p = p + (j as isize * p.data.pixel_stride::<BD>());
+        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
         for i in 0..w {
             let v = w0 * dst[j * 384 + i].as_::<c_int>();
-            *p.offset(i as isize) =
-                bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
+            p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
         }
-        p = p.offset(BD::pxstride(stride));
     }
 }
 
@@ -810,8 +815,8 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
-    p: *mut DynPixel,
-    stride: ptrdiff_t,
+    _p_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
     w: c_int,
@@ -819,8 +824,10 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let p = p.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+    let p = *unsafe { FFISafe::get(p) };
     let left = left.cast();
     let lpf = lpf.cast();
     let w = w as usize;
@@ -828,12 +835,11 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
     // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
     let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_3x3_rust(p, stride, left, lpf, w, h, params, edges, bd)
+    sgr_3x3_rust(p, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_3x3_rust<BD: BitDepth>(
-    mut p: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: usize,
@@ -845,7 +851,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
     let mut dst = [0.as_(); 64 * 384];
 
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(&mut tmp, p, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst,
@@ -860,12 +866,12 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
+        let p = p + (j as isize * p.data.pixel_stride::<BD>());
+        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
         for i in 0..w {
             let v = w1 * dst[j * 384 + i].as_::<c_int>();
-            *p.offset(i as isize) =
-                bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
+            p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
         }
-        p = p.offset(BD::pxstride(stride));
     }
 }
 
@@ -873,8 +879,8 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
-    p: *mut DynPixel,
-    stride: ptrdiff_t,
+    _p_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
     w: c_int,
@@ -882,8 +888,10 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let p = p.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+    let p = *unsafe { FFISafe::get(p) };
     let left = left.cast();
     let lpf = lpf.cast();
     let w = w as usize;
@@ -891,12 +899,11 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
     // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
     let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_mix_rust(p, stride, left, lpf, w, h, params, edges, bd)
+    sgr_mix_rust(p, left, lpf, w, h, params, edges, bd)
 }
 
 unsafe fn sgr_mix_rust<BD: BitDepth>(
-    mut p: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: *const BD::Pixel,
     w: usize,
@@ -909,7 +916,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let mut dst0 = [0.as_(); 64 * 384];
     let mut dst1 = [0.as_(); 64 * 384];
 
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(&mut tmp, p, left, lpf, w, h, edges);
     let sgr = params.sgr();
     selfguided_filter(
         &mut dst0,
@@ -935,12 +942,12 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let w0 = sgr.w0 as c_int;
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
+        let p = p + (j as isize * p.data.pixel_stride::<BD>());
+        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
         for i in 0..w {
             let v = w0 * dst0[j * 384 + i].as_::<c_int>() + w1 * dst1[j * 384 + i].as_::<c_int>();
-            *p.offset(i as isize) =
-                bd.iclip_pixel((*p.offset(i as isize)).as_::<c_int>() + (v + (1 << 10) >> 11));
+            p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
         }
-        p = p.offset(BD::pxstride(stride));
     }
 }
 
@@ -1047,6 +1054,7 @@ unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     wiener_filter_neon(
         p.cast(),
@@ -1497,6 +1505,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     let p = p.cast();
     let left = left.cast();
@@ -1543,6 +1552,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     let p = p.cast();
     let left = left.cast();
@@ -3395,6 +3405,7 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
+    _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     let p = p.cast();
     let left = left.cast();
