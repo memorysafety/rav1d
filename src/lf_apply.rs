@@ -1,5 +1,4 @@
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::AlignedVec64;
@@ -43,7 +42,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     dsp: &Rav1dBitDepthDSPContext,
     resize_step: [c_int; 2],
     resize_start: [c_int; 2],
-    bitdepth_max: c_int,
+    bd: BD,
 ) {
     let cdef_backup = (lr_backup == 0) as c_int;
     let dst_w = if frame_hdr.size.super_res.enabled {
@@ -90,17 +89,17 @@ unsafe fn backup_lpf<BD: BitDepth>(
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
             let mut dst_guard = dst.mut_slice_as(dst_offset..dst_offset + dst_w as usize);
-            (dsp.mc.resize)(
-                dst_guard.as_mut_ptr() as *mut BD::Pixel as *mut DynPixel,
+            dsp.mc.resize.call::<BD>(
+                dst_guard.as_mut_ptr(),
                 dst_stride,
-                src.as_ptr().add(src_offset).cast(),
+                src.as_ptr().add(src_offset),
                 src_stride,
                 dst_w,
                 n_lines,
                 src_w,
                 resize_step[ss_hor as usize],
                 resize_start[ss_hor as usize],
-                bitdepth_max,
+                bd,
             );
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
@@ -165,6 +164,8 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     src_offset: &[usize; 2],
     sby: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     let have_tt = (c.tc.len() > 1) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
@@ -216,7 +217,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 f.dsp,
                 f.resize_step,
                 f.resize_start,
-                f.bitdepth_max,
+                bd,
             );
         }
         if have_tt != 0 && resize != 0 {
@@ -244,7 +245,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 f.dsp,
                 f.resize_step,
                 f.resize_start,
-                f.bitdepth_max,
+                bd,
             );
         }
     }
@@ -281,7 +282,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     f.dsp,
                     f.resize_step,
                     f.resize_start,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             if have_tt != 0 && resize != 0 {
@@ -309,7 +310,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     f.dsp,
                     f.resize_step,
                     f.resize_start,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
         }
@@ -335,7 +336,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     f.dsp,
                     f.resize_step,
                     f.resize_start,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             if have_tt != 0 && resize != 0 {
@@ -363,7 +364,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     f.dsp,
                     f.resize_step,
                     f.resize_start,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
         }

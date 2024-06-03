@@ -2291,11 +2291,10 @@ unsafe fn obmc<BD: BitDepth>(
                     dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
-                (f.dsp.mc.blend_h)(
-                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize)
-                        .cast(),
+                f.dsp.mc.blend_h.call::<BD>(
+                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize),
                     dst.stride(),
-                    lap.as_ptr().cast(),
+                    lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );
@@ -2338,14 +2337,13 @@ unsafe fn obmc<BD: BitDepth>(
                     dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
-                (f.dsp.mc.blend_v)(
+                f.dsp.mc.blend_v.call::<BD>(
                     dst.as_mut_ptr_at::<BD>(
                         dst_offset
                             .wrapping_add_signed((y * v_mul) as isize * dst.pixel_stride::<BD>()),
-                    )
-                    .cast(),
+                    ),
                     dst.stride(),
-                    lap.as_ptr().cast(),
+                    lap,
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );
@@ -3378,28 +3376,28 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let mut mask = &[][..];
         match comp_inter_type {
             CompInterType::Avg => {
-                (f.dsp.mc.avg)(
-                    dst.cast(),
+                f.dsp.mc.avg.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             CompInterType::WeightedAvg => {
                 jnt_weight =
                     f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
-                (f.dsp.mc.w_avg)(
-                    dst.cast(),
+                f.dsp.mc.w_avg.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[0],
                     &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
                     jnt_weight,
-                    f.bitdepth_max,
+                    bd,
                 );
             }
             CompInterType::Seg => {
@@ -3418,15 +3416,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             CompInterType::Wedge => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
-                (f.dsp.mc.mask)(
-                    dst.cast(),
+                f.dsp.mc.mask.call::<BD>(
+                    dst,
                     f.cur.stride[0],
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
                     mask.as_ptr(),
-                    f.bitdepth_max,
+                    bd,
                 );
                 if has_chroma {
                     mask = dav1d_wedge_masks[bs as usize][chr_layout_idx]
@@ -3483,38 +3481,38 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                 match comp_inter_type {
                     CompInterType::Avg => {
-                        (f.dsp.mc.avg)(
-                            uvdst.cast(),
+                        f.dsp.mc.avg.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                     CompInterType::WeightedAvg => {
-                        (f.dsp.mc.w_avg)(
-                            uvdst.cast(),
+                        f.dsp.mc.w_avg.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[0],
                             &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             jnt_weight,
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
-                        (f.dsp.mc.mask)(
-                            uvdst.cast(),
+                        f.dsp.mc.mask.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
                             &tmp[inter.nd.one_d.mask_sign() as usize],
                             &tmp[!inter.nd.one_d.mask_sign() as usize],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             mask.as_ptr(),
-                            f.bitdepth_max,
+                            bd,
                         );
                     }
                 }
@@ -3627,10 +3625,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
-            (f.dsp.mc.blend)(
-                dst.cast(),
+            f.dsp.mc.blend.call::<BD>(
+                dst,
                 f.cur.stride[0],
-                tmp.as_mut_ptr().cast(),
+                tmp.as_mut_ptr(),
                 bw4 * 4,
                 bh4 * 4,
                 ii_mask.as_ptr(),
@@ -3934,10 +3932,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             0,
                             bd,
                         );
-                        (f.dsp.mc.blend)(
-                            uvdst.cast(),
+                        f.dsp.mc.blend.call::<BD>(
+                            uvdst,
                             f.cur.stride[1],
-                            tmp.as_mut_ptr().cast(),
+                            tmp.as_mut_ptr(),
                             cbw4 * 4,
                             cbh4 * 4,
                             ii_mask.as_ptr(),
@@ -4368,6 +4366,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
     let cur_data = &f.cur.data.as_ref().unwrap().data;
     let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
 
@@ -4410,17 +4409,17 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let src_w = 4 * f.bw + ss_hor >> ss_hor;
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
-        (f.dsp.mc.resize)(
-            dst.cast(),
+        f.dsp.mc.resize.call::<BD>(
+            dst,
             dst_stride,
-            src.cast(),
+            src,
             src_stride,
             dst_w,
             cmp::min(img_h, h_end) + h_start,
             src_w,
             f.resize_step[(pl != 0) as usize],
             f.resize_start[(pl != 0) as usize],
-            f.bitdepth_max,
+            bd,
         );
     }
 }
