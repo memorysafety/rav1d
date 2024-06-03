@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
@@ -30,19 +31,18 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
 impl loopfilter_sb::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
+        f: &Rav1dFrameData,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
-        b4_stride: usize,
-        lut: &Align16<Av1FilterLUT>,
         w: c_int,
-        bd: BD,
     ) {
         let dst = dst.cast();
         let lvl = lvl.as_ptr();
-        let b4_stride = b4_stride as isize;
-        let bd = bd.into_c();
+        let b4_stride = f.b4_stride;
+        let lut = &f.lf.lim_lut;
+        let bd = f.bitdepth_max;
         self.get()(dst, stride, mask, lvl, b4_stride, lut, w, bd)
     }
 }
