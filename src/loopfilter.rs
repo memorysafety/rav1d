@@ -9,7 +9,6 @@ use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_uint;
 
 #[cfg(all(
     feature = "asm",
@@ -410,8 +409,8 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     _h: c_int,
     bd: BD,
 ) {
-    let vm: c_uint = vmask[0] | vmask[1] | vmask[2];
-    let mut y: c_uint = 1;
+    let vm = vmask[0] | vmask[1] | vmask[2];
+    let mut y = 1u32;
     while vm & !y.wrapping_sub(1) != 0 {
         if vm & y != 0 {
             let L = if (*l.offset(0))[0] != 0 {
@@ -469,8 +468,8 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     _w: c_int,
     bd: BD,
 ) {
-    let vm: c_uint = vmask[0] | vmask[1] | vmask[2];
-    let mut x: c_uint = 1;
+    let vm = vmask[0] | vmask[1] | vmask[2];
+    let mut x = 1u32;
     while vm & !x.wrapping_sub(1) != 0 {
         if vm & x != 0 {
             let L = if (*l.offset(0))[0] != 0 {
@@ -528,8 +527,8 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     _h: c_int,
     bd: BD,
 ) {
-    let vm: c_uint = vmask[0] | vmask[1];
-    let mut y: c_uint = 1;
+    let vm = vmask[0] | vmask[1];
+    let mut y = 1u32;
     while vm & !y.wrapping_sub(1) != 0 {
         if vm & y != 0 {
             let L = if (*l.offset(0))[0] != 0 {
@@ -583,8 +582,8 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
     _w: c_int,
     bd: BD,
 ) {
-    let vm: c_uint = vmask[0] | vmask[1];
-    let mut x: c_uint = 1;
+    let vm = vmask[0] | vmask[1];
+    let mut x = 1u32;
     while vm & !x.wrapping_sub(1) != 0 {
         if vm & x != 0 {
             let L = if (*l.offset(0))[0] != 0 {
