@@ -12,6 +12,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
@@ -101,7 +102,6 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
-use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -2237,8 +2237,8 @@ unsafe fn mc<BD: BitDepth>(
 unsafe fn obmc<BD: BitDepth>(
     f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
-    dst: *mut BD::Pixel,
-    dst_stride: ptrdiff_t,
+    dst: &Rav1dPictureDataComponent,
+    dst_offset: usize,
     b_dim: &[u8; 4],
     pl: usize,
     bx4: c_int,
@@ -2292,8 +2292,9 @@ unsafe fn obmc<BD: BitDepth>(
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 (f.dsp.mc.blend_h)(
-                    dst.add((x * h_mul) as usize).cast(),
-                    dst_stride,
+                    dst.as_mut_ptr_at::<BD>(dst_offset + (x * h_mul) as usize)
+                        .cast(),
+                    dst.stride(),
                     lap.as_ptr().cast(),
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
@@ -2338,9 +2339,12 @@ unsafe fn obmc<BD: BitDepth>(
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
                 (f.dsp.mc.blend_v)(
-                    dst.offset((y * v_mul) as isize * BD::pxstride(dst_stride))
-                        .cast(),
-                    dst_stride,
+                    dst.as_mut_ptr_at::<BD>(
+                        dst_offset
+                            .wrapping_add_signed((y * v_mul) as isize * dst.pixel_stride::<BD>()),
+                    )
+                    .cast(),
+                    dst.stride(),
                     lap.as_ptr().cast(),
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
@@ -3562,7 +3566,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 filter_2d,
             )?;
             if inter.motion_mode == MotionMode::Obmc {
-                obmc::<BD>(f, t, dst, f.cur.stride[0], b_dim, 0, bx4, by4, w4, h4)?;
+                obmc::<BD>(f, t, y_dst, y_dst_offset, b_dim, 0, bx4, by4, w4, h4)?;
             }
         }
         if let Some(interintra_type) = inter.interintra_type {
@@ -3841,12 +3845,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             inter.r#ref[0] as usize,
                             filter_2d,
                         )?;
+                        let uv_dst = &cur_data[1 + pl];
+                        let uv_dst_offset =
+                            uv_dst.pixel_offset::<BD>().wrapping_add_signed(uvdstoff);
                         if inter.motion_mode == MotionMode::Obmc {
                             obmc::<BD>(
                                 f,
                                 t,
-                                cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff),
-                                f.cur.stride[1],
+                                uv_dst,
+                                uv_dst_offset,
                                 b_dim,
                                 1 + pl,
                                 bx4,
