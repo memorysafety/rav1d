@@ -448,7 +448,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     cost[4] += (partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint;
 
     for n in 0..4 {
-        let cost_ptr = &mut *cost.as_mut_ptr().offset((n * 2 + 1) as isize) as *mut c_uint;
+        let cost_ptr = &mut cost[n * 2 + 1];
         for m in 0..5 {
             *cost_ptr += (partial_sum_alt[n][3 + m] * partial_sum_alt[n][3 + m]) as c_uint;
         }
