@@ -2618,16 +2618,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             .edge
                             .buf_mut::<BD>();
                         let edge_offset = 128;
-                        let data_stride = BD::pxstride(f.cur.stride[0]);
-                        let data_width = 4 * ts.tiling.col_end;
-                        let data_height = 4 * ts.tiling.row_end;
-                        let data_diff = (data_height - 1) as isize * data_stride;
-                        let dst_slice = slice::from_raw_parts(
-                            cur_data[0]
-                                .as_strided_ptr::<BD>()
-                                .offset(cmp::min(data_diff, 0)),
-                            data_diff.unsigned_abs() + data_width as usize,
-                        );
                         m = rav1d_prepare_intra_edges(
                             t.b.x,
                             t.b.x > ts.tiling.col_start,
@@ -2636,8 +2626,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             ts.tiling.col_end,
                             ts.tiling.row_end,
                             edge_flags,
-                            dst_slice,
-                            f.cur.stride[0],
+                            y_dst,
+                            y_dst_offset,
                             top_sb_edge_slice,
                             intra.y_mode as IntraPredMode,
                             &mut angle,
@@ -2855,15 +2845,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let ystart = ts.tiling.row_start >> ss_ver;
                     let edge_array = scratch.interintra_edge_pal.edge.buf_mut::<BD>();
                     let edge_offset = 128;
-                    let data_stride = BD::pxstride(f.cur.stride[1]);
-                    let data_width = 4 * ts.tiling.col_end >> ss_hor;
-                    let data_height = 4 * ts.tiling.row_end >> ss_ver;
-                    let data_diff = (data_height - 1) as isize * data_stride;
-                    let uvdst_slice = slice::from_raw_parts(
-                        cur_data[1 + pl]
-                            .as_strided_ptr::<BD>()
-                            .offset(cmp::min(data_diff, 0)),
-                        data_diff.unsigned_abs() + data_width as usize,
+                    let uv_dst = &cur_data[1 + pl];
+                    let uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(
+                        4 * ((t.b.x >> ss_hor) as isize
+                            + (t.b.y >> ss_ver) as isize * uv_dst.pixel_stride::<BD>()),
                     );
                     let m: IntraPredMode = rav1d_prepare_intra_edges(
                         xpos,
@@ -2873,8 +2858,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         ts.tiling.col_end >> ss_hor,
                         ts.tiling.row_end >> ss_ver,
                         EdgeFlags::empty(),
-                        uvdst_slice,
-                        stride,
+                        uv_dst,
+                        uv_dst_offset,
                         top_sb_edge_slice,
                         DC_PRED,
                         &mut angle,
@@ -2884,11 +2869,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         edge_array,
                         edge_offset,
                         bd,
-                    );
-                    let uv_dst = &cur_data[1 + pl];
-                    let uv_dst_offset = uv_dst.pixel_offset::<BD>().wrapping_add_signed(
-                        4 * ((t.b.x >> ss_hor) as isize
-                            + (t.b.y >> ss_ver) as isize * uv_dst.pixel_stride::<BD>()),
                     );
                     f.dsp.ipred.cfl_pred[m as usize].call(
                         uv_dst,
@@ -3064,16 +3044,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 .edge
                                 .buf_mut::<BD>();
                             let edge_offset = 128;
-                            let data_stride = BD::pxstride(f.cur.stride[1]);
-                            let data_width = 4 * ts.tiling.col_end >> ss_hor;
-                            let data_height = 4 * ts.tiling.row_end >> ss_ver;
-                            let data_diff = (data_height - 1) as isize * data_stride;
-                            let dstuv_slice = slice::from_raw_parts(
-                                cur_data[1 + pl]
-                                    .as_strided_ptr::<BD>()
-                                    .offset(cmp::min(data_diff, 0)),
-                                data_diff.unsigned_abs() + data_width as usize,
-                            );
                             m = rav1d_prepare_intra_edges(
                                 xpos,
                                 xpos > xstart,
@@ -3082,8 +3052,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 ts.tiling.col_end >> ss_hor,
                                 ts.tiling.row_end >> ss_ver,
                                 edge_flags,
-                                dstuv_slice,
-                                stride,
+                                uv_dst,
+                                uv_dst_offset,
                                 top_sb_edge_slice,
                                 uv_mode,
                                 &mut angle,
@@ -3300,6 +3270,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let mut dst = cur_data[0]
         .as_strided_mut_ptr::<BD>()
         .offset(4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize));
+    let y_dst = &cur_data[0];
+    let mut y_dst_offset = y_dst
+        .pixel_offset::<BD>()
+        .wrapping_add_signed(4 * (t.b.y as isize * y_dst.pixel_stride::<BD>() + t.b.x as isize));
     let uvdstoff = 4
         * ((t.b.x >> ss_hor) as isize + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -3608,16 +3582,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             } else {
                 None
             };
-            let data_stride = BD::pxstride(f.cur.stride[0]);
-            let data_width = 4 * ts.tiling.col_end;
-            let data_height = 4 * ts.tiling.row_end;
-            let data_diff = (data_height - 1) as isize * data_stride;
-            let dst_slice = slice::from_raw_parts(
-                cur_data[0]
-                    .as_strided_ptr::<BD>()
-                    .offset(cmp::min(data_diff, 0)),
-                data_diff.unsigned_abs() + data_width as usize,
-            );
             m = rav1d_prepare_intra_edges(
                 t.b.x,
                 t.b.x > ts.tiling.col_start,
@@ -3626,8 +3590,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 ts.tiling.col_end,
                 ts.tiling.row_end,
                 EdgeFlags::empty(),
-                dst_slice,
-                f.cur.stride[0],
+                y_dst,
+                y_dst_offset,
                 top_sb_edge_slice,
                 m,
                 &mut angle,
@@ -3918,6 +3882,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             mode => mode as IntraPredMode,
                         };
                         let mut angle = 0;
+                        let uv_dst = &cur_data[1 + pl];
+                        let uv_dst_offset =
+                            uv_dst.pixel_offset::<BD>().wrapping_add_signed(uvdstoff);
                         let uvdst = cur_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uvdstoff);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
                             let sby = t.b.y >> f.sb_shift;
@@ -3927,26 +3894,16 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         } else {
                             None
                         };
-                        let data_stride = BD::pxstride(f.cur.stride[1]);
-                        let data_width = 4 * ts.tiling.col_end >> ss_hor;
-                        let data_height = 4 * ts.tiling.row_end >> ss_ver;
-                        let data_diff = (data_height - 1) as isize * data_stride;
-                        let dstuv_slice = slice::from_raw_parts(
-                            cur_data[1 + pl]
-                                .as_strided_ptr::<BD>()
-                                .offset(cmp::min(data_diff, 0)),
-                            data_diff.unsigned_abs() + data_width as usize,
-                        );
                         m = rav1d_prepare_intra_edges(
                             t.b.x >> ss_hor,
-                            t.b.x >> ss_hor > ts.tiling.col_start >> ss_hor,
+                            (t.b.x >> ss_hor) > (ts.tiling.col_start >> ss_hor),
                             t.b.y >> ss_ver,
-                            t.b.y >> ss_ver > ts.tiling.row_start >> ss_ver,
+                            (t.b.y >> ss_ver) > (ts.tiling.row_start >> ss_ver),
                             ts.tiling.col_end >> ss_hor,
                             ts.tiling.row_end >> ss_ver,
                             EdgeFlags::empty(),
-                            dstuv_slice,
-                            f.cur.stride[1],
+                            uv_dst,
+                            uv_dst_offset,
                             top_sb_edge_slice,
                             m,
                             &mut angle,
@@ -4048,6 +4005,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             // coefficient coding & inverse transforms
             let mut y_off = (init_y != 0) as c_int;
             let mut y;
+            y_dst_offset =
+                y_dst_offset.wrapping_add_signed(y_dst.pixel_stride::<BD>() * 4 * init_y as isize);
             dst = dst.offset(BD::pxstride(f.cur.stride[0]) * 4 * init_y as isize);
             y = init_y;
             t.b.y += init_y;
@@ -4074,12 +4033,16 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     x += ytx.w as c_int;
                     x_off += 1;
                 }
+                y_dst_offset = y_dst_offset
+                    .wrapping_add_signed(y_dst.pixel_stride::<BD>() * 4 * ytx.h as isize);
                 dst = dst.offset(BD::pxstride(f.cur.stride[0]) * 4 * ytx.h as isize);
                 t.b.x -= x;
                 t.b.y += ytx.h as c_int;
                 y += ytx.h as c_int;
                 y_off += 1;
             }
+            y_dst_offset =
+                y_dst_offset.wrapping_add_signed(y_dst.pixel_stride::<BD>() * 4 * y as isize);
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
             t.b.y -= y;
 
