@@ -173,6 +173,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     sbrow_start: bool,
     sby: c_int,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     let bitdepth_min_8 = match BD::BPC {
         BPC::BPC8 => 0,
         BPC::BPC16 => f.cur.p.bpc - 8,
@@ -312,12 +314,10 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            (f.dsp.cdef.dir)(
-                                bptrs[0].cast(),
-                                f.cur.stride[0],
-                                &mut variance,
-                                f.bitdepth_max,
-                            )
+                            f.dsp
+                                .cdef
+                                .dir
+                                .call::<BD>(bptrs[0], f.cur.stride[0], &mut variance, bd)
                         } else {
                             0
                         };
@@ -382,33 +382,33 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                f.dsp.cdef.fb[0](
-                                    bptrs[0].cast(),
+                                f.dsp.cdef.fb[0].call::<BD>(
+                                    bptrs[0],
                                     f.cur.stride[0],
-                                    lr_bak[bit as usize][0].as_mut_ptr().cast(),
-                                    top.cast(),
-                                    bot.cast(),
+                                    &lr_bak[bit as usize][0],
+                                    top,
+                                    bot,
                                     adj_y_pri_lvl,
-                                    y_sec_lvl.into(),
+                                    y_sec_lvl,
                                     dir,
-                                    damping.into(),
+                                    damping,
                                     edges,
-                                    f.bitdepth_max,
+                                    bd,
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            f.dsp.cdef.fb[0](
-                                bptrs[0].cast(),
+                            f.dsp.cdef.fb[0].call::<BD>(
+                                bptrs[0],
                                 f.cur.stride[0],
-                                (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
-                                top.cast(),
-                                bot.cast(),
-                                0 as c_int,
-                                y_sec_lvl.into(),
-                                0 as c_int,
-                                damping.into(),
+                                &lr_bak[bit as usize][0],
+                                top,
+                                bot,
+                                0,
+                                y_sec_lvl,
+                                0,
+                                damping,
                                 edges,
-                                f.bitdepth_max,
+                                bd,
                             );
                         }
                         if uv_lvl != 0 {
@@ -478,18 +478,18 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     bot = bptrs[pl].offset((8 >> ss_ver) * uv_stride);
                                 }
 
-                                f.dsp.cdef.fb[uv_idx as usize](
-                                    bptrs[pl].cast(),
+                                f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
+                                    bptrs[pl],
                                     f.cur.stride[1],
-                                    lr_bak[bit as usize][pl].as_mut_ptr().cast(),
-                                    top.cast(),
-                                    bot.cast(),
+                                    &lr_bak[bit as usize][pl],
+                                    top,
+                                    bot,
                                     uv_pri_lvl.into(),
-                                    uv_sec_lvl.into(),
+                                    uv_sec_lvl,
                                     uvdir,
-                                    (damping - 1).into(),
+                                    damping - 1,
                                     edges,
-                                    f.bitdepth_max,
+                                    bd,
                                 );
                             }
                         }

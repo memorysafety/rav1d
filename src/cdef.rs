@@ -7,17 +7,22 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
 use crate::src::cpu::CpuFlags;
 use crate::src::tables::dav1d_cdef_directions;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ptr;
 
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::bd_fn;
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::{bpc_fn, BPC};
 
 bitflags! {
     #[repr(transparent)]
@@ -30,512 +35,89 @@ bitflags! {
     }
 }
 
-pub type cdef_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const LeftPixelRow2px<DynPixel>,
-    *const DynPixel,
-    *const DynPixel,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    CdefEdgeFlags,
-    c_int,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: c_int,
+) -> ());
 
-pub type cdef_dir_fn =
-    unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut c_uint, c_int) -> c_int;
+impl cdef::Fn {
+    /// CDEF operates entirely on pre-filter data.
+    /// If bottom/right edges are present (according to `edges`),
+    /// then the pre-filter data is located in `dst`.
+    /// However, the edge pixels above `dst` may be post-filter,
+    /// so in order to get access to pre-filter top pixels, use `top`.
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        left: &[LeftPixelRow2px<BD::Pixel>; 8],
+        top: *const BD::Pixel,
+        bottom: *const BD::Pixel,
+        pri_strength: c_int,
+        sec_strength: u8,
+        dir: c_int,
+        damping: u8,
+        edges: CdefEdgeFlags,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let left = ptr::from_ref(left).cast();
+        let top = top.cast();
+        let bottom = bottom.cast();
+        let sec_strength = sec_strength as c_int;
+        let damping = damping as c_int;
+        let bd = bd.into_c();
+        self.get()(
+            dst,
+            stride,
+            left,
+            top,
+            bottom,
+            pri_strength,
+            sec_strength,
+            dir,
+            damping,
+            edges,
+            bd,
+        )
+    }
+}
+
+wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
+    dst: *const DynPixel,
+    dst_stride: ptrdiff_t,
+    variance: &mut c_uint,
+    bitdepth_max: c_int,
+) -> c_int);
+
+impl cdef_dir::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *const BD::Pixel,
+        dst_stride: ptrdiff_t,
+        variance: &mut c_uint,
+        bd: BD,
+    ) -> c_int {
+        let dst = dst.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, variance, bd)
+    }
+}
 
 pub struct Rav1dCdefDSPContext {
-    pub dir: cdef_dir_fn,
-    pub fb: [cdef_fn; 3],
-}
+    pub dir: cdef_dir::Fn,
 
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_cdef_filter_8x8_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_dir_8bpc_sse4(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_filter_8x8_8bpc_sse4(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_sse4(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_sse4(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_sse2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_dir_8bpc_ssse3(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_filter_4x4_8bpc_sse2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_8x8_8bpc_sse2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_cdef_dir_8bpc_avx2(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_filter_8x8_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_8x8_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
-extern "C" {
-    fn dav1d_cdef_find_dir_8bpc_neon(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_padding4_8bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_padding8_8bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter4_8bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-    );
-    fn dav1d_cdef_filter8_8bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_cdef_dir_16bpc_sse4(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_filter_4x4_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_8x8_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_dir_16bpc_ssse3(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_16", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_cdef_filter_4x4_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_8x8_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x4_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_4x8_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter_8x8_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        edges: CdefEdgeFlags,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_dir_16bpc_avx2(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
-extern "C" {
-    fn dav1d_cdef_find_dir_16bpc_neon(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_padding4_16bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_padding8_16bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter4_16bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_cdef_filter8_16bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-        bitdepth_max: c_int,
-    );
+    /// 444/luma, 422, 420
+    pub fb: [cdef::Fn; 3],
 }
 
 #[inline]
@@ -566,7 +148,7 @@ unsafe fn padding<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    left: *const [BD::Pixel; 2],
+    left: &[LeftPixelRow2px<BD::Pixel>; 8],
     mut top: *const BD::Pixel,
     mut bottom: *const BD::Pixel,
     w: c_int,
@@ -632,7 +214,7 @@ unsafe fn padding<BD: BitDepth>(
         let mut x_0 = x_start;
         while x_0 < 0 {
             *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
-                (*left.offset(y_0 as isize))[(2 + x_0) as usize].as_::<i16>();
+                left[y_0 as usize][(2 + x_0) as usize].as_::<i16>();
             x_0 += 1;
         }
         y_0 += 1;
@@ -665,7 +247,7 @@ unsafe fn padding<BD: BitDepth>(
 unsafe fn cdef_filter_block_c<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    left: *const [BD::Pixel; 2],
+    left: &[LeftPixelRow2px<BD::Pixel>; 8],
     top: *const BD::Pixel,
     bottom: *const BD::Pixel,
     pri_strength: c_int,
@@ -816,10 +398,10 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     };
 }
 
-unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
+unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: c_int,
@@ -829,96 +411,42 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
 ) {
+    let dst = dst.cast();
+    // SAFETY: Reverse of cast in `cdef::Fn::call`.
+    let left = unsafe { &*left.cast() };
+    let top = top.cast();
+    let bottom = bottom.cast();
+    let bd = BD::from_c(bitdepth_max);
     cdef_filter_block_c(
-        dst.cast(),
+        dst,
         stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
+        left,
+        top,
+        bottom,
         pri_strength,
         sec_strength,
         dir,
         damping,
-        4 as c_int,
-        4 as c_int,
+        W as c_int,
+        H as c_int,
         edges,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_4x8_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        4 as c_int,
-        8 as c_int,
-        edges,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_8x8_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        8 as c_int,
-        8 as c_int,
-        edges,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
     img: *const DynPixel,
     stride: ptrdiff_t,
-    var: *mut c_uint,
+    variance: &mut c_uint,
     bitdepth_max: c_int,
 ) -> c_int {
-    cdef_find_dir_rust(img.cast(), stride, var, BD::from_c(bitdepth_max))
+    cdef_find_dir_rust(img.cast(), stride, variance, BD::from_c(bitdepth_max))
 }
 
 unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     mut img: *const BD::Pixel,
     stride: ptrdiff_t,
-    var: *mut c_uint,
+    variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
     let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
@@ -1023,16 +551,47 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         }
         n_2 += 1;
     }
-    *var = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
+    *variance = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
     return best_dir;
 }
 
-#[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+wrap_fn_ptr!(unsafe extern "C" fn padding(
+    tmp: *mut u16,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    h: c_int,
+    edges: CdefEdgeFlags,
+) -> ());
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+wrap_fn_ptr!(unsafe extern "C" fn filter(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const u16,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    h: c_int,
+    edges: usize,
+    bitdepth_max: c_int,
+) -> ());
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn cdef_filter_neon_erased<
+    BD: BitDepth,
+    const W: usize,
+    const H: usize,
+    const TMP_STRIDE: usize,
+    const TMP_LEN: usize,
+>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
+    left: *const [LeftPixelRow2px<DynPixel>; 8],
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: c_int,
@@ -1044,149 +603,42 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
 ) {
     use crate::src::align::Align16;
 
-    let mut tmp_buf = Align16([0; 200]);
-    let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
-            dav1d_cdef_filter8_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_padding8_16bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
-            dav1d_cdef_filter8_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
-}
-
-#[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    let mut tmp_buf: [u16; 104] = [0; 104];
-    let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
-            dav1d_cdef_filter4_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_padding4_16bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
-            dav1d_cdef_filter4_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
-}
-
-#[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    let mut tmp_buf = [0; 104];
-    let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
-            dav1d_cdef_filter4_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                4,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_padding4_16bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
-            dav1d_cdef_filter4_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                4,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
+    let mut tmp_buf = Align16([0; TMP_LEN]);
+    let tmp = tmp_buf.0.as_mut_ptr().add(2 * TMP_STRIDE + 8);
+    let (padding, filter) = match W {
+        4 => (
+            bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
+            bd_fn!(filter::decl_fn, BD, cdef_filter4, neon),
+        ),
+        8 => (
+            bd_fn!(padding::decl_fn, BD, cdef_padding8, neon),
+            bd_fn!(filter::decl_fn, BD, cdef_filter8, neon),
+        ),
+        _ => unreachable!(),
+    };
+    padding.get()(tmp, dst, stride, left, top, bottom, H as c_int, edges);
+    filter.get()(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        H as c_int,
+        edges.bits() as usize,
+        bitdepth_max,
+    );
 }
 
 impl Rav1dCdefDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
         Self {
-            dir: cdef_find_dir_c_erased::<BD>,
+            dir: cdef_dir::Fn::new(cdef_find_dir_c_erased::<BD>),
             fb: [
-                cdef_filter_block_8x8_c_erased::<BD>,
-                cdef_filter_block_4x8_c_erased::<BD>,
-                cdef_filter_block_4x4_c_erased::<BD>,
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 8, 8>),
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 4, 8>),
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 4, 4>),
             ],
         }
     }
@@ -1194,91 +646,55 @@ impl Rav1dCdefDSPContext {
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
-        match BD::BPC {
-            BPC::BPC8 => {
-                if !flags.contains(CpuFlags::SSE2) {
-                    return self;
-                }
-
-                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
-                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
-                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
-
-                if !flags.contains(CpuFlags::SSSE3) {
-                    return self;
-                }
-
-                self.dir = dav1d_cdef_dir_8bpc_ssse3;
-                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
-                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
-                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
-
-                if !flags.contains(CpuFlags::SSE41) {
-                    return self;
-                }
-
-                self.dir = dav1d_cdef_dir_8bpc_sse4;
-                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
-                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
-                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
-
-                #[cfg(target_arch = "x86_64")]
-                {
-                    if !flags.contains(CpuFlags::AVX2) {
-                        return self;
-                    }
-
-                    self.dir = dav1d_cdef_dir_8bpc_avx2;
-                    self.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
-                    self.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
-                    self.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
-
-                    if !flags.contains(CpuFlags::AVX512ICL) {
-                        return self;
-                    }
-
-                    self.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
-                    self.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
-                    self.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
-                }
+        if matches!(BD::BPC, BPC::BPC8) {
+            if !flags.contains(CpuFlags::SSE2) {
+                return self;
             }
-            BPC::BPC16 => {
-                if !flags.contains(CpuFlags::SSSE3) {
-                    return self;
-                }
 
-                self.dir = dav1d_cdef_dir_16bpc_ssse3;
-                self.fb[0] = dav1d_cdef_filter_8x8_16bpc_ssse3;
-                self.fb[1] = dav1d_cdef_filter_4x8_16bpc_ssse3;
-                self.fb[2] = dav1d_cdef_filter_4x4_16bpc_ssse3;
+            self.fb[0] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_8x8, sse2);
+            self.fb[1] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x8, sse2);
+            self.fb[2] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x4, sse2);
+        }
 
-                if !flags.contains(CpuFlags::SSE41) {
-                    return self;
-                }
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
+        }
 
-                self.dir = dav1d_cdef_dir_16bpc_sse4;
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, ssse3);
+        self.fb[0] = bd_fn!(cdef::decl_fn, BD, cdef_filter_8x8, ssse3);
+        self.fb[1] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x8, ssse3);
+        self.fb[2] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x4, ssse3);
 
-                #[cfg(target_arch = "x86_64")]
-                {
-                    if !flags.contains(CpuFlags::AVX2) {
-                        return self;
-                    }
+        if !flags.contains(CpuFlags::SSE41) {
+            return self;
+        }
 
-                    self.dir = dav1d_cdef_dir_16bpc_avx2;
-                    self.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx2;
-                    self.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx2;
-                    self.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx2;
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, sse4);
+        if matches!(BD::BPC, BPC::BPC8) {
+            self.fb[0] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_8x8, sse4);
+            self.fb[1] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x8, sse4);
+            self.fb[2] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x4, sse4);
+        }
 
-                    if !flags.contains(CpuFlags::AVX512ICL) {
-                        return self;
-                    }
-
-                    self.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx512icl;
-                    self.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx512icl;
-                    self.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx512icl;
-                }
+        #[cfg(target_arch = "x86_64")]
+        {
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
             }
-        };
+
+            self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, avx2);
+            self.fb[0] = bd_fn!(cdef::decl_fn, BD, cdef_filter_8x8, avx2);
+            self.fb[1] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x8, avx2);
+            self.fb[2] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x4, avx2);
+
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
+
+            self.fb[0] = bd_fn!(cdef::decl_fn, BD, cdef_filter_8x8, avx512icl);
+            self.fb[1] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x8, avx512icl);
+            self.fb[2] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x4, avx512icl);
+        }
 
         self
     }
@@ -1290,13 +706,10 @@ impl Rav1dCdefDSPContext {
             return self;
         }
 
-        self.dir = match BD::BPC {
-            BPC::BPC8 => dav1d_cdef_find_dir_8bpc_neon,
-            BPC::BPC16 => dav1d_cdef_find_dir_16bpc_neon,
-        };
-        self.fb[0] = cdef_filter_8x8_neon_erased::<BD>;
-        self.fb[1] = cdef_filter_4x8_neon_erased::<BD>;
-        self.fb[2] = cdef_filter_4x4_neon_erased::<BD>;
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_find_dir, neon);
+        self.fb[0] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 8, 8, 16, { 12 * 16 + 8 }>);
+        self.fb[1] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 4, 8, 8, { 12 * 8 + 8 }>);
+        self.fb[2] = cdef::Fn::new(cdef_filter_neon_erased::<BD, 4, 4, 8, { 12 * 8 + 8 }>);
 
         self
     }
