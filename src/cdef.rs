@@ -158,17 +158,12 @@ unsafe fn padding<BD: BitDepth>(
     let mut y_start = -2 + 2;
     let mut y_end = h + 2 + 2;
     if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
-        fill(
-            tmp.offset(-2).offset(-(2 * tmp_stride)),
-            tmp_stride,
-            w + 4,
-            2,
-        );
+        fill(tmp, tmp_stride, w + 4, 2);
         y_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
         fill(
-            tmp.offset(h as isize * tmp_stride).offset(-2),
+            tmp.offset((h + 2) as isize * tmp_stride),
             tmp_stride,
             w + 4,
             2,
@@ -177,7 +172,7 @@ unsafe fn padding<BD: BitDepth>(
     }
     if !edges.contains(CdefEdgeFlags::HAVE_LEFT) {
         fill(
-            tmp.offset((y_start - 2) as isize * tmp_stride).offset(-2),
+            tmp.offset(y_start as isize * tmp_stride),
             tmp_stride,
             2,
             y_end - y_start,
@@ -186,7 +181,8 @@ unsafe fn padding<BD: BitDepth>(
     }
     if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
         fill(
-            tmp.offset((y_start - 2) as isize * tmp_stride).offset(w as isize),
+            tmp.offset(y_start as isize * tmp_stride)
+                .offset((w + 2) as isize),
             tmp_stride,
             2,
             y_end - y_start,
@@ -195,33 +191,29 @@ unsafe fn padding<BD: BitDepth>(
     }
 
     for y in y_start..2 {
-        let y = y - 2;
         for x in x_start..x_end {
-            let x = x - 2;
             *tmp.offset(x as isize + y as isize * tmp_stride) =
-                (*top.offset(x as isize)).as_::<i16>();
+                (*top.offset((x - 2) as isize)).as_::<i16>();
         }
         top = top.offset(BD::pxstride(src_stride));
     }
     for y in 0..h as usize {
         for x in x_start..2 {
-            let x = x - 2;
-            *tmp.offset(x as isize + y as isize * tmp_stride) =
-                left[y][(2 + x) as usize].as_::<i16>();
+            *tmp.offset(x as isize + (y + 2) as isize * tmp_stride) =
+                left[y][x as usize].as_::<i16>();
         }
     }
+    tmp = tmp.offset(2 * tmp_stride);
     for y in 0..h {
         for x in if y < h { 2 } else { x_start }..x_end {
-            let x = x - 2;
-            *tmp.offset(x as isize) = (*src.offset(x as isize)).as_::<i16>();
+            *tmp.offset(x as isize) = (*src.offset((x - 2) as isize)).as_::<i16>();
         }
         src = src.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride);
     }
     for _ in h + 2..y_end {
         for x in x_start..x_end {
-            let x = x - 2;
-            *tmp.offset(x as isize) = (*bottom.offset(x as isize)).as_::<i16>();
+            *tmp.offset(x as isize) = (*bottom.offset((x - 2) as isize)).as_::<i16>();
         }
         bottom = bottom.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride);
@@ -252,7 +244,16 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     let mut tmp = tmp_buf.as_mut_ptr().offset(2 * tmp_stride).offset(2);
 
     padding::<BD>(
-        tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
+        tmp_buf.as_mut_ptr(),
+        tmp_stride,
+        dst,
+        dst_stride,
+        left,
+        top,
+        bottom,
+        w,
+        h,
+        edges,
     );
 
     if pri_strength != 0 {
