@@ -257,9 +257,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     bd: BD,
 ) {
     let tmp_stride = 12;
-    if !((w == 4 || w == 8) && (h == 4 || h == 8)) {
-        unreachable!();
-    }
+    assert!((w == 4 || w == 8) && (h == 4 || h == 8));
     let mut tmp_buf = [0; 144];
     let mut tmp = tmp_buf.as_mut_ptr().offset(2 * tmp_stride).offset(2);
     padding::<BD>(
@@ -354,9 +352,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
             }
         }
     } else {
-        if sec_strength == 0 {
-            unreachable!();
-        }
+        assert!(sec_strength != 0);
         let sec_shift = damping - ulog2(sec_strength as c_uint);
         loop {
             let mut x = 0;
