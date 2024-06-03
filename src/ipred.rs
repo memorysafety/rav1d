@@ -741,7 +741,6 @@ fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
 #[inline(never)]
 fn filter_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
-    out_off: usize,
     sz: c_int,
     lim_from: c_int,
     lim_to: c_int,
@@ -756,7 +755,7 @@ fn filter_edge<BD: BitDepth>(
     assert!(strength > 0);
     let mut i = 0;
     while i < cmp::min(sz, lim_from) {
-        out[out_off + i as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
+        out[i as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
         i += 1;
     }
     while i < cmp::min(lim_to, sz) {
@@ -766,11 +765,11 @@ fn filter_edge<BD: BitDepth>(
                 .as_::<c_int>()
                 * kernel[(strength - 1) as usize][j as usize] as c_int;
         }
-        out[out_off + i as usize] = (s + 8 >> 4).as_::<BD::Pixel>();
+        out[i as usize] = (s + 8 >> 4).as_::<BD::Pixel>();
         i += 1;
     }
     while i < sz {
-        out[out_off + i as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
+        out[i as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
         i += 1;
     }
 }
@@ -855,7 +854,6 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut top_out,
-                0,
                 width + height,
                 0 as c_int,
                 width + height,
@@ -954,8 +952,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         };
         if filter_strength != 0 {
             filter_edge::<BD>(
-                &mut edge,
-                topleft + 1,
+                &mut edge[topleft + 1..],
                 width,
                 0 as c_int,
                 max_width,
@@ -993,8 +990,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         };
         if filter_strength_0 != 0 {
             filter_edge::<BD>(
-                &mut edge,
-                topleft - height as usize,
+                &mut edge[topleft - height as usize..],
                 height,
                 height - max_height,
                 height,
@@ -1098,7 +1094,6 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut left_out,
-                0,
                 width + height,
                 0 as c_int,
                 width + height,
