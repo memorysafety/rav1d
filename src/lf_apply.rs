@@ -387,8 +387,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
             }
             f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
                 f,
-                y_dst.data.as_mut_ptr_at::<BD>(y_dst.offset + x * 4),
-                y_dst.data.stride(),
+                y_dst + x * 4,
                 &hmask,
                 &lvl[x..],
                 endy4 - starty4,
@@ -424,8 +423,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
             ];
             f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
                 f,
-                y_dst.data.as_mut_ptr_at::<BD>(y_dst.offset),
-                y_dst.data.stride(),
+                y_dst,
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 1),
                 w,
@@ -468,16 +466,14 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             // hmask[2] = 0; Already initialized to 0 above
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
                 f,
-                u_dst.data.as_mut_ptr_at::<BD>(u_dst.offset + x * 4),
-                u_dst.data.stride(),
+                u_dst + x * 4,
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 2),
                 endy4 - starty4,
             );
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
                 f,
-                v_dst.data.as_mut_ptr_at::<BD>(v_dst.offset + x * 4),
-                v_dst.data.stride(),
+                v_dst + x * 4,
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 3),
                 endy4 - starty4,
@@ -514,16 +510,14 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             ];
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
                 f,
-                u_dst.data.as_mut_ptr_at::<BD>(u_dst.offset),
-                u_dst.data.stride(),
+                u_dst,
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 2),
                 w,
             );
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
                 f,
-                v_dst.data.as_mut_ptr_at::<BD>(v_dst.offset),
-                v_dst.data.stride(),
+                v_dst,
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 3),
                 w,
