@@ -53,7 +53,7 @@ pub struct Rav1dLoopFilterDSPContext {
 
 #[inline(never)]
 unsafe fn loop_filter<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     mut E: c_int,
     mut I: c_int,
     mut H: c_int,
@@ -67,8 +67,9 @@ unsafe fn loop_filter<BD: BitDepth>(
     E <<= bitdepth_min_8;
     I <<= bitdepth_min_8;
     H <<= bitdepth_min_8;
-    let mut i = 0;
-    while i < 4 {
+    for i in 0..4 {
+        let dst = dst.offset(i * stridea);
+
         let mut p6 = 0;
         let mut p5 = 0;
         let mut p4 = 0;
@@ -373,8 +374,6 @@ unsafe fn loop_filter<BD: BitDepth>(
                 }
             }
         }
-        i += 1;
-        dst = dst.offset(stridea as isize);
     }
 }
 
