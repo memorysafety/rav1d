@@ -15,6 +15,7 @@ use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::internal::SCRATCH_INTER_INTRA_BUF_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
+use crate::src::internal::SEG_MASK_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
@@ -812,21 +813,20 @@ unsafe fn blend_h_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn w_mask_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
-    dst_stride: isize,
+fn w_mask_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: bool,
     ss_hor: bool,
     ss_ver: bool,
     bd: BD,
 ) {
-    let dst_stride = BD::pxstride(dst_stride);
-    let mut mask = slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
+    let mut mask = &mut mask[..(w >> ss_hor as usize) * (h >> ss_ver as usize)];
     let sign = sign as u8;
 
     // store mask at 2x2 resolution, i.e. store 2x1 sum for even rows,
@@ -841,14 +841,14 @@ unsafe fn w_mask_rust<BD: BitDepth>(
         .take(h)
         .enumerate()
     {
-        let dst = slice::from_raw_parts_mut(dst_ptr, w);
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
         let mut x = 0;
         while x < w {
             let m = cmp::min(
                 38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                 64,
             ) as u8;
-            dst[x] = bd.iclip_pixel(
+            dst_slice[x] = bd.iclip_pixel(
                 (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
 
@@ -859,7 +859,7 @@ unsafe fn w_mask_rust<BD: BitDepth>(
                     38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                     64,
                 ) as u8;
-                dst[x] = bd.iclip_pixel(
+                dst_slice[x] = bd.iclip_pixel(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
 
@@ -876,7 +876,7 @@ unsafe fn w_mask_rust<BD: BitDepth>(
             x += 1;
         }
 
-        dst_ptr = dst_ptr.offset(dst_stride);
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
         if !ss_ver || h & 1 != 0 {
             mask = &mut mask[w >> ss_hor as usize..];
         }
@@ -1391,33 +1391,37 @@ impl mask::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl w_mask::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         tmp1: &[i16; COMPINTER_LEN],
         tmp2: &[i16; COMPINTER_LEN],
         w: i32,
         h: i32,
-        mask: *mut u8,
+        mask: &mut [u8; SEG_MASK_LEN],
         sign: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_stride = dst.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, bd)
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn w_mask_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, mask, sign, bd, dst) }
     }
 }
 
@@ -1897,85 +1901,35 @@ unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     mask_rust(dst, dst_offset, tmp1, tmp2, w, h, mask, bd)
 }
 
-unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+/// # Safety
+///
+/// Must be called by [`w_mask::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
+unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD: BitDepth>(
+    dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
-    mask: *mut u8,
+    mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
+    // SAFETY: Was passed as `FFISafe::new(_)` in `w_mask::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `w_mask::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let w = w as usize;
+    let h = h as usize;
     debug_assert!(sign == 1 || sign == 0);
+    let sign = sign != 0;
+    let bd = BD::from_c(bitdepth_max);
     w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        false,
-        false,
-        BD::from_c(bitdepth_max),
+        dst, dst_offset, tmp1, tmp2, w, h, mask, sign, SS_HOR, SS_VER, bd,
     )
-}
-
-unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    tmp1: &[i16; COMPINTER_LEN],
-    tmp2: &[i16; COMPINTER_LEN],
-    w: i32,
-    h: i32,
-    mask: *mut u8,
-    sign: i32,
-    bitdepth_max: i32,
-) {
-    debug_assert!(sign == 1 || sign == 0);
-    w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        true,
-        false,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    tmp1: &[i16; COMPINTER_LEN],
-    tmp2: &[i16; COMPINTER_LEN],
-    w: i32,
-    h: i32,
-    mask: *mut u8,
-    sign: i32,
-    bitdepth_max: i32,
-) {
-    debug_assert!(sign == 1 || sign == 0);
-    w_mask_rust(
-        dst.cast(),
-        dst_stride,
-        tmp1,
-        tmp2,
-        w as usize,
-        h as usize,
-        mask,
-        sign != 0,
-        true,
-        true,
-        BD::from_c(bitdepth_max),
-    );
 }
 
 /// # Safety
@@ -2175,9 +2129,9 @@ impl Rav1dMCDSPContext {
             w_avg: w_avg::Fn::new(w_avg_c_erased::<BD>),
             mask: mask::Fn::new(mask_c_erased::<BD>),
             w_mask: enum_map!(Rav1dPixelLayoutSubSampled => w_mask::Fn; match key {
-                I420 => w_mask::Fn::new(w_mask_420_c_erased::<BD>),
-                I422 => w_mask::Fn::new(w_mask_422_c_erased::<BD>),
-                I444 => w_mask::Fn::new(w_mask_444_c_erased::<BD>),
+                I420 => w_mask::Fn::new(w_mask_c_erased::<true, true, BD>),
+                I422 => w_mask::Fn::new(w_mask_c_erased::<true, false, BD>),
+                I444 => w_mask::Fn::new(w_mask_c_erased::<false, false, BD>),
             }),
             blend: blend::Fn::new(blend_c_erased::<BD>),
             blend_v: blend_dir::Fn::new(blend_v_c_erased::<BD>),
