@@ -54,19 +54,16 @@ pub struct Rav1dLoopFilterDSPContext {
 #[inline(never)]
 unsafe fn loop_filter<BD: BitDepth>(
     dst: *mut BD::Pixel,
-    mut E: c_int,
-    mut I: c_int,
-    mut H: c_int,
+    E: c_int,
+    I: c_int,
+    H: c_int,
     stridea: ptrdiff_t,
     strideb: ptrdiff_t,
     wd: c_int,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let F = 1 << bitdepth_min_8;
-    E <<= bitdepth_min_8;
-    I <<= bitdepth_min_8;
-    H <<= bitdepth_min_8;
+    let [F, E, I, H] = [1, E, I, H].map(|n| n << bitdepth_min_8);
     for i in 0..4 {
         let dst = dst.offset(i * stridea);
         let dst = |stride_index| &mut *dst.offset(strideb * stride_index);
@@ -87,10 +84,9 @@ unsafe fn loop_filter<BD: BitDepth>(
         let mut q4 = 0;
         let mut q5 = 0;
         let mut q6 = 0;
-        let mut fm;
         let mut flat8out = false;
         let mut flat8in = false;
-        fm = (p1 - p0).abs() <= I
+        let mut fm = (p1 - p0).abs() <= I
             && (q1 - q0).abs() <= I
             && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E;
         if wd > 4 {
@@ -202,8 +198,8 @@ unsafe fn loop_filter<BD: BitDepth>(
             }
 
             if hev {
-                let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
-                f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
+                let f = iclip_diff(p1 - q1, bitdepth_min_8);
+                let f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
 
                 let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
                 let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
@@ -211,7 +207,7 @@ unsafe fn loop_filter<BD: BitDepth>(
                 *dst(-1) = bd.iclip_pixel(p0 + f2);
                 *dst(0) = bd.iclip_pixel(q0 - f1);
             } else {
-                let mut f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
+                let f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
 
                 let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
                 let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
@@ -219,7 +215,7 @@ unsafe fn loop_filter<BD: BitDepth>(
                 *dst(-1) = bd.iclip_pixel(p0 + f2);
                 *dst(0) = bd.iclip_pixel(q0 - f1);
 
-                f = (f1 + 1) >> 1;
+                let f = (f1 + 1) >> 1;
                 *dst(-2) = bd.iclip_pixel(p1 + f);
                 *dst(1) = bd.iclip_pixel(q1 - f);
             }
