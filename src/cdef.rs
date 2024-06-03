@@ -438,9 +438,9 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     bd: BD,
 ) -> c_int {
     let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
-    let mut partial_sum_hv = [[0, 0, 0, 0, 0, 0, 0, 0], [0; 8]];
-    let mut partial_sum_diag = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0; 15]];
-    let mut partial_sum_alt = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0; 11], [0; 11], [0; 11]];
+    let mut partial_sum_hv = [[0; 8]; 2];
+    let mut partial_sum_diag = [[0; 15]; 2];
+    let mut partial_sum_alt = [[0; 11]; 4];
     let mut y = 0;
     while y < 8 {
         let mut x = 0;
@@ -459,7 +459,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         img = img.offset(BD::pxstride(stride));
         y += 1;
     }
-    let mut cost = [0, 0, 0, 0, 0, 0, 0, 0];
+    let mut cost = [0; 8];
     let mut n = 0;
     while n < 8 {
         cost[2] += (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as c_uint;
