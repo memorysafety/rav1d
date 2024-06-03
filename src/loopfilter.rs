@@ -100,278 +100,135 @@ unsafe fn loop_filter<BD: BitDepth>(
                 fm &= ((p3 - p2).abs() <= I && (q3 - q2).abs() <= I) as c_int;
             }
         }
-        if !(fm == 0) {
-            if wd >= 16 {
-                p6 = (*dst.offset(strideb * -7)).as_::<c_int>();
-                p5 = (*dst.offset(strideb * -6)).as_::<c_int>();
-                p4 = (*dst.offset(strideb * -5)).as_::<c_int>();
-                q4 = (*dst.offset(strideb * 4)).as_::<c_int>();
-                q5 = (*dst.offset(strideb * 5)).as_::<c_int>();
-                q6 = (*dst.offset(strideb * 6)).as_::<c_int>();
-                flat8out = ((p6 - p0).abs() <= F
-                    && (p5 - p0).abs() <= F
-                    && (p4 - p0).abs() <= F
-                    && (q4 - q0).abs() <= F
-                    && (q5 - q0).abs() <= F
-                    && (q6 - q0).abs() <= F) as c_int;
+        if fm == 0 {
+            continue;
+        }
+        if wd >= 16 {
+            p6 = (*dst.offset(strideb * -7)).as_::<c_int>();
+            p5 = (*dst.offset(strideb * -6)).as_::<c_int>();
+            p4 = (*dst.offset(strideb * -5)).as_::<c_int>();
+            q4 = (*dst.offset(strideb * 4)).as_::<c_int>();
+            q5 = (*dst.offset(strideb * 5)).as_::<c_int>();
+            q6 = (*dst.offset(strideb * 6)).as_::<c_int>();
+            flat8out = ((p6 - p0).abs() <= F
+                && (p5 - p0).abs() <= F
+                && (p4 - p0).abs() <= F
+                && (q4 - q0).abs() <= F
+                && (q5 - q0).abs() <= F
+                && (q6 - q0).abs() <= F) as c_int;
+        }
+        if wd >= 6 {
+            flat8in = ((p2 - p0).abs() <= F
+                && (p1 - p0).abs() <= F
+                && (q1 - q0).abs() <= F
+                && (q2 - q0).abs() <= F) as c_int;
+        }
+        if wd >= 8 {
+            flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as c_int;
+        }
+        if wd >= 16 && flat8out & flat8in != 0 {
+            *dst.offset(strideb * -6) =
+                (p6 + p6 + p6 + p6 + p6 + p6 * 2 + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0 + q0 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * -5) =
+                (p6 + p6 + p6 + p6 + p6 + p5 * 2 + p4 * 2 + p3 * 2 + p2 + p1 + p0 + q0 + q1 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * -4) =
+                (p6 + p6 + p6 + p6 + p5 + p4 * 2 + p3 * 2 + p2 * 2 + p1 + p0 + q0 + q1 + q2 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * -3) =
+                (p6 + p6 + p6 + p5 + p4 + p3 * 2 + p2 * 2 + p1 * 2 + p0 + q0 + q1 + q2 + q3 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * -2) =
+                (p6 + p6 + p5 + p4 + p3 + p2 * 2 + p1 * 2 + p0 * 2 + q0 + q1 + q2 + q3 + q4 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * -1) =
+                (p6 + p5 + p4 + p3 + p2 + p1 * 2 + p0 * 2 + q0 * 2 + q1 + q2 + q3 + q4 + q5 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 0) =
+                (p5 + p4 + p3 + p2 + p1 + p0 * 2 + q0 * 2 + q1 * 2 + q2 + q3 + q4 + q5 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 1) =
+                (p4 + p3 + p2 + p1 + p0 + q0 * 2 + q1 * 2 + q2 * 2 + q3 + q4 + q5 + q6 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 2) =
+                (p3 + p2 + p1 + p0 + q0 + q1 * 2 + q2 * 2 + q3 * 2 + q4 + q5 + q6 + q6 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 3) =
+                (p2 + p1 + p0 + q0 + q1 + q2 * 2 + q3 * 2 + q4 * 2 + q5 + q6 + q6 + q6 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 4) =
+                (p1 + p0 + q0 + q1 + q2 + q3 * 2 + q4 * 2 + q5 * 2 + q6 + q6 + q6 + q6 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+            *dst.offset(strideb * 5) =
+                (p0 + q0 + q1 + q2 + q3 + q4 * 2 + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6 + q6 + 8
+                    >> 4)
+                    .as_::<BD::Pixel>();
+        } else if wd >= 8 && flat8in != 0 {
+            *dst.offset(strideb * -3) =
+                (p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * -2) =
+                (p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * -1) =
+                (p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * 0) =
+                (p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * 1) =
+                (p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * 2) =
+                (p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
+        } else if wd == 6 && flat8in != 0 {
+            *dst.offset(strideb * -2) =
+                (p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * -1) =
+                (p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * 0) =
+                (p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
+            *dst.offset(strideb * 1) =
+                (p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3).as_::<BD::Pixel>();
+        } else {
+            let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
+
+            fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
+                iclip(
+                    v,
+                    -128 * (1 << bitdepth_min_8),
+                    128 * (1 << bitdepth_min_8) - 1,
+                )
             }
-            if wd >= 6 {
-                flat8in = ((p2 - p0).abs() <= F
-                    && (p1 - p0).abs() <= F
-                    && (q1 - q0).abs() <= F
-                    && (q2 - q0).abs() <= F) as c_int;
-            }
-            if wd >= 8 {
-                flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as c_int;
-            }
-            if wd >= 16 && flat8out & flat8in != 0 {
-                *dst.offset(strideb * -6) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6 * 2
-                    + p5 * 2
-                    + p4 * 2
-                    + p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -5) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6
-                    + p5 * 2
-                    + p4 * 2
-                    + p3 * 2
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -4) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p5
-                    + p4 * 2
-                    + p3 * 2
-                    + p2 * 2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -3) = (p6
-                    + p6
-                    + p6
-                    + p5
-                    + p4
-                    + p3 * 2
-                    + p2 * 2
-                    + p1 * 2
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -2) = (p6
-                    + p6
-                    + p5
-                    + p4
-                    + p3
-                    + p2 * 2
-                    + p1 * 2
-                    + p0 * 2
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + q4
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -1) = (p6
-                    + p5
-                    + p4
-                    + p3
-                    + p2
-                    + p1 * 2
-                    + p0 * 2
-                    + q0 * 2
-                    + q1
-                    + q2
-                    + q3
-                    + q4
-                    + q5
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 0) = (p5
-                    + p4
-                    + p3
-                    + p2
-                    + p1
-                    + p0 * 2
-                    + q0 * 2
-                    + q1 * 2
-                    + q2
-                    + q3
-                    + q4
-                    + q5
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 1) = (p4
-                    + p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0 * 2
-                    + q1 * 2
-                    + q2 * 2
-                    + q3
-                    + q4
-                    + q5
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 2) = (p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1 * 2
-                    + q2 * 2
-                    + q3 * 2
-                    + q4
-                    + q5
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 3) = (p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2 * 2
-                    + q3 * 2
-                    + q4 * 2
-                    + q5
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 4) = (p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3 * 2
-                    + q4 * 2
-                    + q5 * 2
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * 5) = (p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + q4 * 2
-                    + q5 * 2
-                    + q6 * 2
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            } else if wd >= 8 && flat8in != 0 {
-                *dst.offset(strideb * -3) =
-                    (p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -2) =
-                    (p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -1) =
-                    (p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * 0) =
-                    (p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * 1) =
-                    (p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * 2) =
-                    (p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
-            } else if wd == 6 && flat8in != 0 {
-                *dst.offset(strideb * -2) =
-                    (p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -1) =
-                    (p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * 0) =
-                    (p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * 1) =
-                    (p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3).as_::<BD::Pixel>();
+
+            if hev != 0 {
+                let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
+                f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
+
+                let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
+                let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
+
+                *dst.offset(strideb * -1) = bd.iclip_pixel(p0 + f2);
+                *dst.offset(strideb * 0) = bd.iclip_pixel(q0 - f1);
             } else {
-                let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
+                let mut f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
 
-                fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
-                    iclip(
-                        v,
-                        -128 * (1 << bitdepth_min_8),
-                        128 * (1 << bitdepth_min_8) - 1,
-                    )
-                }
+                let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
+                let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
 
-                if hev != 0 {
-                    let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
-                    f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
+                *dst.offset(strideb * -1) = bd.iclip_pixel(p0 + f2);
+                *dst.offset(strideb * 0) = bd.iclip_pixel(q0 - f1);
 
-                    let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
-                    let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
-
-                    *dst.offset(strideb * -1) = bd.iclip_pixel(p0 + f2);
-                    *dst.offset(strideb * 0) = bd.iclip_pixel(q0 - f1);
-                } else {
-                    let mut f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
-
-                    let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
-                    let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
-
-                    *dst.offset(strideb * -1) = bd.iclip_pixel(p0 + f2);
-                    *dst.offset(strideb * 0) = bd.iclip_pixel(q0 - f1);
-
-                    f = (f1 + 1) >> 1;
-                    *dst.offset(strideb * -2) = bd.iclip_pixel(p1 + f);
-                    *dst.offset(strideb * 1) = bd.iclip_pixel(q1 - f);
-                }
+                f = (f1 + 1) >> 1;
+                *dst.offset(strideb * -2) = bd.iclip_pixel(p1 + f);
+                *dst.offset(strideb * 1) = bd.iclip_pixel(q1 - f);
             }
         }
     }
