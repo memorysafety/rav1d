@@ -64,6 +64,7 @@ unsafe fn loop_filter<BD: BitDepth>(
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let [F, E, I, H] = [1, E, I, H].map(|n| n << bitdepth_min_8);
+
     for i in 0..4 {
         let dst = dst.offset(i * stridea);
         let dst = |stride_index| &mut *dst.offset(strideb * stride_index);
@@ -86,22 +87,28 @@ unsafe fn loop_filter<BD: BitDepth>(
         let mut q6 = 0;
         let mut flat8out = false;
         let mut flat8in = false;
+
         let mut fm = (p1 - p0).abs() <= I
             && (q1 - q0).abs() <= I
             && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E;
+
         if wd > 4 {
             p2 = get_dst(-3);
             q2 = get_dst(2);
+
             fm &= (p2 - p1).abs() <= I && (q2 - q1).abs() <= I;
+
             if wd > 6 {
                 p3 = get_dst(-4);
                 q3 = get_dst(3);
+
                 fm &= (p3 - p2).abs() <= I && (q3 - q2).abs() <= I;
             }
         }
         if !fm {
             continue;
         }
+
         if wd >= 16 {
             p6 = get_dst(-7);
             p5 = get_dst(-6);
@@ -109,6 +116,7 @@ unsafe fn loop_filter<BD: BitDepth>(
             q4 = get_dst(4);
             q5 = get_dst(5);
             q6 = get_dst(6);
+
             flat8out = (p6 - p0).abs() <= F
                 && (p5 - p0).abs() <= F
                 && (p4 - p0).abs() <= F
@@ -116,15 +124,18 @@ unsafe fn loop_filter<BD: BitDepth>(
                 && (q5 - q0).abs() <= F
                 && (q6 - q0).abs() <= F;
         }
+
         if wd >= 6 {
             flat8in = (p2 - p0).abs() <= F
                 && (p1 - p0).abs() <= F
                 && (q1 - q0).abs() <= F
                 && (q2 - q0).abs() <= F;
         }
+
         if wd >= 8 {
             flat8in &= (p3 - p0).abs() <= F && (q3 - q0).abs() <= F;
         }
+
         if wd >= 16 && flat8out && flat8in {
             set_dst(
                 -6,
