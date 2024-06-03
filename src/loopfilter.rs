@@ -54,16 +54,16 @@ pub struct Rav1dLoopFilterDSPContext {
 #[inline(never)]
 unsafe fn loop_filter<BD: BitDepth>(
     dst: *mut BD::Pixel,
-    E: c_int,
-    I: c_int,
-    H: c_int,
+    E: u8,
+    I: u8,
+    H: u8,
     stridea: ptrdiff_t,
     strideb: ptrdiff_t,
     wd: c_int,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let [F, E, I, H] = [1, E, I, H].map(|n| n << bitdepth_min_8);
+    let [F, E, I, H] = [1, E, I, H].map(|n| (n as i32) << bitdepth_min_8);
 
     for i in 0..4 {
         let dst = dst.offset(i * stridea);
@@ -265,14 +265,14 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     while vm & !y.wrapping_sub(1) != 0 {
         if vm & y != 0 {
             let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0] as c_int
+                (*l.offset(0))[0]
             } else {
-                (*l.offset(-1))[0] as c_int
+                (*l.offset(-1))[0]
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
+                let E = lut.0.e[L as usize];
+                let I = lut.0.i[L as usize];
                 let idx = if vmask[2] & y != 0 {
                     2
                 } else {
@@ -318,14 +318,14 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     while vm & !x.wrapping_sub(1) != 0 {
         if vm & x != 0 {
             let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0] as c_int
+                (*l.offset(0))[0]
             } else {
-                (*l.sub(b4_stride))[0] as c_int
+                (*l.sub(b4_stride))[0]
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
+                let E = lut.0.e[L as usize];
+                let I = lut.0.i[L as usize];
                 let idx = if vmask[2] & x != 0 {
                     2
                 } else {
@@ -371,14 +371,14 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     while vm & !y.wrapping_sub(1) != 0 {
         if vm & y != 0 {
             let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0] as c_int
+                (*l.offset(0))[0]
             } else {
-                (*l.offset(-1))[0] as c_int
+                (*l.offset(-1))[0]
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
+                let E = lut.0.e[L as usize];
+                let I = lut.0.i[L as usize];
                 let idx = (vmask[1] & y != 0) as c_int;
                 loop_filter(dst, E, I, H, BD::pxstride(stride), 1, 4 + 2 * idx, bd);
             }
@@ -420,14 +420,14 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
     while vm & !x.wrapping_sub(1) != 0 {
         if vm & x != 0 {
             let L = if (*l.offset(0))[0] != 0 {
-                (*l.offset(0))[0] as c_int
+                (*l.offset(0))[0]
             } else {
-                (*l.sub(b4_stride))[0] as c_int
+                (*l.sub(b4_stride))[0]
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
+                let E = lut.0.e[L as usize];
+                let I = lut.0.i[L as usize];
                 let idx = (vmask[1] & x != 0) as c_int;
                 loop_filter(dst, E, I, H, 1, BD::pxstride(stride), 4 + 2 * idx, bd);
             }
