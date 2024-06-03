@@ -383,7 +383,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[1] = mask[x][1][1].get() as u32;
                 hmask[2] = mask[x][2][1].get() as u32;
             }
-            f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
+            f.dsp.lf.loop_filter_sb.y.h.call::<BD>(
                 f,
                 y_dst + x * 4,
                 &hmask,
@@ -416,7 +416,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 mask[y as usize][1][0].get() as u32 | (mask[y as usize][1][1].get() as u32) << 16,
                 mask[y as usize][2][0].get() as u32 | (mask[y as usize][2][1].get() as u32) << 16,
             ];
-            f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
+            f.dsp.lf.loop_filter_sb.y.v.call::<BD>(
                 f,
                 y_dst,
                 &vmask,
@@ -457,14 +457,14 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 hmask[1] = mask[x as usize][1][1].get() as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
-            f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
+            f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
                 f,
                 u_dst + x * 4,
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 2),
                 endy4 - starty4,
             );
-            f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
+            f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
                 f,
                 v_dst + x * 4,
                 &hmask,
@@ -501,14 +501,14 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                     | (mask[y as usize][1][1].get() as u32) << (16 >> ss_hor),
                 0,
             ];
-            f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
+            f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
                 f,
                 u_dst,
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 2),
                 w,
             );
-            f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
+            f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
                 f,
                 v_dst,
                 &vmask,

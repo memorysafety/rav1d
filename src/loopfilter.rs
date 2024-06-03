@@ -50,10 +50,24 @@ impl loopfilter_sb::Fn {
         let dst = FFISafe::new(&dst);
         self.get()(dst_ptr, stride, mask, lvl, b4_stride, lut, w, bd, dst)
     }
+
+    const fn default<BD: BitDepth, const HV: usize, const YUV: usize>() -> Self {
+        Self::new(loop_filter_sb128_c_erased::<BD, { HV }, { YUV }>)
+    }
+}
+
+pub struct LoopFilterHVDSPContext {
+    pub h: loopfilter_sb::Fn,
+    pub v: loopfilter_sb::Fn,
+}
+
+pub struct LoopFilterYUVDSPContext {
+    pub y: LoopFilterHVDSPContext,
+    pub uv: LoopFilterHVDSPContext,
 }
 
 pub struct Rav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb::Fn; 2]; 2],
+    pub loop_filter_sb: LoopFilterYUVDSPContext,
 }
 
 #[inline(never)]
@@ -351,24 +365,16 @@ impl Rav1dLoopFilterDSPContext {
         use HV::*;
         use YUV::*;
         Self {
-            loop_filter_sb: [
-                [
-                    loopfilter_sb::Fn::new(
-                        loop_filter_sb128_c_erased::<BD, { H as _ }, { Y as _ }>,
-                    ),
-                    loopfilter_sb::Fn::new(
-                        loop_filter_sb128_c_erased::<BD, { V as _ }, { Y as _ }>,
-                    ),
-                ],
-                [
-                    loopfilter_sb::Fn::new(
-                        loop_filter_sb128_c_erased::<BD, { H as _ }, { UV as _ }>,
-                    ),
-                    loopfilter_sb::Fn::new(
-                        loop_filter_sb128_c_erased::<BD, { V as _ }, { UV as _ }>,
-                    ),
-                ],
-            ],
+            loop_filter_sb: LoopFilterYUVDSPContext {
+                y: LoopFilterHVDSPContext {
+                    h: loopfilter_sb::Fn::default::<BD, { H as _ }, { Y as _ }>(),
+                    v: loopfilter_sb::Fn::default::<BD, { V as _ }, { Y as _ }>(),
+                },
+                uv: LoopFilterHVDSPContext {
+                    h: loopfilter_sb::Fn::default::<BD, { H as _ }, { UV as _ }>(),
+                    v: loopfilter_sb::Fn::default::<BD, { V as _ }, { UV as _ }>(),
+                },
+            },
         }
     }
 
@@ -379,10 +385,10 @@ impl Rav1dLoopFilterDSPContext {
             return self;
         }
 
-        self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, ssse3);
-        self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, ssse3);
-        self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, ssse3);
-        self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, ssse3);
+        self.loop_filter_sb.y.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, ssse3);
+        self.loop_filter_sb.y.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, ssse3);
+        self.loop_filter_sb.uv.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, ssse3);
+        self.loop_filter_sb.uv.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, ssse3);
 
         #[cfg(target_arch = "x86_64")]
         {
@@ -390,22 +396,21 @@ impl Rav1dLoopFilterDSPContext {
                 return self;
             }
 
-            self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx2);
-            self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx2);
-            self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, avx2);
-            self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx2);
+            self.loop_filter_sb.y.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx2);
+            self.loop_filter_sb.y.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx2);
+            self.loop_filter_sb.uv.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, avx2);
+            self.loop_filter_sb.uv.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
             }
 
-            self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx512icl);
-            self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx512icl);
+            self.loop_filter_sb.y.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx512icl);
+            self.loop_filter_sb.uv.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx512icl);
 
             if !flags.contains(CpuFlags::SLOW_GATHER) {
-                self.loop_filter_sb[0][0] =
-                    bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx512icl);
-                self.loop_filter_sb[1][0] =
+                self.loop_filter_sb.y.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx512icl);
+                self.loop_filter_sb.uv.h =
                     bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, avx512icl);
             }
         }
@@ -420,10 +425,10 @@ impl Rav1dLoopFilterDSPContext {
             return self;
         }
 
-        self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, neon);
-        self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, neon);
-        self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, neon);
-        self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, neon);
+        self.loop_filter_sb.y.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, neon);
+        self.loop_filter_sb.y.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, neon);
+        self.loop_filter_sb.uv.h = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, neon);
+        self.loop_filter_sb.uv.v = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, neon);
 
         self
     }
