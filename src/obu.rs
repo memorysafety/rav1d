@@ -72,7 +72,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
 use std::mem;
-use std::mem::MaybeUninit;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -1765,7 +1764,7 @@ fn parse_film_grain(
     })
 }
 
-unsafe fn parse_frame_hdr(
+fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     temporal_id: u8,
@@ -1808,11 +1807,9 @@ unsafe fn parse_frame_hdr(
             existing_frame_idx,
             frame_presentation_delay,
             frame_id,
-            // TODO(kkysen) I'm still using this vs. `Default::default()`
-            // because [`Default`] requires `#[derive(Default)]` on almost all of the type,
-            // and I think an [`Option`] somewhere could avoid that.
+            // TODO(kkysen) I think an [`Option`] somewhere could avoid having to `#[derive(Default)]` everything.
             // There are also `enum`s that don't have a clear default other than being 0.
-            ..MaybeUninit::zeroed().assume_init()
+            ..Default::default()
         });
     } else {
         // Default initialization.
@@ -2134,7 +2131,7 @@ fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTi
     }
 }
 
-unsafe fn parse_obus(
+fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
@@ -2624,7 +2621,7 @@ unsafe fn parse_obus(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_parse_obus(
+pub(crate) fn rav1d_parse_obus(
     c: &mut Rav1dContext,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,

@@ -107,8 +107,9 @@ pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = Rav1dTxfmMode::Only4x4 as Dav1dTxfm
 pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = Rav1dTxfmMode::Largest as Dav1dTxfmMode;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = Rav1dTxfmMode::Switchable as Dav1dTxfmMode;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, Default)]
 pub enum Rav1dTxfmMode {
+    #[default] // Not really a real default.
     Only4x4 = 0,
     Largest = 1,
     Switchable = 2,
@@ -139,8 +140,9 @@ pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode =
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode =
     Rav1dFilterMode::Regular8Tap as Dav1dFilterMode;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum Rav1dFilterMode {
+    #[default] // Not really a real default.
     Regular8Tap = 0,
     Smooth8Tap = 1,
     Sharp8Tap = 2,
@@ -497,8 +499,9 @@ impl From<Rav1dPixelLayoutSubSampled> for Rav1dPixelLayout {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum Rav1dFrameType {
+    #[default] // Not really a real default.
     Key = 0,
     Inter = 1,
     Intra = 2,
@@ -1571,7 +1574,7 @@ pub struct Dav1dLoopfilterModeRefDeltas {
     pub ref_delta: [i8; DAV1D_TOTAL_REFS_PER_FRAME],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dLoopfilterModeRefDeltas {
     pub mode_delta: [i8; 2],
@@ -1779,7 +1782,7 @@ pub struct Dav1dFrameHeader_film_grain {
     pub update: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_film_grain {
     pub data: Rav1dFilmGrainData,
@@ -1858,7 +1861,7 @@ pub struct Dav1dFrameHeader_super_res {
     pub enabled: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: u8,
@@ -1925,6 +1928,26 @@ pub struct Rav1dFrameHeader_tiling {
     pub col_start_sb: [u16; RAV1D_MAX_TILE_COLS + 1],
     pub row_start_sb: [u16; RAV1D_MAX_TILE_ROWS + 1],
     pub update: u16,
+}
+
+impl Default for Rav1dFrameHeader_tiling {
+    fn default() -> Self {
+        Self {
+            uniform: Default::default(),
+            n_bytes: Default::default(),
+            min_log2_cols: Default::default(),
+            max_log2_cols: Default::default(),
+            log2_cols: Default::default(),
+            cols: Default::default(),
+            min_log2_rows: Default::default(),
+            max_log2_rows: Default::default(),
+            log2_rows: Default::default(),
+            rows: Default::default(),
+            col_start_sb: [Default::default(); RAV1D_MAX_TILE_COLS + 1],
+            row_start_sb: [Default::default(); RAV1D_MAX_TILE_ROWS + 1],
+            update: Default::default(),
+        }
+    }
 }
 
 impl From<Dav1dFrameHeader_tiling> for Rav1dFrameHeader_tiling {
@@ -2012,7 +2035,7 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_v: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_quant {
     pub yac: u8,
@@ -2097,7 +2120,7 @@ pub struct Dav1dFrameHeader_segmentation {
     pub qidx: [u8; DAV1D_MAX_SEGMENTS as usize],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_segmentation {
     pub enabled: u8,
@@ -2163,7 +2186,7 @@ pub struct Dav1dFrameHeader_delta_q {
     pub res_log2: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_delta_q {
     pub present: u8,
@@ -2192,7 +2215,7 @@ pub struct Dav1dFrameHeader_delta_lf {
     pub multi: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_delta_lf {
     pub present: u8,
@@ -2237,7 +2260,7 @@ pub struct Dav1dFrameHeader_delta {
     pub lf: Dav1dFrameHeader_delta_lf,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_delta {
     pub q: Rav1dFrameHeader_delta_q,
@@ -2276,7 +2299,7 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub sharpness: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_loopfilter {
     pub level_y: [u8; 2],
@@ -2343,7 +2366,7 @@ pub struct Dav1dFrameHeader_cdef {
     pub uv_strength: [u8; DAV1D_MAX_CDEF_STRENGTHS],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_cdef {
     pub damping: u8,
@@ -2393,7 +2416,7 @@ pub struct Dav1dFrameHeader_restoration {
     pub unit_size: [u8; 2],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_restoration {
     pub r#type: [Rav1dRestorationType; 3],
@@ -2475,7 +2498,7 @@ pub struct Dav1dFrameHeader {
     pub gmv: [Dav1dWarpedMotionParams; DAV1D_REFS_PER_FRAME],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameSize {
     pub width: [c_int; 2],
@@ -2486,7 +2509,7 @@ pub struct Rav1dFrameSize {
     pub have_render_size: u8,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameSkipMode {
     pub allowed: u8,
@@ -2494,7 +2517,7 @@ pub struct Rav1dFrameSkipMode {
     pub refs: [i8; 2],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader {
     pub size: Rav1dFrameSize,
