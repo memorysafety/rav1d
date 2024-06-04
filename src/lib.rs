@@ -603,7 +603,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
+pub(crate) fn rav1d_flush(c: &mut Rav1dContext) {
     let _ = mem::take(&mut c.in_0);
     let _ = mem::take(&mut c.out);
     let _ = mem::take(&mut c.cache);
