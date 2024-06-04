@@ -509,9 +509,9 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
 
 unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     mut dst_ptr: *mut BD::Pixel,
-    dst_stride: usize,
+    dst_stride: isize,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -619,7 +619,7 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
 unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -1574,7 +1574,7 @@ pub struct Rav1dMCDSPContext {
     pub resize: resize::Fn,
 }
 
-unsafe extern "C" fn put_8tap_c_erased<BD: BitDepth, const FILTER: usize>(
+unsafe extern "C" fn put_c_erased<BD: BitDepth, const FILTER: usize>(
     dst: *mut DynPixel,
     dst_stride: isize,
     src: *const DynPixel,
@@ -1591,12 +1591,16 @@ unsafe extern "C" fn put_8tap_c_erased<BD: BitDepth, const FILTER: usize>(
     let h = h as usize;
     let mx = mx as usize;
     let my = my as usize;
-    let filter = Filter2d::from_repr(FILTER).unwrap().hv();
+    let filter = Filter2d::from_repr(FILTER).unwrap();
+    let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
-    put_8tap_rust(dst, dst_stride, src, src_stride, w, h, mx, my, filter, bd);
+    match filter {
+        Filter2d::Bilinear => put_bilin_rust(dst, dst_stride, src, src_stride, w, h, mx, my, bd),
+        _ => put_8tap_rust(dst, dst_stride, src, src_stride, w, h, mx, my, hv, bd),
+    }
 }
 
-unsafe extern "C" fn put_8tap_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
+unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     dst: *mut DynPixel,
     dst_stride: isize,
     src: *const DynPixel,
@@ -1617,14 +1621,20 @@ unsafe extern "C" fn put_8tap_scaled_c_erased<BD: BitDepth, const FILTER: usize>
     let my = my as usize;
     let dx = dx as usize;
     let dy = dy as usize;
-    let filter = Filter2d::from_repr(FILTER).unwrap().hv();
+    let filter = Filter2d::from_repr(FILTER).unwrap();
+    let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
-    put_8tap_scaled_rust(
-        dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, filter, bd,
-    );
+    match filter {
+        Filter2d::Bilinear => {
+            put_bilin_scaled_rust(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bd)
+        }
+        _ => put_8tap_scaled_rust(
+            dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, hv, bd,
+        ),
+    }
 }
 
-unsafe extern "C" fn prep_8tap_c_erased<BD: BitDepth, const FILTER: usize>(
+unsafe extern "C" fn prep_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
     src: *const DynPixel,
     src_stride: isize,
@@ -1640,12 +1650,16 @@ unsafe extern "C" fn prep_8tap_c_erased<BD: BitDepth, const FILTER: usize>(
     let h = h as usize;
     let mx = mx as usize;
     let my = my as usize;
-    let filter = Filter2d::from_repr(FILTER).unwrap().hv();
+    let filter = Filter2d::from_repr(FILTER).unwrap();
+    let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
-    prep_8tap_rust(tmp, src, src_stride, w, h, mx, my, filter, bd);
+    match filter {
+        Filter2d::Bilinear => prep_bilin_rust(tmp, src, src_stride, w, h, mx, my, bd),
+        _ => prep_8tap_rust(tmp, src, src_stride, w, h, mx, my, hv, bd),
+    }
 }
 
-unsafe extern "C" fn prep_8tap_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
+unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
     src: *const DynPixel,
     src_stride: isize,
@@ -1664,110 +1678,15 @@ unsafe extern "C" fn prep_8tap_scaled_c_erased<BD: BitDepth, const FILTER: usize
     let my = my as usize;
     let dx = dx as usize;
     let dy = dy as usize;
-    let filter = Filter2d::from_repr(FILTER).unwrap().hv();
+    let filter = Filter2d::from_repr(FILTER).unwrap();
+    let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
-    prep_8tap_scaled_rust(tmp, src, src_stride, w, h, mx, my, dx, dy, filter, bd);
-}
-
-unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    src: *const DynPixel,
-    src_stride: isize,
-    w: i32,
-    h: i32,
-    mx: i32,
-    my: i32,
-    bitdepth_max: i32,
-) {
-    put_bilin_rust(
-        dst.cast(),
-        dst_stride,
-        src.cast(),
-        src_stride,
-        w as usize,
-        h as usize,
-        mx as usize,
-        my as usize,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
-    tmp: *mut i16,
-    src: *const DynPixel,
-    src_stride: isize,
-    w: i32,
-    h: i32,
-    mx: i32,
-    my: i32,
-    bitdepth_max: i32,
-) {
-    let tmp = std::slice::from_raw_parts_mut(tmp, (w * h) as usize);
-    prep_bilin_rust(
-        tmp,
-        src.cast(),
-        src_stride,
-        w as usize,
-        h as usize,
-        mx as usize,
-        my as usize,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    src: *const DynPixel,
-    src_stride: isize,
-    w: i32,
-    h: i32,
-    mx: i32,
-    my: i32,
-    dx: i32,
-    dy: i32,
-    bitdepth_max: i32,
-) {
-    put_bilin_scaled_rust(
-        dst.cast(),
-        dst_stride as usize,
-        src.cast(),
-        src_stride as usize,
-        w as usize,
-        h as usize,
-        mx as usize,
-        my as usize,
-        dx as usize,
-        dy as usize,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
-    tmp: *mut i16,
-    src: *const DynPixel,
-    src_stride: isize,
-    w: i32,
-    h: i32,
-    mx: i32,
-    my: i32,
-    dx: i32,
-    dy: i32,
-    bitdepth_max: i32,
-) {
-    prep_bilin_scaled_rust(
-        tmp,
-        src.cast(),
-        src_stride as usize,
-        w as usize,
-        h as usize,
-        mx as usize,
-        my as usize,
-        dx as usize,
-        dy as usize,
-        BD::from_c(bitdepth_max),
-    )
+    match filter {
+        Filter2d::Bilinear => {
+            prep_bilin_scaled_rust(tmp, src, src_stride, w, h, mx, my, dx, dy, bd)
+        }
+        _ => prep_8tap_scaled_rust(tmp, src, src_stride, w, h, mx, my, dx, dy, hv, bd),
+    }
 }
 
 /// # Safety
@@ -2052,52 +1971,52 @@ impl Rav1dMCDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
         Self {
             mc: enum_map!(Filter2d => mc::Fn; match key {
-                Regular8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {Regular8Tap as _}>),
-                RegularSmooth8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {RegularSmooth8Tap as _}>),
-                RegularSharp8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {RegularSharp8Tap as _}>),
-                SharpRegular8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {SharpRegular8Tap as _}>),
-                SharpSmooth8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {SharpSmooth8Tap as _}>),
-                Sharp8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {Sharp8Tap as _}>),
-                SmoothRegular8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {SmoothRegular8Tap as _}>),
-                Smooth8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {Smooth8Tap as _}>),
-                SmoothSharp8Tap => mc::Fn::new(put_8tap_c_erased::<BD, {SmoothSharp8Tap as _}>),
-                Bilinear => mc::Fn::new(put_bilin_c_erased::<BD>),
+                Regular8Tap => mc::Fn::new(put_c_erased::<BD, {Regular8Tap as _}>),
+                RegularSmooth8Tap => mc::Fn::new(put_c_erased::<BD, {RegularSmooth8Tap as _}>),
+                RegularSharp8Tap => mc::Fn::new(put_c_erased::<BD, {RegularSharp8Tap as _}>),
+                SharpRegular8Tap => mc::Fn::new(put_c_erased::<BD, {SharpRegular8Tap as _}>),
+                SharpSmooth8Tap => mc::Fn::new(put_c_erased::<BD, {SharpSmooth8Tap as _}>),
+                Sharp8Tap => mc::Fn::new(put_c_erased::<BD, {Sharp8Tap as _}>),
+                SmoothRegular8Tap => mc::Fn::new(put_c_erased::<BD, {SmoothRegular8Tap as _}>),
+                Smooth8Tap => mc::Fn::new(put_c_erased::<BD, {Smooth8Tap as _}>),
+                SmoothSharp8Tap => mc::Fn::new(put_c_erased::<BD, {SmoothSharp8Tap as _}>),
+                Bilinear => mc::Fn::new(put_c_erased::<BD, {Bilinear as _}>),
             }),
             mct: enum_map!(Filter2d => mct::Fn; match key {
-                Regular8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {Regular8Tap as _}>),
-                RegularSmooth8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {RegularSmooth8Tap as _}>),
-                RegularSharp8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {RegularSharp8Tap as _}>),
-                SharpRegular8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {SharpRegular8Tap as _}>),
-                SharpSmooth8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {SharpSmooth8Tap as _}>),
-                Sharp8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {Sharp8Tap as _}>),
-                SmoothRegular8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {SmoothRegular8Tap as _}>),
-                Smooth8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {Smooth8Tap as _}>),
-                SmoothSharp8Tap => mct::Fn::new(prep_8tap_c_erased::<BD, {SmoothSharp8Tap as _}>),
-                Bilinear => mct::Fn::new(prep_bilin_c_erased::<BD>),
+                Regular8Tap => mct::Fn::new(prep_c_erased::<BD, {Regular8Tap as _}>),
+                RegularSmooth8Tap => mct::Fn::new(prep_c_erased::<BD, {RegularSmooth8Tap as _}>),
+                RegularSharp8Tap => mct::Fn::new(prep_c_erased::<BD, {RegularSharp8Tap as _}>),
+                SharpRegular8Tap => mct::Fn::new(prep_c_erased::<BD, {SharpRegular8Tap as _}>),
+                SharpSmooth8Tap => mct::Fn::new(prep_c_erased::<BD, {SharpSmooth8Tap as _}>),
+                Sharp8Tap => mct::Fn::new(prep_c_erased::<BD, {Sharp8Tap as _}>),
+                SmoothRegular8Tap => mct::Fn::new(prep_c_erased::<BD, {SmoothRegular8Tap as _}>),
+                Smooth8Tap => mct::Fn::new(prep_c_erased::<BD, {Smooth8Tap as _}>),
+                SmoothSharp8Tap => mct::Fn::new(prep_c_erased::<BD, {SmoothSharp8Tap as _}>),
+                Bilinear => mct::Fn::new(prep_c_erased::<BD, {Bilinear as _}>),
             }),
             mc_scaled: enum_map!(Filter2d => mc_scaled::Fn; match key {
-                Regular8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {Regular8Tap as _}>),
-                RegularSmooth8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {RegularSmooth8Tap as _}>),
-                RegularSharp8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {RegularSharp8Tap as _}>),
-                SharpRegular8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {SharpRegular8Tap as _}>),
-                SharpSmooth8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {SharpSmooth8Tap as _}>),
-                Sharp8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {Sharp8Tap as _}>),
-                SmoothRegular8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {SmoothRegular8Tap as _}>),
-                Smooth8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {Smooth8Tap as _}>),
-                SmoothSharp8Tap => mc_scaled::Fn::new(put_8tap_scaled_c_erased::<BD, {SmoothSharp8Tap as _}>),
-                Bilinear => mc_scaled::Fn::new(put_bilin_scaled_c_erased::<BD>),
+                Regular8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {Regular8Tap as _}>),
+                RegularSmooth8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {RegularSmooth8Tap as _}>),
+                RegularSharp8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {RegularSharp8Tap as _}>),
+                SharpRegular8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {SharpRegular8Tap as _}>),
+                SharpSmooth8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {SharpSmooth8Tap as _}>),
+                Sharp8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {Sharp8Tap as _}>),
+                SmoothRegular8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {SmoothRegular8Tap as _}>),
+                Smooth8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {Smooth8Tap as _}>),
+                SmoothSharp8Tap => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {SmoothSharp8Tap as _}>),
+                Bilinear => mc_scaled::Fn::new(put_scaled_c_erased::<BD, {Bilinear as _}>),
             }),
             mct_scaled: enum_map!(Filter2d => mct_scaled::Fn; match key {
-                Regular8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {Regular8Tap as _}>),
-                RegularSmooth8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {RegularSmooth8Tap as _}>),
-                RegularSharp8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {RegularSharp8Tap as _}>),
-                SharpRegular8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {SharpRegular8Tap as _}>),
-                SharpSmooth8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {SharpSmooth8Tap as _}>),
-                Sharp8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {Sharp8Tap as _}>),
-                SmoothRegular8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {SmoothRegular8Tap as _}>),
-                Smooth8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {Smooth8Tap as _}>),
-                SmoothSharp8Tap => mct_scaled::Fn::new(prep_8tap_scaled_c_erased::<BD, {SmoothSharp8Tap as _}>),
-                Bilinear => mct_scaled::Fn::new(prep_bilin_scaled_c_erased::<BD>),
+                Regular8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {Regular8Tap as _}>),
+                RegularSmooth8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {RegularSmooth8Tap as _}>),
+                RegularSharp8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {RegularSharp8Tap as _}>),
+                SharpRegular8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {SharpRegular8Tap as _}>),
+                SharpSmooth8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {SharpSmooth8Tap as _}>),
+                Sharp8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {Sharp8Tap as _}>),
+                SmoothRegular8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {SmoothRegular8Tap as _}>),
+                Smooth8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {Smooth8Tap as _}>),
+                SmoothSharp8Tap => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {SmoothSharp8Tap as _}>),
+                Bilinear => mct_scaled::Fn::new(prep_scaled_c_erased::<BD, {Bilinear as _}>),
             }),
             avg: avg::Fn::new(avg_c_erased::<BD>),
             w_avg: w_avg::Fn::new(w_avg_c_erased::<BD>),
