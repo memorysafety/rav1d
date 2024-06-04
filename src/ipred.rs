@@ -1086,9 +1086,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
-    if !(angle > 180) {
-        unreachable!();
-    }
+    assert!(angle > 180);
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
     let mut left_out: [BD::Pixel; 128] = [0.into(); 128];
     let left: *const BD::Pixel;
