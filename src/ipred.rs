@@ -1227,7 +1227,8 @@ cfg_if! {
 unsafe fn ipred_filter_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft_in: *const BD::Pixel,
+    topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
     mut filt_idx: c_int,
@@ -1239,12 +1240,11 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     assert!(filt_idx < 5);
 
     let filter = &dav1d_filter_intra_taps[filt_idx as usize];
-    let mut top: *const BD::Pixel = &*topleft_in.offset(1) as *const BD::Pixel;
+    let mut top = topleft_in.as_ptr().add(topleft_off + 1);
     let mut y = 0;
     while y < height {
-        let mut topleft: *const BD::Pixel = &*topleft_in.offset(-y as isize) as *const BD::Pixel;
-        let mut left: *const BD::Pixel =
-            &*topleft.offset(-(1 as c_int) as isize) as *const BD::Pixel;
+        let mut topleft = topleft_in.as_ptr().add(topleft_off - y as usize);
+        let mut left = topleft.sub(1);
         let mut left_stride: ptrdiff_t = -(1 as c_int) as ptrdiff_t;
         let mut x = 0;
         while x < width {
@@ -1292,12 +1292,14 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
+    let topleft = reconstruct_topleft::<BD>(topleft_in, topleft_off);
     ipred_filter_rust(
         dst.cast(),
         stride,
-        topleft_in.cast(),
+        topleft,
+        topleft_off,
         width,
         height,
         filt_idx,
