@@ -211,7 +211,7 @@ unsafe fn padding<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn cdef_filter_block_c<BD: BitDepth>(
+unsafe fn cdef_filter_block_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
@@ -362,7 +362,7 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     let top = top.cast();
     let bottom = bottom.cast();
     let bd = BD::from_c(bitdepth_max);
-    cdef_filter_block_c(
+    cdef_filter_block_rust(
         dst,
         stride,
         left,
