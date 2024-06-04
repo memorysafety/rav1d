@@ -736,13 +736,7 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.frame_thread.out_delayed);
         }
         let _ = mem::take(&mut self.tiles);
-        for n in 0..8 {
-            if self.refs[n].p.p.frame_hdr.is_some() {
-                let _ = mem::take(&mut self.refs[n].p);
-            }
-            let _ = mem::take(&mut self.refs[n].refmvs);
-            let _ = mem::take(&mut self.refs[n].segmap);
-        }
+        let _ = mem::take(&mut self.refs);
         let _ = mem::take(&mut self.seq_hdr);
         let _ = mem::take(&mut self.frame_hdr);
         let _ = mem::take(&mut self.mastering_display);
