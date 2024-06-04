@@ -2,8 +2,10 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -19,7 +21,7 @@ use strum::FromRepr;
 use crate::include::common::bitdepth::bd_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     stride: ptrdiff_t,
     mask: &[u32; 3],
     lvl: *const [u8; 4],
@@ -27,24 +29,26 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl loopfilter_sb::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         f: &Rav1dFrameData,
-        dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
         w: c_int,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
+        let stride = dst.data.stride();
         let lvl = lvl.as_ptr();
         let b4_stride = f.b4_stride;
         let lut = &f.lf.lim_lut;
         let bd = f.bitdepth_max;
-        self.get()(dst, stride, mask, lvl, b4_stride, lut, w, bd)
+        let dst = FFISafe::new(&dst);
+        self.get()(dst_ptr, stride, mask, lvl, b4_stride, lut, w, bd, dst)
     }
 }
 
@@ -54,7 +58,7 @@ pub struct Rav1dLoopFilterDSPContext {
 
 #[inline(never)]
 unsafe fn loop_filter<BD: BitDepth>(
-    dst: *mut BD::Pixel,
+    dst: Rav1dPictureDataComponentOffset,
     E: u8,
     I: u8,
     H: u8,
@@ -67,10 +71,19 @@ unsafe fn loop_filter<BD: BitDepth>(
     let [F, E, I, H] = [1, E, I, H].map(|n| (n as i32) << bitdepth_min_8);
 
     for i in 0..4 {
-        let dst = dst.offset(i * stridea);
-        let dst = |stride_index| &mut *dst.offset(strideb * stride_index);
+        let dst = dst + (i * stridea);
+        let dst = |stride_index: isize| {
+            let dst = dst + (strideb * stride_index);
+            dst.data.index_mut::<BD>(dst.offset)
+        };
+
         let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
-        let set_dst = |stride_index, value: i32| *dst(stride_index) = value.as_::<BD::Pixel>();
+        let set_dst = |stride_index, pixel: i32| {
+            *dst(stride_index) = pixel.as_::<BD::Pixel>();
+        };
+        let set_dst_clipped = |stride_index, pixel: i32| {
+            *dst(stride_index) = bd.iclip_pixel(pixel);
+        };
 
         let mut p6 = 0;
         let mut p5 = 0;
@@ -216,20 +229,20 @@ unsafe fn loop_filter<BD: BitDepth>(
                 let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
                 let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
 
-                *dst(-1) = bd.iclip_pixel(p0 + f2);
-                *dst(0) = bd.iclip_pixel(q0 - f1);
+                set_dst_clipped(-1, p0 + f2);
+                set_dst_clipped(0, q0 - f1);
             } else {
                 let f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
 
                 let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
                 let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
 
-                *dst(-1) = bd.iclip_pixel(p0 + f2);
-                *dst(0) = bd.iclip_pixel(q0 - f1);
+                set_dst_clipped(-1, p0 + f2);
+                set_dst_clipped(0, q0 - f1);
 
                 let f = (f1 + 1) >> 1;
-                *dst(-2) = bd.iclip_pixel(p1 + f);
-                *dst(1) = bd.iclip_pixel(q1 - f);
+                set_dst_clipped(-2, p1 + f);
+                set_dst_clipped(1, q1 - f);
             }
         }
     }
@@ -248,8 +261,7 @@ enum YUV {
 }
 
 unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
-    mut dst: *mut BD::Pixel,
-    stride: isize,
+    mut dst: Rav1dPictureDataComponentOffset,
     vmask: &[u32; 3],
     mut l: *const [u8; 4],
     b4_stride: usize,
@@ -260,7 +272,7 @@ unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize
     let hv = HV::from_repr(HV).unwrap();
     let yuv = YUV::from_repr(YUV).unwrap();
 
-    let stride = BD::pxstride(stride);
+    let stride = dst.data.pixel_stride::<BD>();
     let (stridea, strideb) = match hv {
         HV::H => (stride, 1),
         HV::V => (1, stride),
@@ -308,25 +320,30 @@ unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize
             loop_filter(dst, E, I, H, stridea, strideb, idx, bd);
         }
         xy <<= 1;
-        dst = dst.offset(4 * stridea);
+        dst += 4 * stridea;
         l = l.add(b4_stridea);
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`loopfilter_sb::Fn::call`].
 unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, const YUV: usize>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    _dst_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
     b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     wh: c_int,
     bitdepth_max: c_int,
+    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let dst = dst.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `loopfilter_sb::Fn::call`.
+    let dst = *unsafe { FFISafe::get(dst) };
     let b4_stride = b4_stride as usize;
     let bd = BD::from_c(bitdepth_max);
-    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, stride, vmask, l, b4_stride, lut, wh, bd)
+    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, vmask, l, b4_stride, lut, wh, bd)
 }
 
 impl Rav1dLoopFilterDSPContext {
