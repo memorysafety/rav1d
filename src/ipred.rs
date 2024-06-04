@@ -930,7 +930,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
 }
 
 unsafe fn ipred_z2_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
@@ -943,10 +943,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    if !(angle > 90 && angle < 180) {
-        unreachable!();
-    }
+    angle &= 511;
+    assert!(angle > 90 && angle < 180);
     let mut dy = dav1d_dr_intra_derivative[(angle - 90 >> 1) as usize] as c_int;
     let mut dx = dav1d_dr_intra_derivative[(180 - angle >> 1) as usize] as c_int;
     let upsample_left = if enable_intra_edge_filter != 0 {
@@ -959,15 +957,16 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     } else {
         false
     };
-    let mut edge = [0.into(); 129];
+    let mut edge = [0.into(); 64 + 64 + 1];
     let topleft = 64;
+
     if upsample_above {
         upsample_edge::<BD>(
             &mut edge[topleft..],
             width + 1,
             topleft_in,
             topleft_in_off,
-            0 as c_int,
+            0,
             width + 1,
             bd,
         );
@@ -976,22 +975,22 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, angle - 90, is_sm)
         } else {
-            0 as c_int
+            0
         };
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut edge[topleft + 1..],
                 width,
-                0 as c_int,
+                0,
                 max_width,
                 topleft_in,
                 topleft_in_off + 1,
-                -(1 as c_int),
+                -1,
                 width,
                 filter_strength,
             );
         } else {
-            let width = width.try_into().unwrap();
+            let width = width as usize;
             BD::pixel_copy(
                 &mut edge[topleft + 1..][..width],
                 &topleft_in[topleft_in_off + 1..][..width],
@@ -1005,7 +1004,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             height + 1,
             topleft_in,
             topleft_in_off - height as usize,
-            0 as c_int,
+            0,
             height + 1,
             bd,
         );
@@ -1014,7 +1013,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         let filter_strength_0 = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, 180 - angle, is_sm)
         } else {
-            0 as c_int
+            0
         };
         if filter_strength_0 != 0 {
             filter_edge::<BD>(
@@ -1024,50 +1023,47 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 height,
                 topleft_in,
                 topleft_in_off - height as usize,
-                0 as c_int,
+                0,
                 height + 1,
                 filter_strength_0,
             );
         } else {
+            let height = height as usize;
             BD::pixel_copy(
-                &mut edge[topleft - height as usize..][..height as usize],
-                &topleft_in[topleft_in_off - height as usize..][..height as usize],
-                height.try_into().unwrap(),
+                &mut edge[topleft - height..][..height],
+                &topleft_in[topleft_in_off - height..][..height],
+                height,
             );
         }
     }
     edge[topleft] = topleft_in[topleft_in_off];
-    let base_inc_x = 1 + upsample_above as c_int;
-    let left = edge[topleft - (1 + upsample_left as usize)..].as_mut_ptr();
-    let mut y = 0;
-    let mut xpos = (1 + (upsample_above as c_int) << 6) - dx;
-    while y < height {
-        let mut base_x = xpos >> 6;
-        let frac_x = xpos & 0x3e as c_int;
-        let mut x = 0;
-        let mut ypos = (y << 6 + upsample_left as c_int) - dy;
-        while x < width {
-            let v;
-            if base_x >= 0 {
-                v = edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
-                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x;
+
+    let base_inc_x = 1 + upsample_above as usize;
+    let left = topleft - (1 + upsample_left as usize);
+    for y in 0..height {
+        let xpos = (1 + (upsample_above as c_int) << 6) - (dx * (y + 1));
+        let base_x = xpos >> 6;
+        let frac_x = xpos & 0x3e;
+
+        let dst_slice = slice::from_raw_parts_mut(
+            dst.offset(BD::pxstride(stride) * y as isize),
+            width as usize,
+        );
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1) as c_int);
+            let base_x = base_x + (base_inc_x * x) as c_int;
+            let v = if base_x >= 0 {
+                edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
+                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x
             } else {
                 let base_y = ypos >> 6;
-                if !(base_y >= -(1 + upsample_left as c_int)) {
-                    unreachable!();
-                }
-                let frac_y = ypos & 0x3e as c_int;
-                v = (*left.offset(-base_y as isize)).as_::<c_int>() * (64 - frac_y)
-                    + (*left.offset(-(base_y + 1) as isize)).as_::<c_int>() * frac_y;
-            }
-            *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
-            x += 1;
-            base_x += base_inc_x;
-            ypos -= dy;
+                assert!(base_y >= -(1 + upsample_left as c_int));
+                let frac_y = ypos & 0x3e;
+                edge[left.wrapping_add_signed(-base_y as isize)].as_::<c_int>() * (64 - frac_y)
+                    + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>() * frac_y
+            };
+            *dst = (v + 32 >> 6).as_::<BD::Pixel>();
         }
-        y += 1;
-        xpos -= dx;
-        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
