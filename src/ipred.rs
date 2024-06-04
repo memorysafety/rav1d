@@ -1083,6 +1083,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     _max_height: c_int,
     bd: BD,
 ) {
+    let stride = BD::pxstride(stride);
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511;
@@ -1151,11 +1152,10 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
                     * (64 - frac)
                     + left[left_off.wrapping_add_signed(-(base + 1) as isize)].as_::<c_int>()
                         * frac;
-                *dst.offset(y as isize * BD::pxstride(stride) + x as isize) =
-                    (v + 32 >> 6).as_::<BD::Pixel>();
+                *dst.offset(y as isize * stride + x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
                 for y in y..height {
-                    *dst.offset(y as isize * BD::pxstride(stride) + x as isize) =
+                    *dst.offset(y as isize * stride + x as isize) =
                         left[left_off.wrapping_add_signed(-max_base_y as isize)];
                 }
                 break;
