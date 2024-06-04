@@ -128,18 +128,19 @@ pub fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
     )
 }
 
+const TMP_STRIDE: usize = 12;
+
 #[inline]
-pub fn fill(tmp: &mut [i16], stride: usize, w: usize, h: usize) {
+pub fn fill(tmp: &mut [i16], w: usize, h: usize) {
     // Use a value that's a large positive number when interpreted as unsigned,
     // and a large negative number when interpreted as signed.
     for y in 0..h {
-        tmp[y * stride..][..w].fill(i16::MIN);
+        tmp[y * TMP_STRIDE..][..w].fill(i16::MIN);
     }
 }
 
 unsafe fn padding<BD: BitDepth>(
-    tmp: &mut [i16; 12 * 12],
-    tmp_stride: usize,
+    tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
     src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
@@ -157,52 +158,42 @@ unsafe fn padding<BD: BitDepth>(
     let mut y_start = 2 - 2;
     let mut y_end = h + 2 + 2;
     if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
-        fill(tmp, tmp_stride, w + 4, 2);
+        fill(tmp, w + 4, 2);
         y_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
-        fill(&mut tmp[(h + 2) * tmp_stride..], tmp_stride, w + 4, 2);
+        fill(&mut tmp[(h + 2) * TMP_STRIDE..], w + 4, 2);
         y_end -= 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_LEFT) {
-        fill(
-            &mut tmp[y_start * tmp_stride..],
-            tmp_stride,
-            2,
-            y_end - y_start,
-        );
+        fill(&mut tmp[y_start * TMP_STRIDE..], 2, y_end - y_start);
         x_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
-        fill(
-            &mut tmp[y_start * tmp_stride + w + 2..],
-            tmp_stride,
-            2,
-            y_end - y_start,
-        );
+        fill(&mut tmp[y_start * TMP_STRIDE + w + 2..], 2, y_end - y_start);
         x_end -= 2;
     }
 
     for y in y_start..2 {
         for x in x_start..x_end {
-            tmp[x + y * tmp_stride] = (*top.add(x)).as_::<i16>();
+            tmp[x + y * TMP_STRIDE] = (*top.add(x)).as_::<i16>();
         }
         top = top.offset(BD::pxstride(src_stride));
     }
     for y in 0..h {
         for x in x_start..2 {
-            tmp[x + (y + 2) * tmp_stride] = left[y][x].as_::<i16>();
+            tmp[x + (y + 2) * TMP_STRIDE] = left[y][x].as_::<i16>();
         }
     }
     for y in 0..h {
-        let tmp = &mut tmp[(y + 2) * tmp_stride..];
+        let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
         for x in if y < h { 2 } else { x_start }..x_end {
             tmp[x] = (*src.add(x)).as_::<i16>();
         }
         src = src.offset(BD::pxstride(src_stride));
     }
     for y in h + 2..y_end {
-        let tmp = &mut tmp[y * tmp_stride..];
+        let tmp = &mut tmp[y * TMP_STRIDE..];
         for x in x_start..x_end {
             tmp[x] = (*bottom.add(x)).as_::<i16>();
         }
@@ -228,15 +219,14 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
 ) {
     let [dir, w, h] = [dir, w, h].map(|it| it as usize);
 
-    let tmp_stride = 12;
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
-    let mut tmp = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
+    let mut tmp = [0; TMP_STRIDE * TMP_STRIDE]; // `12 * 12` is the maximum value of `TMP_STRIDE * (h + 4)`.
 
     padding::<BD>(
-        &mut tmp, tmp_stride, dst, dst_stride, left, top, bottom, w as usize, h as usize, edges,
+        &mut tmp, dst, dst_stride, left, top, bottom, w as usize, h as usize, edges,
     );
 
-    let tmp_offset = 2 * tmp_stride + 2;
+    let tmp_offset = 2 * TMP_STRIDE + 2;
     let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
     if pri_strength != 0 {
@@ -246,7 +236,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         if sec_strength != 0 {
             let sec_shift = damping - sec_strength.ilog2() as c_int;
             for y in 0..h {
-                let tmp = &mut tmp[y * tmp_stride..];
+                let tmp = &mut tmp[y * TMP_STRIDE..];
                 for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
                     let mut sum = 0;
@@ -295,7 +285,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         } else {
             // pri_strength only
             for y in 0..h {
-                let tmp = &mut tmp[y * tmp_stride..];
+                let tmp = &mut tmp[y * TMP_STRIDE..];
                 for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
                     let mut sum = 0;
@@ -318,7 +308,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         // sec_strength only
         let sec_shift = damping - sec_strength.ilog2() as c_int;
         for y in 0..h {
-            let tmp = &mut tmp[y * tmp_stride..];
+            let tmp = &mut tmp[y * TMP_STRIDE..];
             for x in 0..w {
                 let px = (*dst.offset(x as isize)).as_::<c_int>();
                 let mut sum = 0;
