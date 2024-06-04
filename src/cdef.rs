@@ -4,7 +4,9 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cpu::CpuFlags;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
@@ -93,23 +95,26 @@ impl cdef::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
-    dst: *const DynPixel,
+    dst_ptr: *const DynPixel,
     dst_stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> c_int);
 
 impl cdef_dir::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *const BD::Pixel,
-        dst_stride: ptrdiff_t,
+        dst: Rav1dPictureDataComponentOffset,
         variance: &mut c_uint,
         bd: BD,
     ) -> c_int {
-        let dst = dst.cast();
+        let dst_ptr = dst.data.as_ptr_at::<BD>(dst.offset).cast();
+        let dst_stride = dst.data.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, variance, bd)
+        let dst = FFISafe::new(&dst);
+        // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, variance, bd, dst) }
     }
 }
 
@@ -372,18 +377,25 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`cdef_dir::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
-    img: *const DynPixel,
-    stride: ptrdiff_t,
+    _img_ptr: *const DynPixel,
+    _stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
+    img: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> c_int {
-    cdef_find_dir_rust(img.cast(), stride, variance, BD::from_c(bitdepth_max))
+    // SAFETY: Was passed as `FFISafe::new(_)` in `cdef_dir::Fn::call`.
+    let img = *unsafe { FFISafe::get(img) };
+    let bd = BD::from_c(bitdepth_max);
+    cdef_find_dir_rust(img, variance, bd)
 }
 
-unsafe fn cdef_find_dir_rust<BD: BitDepth>(
-    img: *const BD::Pixel,
-    stride: ptrdiff_t,
+fn cdef_find_dir_rust<BD: BitDepth>(
+    img: Rav1dPictureDataComponentOffset,
     variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
@@ -394,7 +406,8 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
 
     let (w, h) = (8, 8);
     for y in 0..h {
-        let img = slice::from_raw_parts(img.offset(y as isize * BD::pxstride(stride)), w);
+        let img = img + (y as isize * img.data.pixel_stride::<BD>());
+        let img = &*img.data.slice::<BD, _>((img.offset.., ..w));
         for x in 0..w {
             let px = (img[x].as_::<c_int>() >> bitdepth_min_8) - 128;
 

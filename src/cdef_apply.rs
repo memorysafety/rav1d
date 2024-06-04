@@ -265,12 +265,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.dsp.cdef.dir.call::<BD>(
-                                bptrs[0].data.as_ptr_at::<BD>(bptrs[0].offset),
-                                bptrs[0].data.stride(),
-                                &mut variance,
-                                bd,
-                            )
+                            f.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };
