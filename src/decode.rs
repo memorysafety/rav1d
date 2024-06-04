@@ -1827,18 +1827,15 @@ fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts_c.msac.rng);
                 }
                 if use_y_pal {
-                    // SAFETY: Function call with all safe args, will be marked safe.
-                    pal_sz[0] = unsafe {
-                        (bd_fn.read_pal_plane)(
-                            t,
-                            f,
-                            ts_c,
-                            false,
-                            sz_ctx,
-                            bx4 as usize,
-                            by4 as usize,
-                        )
-                    };
+                    pal_sz[0] = (bd_fn.read_pal_plane)(
+                        t,
+                        f,
+                        ts_c,
+                        false,
+                        sz_ctx,
+                        bx4 as usize,
+                        by4 as usize,
+                    );
                 }
             }
 
@@ -1853,11 +1850,7 @@ fn decode_b(
                 }
                 if use_uv_pal {
                     // see aomedia bug 2183 for why we use luma coordinates
-                    //
-                    // SAFETY: Function call with all safe args, will be marked safe.
-                    pal_sz[1] = unsafe {
-                        (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize)
-                    };
+                    pal_sz[1] = (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
         }
@@ -2083,17 +2076,7 @@ fn decode_b(
             },
         );
         if pal_sz[0] != 0 {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe {
-                (bd_fn.copy_pal_block_y)(
-                    t,
-                    f,
-                    bx4 as usize,
-                    by4 as usize,
-                    bw4 as usize,
-                    bh4 as usize,
-                )
-            };
+            (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
             CaseSet::<32, false>::many(
@@ -2105,17 +2088,14 @@ fn decode_b(
                 },
             );
             if pal_sz[1] != 0 {
-                // SAFEETY: Function call with all safe args, will be marked safe.
-                unsafe {
-                    (bd_fn.copy_pal_block_uv)(
-                        t,
-                        f,
-                        bx4 as usize,
-                        by4 as usize,
-                        bw4 as usize,
-                        bh4 as usize,
-                    );
-                }
+                (bd_fn.copy_pal_block_uv)(
+                    t,
+                    f,
+                    bx4 as usize,
+                    by4 as usize,
+                    bw4 as usize,
+                    bh4 as usize,
+                );
             }
         }
         let frame_hdr = f.frame_hdr();
@@ -4715,14 +4695,6 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
             }
         }
     }
-
-    // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
-    // plane here to avoid having additional in-loop branches in various places.
-    // We never use those values, so it doesn't really matter what they point
-    // at, as long as the offsets are valid.
-    let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
-    f.lf.p = array::from_fn(|i| has_chroma * i);
-    f.lf.sr_p = array::from_fn(|i| has_chroma * i);
 
     Ok(())
 }

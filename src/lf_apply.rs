@@ -1,6 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dBitDepthDSPContext;
@@ -12,6 +13,7 @@ use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::unstable_extensions::as_chunks;
 use crate::src::unstable_extensions::flatten;
 use libc::ptrdiff_t;
+use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -27,9 +29,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     dst: &DisjointMut<AlignedVec64<u8>>,
     mut dst_offset: usize, // in pixel units
     dst_stride: ptrdiff_t,
-    src: &[BD::Pixel],
-    mut src_offset: usize,
-    src_stride: ptrdiff_t,
+    mut src: Rav1dPictureDataComponentOffset,
     ss_ver: c_int,
     sb128: u8,
     mut row: c_int,
@@ -44,17 +44,17 @@ unsafe fn backup_lpf<BD: BitDepth>(
     resize_start: [c_int; 2],
     bd: BD,
 ) {
+    let src_w = src_w as usize;
+
     let cdef_backup = (lr_backup == 0) as c_int;
     let dst_w = if frame_hdr.size.super_res.enabled {
-        frame_hdr.size.width[1] + ss_hor >> ss_hor
+        (frame_hdr.size.width[1] + ss_hor) as usize >> ss_hor
     } else {
         src_w
     };
     // The first stripe of the frame is shorter by 8 luma pixel rows.
-    let mut stripe_h =
-        ((64 as c_int) << (cdef_backup & sb128 as c_int)) - 8 * (row == 0) as c_int >> ss_ver;
-    src_offset =
-        (src_offset as isize + (stripe_h - 2) as isize * BD::pxstride(src_stride)) as usize;
+    let mut stripe_h = (64 << (cdef_backup & sb128 as c_int)) - 8 * (row == 0) as c_int >> ss_ver;
+    src += (stripe_h - 2) as isize * src.data.pixel_stride::<BD>();
     if c.tc.len() == 1 {
         if row != 0 {
             let top = 4 << sb128;
@@ -73,13 +73,9 @@ unsafe fn backup_lpf<BD: BitDepth>(
 
             for i in 0..4 {
                 BD::pixel_copy(
-                    &mut dst.mut_slice_as(
-                        dst_idx + i * px_abs_stride..dst_idx + i * px_abs_stride + dst_w as usize,
-                    ),
-                    &dst.slice_as(
-                        src_idx + i * px_abs_stride..src_idx + i * px_abs_stride + dst_w as usize,
-                    ),
-                    dst_w as usize,
+                    &mut dst.mut_slice_as((dst_idx + i * px_abs_stride.., ..dst_w)),
+                    &dst.slice_as((src_idx + i * px_abs_stride.., ..dst_w)),
+                    dst_w,
                 );
             }
         }
@@ -88,23 +84,22 @@ unsafe fn backup_lpf<BD: BitDepth>(
     if lr_backup != 0 && frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
-            let mut dst_guard = dst.mut_slice_as(dst_offset..dst_offset + dst_w as usize);
+            let mut dst_guard = dst.mut_slice_as((dst_offset.., ..dst_w));
             dsp.mc.resize.call::<BD>(
                 dst_guard.as_mut_ptr(),
                 dst_stride,
-                src.as_ptr().add(src_offset),
-                src_stride,
-                dst_w,
+                src.data.as_ptr_at::<BD>(src.offset),
+                src.data.stride(),
+                dst_w as c_int,
                 n_lines,
-                src_w,
+                src_w as c_int,
                 resize_step[ss_hor as usize],
                 resize_start[ss_hor as usize],
                 bd,
             );
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
-            src_offset =
-                (src_offset as isize + stripe_h as isize * BD::pxstride(src_stride)) as usize;
+            src += stripe_h as isize * src.data.pixel_stride::<BD>();
             dst_offset =
                 (dst_offset as isize + n_lines as isize * BD::pxstride(dst_stride)) as usize;
 
@@ -116,9 +111,9 @@ unsafe fn backup_lpf<BD: BitDepth>(
                     (dst_offset - dst_abs_px_stride, dst_offset)
                 };
                 BD::pixel_copy(
-                    &mut dst.mut_slice_as(dst_idx..dst_idx + dst_w as usize),
-                    &dst.slice_as(src_idx..src_idx + dst_w as usize),
-                    dst_w as usize,
+                    &mut dst.mut_slice_as((dst_idx.., ..dst_w)),
+                    &dst.slice_as((src_idx.., ..dst_w)),
+                    dst_w,
                 );
                 dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
             }
@@ -130,9 +125,9 @@ unsafe fn backup_lpf<BD: BitDepth>(
                 let dst_abs_px_stride = BD::pxstride(dst_stride.unsigned_abs());
                 if i != n_lines {
                     BD::pixel_copy(
-                        &mut dst.mut_slice_as(dst_offset..dst_offset + src_w as usize),
-                        &src[src_offset..],
-                        src_w as usize,
+                        &mut dst.mut_slice_as((dst_offset.., ..src_w)),
+                        &src.data.slice::<BD, _>((src.offset.., ..src_w)),
+                        src_w,
                     );
                 } else {
                     let (src_idx, dst_idx) = if dst_stride < 0 {
@@ -141,18 +136,17 @@ unsafe fn backup_lpf<BD: BitDepth>(
                         (dst_offset - dst_abs_px_stride, dst_offset)
                     };
                     BD::pixel_copy(
-                        &mut dst.mut_slice_as(dst_idx..dst_idx + src_w as usize),
-                        &dst.slice_as(src_idx..src_idx + src_w as usize),
-                        src_w as usize,
+                        &mut dst.mut_slice_as((dst_idx.., ..src_w)),
+                        &dst.slice_as((src_idx.., ..src_w)),
+                        src_w,
                     )
                 }
                 dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
-                src_offset = (src_offset as isize + BD::pxstride(src_stride)) as usize;
+                src += src.data.pixel_stride::<BD>();
             }
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
-            src_offset =
-                src_offset.wrapping_add_signed((stripe_h - 4) as isize * BD::pxstride(src_stride));
+            src += (stripe_h - 4) as isize * src.data.pixel_stride::<BD>();
         }
     };
 }
@@ -160,8 +154,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
-    src: &[&mut [BD::Pixel]; 3],
-    src_offset: &[usize; 2],
+    src: [Rav1dPictureDataComponentOffset; 3],
     sby: c_int,
 ) {
     let bd = BD::from_c(f.bitdepth_max);
@@ -169,24 +162,16 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     let have_tt = (c.tc.len() > 1) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
-    let offset = 8 * (sby != 0) as c_int;
-    let src_stride = &f.cur.stride;
-    let lr_stride = &f.sr_cur.p.stride;
+    let offset_y = 8 * (sby != 0) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let tt_off = have_tt * sby * ((4 as c_int) << seq_hdr.sb128);
-
-    let src_y_stride = BD::pxstride(src_stride[0]);
-    let src_uv_stride = BD::pxstride(src_stride[1]);
-    let y_stride = BD::pxstride(lr_stride[0]);
-    let uv_stride = BD::pxstride(lr_stride[1]);
-
-    let y_offset = tt_off as isize * y_stride;
-    let uv_offset = tt_off as isize * uv_stride;
-    let dst_offset = [
-        f.lf.lr_lpf_line[0].wrapping_add_signed(y_offset),
-        f.lf.lr_lpf_line[1].wrapping_add_signed(uv_offset),
-        f.lf.lr_lpf_line[2].wrapping_add_signed(uv_offset),
-    ];
+    let tt_off = have_tt * sby * (4 << seq_hdr.sb128);
+    let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
+    let dst = array::from_fn::<_, 3, _>(|i| {
+        let data = &sr_cur_data[i];
+        let offset =
+            f.lf.lr_lpf_line[i].wrapping_add_signed(tt_off as isize * data.pixel_stride::<BD>());
+        Rav1dPictureDataComponentOffset { data, offset }
+    });
 
     // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
@@ -195,16 +180,14 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let h = f.cur.p.h;
         let w = f.bw << 2;
         let row_h = cmp::min((sby + 1) << 6 + seq_hdr.sb128, h - 1);
-        let y_stripe = (sby << 6 + seq_hdr.sb128) - offset;
+        let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
         if restore_planes & LR_RESTORE_Y as c_int != 0 || resize == 0 {
             backup_lpf::<BD>(
                 c,
                 &f.lf.lr_line_buf,
-                dst_offset[0],
-                lr_stride[0],
-                src[0],
-                (src_offset[0] as isize - offset as isize * src_y_stride) as usize,
-                src_stride[0],
+                dst[0].offset,
+                dst[0].data.stride(),
+                src[0] - (offset_y as isize * src[0].data.pixel_stride::<BD>()),
                 0,
                 seq_hdr.sb128,
                 y_stripe,
@@ -221,18 +204,16 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             );
         }
         if have_tt != 0 && resize != 0 {
-            let cdef_off_y: ptrdiff_t = (sby * 4) as isize * src_y_stride;
-            let cdef_plane_y_sz = 4 * f.sbh as isize * src_y_stride;
-            let y_span = cdef_plane_y_sz - src_y_stride;
+            let cdef_off_y = (sby * 4) as isize * src[0].data.pixel_stride::<BD>();
+            let cdef_plane_y_sz = 4 * f.sbh as isize * src[0].data.pixel_stride::<BD>();
+            let y_span = cdef_plane_y_sz - src[0].data.pixel_stride::<BD>();
             let cdef_line_start = (f.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
                 &f.lf.cdef_line_buf,
                 cdef_line_start + (cdef_off_y - cmp::min(y_span, 0)) as usize,
-                src_stride[0],
-                src[0],
-                (src_offset[0] as isize - offset as isize * src_y_stride as isize) as usize,
-                src_stride[0],
+                src[0].data.stride(),
+                src[0] - (offset_y as isize * src[0].data.pixel_stride::<BD>()),
                 0,
                 seq_hdr.sb128,
                 y_stripe,
@@ -257,19 +238,17 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let h_0 = f.cur.p.h + ss_ver >> ss_ver;
         let w_0 = f.bw << 2 - ss_hor;
         let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128 as c_int, h_0 - 1);
-        let offset_uv = offset >> ss_ver;
+        let offset_uv = offset_y >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
-        let cdef_off_uv: ptrdiff_t = sby as isize * 4 * src_uv_stride;
+        let cdef_off_uv = sby as isize * 4 * src[1].data.pixel_stride::<BD>();
         if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
                     c,
                     &f.lf.lr_line_buf,
-                    dst_offset[1],
-                    lr_stride[1],
-                    src[1],
-                    (src_offset[1] as isize - offset_uv as isize * src_uv_stride) as usize,
-                    src_stride[1],
+                    dst[1].offset,
+                    dst[1].data.stride(),
+                    src[1] - (offset_uv as isize * src[1].data.pixel_stride::<BD>()),
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -286,18 +265,16 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 );
             }
             if have_tt != 0 && resize != 0 {
-                let cdef_plane_uv_sz = 4 * f.sbh as isize * src_uv_stride;
-                let uv_span = cdef_plane_uv_sz - src_uv_stride;
+                let cdef_plane_uv_sz = 4 * f.sbh as isize * src[1].data.pixel_stride::<BD>();
+                let uv_span = cdef_plane_uv_sz - src[1].data.pixel_stride::<BD>();
                 let cdef_line_start =
                     (f.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
                     &f.lf.cdef_line_buf,
                     cdef_line_start + (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
-                    src_stride[1],
-                    src[1],
-                    (src_offset[1] as isize - offset_uv as isize * src_uv_stride) as usize,
-                    src_stride[1],
+                    src[1].data.stride(),
+                    src[1] - (offset_uv as isize * src[1].data.pixel_stride::<BD>()),
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -319,11 +296,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 backup_lpf::<BD>(
                     c,
                     &f.lf.lr_line_buf,
-                    dst_offset[2],
-                    lr_stride[1],
-                    src[2],
-                    (src_offset[1] as isize - offset_uv as isize * src_uv_stride) as usize,
-                    src_stride[1],
+                    dst[2].offset,
+                    dst[2].data.stride(),
+                    src[2] - (offset_uv as isize * src[2].data.pixel_stride::<BD>()),
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -340,18 +315,16 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 );
             }
             if have_tt != 0 && resize != 0 {
-                let cdef_plane_uv_sz = 4 * f.sbh as isize * src_uv_stride;
-                let uv_span = cdef_plane_uv_sz - src_uv_stride;
+                let cdef_plane_uv_sz = 4 * f.sbh as isize * src[2].data.pixel_stride::<BD>();
+                let uv_span = cdef_plane_uv_sz - src[2].data.pixel_stride::<BD>();
                 let cdef_line_start =
                     (f.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
                     &f.lf.cdef_line_buf,
                     cdef_line_start + (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
-                    src_stride[1],
-                    src[2],
-                    (src_offset[1] as isize - offset_uv as isize * src_uv_stride) as usize,
-                    src_stride[1],
+                    src[2].data.stride(),
+                    src[2] - (offset_uv as isize * src[2].data.pixel_stride::<BD>()),
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -390,9 +363,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[AtomicU16; 2]; 3]; 32],
-    dst: &mut [BD::Pixel],
-    dst_offset: usize,
-    ls: ptrdiff_t,
+    y_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
     starty4: c_int,
     endy4: c_int,
@@ -418,8 +389,8 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[2] = mask[x][2][1].load(Ordering::Relaxed) as u32;
             }
             f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
-                dst.as_mut_ptr().add(dst_offset + x * 4),
-                ls,
+                y_dst.data.as_mut_ptr_at::<BD>(y_dst.offset + x * 4),
+                y_dst.data.stride(),
                 &hmask,
                 &lvl[x..],
                 b4_stride,
@@ -438,9 +409,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[AtomicU16; 2]; 3]; 32],
-    dst: &mut [BD::Pixel],
-    mut dst_offset: usize,
-    ls: ptrdiff_t,
+    mut y_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
     starty4: c_int,
     endy4: c_int,
@@ -461,8 +430,8 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                     | (mask[y as usize][2][1].load(Ordering::Relaxed) as u32) << 16,
             ];
             f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
-                dst.as_mut_ptr().add(dst_offset),
-                ls,
+                y_dst.data.as_mut_ptr_at::<BD>(y_dst.offset),
+                y_dst.data.stride(),
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 1),
                 b4_stride,
@@ -471,7 +440,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 bd,
             );
         }
-        dst_offset = (dst_offset as isize + 4 * BD::pxstride(ls)) as usize;
+        y_dst += 4 * y_dst.data.pixel_stride::<BD>();
     }
 }
 
@@ -482,10 +451,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[AtomicU16; 2]; 2]; 32],
-    u: &mut [BD::Pixel],
-    v: &mut [BD::Pixel],
-    uv_offset: usize,
-    ls: ptrdiff_t,
+    u_dst: Rav1dPictureDataComponentOffset,
+    v_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
     starty4: c_int,
     endy4: c_int,
@@ -512,8 +479,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             }
             // hmask[2] = 0; Already initialized to 0 above
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
-                u.as_mut_ptr().add(uv_offset + x * 4),
-                ls,
+                u_dst.data.as_mut_ptr_at::<BD>(u_dst.offset + x * 4),
+                u_dst.data.stride(),
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 2),
                 b4_stride,
@@ -522,8 +489,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 bd,
             );
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
-                v.as_mut_ptr().add(uv_offset + x * 4),
-                ls,
+                v_dst.data.as_mut_ptr_at::<BD>(v_dst.offset + x * 4),
+                v_dst.data.stride(),
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 3),
                 b4_stride,
@@ -542,17 +509,14 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[AtomicU16; 2]; 2]; 32],
-    u: &mut [BD::Pixel],
-    v: &mut [BD::Pixel],
-    uv_offset: usize,
-    ls: ptrdiff_t,
+    mut u_dst: Rav1dPictureDataComponentOffset,
+    mut v_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
     starty4: c_int,
     endy4: c_int,
     ss_hor: c_int,
 ) {
     let bd = BD::from_c(f.bitdepth_max);
-    let mut off_l = uv_offset as ptrdiff_t;
 
     //                                 block1
     // filter edges between rows (e.g. ------)
@@ -567,8 +531,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 0,
             ];
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
-                u.as_mut_ptr().offset(off_l),
-                ls,
+                u_dst.data.as_mut_ptr_at::<BD>(u_dst.offset),
+                u_dst.data.stride(),
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 2),
                 b4_stride,
@@ -577,8 +541,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 bd,
             );
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
-                v.as_mut_ptr().offset(off_l),
-                ls,
+                v_dst.data.as_mut_ptr_at::<BD>(v_dst.offset),
+                v_dst.data.stride(),
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 3),
                 b4_stride,
@@ -587,14 +551,15 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 bd,
             );
         }
-        off_l += 4 * BD::pxstride(ls);
+
+        u_dst += 4 * u_dst.data.pixel_stride::<BD>();
+        v_dst += 4 * v_dst.data.pixel_stride::<BD>();
     }
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     f: &Rav1dFrameData,
-    p: &mut [&mut [BD::Pixel]; 3],
-    p_offset: &[usize; 2],
+    [py, pu, pv]: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
     sby: c_int,
     start_of_tile_row: c_int,
@@ -705,25 +670,21 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         f.lf.level
             .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     let mut level_ptr = &*level_ptr_guard;
-    let mut offset = p_offset[0];
     have_left = false;
-    for x in 0..f.sb128w {
+    for x in 0..f.sb128w as usize {
         filter_plane_cols_y::<BD>(
             f,
             have_left,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_y[0],
-            p[0],
-            offset,
-            f.cur.stride[0],
-            cmp::min(32, f.w4 - x * 32),
+            &lflvl[x].filter_y[0],
+            py + x * 128,
+            cmp::min(32, f.w4 - x as c_int * 32),
             starty4 as c_int,
             endy4 as c_int,
         );
         have_left = true;
         level_ptr = &level_ptr[32..];
-        offset += 128;
     }
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
@@ -732,35 +693,29 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         f.lf.level
             .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     let mut level_ptr = &*level_ptr_guard;
-    let [_, pu, pv] = p;
-    let mut uv_off = p_offset[1];
     have_left = false;
-    for x in 0..f.sb128w {
+    for x in 0..f.sb128w as usize {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_uv[0],
-            pu,
-            pv,
-            uv_off,
-            f.cur.stride[1],
-            cmp::min(32, f.w4 - x * 32) + ss_hor >> ss_hor,
+            &lflvl[x].filter_uv[0],
+            pu + x * (128 >> ss_hor),
+            pv + x * (128 >> ss_hor),
+            cmp::min(32, f.w4 - x as c_int * 32) + ss_hor >> ss_hor,
             starty4 as c_int >> ss_ver,
             uv_endy4 as c_int,
             ss_ver,
         );
         have_left = true;
-        uv_off += 128 >> ss_hor;
         level_ptr = &level_ptr[32 >> ss_hor..];
     }
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     f: &Rav1dFrameData,
-    p: &mut [&mut [BD::Pixel]; 3],
-    p_offset: &[usize; 2],
+    p: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
     sby: c_int,
 ) {
@@ -781,17 +736,15 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         f.lf.level
             .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     let mut level_ptr = &*level_ptr_guard;
-    for x in 0..f.sb128w {
+    for x in 0..f.sb128w as usize {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
             level_ptr,
             f.b4_stride,
             &lflvl[x as usize].filter_y[1],
-            p[0],
-            p_offset[0] + 128 * x as usize,
-            f.cur.stride[0],
-            cmp::min(32, f.w4 - x * 32),
+            p[0] + 128 * x,
+            cmp::min(32, f.w4 - x as c_int * 32),
             starty4,
             endy4 as c_int,
         );
@@ -803,29 +756,25 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let mut uv_off: usize = 0;
     let level_ptr_guard =
         f.lf.level
             .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     let mut level_ptr = &*level_ptr_guard;
     let [_, pu, pv] = p;
-    for x in 0..f.sb128w {
+    for x in 0..f.sb128w as usize {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_uv[1],
-            pu,
-            pv,
-            p_offset[1] + uv_off,
-            f.cur.stride[1],
-            cmp::min(32 as c_int, f.w4 - x * 32) + ss_hor >> ss_hor,
+            &lflvl[x].filter_uv[1],
+            pu + (x * 128 >> ss_hor),
+            pv + (x * 128 >> ss_hor),
+            cmp::min(32 as c_int, f.w4 - x as c_int * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
             uv_endy4 as c_int,
             ss_hor,
         );
-        uv_off += 128 >> ss_hor;
         level_ptr = &level_ptr[32 >> ss_hor..];
     }
 }

@@ -32,6 +32,10 @@ use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
+use std::ops::Add;
+use std::ops::AddAssign;
+use std::ops::Sub;
+use std::ops::SubAssign;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To as _;
@@ -351,6 +355,72 @@ impl Rav1dPictureDataComponent {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct Rav1dPictureDataComponentOffset<'a> {
+    pub data: &'a Rav1dPictureDataComponent,
+    pub offset: usize,
+}
+
+impl<'a> AddAssign<usize> for Rav1dPictureDataComponentOffset<'a> {
+    fn add_assign(&mut self, rhs: usize) {
+        self.offset += rhs;
+    }
+}
+
+impl<'a> SubAssign<usize> for Rav1dPictureDataComponentOffset<'a> {
+    fn sub_assign(&mut self, rhs: usize) {
+        self.offset -= rhs;
+    }
+}
+
+impl<'a> AddAssign<isize> for Rav1dPictureDataComponentOffset<'a> {
+    fn add_assign(&mut self, rhs: isize) {
+        self.offset = self.offset.wrapping_add_signed(rhs);
+    }
+}
+
+impl<'a> SubAssign<isize> for Rav1dPictureDataComponentOffset<'a> {
+    fn sub_assign(&mut self, rhs: isize) {
+        self.offset = self.offset.wrapping_add_signed(-rhs);
+    }
+}
+
+impl<'a> Add<usize> for Rav1dPictureDataComponentOffset<'a> {
+    type Output = Self;
+
+    fn add(mut self, rhs: usize) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl<'a> Sub<usize> for Rav1dPictureDataComponentOffset<'a> {
+    type Output = Self;
+
+    fn sub(mut self, rhs: usize) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
+impl<'a> Add<isize> for Rav1dPictureDataComponentOffset<'a> {
+    type Output = Self;
+
+    fn add(mut self, rhs: isize) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl<'a> Sub<isize> for Rav1dPictureDataComponentOffset<'a> {
+    type Output = Self;
+
+    fn sub(mut self, rhs: isize) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
 pub struct Rav1dPictureData {
     pub data: [Rav1dPictureDataComponent; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
@@ -476,6 +546,26 @@ impl From<Rav1dPicture> for Dav1dPicture {
             allocator_data: data.as_ref().and_then(|arc| arc.allocator_data),
             r#ref: data.map(RawArc::from_arc),
         }
+    }
+}
+
+impl Rav1dPicture {
+    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset; 3] {
+        // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
+        // plane here to avoid having additional in-loop branches in various places.
+        // We never use those values, so it doesn't really matter what they point
+        // at, as long as the offsets are valid.
+        let layout = self.p.layout;
+        let has_chroma = layout != Rav1dPixelLayout::I400;
+        let data = &self.data.as_ref().unwrap().data;
+        array::from_fn(|i| {
+            let data = &data[has_chroma as usize * i];
+            let ss_ver = layout == Rav1dPixelLayout::I420 && i != 0;
+            let offset = data
+                .pixel_offset::<BD>()
+                .wrapping_add_signed(y as isize * data.pixel_stride::<BD>() >> ss_ver as u8);
+            Rav1dPictureDataComponentOffset { data, offset }
+        })
     }
 }
 

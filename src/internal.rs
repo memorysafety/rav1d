@@ -19,7 +19,9 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::*;
+use crate::src::align::Align16;
+use crate::src::align::Align64;
+use crate::src::align::AlignedVec64;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
@@ -736,8 +738,6 @@ pub struct Rav1dFrameContext_lf {
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
-    pub p: [usize; 3],         // Offsets into `f.cur.data.data`.
-    pub sr_p: [usize; 3],      // Offsets into `f.sr_cur.p.data.data`.
     pub restore_planes: c_int, // enum LrRestorePlanes
 }
 
