@@ -765,46 +765,40 @@ fn blend_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn blend_v_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
-    dst_stride: isize,
+fn blend_v_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
     w: usize,
     h: usize,
 ) {
     let mask = &dav1d_obmc_masks.0[w..];
-    let dst_stride = BD::pxstride(dst_stride);
-    let mut tmp = tmp.as_slice();
-    for _ in 0..h {
-        let dst = slice::from_raw_parts_mut(dst_ptr, w * 3 >> 2);
-        for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, tmp[x], mask[x])
+    let tmp = &tmp[..w * h];
+    for y in 0..h {
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w * 3 >> 2));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            *dst = blend_px::<BD>(*dst, tmp[y * w + x], mask[x])
         }
-
-        dst_ptr = dst_ptr.offset(dst_stride);
-        tmp = &tmp[w..];
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
-unsafe fn blend_h_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
-    dst_stride: isize,
+fn blend_h_rust<BD: BitDepth>(
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
     w: usize,
     h: usize,
 ) {
     let mask = &dav1d_obmc_masks.0[h..];
     let h = h * 3 >> 2;
-    let dst_stride = BD::pxstride(dst_stride);
-    let mut tmp = tmp.as_slice();
+    let tmp = &tmp[..w * h];
     for y in 0..h {
-        let dst = slice::from_raw_parts_mut(dst_ptr, w);
-        for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, tmp[x], mask[y]);
+        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            *dst = blend_px::<BD>(*dst, tmp[y * w + x], mask[y]);
         }
-
-        dst_ptr = dst_ptr.offset(dst_stride);
-        tmp = &tmp[w..];
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
@@ -1459,25 +1453,29 @@ impl blend::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn blend_dir(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl blend_dir::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
-        tmp: *const [BD::Pixel; SCRATCH_LAP_LEN],
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
+        tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
         w: i32,
         h: i32,
     ) {
-        let dst = dst.cast();
-        let tmp = tmp.cast();
-        self.get()(dst, dst_stride, tmp, w, h)
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_stride = dst.stride();
+        let tmp = ptr::from_ref(tmp).cast();
+        let dst = FFISafe::new(dst);
+        // SAFETY: Fallback `fn blend_{h,v}_rust` are safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, dst_stride, tmp, w, h, dst) }
     }
 }
 
@@ -1971,24 +1969,50 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     blend_rust::<BD>(dst, dst_offset, tmp, w, h, mask)
 }
 
+/// # Safety
+///
+/// Must be called by [`blend_dir::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+    dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    blend_v_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
+    // SAFETY: Was passed as `FFISafe::new(_)` in `blend_dir::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `blend_dir::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let tmp = unsafe { &*tmp.cast() };
+    let w = w as usize;
+    let h = h as usize;
+    blend_v_rust::<BD>(dst, dst_offset, tmp, w, h)
 }
 
+/// # Safety
+///
+/// Must be called by [`blend_dir::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+    dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    blend_h_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
+    // SAFETY: Was passed as `FFISafe::new(_)` in `blend_dir::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `blend_dir::Fn::call`.
+    let dst_offset =
+        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let tmp = unsafe { &*tmp.cast() };
+    let w = w as usize;
+    let h = h as usize;
+    blend_h_rust::<BD>(dst, dst_offset, tmp, w, h)
 }
 
 unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
