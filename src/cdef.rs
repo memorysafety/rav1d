@@ -227,6 +227,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         &mut tmp, dst, dst_stride, left, top, bottom, w as usize, h as usize, edges,
     );
 
+    let tmp = tmp;
     let tmp_offset = 2 * TMP_STRIDE + 2;
     let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
@@ -237,7 +238,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         if sec_strength != 0 {
             let sec_shift = damping - sec_strength.ilog2() as c_int;
             for y in 0..h {
-                let tmp = &mut tmp[y * TMP_STRIDE..];
+                let tmp = &tmp[y * TMP_STRIDE..];
                 let dst =
                     slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
@@ -286,7 +287,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         } else {
             // pri_strength only
             for y in 0..h {
-                let tmp = &mut tmp[y * TMP_STRIDE..];
+                let tmp = &tmp[y * TMP_STRIDE..];
                 let dst =
                     slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
@@ -309,7 +310,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         // sec_strength only
         let sec_shift = damping - sec_strength.ilog2() as c_int;
         for y in 0..h {
-            let tmp = &mut tmp[y * TMP_STRIDE..];
+            let tmp = &tmp[y * TMP_STRIDE..];
             let dst =
                 slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
             for x in 0..w {
