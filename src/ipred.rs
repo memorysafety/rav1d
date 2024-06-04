@@ -834,7 +834,7 @@ fn upsample_edge<BD: BitDepth>(
 }
 
 unsafe fn ipred_z1_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
@@ -846,86 +846,75 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
-    let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    if !(angle < 90) {
-        unreachable!();
-    }
+    let enable_intra_edge_filter = (angle >> 10) != 0;
+    angle &= 511;
+    assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
-    let mut top_out: [BD::Pixel; 128] = [0.into(); 128];
-    let top: *const BD::Pixel;
-    let max_base_x;
-    let upsample_above = if enable_intra_edge_filter != 0 {
+    let mut top_out = [0.into(); 64 + 64];
+    let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
         false
     };
-    if upsample_above {
+    let (top, max_base_x) = if upsample_above {
         upsample_edge::<BD>(
             &mut top_out,
             width + height,
             topleft_in,
             topleft_in_off + 1,
-            -(1 as c_int),
+            -1,
             width + cmp::min(width, height),
             bd,
         );
-        top = top_out.as_mut_ptr();
-        max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
+
+        (top_out.as_slice(), 2 * (width + height) - 2)
     } else {
-        let filter_strength = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter {
             get_filter_strength(width + height, 90 - angle, is_sm)
         } else {
-            0 as c_int
+            0
         };
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut top_out,
                 width + height,
-                0 as c_int,
+                0,
                 width + height,
                 topleft_in,
                 topleft_in_off + 1,
-                -(1 as c_int),
+                -1,
                 width + cmp::min(width, height),
                 filter_strength,
             );
-            top = top_out.as_mut_ptr();
-            max_base_x = width + height - 1;
+            (top_out.as_slice(), width + height - 1)
         } else {
-            top = topleft_in[topleft_in_off + 1..].as_ptr();
-            max_base_x = width + cmp::min(width, height) - 1;
+            (
+                &topleft_in[topleft_in_off + 1..],
+                width + cmp::min(width, height) - 1,
+            )
         }
-    }
-    let base_inc = 1 + upsample_above as c_int;
-    let mut y = 0;
-    let mut xpos = dx;
-    while y < height {
-        let frac = xpos & 0x3e as c_int;
-        let mut x = 0;
-        let mut base = xpos >> 6;
-        while x < width {
+    };
+    let width = width as usize;
+    let max_base_x = max_base_x as usize;
+    let base_inc = 1 + upsample_above as usize;
+    for y in 0..height {
+        let xpos = (y + 1) * dx;
+        let frac = xpos & 0x3e;
+
+        let dst_slice =
+            slice::from_raw_parts_mut(dst.offset(BD::pxstride(stride) * y as isize), width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
-                let v = (*top.offset(base as isize)).as_::<c_int>() * (64 - frac)
-                    + (*top.offset((base + 1) as isize)).as_::<c_int>() * frac;
-                *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
-                x += 1;
-                base += base_inc;
+                let v =
+                    top[base].as_::<c_int>() * (64 - frac) + top[base + 1].as_::<c_int>() * frac;
+                *dst = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
-                let width = width.try_into().unwrap();
-                let x = x as usize;
-                BD::pixel_set(
-                    &mut slice::from_raw_parts_mut(dst, width)[x..],
-                    *top.offset(max_base_x as isize),
-                    width - x,
-                );
+                BD::pixel_set(&mut dst_slice[x..], top[max_base_x], width - x);
                 break;
             }
         }
-        y += 1;
-        dst = dst.offset(BD::pxstride(stride));
-        xpos += dx;
     }
 }
 
