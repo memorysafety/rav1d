@@ -732,28 +732,28 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
             }
             if self.fc.len() > 1 && !self.frame_thread.out_delayed.is_empty() {
-                let mut n_2 = 0;
-                while n_2 < self.fc.len() {
-                    if self.frame_thread.out_delayed[n_2 as usize]
+                let mut n = 0;
+                while n < self.fc.len() {
+                    if self.frame_thread.out_delayed[n as usize]
                         .p
                         .frame_hdr
                         .is_some()
                     {
-                        let _ = mem::take(&mut self.frame_thread.out_delayed[n_2 as usize]);
+                        let _ = mem::take(&mut self.frame_thread.out_delayed[n as usize]);
                     }
-                    n_2 = n_2.wrapping_add(1);
+                    n = n.wrapping_add(1);
                 }
                 let _ = mem::take(&mut self.frame_thread.out_delayed);
             }
             let _ = mem::take(&mut self.tiles);
-            let mut n_4 = 0;
-            while n_4 < 8 {
-                if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
-                    let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p);
+            let mut n = 0;
+            while n < 8 {
+                if self.refs[n as usize].p.p.frame_hdr.is_some() {
+                    let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n as isize)).p);
                 }
-                let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
-                let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
-                n_4 += 1;
+                let _ = mem::take(&mut self.refs[n as usize].refmvs);
+                let _ = mem::take(&mut self.refs[n as usize].segmap);
+                n += 1;
             }
             let _ = mem::take(&mut self.seq_hdr);
             let _ = mem::take(&mut self.frame_hdr);
