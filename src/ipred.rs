@@ -1088,7 +1088,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     angle &= 511 as c_int;
     assert!(angle > 180);
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
-    let mut left_out: [BD::Pixel; 128] = [0.into(); 128];
+    let mut left_out = [0.into(); 64 + 64];
     let left: *const BD::Pixel;
     let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
@@ -1117,6 +1117,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         } else {
             0 as c_int
         };
+
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut left_out,
@@ -1142,6 +1143,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     let mut ypos = dy;
     while x < width {
         let frac = ypos & 0x3e as c_int;
+
         let mut y = 0;
         let mut base = ypos >> 6;
         while y < height {
