@@ -846,7 +846,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
-    let enable_intra_edge_filter = angle >> 10 != 0;
+    let enable_intra_edge_filter = (angle >> 10) != 0;
     angle &= 511;
     assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
