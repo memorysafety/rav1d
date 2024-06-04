@@ -930,7 +930,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
 }
 
 unsafe fn ipred_z2_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
@@ -1040,14 +1040,15 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
 
     let base_inc_x = 1 + upsample_above as c_int;
     let left = topleft - (1 + upsample_left as usize);
-    let mut y = 0;
-    let mut xpos = (1 + (upsample_above as c_int) << 6) - dx;
-    while y < height {
-        let mut base_x = xpos >> 6;
+    for y in 0..height {
+        let xpos = (1 + (upsample_above as c_int) << 6) - (dx * (y + 1));
+        let base_x = xpos >> 6;
         let frac_x = xpos & 0x3e;
-        let mut x = 0;
-        let mut ypos = (y << 6 + upsample_left as c_int) - dy;
-        while x < width {
+        let dst = dst.offset(BD::pxstride(stride) * y as isize);
+
+        for x in 0..width {
+            let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1));
+            let base_x = base_x + base_inc_x * x;
             let v = if base_x >= 0 {
                 edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
                     + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x
@@ -1059,13 +1060,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                     + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>() * frac_y
             };
             *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
-            x += 1;
-            base_x += base_inc_x;
-            ypos -= dy;
         }
-        y += 1;
-        xpos -= dx;
-        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
