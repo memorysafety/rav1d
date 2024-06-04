@@ -24,6 +24,7 @@ use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
+use std::ffi::c_int;
 use std::iter;
 use std::mem;
 use std::ptr;
@@ -1059,20 +1060,20 @@ unsafe fn resize_rust<BD: BitDepth>(
     dst_ptr: *mut BD::Pixel,
     dst_stride: isize,
     src: Rav1dPictureDataComponentOffset,
-    dst_w: i32,
-    h: i32,
-    src_w: i32,
+    dst_w: usize,
+    h: usize,
+    src_w: usize,
     dx: i32,
     mx0: i32,
     bd: BD,
 ) {
-    let max = src_w - 1;
+    let max = src_w as c_int - 1;
     for y in 0..h {
         let mut mx = mx0;
         let mut src_x = -1;
         let dst_ptr = dst_ptr.offset(y as isize * BD::pxstride(dst_stride));
         let src = src + (y as isize * src.data.pixel_stride::<BD>());
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..src_w as usize));
+        let src = &*src.data.slice::<BD, _>((src.offset.., ..src_w));
         let dst = slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
         for dst in dst {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
@@ -1540,9 +1541,9 @@ impl resize::Fn {
         dst: *mut BD::Pixel,
         dst_stride: isize,
         src: Rav1dPictureDataComponentOffset,
-        dst_w: i32,
-        h: i32,
-        src_w: i32,
+        dst_w: usize,
+        h: usize,
+        src_w: usize,
         dx: i32,
         mx: i32,
         bd: BD,
@@ -1550,6 +1551,9 @@ impl resize::Fn {
         let dst = dst.cast();
         let src_ptr = src.data.as_ptr_at::<BD>(src.offset).cast();
         let src_stride = src.data.stride();
+        let dst_w = dst_w as c_int;
+        let h = h as c_int;
+        let src_w = src_w as c_int;
         let bd = bd.into_c();
         let src = FFISafe::new(&src);
         self.get()(
@@ -1968,6 +1972,9 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     let dst = dst.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `resize::Fn::call`.
     let src = *unsafe { FFISafe::get(src) };
+    let dst_w = dst_w as usize;
+    let h = h as usize;
+    let src_w = src_w as usize;
     let bd = BD::from_c(bitdepth_max);
     resize_rust(dst, dst_stride, src, dst_w, h, src_w, dx, mx0, bd)
 }
