@@ -1218,9 +1218,9 @@ unsafe fn filter_fn(
 
 cfg_if! {
     if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        const FLT_INCR: isize = 2;
+        const FLT_INCR: usize = 2;
     } else {
-        const FLT_INCR: isize = 1;
+        const FLT_INCR: usize = 1;
     }
 }
 
@@ -1239,7 +1239,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     if !(filt_idx < 5) {
         unreachable!();
     }
-    let filter: *const i8 = (dav1d_filter_intra_taps[filt_idx as usize]).as_ptr();
+    let filter = &dav1d_filter_intra_taps[filt_idx as usize];
     let mut top: *const BD::Pixel = &*topleft_in.offset(1) as *const BD::Pixel;
     let mut y = 0;
     while y < height {
@@ -1257,15 +1257,15 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             let p5 = (*left.offset((0 * left_stride) as isize)).as_::<c_int>();
             let p6 = (*left.offset((1 * left_stride) as isize)).as_::<c_int>();
             let mut ptr: *mut BD::Pixel = &mut *dst.offset(x as isize) as *mut BD::Pixel;
-            let mut flt_ptr: *const i8 = filter;
+            let mut flt_ptr = filter.as_slice();
             let mut yy = 0;
             while yy < 2 {
                 let mut xx = 0;
                 while xx < 4 {
-                    let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
+                    let acc = filter_fn(flt_ptr.as_ptr(), p0, p1, p2, p3, p4, p5, p6);
                     *ptr.offset(xx as isize) = bd.iclip_pixel(acc + 8 >> 4);
                     xx += 1;
-                    flt_ptr = flt_ptr.offset(FLT_INCR);
+                    flt_ptr = &flt_ptr[FLT_INCR..];
                 }
                 ptr = ptr.offset(BD::pxstride(stride));
                 yy += 1;
