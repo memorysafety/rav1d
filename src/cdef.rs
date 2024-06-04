@@ -151,7 +151,7 @@ unsafe fn padding<BD: BitDepth>(
     h: usize,
     edges: CdefEdgeFlags,
 ) {
-    let [src, top, bottom] = [src, top, bottom].map(|it| it.sub(2));
+    let [top, bottom] = [top, bottom].map(|it| it.sub(2));
 
     // Fill extended input buffer.
     let mut x_start = 2 - 2;
@@ -190,7 +190,7 @@ unsafe fn padding<BD: BitDepth>(
         let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
         let src = slice::from_raw_parts(src.offset(y as isize * BD::pxstride(src_stride)), x_end);
         for x in 2..x_end {
-            tmp[x] = src[x].as_::<i16>();
+            tmp[x] = src[x - 2].as_::<i16>();
         }
     }
     for (i, y) in (h + 2..y_end).enumerate() {
