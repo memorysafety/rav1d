@@ -687,19 +687,20 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: bool) {
 
 impl Drop for Rav1dContext {
     fn drop(&mut self) {
-        if self.tc.len() > 1 {
-            let ttd: &TaskThreadData = &*self.task_thread;
-            let task_thread_lock = ttd.lock.lock();
-            for tc in self.tc.iter() {
-                tc.thread_data.die.store(true, Ordering::Relaxed);
-            }
-            ttd.cond.notify_all();
-            drop(task_thread_lock);
-            let tc = mem::take(&mut self.tc);
-            for task_thread in tc.into_vec() {
-                if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
-                    handle.join().expect("Could not join task thread");
-                }
+        if self.tc.is_empty() {
+            return;
+        }
+        let ttd = &*self.task_thread;
+        let task_thread_lock = ttd.lock.lock();
+        for tc in self.tc.iter() {
+            tc.thread_data.die.store(true, Ordering::Relaxed);
+        }
+        ttd.cond.notify_all();
+        drop(task_thread_lock);
+        let tc = mem::take(&mut self.tc);
+        for task_thread in tc.into_vec() {
+            if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
+                handle.join().expect("Could not join task thread");
             }
         }
     }
