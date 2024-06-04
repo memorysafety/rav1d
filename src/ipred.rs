@@ -1089,7 +1089,8 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     assert!(angle > 180);
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
     let mut left_out = [0.into(); 64 + 64];
-    let left: *const BD::Pixel;
+    let left;
+    let left_off;
     let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
@@ -1106,9 +1107,8 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             width + height + 1,
             bd,
         );
-        left = &mut *left_out
-            .as_mut_ptr()
-            .offset((2 * (width + height) - 2) as isize) as *mut BD::Pixel;
+        left = left_out.as_slice();
+        left_off = 2 * (width + height) as usize - 2;
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
     } else {
@@ -1130,11 +1130,12 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
                 width + height + 1,
                 filter_strength,
             );
-            left =
-                &mut *left_out.as_mut_ptr().offset((width + height - 1) as isize) as *mut BD::Pixel;
+            left = left_out.as_slice();
+            left_off = (width + height - 1) as usize;
             max_base_y = width + height - 1;
         } else {
-            left = topleft_in[topleft_in_off - 1..].as_ptr();
+            left = topleft_in.as_slice();
+            left_off = topleft_in_off - 1;
             max_base_y = height + cmp::min(width, height) - 1;
         }
     }
@@ -1148,8 +1149,10 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         let mut base = ypos >> 6;
         while y < height {
             if base < max_base_y {
-                let v = (*left.offset(-base as isize)).as_::<c_int>() * (64 - frac)
-                    + (*left.offset(-(base + 1) as isize)).as_::<c_int>() * frac;
+                let v = left[left_off.wrapping_add_signed(-base as isize)].as_::<c_int>()
+                    * (64 - frac)
+                    + left[left_off.wrapping_add_signed(-(base + 1) as isize)].as_::<c_int>()
+                        * frac;
                 *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
                     (v + 32 >> 6).as_::<BD::Pixel>();
                 y += 1;
@@ -1157,7 +1160,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             } else {
                 loop {
                     *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
-                        *left.offset(-max_base_y as isize);
+                        left[left_off.wrapping_add_signed(-max_base_y as isize)];
                     y += 1;
                     if !(y < height) {
                         break;
