@@ -1241,13 +1241,11 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
 
     let filter = &dav1d_filter_intra_taps[filt_idx as usize];
     let mut top = topleft_in.as_ptr().add(topleft_off + 1);
-    let mut y = 0;
-    while y < height {
+    for y in (0..height).step_by(2) {
         let mut topleft = topleft_in.as_ptr().add(topleft_off - y as usize);
         let mut left = topleft.sub(1);
         let mut left_stride = -1;
-        let mut x = 0;
-        while x < width {
+        for x in (0..width).step_by(4) {
             let p0 = (*topleft).as_::<c_int>();
             let p1 = (*top.offset(0)).as_::<c_int>();
             let p2 = (*top.offset(1)).as_::<c_int>();
@@ -1258,27 +1256,21 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             let mut ptr: *mut BD::Pixel = &mut *dst.offset(x as isize) as *mut BD::Pixel;
             let mut flt_ptr = filter.as_slice();
 
-            let mut yy = 0;
-            while yy < 2 {
-                let mut xx = 0;
-                while xx < 4 {
+            for _yy in 0..2 {
+                for xx in 0..4 {
                     let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
                     *ptr.offset(xx as isize) = bd.iclip_pixel(acc + 8 >> 4);
-                    xx += 1;
                     flt_ptr = &flt_ptr[FLT_INCR..];
                 }
                 ptr = ptr.offset(BD::pxstride(stride));
-                yy += 1;
             }
             left = &mut *dst.offset((x + 4 - 1) as isize) as *mut BD::Pixel;
             left_stride = BD::pxstride(stride);
             top = top.offset(4);
             topleft = &*top.offset(-1) as *const BD::Pixel;
-            x += 4;
         }
         top = &mut *dst.offset(BD::pxstride(stride)) as *mut BD::Pixel;
         dst = &mut *dst.offset(BD::pxstride(stride) * 2) as *mut BD::Pixel;
-        y += 2;
     }
 }
 
