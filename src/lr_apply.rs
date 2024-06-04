@@ -99,8 +99,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         // pass an out-of-bounds pointer to this function which is then indexed
         // back into bounds.
         lr_fn.call::<BD>(
-            p.data.as_mut_ptr_at::<BD>(p.offset),
-            stride,
+            p,
             left,
             // NOTE: The calculated pointer may point to before the beginning of
             // `lr_line_buf`, so we must use `.wrapping_offset` here.
