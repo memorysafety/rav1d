@@ -1079,15 +1079,15 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     _max_height: c_int,
     bd: BD,
 ) {
+    let stride = BD::pxstride(stride);
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    if !(angle > 180) {
-        unreachable!();
-    }
+    angle &= 511;
+    assert!(angle > 180);
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
-    let mut left_out: [BD::Pixel; 128] = [0.into(); 128];
-    let left: *const BD::Pixel;
+    let mut left_out = [0.into(); 64 + 64];
+    let left;
+    let left_off;
     let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
@@ -1100,70 +1100,63 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             width + height,
             topleft_in,
             topleft_in_off - (width + height) as usize,
-            cmp::max(width - height, 0 as c_int),
+            cmp::max(width - height, 0),
             width + height + 1,
             bd,
         );
-        left = &mut *left_out
-            .as_mut_ptr()
-            .offset((2 * (width + height) - 2) as isize) as *mut BD::Pixel;
+        left = left_out.as_slice();
+        left_off = 2 * (width + height) as usize - 2;
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
     } else {
         let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, angle - 180, is_sm)
         } else {
-            0 as c_int
+            0
         };
+
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut left_out,
                 width + height,
-                0 as c_int,
+                0,
                 width + height,
                 topleft_in,
                 topleft_in_off - (width + height) as usize,
-                cmp::max(width - height, 0 as c_int),
+                cmp::max(width - height, 0),
                 width + height + 1,
                 filter_strength,
             );
-            left =
-                &mut *left_out.as_mut_ptr().offset((width + height - 1) as isize) as *mut BD::Pixel;
+            left = left_out.as_slice();
+            left_off = (width + height - 1) as usize;
             max_base_y = width + height - 1;
         } else {
-            left = topleft_in[topleft_in_off - 1..].as_ptr();
+            left = topleft_in.as_slice();
+            left_off = topleft_in_off - 1;
             max_base_y = height + cmp::min(width, height) - 1;
         }
     }
     let base_inc = 1 + upsample_left as c_int;
-    let mut x = 0;
-    let mut ypos = dy;
-    while x < width {
-        let frac = ypos & 0x3e as c_int;
-        let mut y = 0;
-        let mut base = ypos >> 6;
-        while y < height {
+    for x in 0..width {
+        let ypos = dy * (x + 1);
+        let frac = ypos & 0x3e;
+
+        for y in 0..height {
+            let base = (ypos >> 6) + base_inc * y;
             if base < max_base_y {
-                let v = (*left.offset(-base as isize)).as_::<c_int>() * (64 - frac)
-                    + (*left.offset(-(base + 1) as isize)).as_::<c_int>() * frac;
-                *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
-                    (v + 32 >> 6).as_::<BD::Pixel>();
-                y += 1;
-                base += base_inc;
+                let v = left[left_off.wrapping_add_signed(-base as isize)].as_::<c_int>()
+                    * (64 - frac)
+                    + left[left_off.wrapping_add_signed(-(base + 1) as isize)].as_::<c_int>()
+                        * frac;
+                *dst.offset(y as isize * stride + x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
-                loop {
-                    *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
-                        *left.offset(-max_base_y as isize);
-                    y += 1;
-                    if !(y < height) {
-                        break;
-                    }
+                for y in y..height {
+                    *dst.offset(y as isize * stride + x as isize) =
+                        left[left_off.wrapping_add_signed(-max_base_y as isize)];
                 }
                 break;
             }
         }
-        x += 1;
-        ypos += dy;
     }
 }
 
