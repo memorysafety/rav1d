@@ -189,7 +189,7 @@ unsafe fn padding<BD: BitDepth>(
     for y in 0..h {
         let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
         let src = slice::from_raw_parts(src.offset(y as isize * BD::pxstride(src_stride)), x_end);
-        for x in if y < h { 2 } else { x_start }..x_end {
+        for x in 2..x_end {
             tmp[x] = src[x].as_::<i16>();
         }
     }
