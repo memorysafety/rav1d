@@ -944,9 +944,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
-    if !(angle > 90 && angle < 180) {
-        unreachable!();
-    }
+    assert!(angle > 90 && angle < 180);
     let mut dy = dav1d_dr_intra_derivative[(angle - 90 >> 1) as usize] as c_int;
     let mut dx = dav1d_dr_intra_derivative[(180 - angle >> 1) as usize] as c_int;
     let upsample_left = if enable_intra_edge_filter != 0 {
