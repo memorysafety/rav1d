@@ -851,14 +851,12 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
     let mut top_out = [0.into(); 64 + 64];
-    let top;
-    let max_base_x;
     let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
         false
     };
-    if upsample_above {
+    let (top, max_base_x) = if upsample_above {
         upsample_edge::<BD>(
             &mut top_out,
             width + height,
@@ -868,9 +866,9 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             width + cmp::min(width, height),
             bd,
         );
-        top = top_out.as_slice();
-        max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
+
+        (top_out.as_slice(), 2 * (width + height) - 2)
     } else {
         let filter_strength = if enable_intra_edge_filter {
             get_filter_strength(width + height, 90 - angle, is_sm)
@@ -889,13 +887,14 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
                 width + cmp::min(width, height),
                 filter_strength,
             );
-            top = top_out.as_slice();
-            max_base_x = width + height - 1;
+            (top_out.as_slice(), width + height - 1)
         } else {
-            top = &topleft_in[topleft_in_off + 1..];
-            max_base_x = width + cmp::min(width, height) - 1;
+            (
+                &topleft_in[topleft_in_off + 1..],
+                width + cmp::min(width, height) - 1,
+            )
         }
-    }
+    };
     let width = width as usize;
     let max_base_x = max_base_x as usize;
     let base_inc = 1 + upsample_above as usize;
