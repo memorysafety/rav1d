@@ -382,7 +382,7 @@ unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
 }
 
 unsafe fn cdef_find_dir_rust<BD: BitDepth>(
-    mut img: *const BD::Pixel,
+    img: *const BD::Pixel,
     stride: ptrdiff_t,
     variance: &mut c_uint,
     bd: BD,
@@ -392,9 +392,11 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     let mut partial_sum_diag = [[0; 15]; 2];
     let mut partial_sum_alt = [[0; 11]; 4];
 
-    for y in 0..8 {
-        for x in 0..8 {
-            let px = ((*img.offset(x as isize)).as_::<c_int>() >> bitdepth_min_8) - 128;
+    let (w, h) = (8, 8);
+    for y in 0..h {
+        let img = slice::from_raw_parts(img.offset(y as isize * BD::pxstride(stride)), w);
+        for x in 0..w {
+            let px = (img[x].as_::<c_int>() >> bitdepth_min_8) - 128;
 
             partial_sum_diag[0][y + x] += px;
             partial_sum_alt[0][y + (x >> 1)] += px;
@@ -405,7 +407,6 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
             partial_sum_hv[1][x] += px;
             partial_sum_alt[3][(y >> 1) + x] += px;
         }
-        img = img.offset(BD::pxstride(stride));
     }
 
     let mut cost = [0; 8];
