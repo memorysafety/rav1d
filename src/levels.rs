@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 
+use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::enum_map::EnumKey;
 use std::mem;
 use std::ops::Neg;
@@ -175,7 +176,7 @@ pub enum BlockSize {
     Bs4x4 = 21,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, Default, FromRepr)]
 pub enum Filter2d {
     #[default]
     Regular8Tap = 0,
@@ -206,6 +207,32 @@ impl EnumKey<{ Self::COUNT }> for Filter2d {
 
     fn as_usize(self) -> usize {
         self as usize
+    }
+}
+
+impl Filter2d {
+    pub const fn h(&self) -> Rav1dFilterMode {
+        use Filter2d::*;
+        match *self {
+            Regular8Tap | RegularSmooth8Tap | RegularSharp8Tap => Rav1dFilterMode::Regular8Tap,
+            SharpRegular8Tap | SharpSmooth8Tap | Sharp8Tap => Rav1dFilterMode::Sharp8Tap,
+            SmoothRegular8Tap | Smooth8Tap | SmoothSharp8Tap => Rav1dFilterMode::Smooth8Tap,
+            Bilinear => Rav1dFilterMode::Bilinear,
+        }
+    }
+
+    pub const fn v(&self) -> Rav1dFilterMode {
+        use Filter2d::*;
+        match *self {
+            Regular8Tap | SharpRegular8Tap | SmoothRegular8Tap => Rav1dFilterMode::Regular8Tap,
+            RegularSharp8Tap | Sharp8Tap | SmoothSharp8Tap => Rav1dFilterMode::Sharp8Tap,
+            RegularSmooth8Tap | SharpSmooth8Tap | Smooth8Tap => Rav1dFilterMode::Smooth8Tap,
+            Bilinear => Rav1dFilterMode::Bilinear,
+        }
+    }
+
+    pub const fn hv(&self) -> (Rav1dFilterMode, Rav1dFilterMode) {
+        (self.h(), self.v())
     }
 }
 
