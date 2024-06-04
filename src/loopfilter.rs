@@ -4,12 +4,13 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_uint;
+use strum::FromRepr;
 
 #[cfg(all(
     feature = "asm",
@@ -22,7 +23,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     stride: ptrdiff_t,
     mask: &[u32; 3],
     lvl: *const [u8; 4],
-    lvl_stride: ptrdiff_t,
+    b4_stride: ptrdiff_t,
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
@@ -31,19 +32,19 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
 impl loopfilter_sb::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
+        f: &Rav1dFrameData,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
-        lvl_stride: ptrdiff_t,
-        lut: &Align16<Av1FilterLUT>,
         w: c_int,
-        bd: BD,
     ) {
         let dst = dst.cast();
         let lvl = lvl.as_ptr();
-        let bd = bd.into_c();
-        self.get()(dst, stride, mask, lvl, lvl_stride, lut, w, bd)
+        let b4_stride = f.b4_stride;
+        let lut = &f.lf.lim_lut;
+        let bd = f.bitdepth_max;
+        self.get()(dst, stride, mask, lvl, b4_stride, lut, w, bd)
     }
 }
 
@@ -53,606 +54,302 @@ pub struct Rav1dLoopFilterDSPContext {
 
 #[inline(never)]
 unsafe fn loop_filter<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    mut E: c_int,
-    mut I: c_int,
-    mut H: c_int,
+    dst: *mut BD::Pixel,
+    E: u8,
+    I: u8,
+    H: u8,
     stridea: ptrdiff_t,
     strideb: ptrdiff_t,
     wd: c_int,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let F = 1 << bitdepth_min_8;
-    E <<= bitdepth_min_8;
-    I <<= bitdepth_min_8;
-    H <<= bitdepth_min_8;
-    let mut i = 0;
-    while i < 4 {
+    let [F, E, I, H] = [1, E, I, H].map(|n| (n as i32) << bitdepth_min_8);
+
+    for i in 0..4 {
+        let dst = dst.offset(i * stridea);
+        let dst = |stride_index| &mut *dst.offset(strideb * stride_index);
+        let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
+        let set_dst = |stride_index, value: i32| *dst(stride_index) = value.as_::<BD::Pixel>();
+
         let mut p6 = 0;
         let mut p5 = 0;
         let mut p4 = 0;
         let mut p3 = 0;
         let mut p2 = 0;
-        let p1 = (*dst.offset(strideb * -(2 as c_int) as isize)).as_::<c_int>();
-        let p0 = (*dst.offset(strideb * -(1 as c_int) as isize)).as_::<c_int>();
-        let q0 = (*dst.offset((strideb * 0) as isize)).as_::<c_int>();
-        let q1 = (*dst.offset((strideb * 1) as isize)).as_::<c_int>();
+        let p1 = get_dst(-2);
+        let p0 = get_dst(-1);
+        let q0 = get_dst(0);
+        let q1 = get_dst(1);
         let mut q2 = 0;
         let mut q3 = 0;
         let mut q4 = 0;
         let mut q5 = 0;
         let mut q6 = 0;
-        let mut fm;
-        let mut flat8out = 0;
-        let mut flat8in = 0;
-        fm = ((p1 - p0).abs() <= I
+        let mut flat8out = false;
+        let mut flat8in = false;
+
+        let mut fm = (p1 - p0).abs() <= I
             && (q1 - q0).abs() <= I
-            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E) as c_int;
+            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E;
+
         if wd > 4 {
-            p2 = (*dst.offset(strideb * -(3 as c_int) as isize)).as_::<c_int>();
-            q2 = (*dst.offset((strideb * 2) as isize)).as_::<c_int>();
-            fm &= ((p2 - p1).abs() <= I && (q2 - q1).abs() <= I) as c_int;
+            p2 = get_dst(-3);
+            q2 = get_dst(2);
+
+            fm &= (p2 - p1).abs() <= I && (q2 - q1).abs() <= I;
+
             if wd > 6 {
-                p3 = (*dst.offset(strideb * -(4 as c_int) as isize)).as_::<c_int>();
-                q3 = (*dst.offset((strideb * 3) as isize)).as_::<c_int>();
-                fm &= ((p3 - p2).abs() <= I && (q3 - q2).abs() <= I) as c_int;
+                p3 = get_dst(-4);
+                q3 = get_dst(3);
+
+                fm &= (p3 - p2).abs() <= I && (q3 - q2).abs() <= I;
             }
         }
-        if !(fm == 0) {
-            if wd >= 16 {
-                p6 = (*dst.offset(strideb * -(7 as c_int) as isize)).as_::<c_int>();
-                p5 = (*dst.offset(strideb * -(6 as c_int) as isize)).as_::<c_int>();
-                p4 = (*dst.offset(strideb * -(5 as c_int) as isize)).as_::<c_int>();
-                q4 = (*dst.offset((strideb * 4) as isize)).as_::<c_int>();
-                q5 = (*dst.offset((strideb * 5) as isize)).as_::<c_int>();
-                q6 = (*dst.offset(strideb * 6)).as_::<c_int>();
-                flat8out = ((p6 - p0).abs() <= F
-                    && (p5 - p0).abs() <= F
-                    && (p4 - p0).abs() <= F
-                    && (q4 - q0).abs() <= F
-                    && (q5 - q0).abs() <= F
-                    && (q6 - q0).abs() <= F) as c_int;
-            }
-            if wd >= 6 {
-                flat8in = ((p2 - p0).abs() <= F
-                    && (p1 - p0).abs() <= F
-                    && (q1 - q0).abs() <= F
-                    && (q2 - q0).abs() <= F) as c_int;
-            }
-            if wd >= 8 {
-                flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as c_int;
-            }
-            if wd >= 16 && flat8out & flat8in != 0 {
-                *dst.offset(strideb * -(6 as c_int) as isize) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6 * 2
-                    + p5 * 2
-                    + p4 * 2
-                    + p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -(5 as c_int) as isize) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p6
-                    + p5 * 2
-                    + p4 * 2
-                    + p3 * 2
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -(4 as c_int) as isize) = (p6
-                    + p6
-                    + p6
-                    + p6
-                    + p5
-                    + p4 * 2
-                    + p3 * 2
-                    + p2 * 2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -(3 as c_int) as isize) = (p6
-                    + p6
-                    + p6
-                    + p5
-                    + p4
-                    + p3 * 2
-                    + p2 * 2
-                    + p1 * 2
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -(2 as c_int) as isize) = (p6
-                    + p6
-                    + p5
-                    + p4
-                    + p3
-                    + p2 * 2
-                    + p1 * 2
-                    + p0 * 2
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + q4
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset(strideb * -(1 as c_int) as isize) = (p6
-                    + p5
-                    + p4
-                    + p3
-                    + p2
-                    + p1 * 2
-                    + p0 * 2
-                    + q0 * 2
-                    + q1
-                    + q2
-                    + q3
-                    + q4
-                    + q5
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 0) as isize) = (p5
-                    + p4
-                    + p3
-                    + p2
-                    + p1
-                    + p0 * 2
-                    + q0 * 2
-                    + q1 * 2
-                    + q2
-                    + q3
-                    + q4
-                    + q5
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 1) as isize) = (p4
-                    + p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0 * 2
-                    + q1 * 2
-                    + q2 * 2
-                    + q3
-                    + q4
-                    + q5
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 2) as isize) = (p3
-                    + p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1 * 2
-                    + q2 * 2
-                    + q3 * 2
-                    + q4
-                    + q5
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 3) as isize) = (p2
-                    + p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2 * 2
-                    + q3 * 2
-                    + q4 * 2
-                    + q5
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 4) as isize) = (p1
-                    + p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3 * 2
-                    + q4 * 2
-                    + q5 * 2
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-                *dst.offset((strideb * 5) as isize) = (p0
-                    + q0
-                    + q1
-                    + q2
-                    + q3
-                    + q4 * 2
-                    + q5 * 2
-                    + q6 * 2
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + q6
-                    + 8
-                    >> 4)
-                    .as_::<BD::Pixel>();
-            } else if wd >= 8 && flat8in != 0 {
-                *dst.offset(strideb * -(3 as c_int) as isize) =
-                    (p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -(2 as c_int) as isize) =
-                    (p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -(1 as c_int) as isize) =
-                    (p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset((strideb * 0) as isize) =
-                    (p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset((strideb * 1) as isize) =
-                    (p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset((strideb * 2) as isize) =
-                    (p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3).as_::<BD::Pixel>();
-            } else if wd == 6 && flat8in != 0 {
-                *dst.offset(strideb * -(2 as c_int) as isize) =
-                    (p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset(strideb * -(1 as c_int) as isize) =
-                    (p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset((strideb * 0) as isize) =
-                    (p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3).as_::<BD::Pixel>();
-                *dst.offset((strideb * 1) as isize) =
-                    (p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3).as_::<BD::Pixel>();
-            } else {
-                let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
+        if !fm {
+            continue;
+        }
 
-                fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
-                    iclip(
-                        v,
-                        -128 * (1 << bitdepth_min_8),
-                        128 * (1 << bitdepth_min_8) - 1,
-                    )
+        if wd >= 16 {
+            p6 = get_dst(-7);
+            p5 = get_dst(-6);
+            p4 = get_dst(-5);
+            q4 = get_dst(4);
+            q5 = get_dst(5);
+            q6 = get_dst(6);
+
+            flat8out = (p6 - p0).abs() <= F
+                && (p5 - p0).abs() <= F
+                && (p4 - p0).abs() <= F
+                && (q4 - q0).abs() <= F
+                && (q5 - q0).abs() <= F
+                && (q6 - q0).abs() <= F;
+        }
+
+        if wd >= 6 {
+            flat8in = (p2 - p0).abs() <= F
+                && (p1 - p0).abs() <= F
+                && (q1 - q0).abs() <= F
+                && (q2 - q0).abs() <= F;
+        }
+
+        if wd >= 8 {
+            flat8in &= (p3 - p0).abs() <= F && (q3 - q0).abs() <= F;
+        }
+
+        if wd >= 16 && flat8out && flat8in {
+            set_dst(
+                -6,
+                p6 + p6 + p6 + p6 + p6 + p6 * 2 + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0 + q0 + 8 >> 4,
+            );
+            set_dst(
+                -5,
+                p6 + p6 + p6 + p6 + p6 + p5 * 2 + p4 * 2 + p3 * 2 + p2 + p1 + p0 + q0 + q1 + 8 >> 4,
+            );
+            set_dst(
+                -4,
+                p6 + p6 + p6 + p6 + p5 + p4 * 2 + p3 * 2 + p2 * 2 + p1 + p0 + q0 + q1 + q2 + 8 >> 4,
+            );
+            set_dst(
+                -3,
+                p6 + p6 + p6 + p5 + p4 + p3 * 2 + p2 * 2 + p1 * 2 + p0 + q0 + q1 + q2 + q3 + 8 >> 4,
+            );
+            set_dst(
+                -2,
+                p6 + p6 + p5 + p4 + p3 + p2 * 2 + p1 * 2 + p0 * 2 + q0 + q1 + q2 + q3 + q4 + 8 >> 4,
+            );
+            set_dst(
+                -1,
+                p6 + p5 + p4 + p3 + p2 + p1 * 2 + p0 * 2 + q0 * 2 + q1 + q2 + q3 + q4 + q5 + 8 >> 4,
+            );
+            set_dst(
+                0,
+                p5 + p4 + p3 + p2 + p1 + p0 * 2 + q0 * 2 + q1 * 2 + q2 + q3 + q4 + q5 + q6 + 8 >> 4,
+            );
+            set_dst(
+                1,
+                p4 + p3 + p2 + p1 + p0 + q0 * 2 + q1 * 2 + q2 * 2 + q3 + q4 + q5 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                2,
+                p3 + p2 + p1 + p0 + q0 + q1 * 2 + q2 * 2 + q3 * 2 + q4 + q5 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                3,
+                p2 + p1 + p0 + q0 + q1 + q2 * 2 + q3 * 2 + q4 * 2 + q5 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                4,
+                p1 + p0 + q0 + q1 + q2 + q3 * 2 + q4 * 2 + q5 * 2 + q6 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
+            set_dst(
+                5,
+                p0 + q0 + q1 + q2 + q3 + q4 * 2 + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6 + q6 + 8 >> 4,
+            );
+        } else if wd >= 8 && flat8in {
+            set_dst(-3, p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0 + 4 >> 3);
+            set_dst(-2, p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4 >> 3);
+            set_dst(-1, p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4 >> 3);
+            set_dst(0, p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4 >> 3);
+            set_dst(1, p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3 + 4 >> 3);
+            set_dst(2, p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3 + 4 >> 3);
+        } else if wd == 6 && flat8in {
+            set_dst(-2, p2 + 2 * p2 + 2 * p1 + 2 * p0 + q0 + 4 >> 3);
+            set_dst(-1, p2 + 2 * p1 + 2 * p0 + 2 * q0 + q1 + 4 >> 3);
+            set_dst(0, p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3);
+            set_dst(1, p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3);
+        } else {
+            let hev = (p1 - p0).abs() > H || (q1 - q0).abs() > H;
+
+            fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
+                iclip(
+                    v,
+                    -128 * (1 << bitdepth_min_8),
+                    128 * (1 << bitdepth_min_8) - 1,
+                )
+            }
+
+            if hev {
+                let f = iclip_diff(p1 - q1, bitdepth_min_8);
+                let f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
+
+                let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
+                let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
+
+                *dst(-1) = bd.iclip_pixel(p0 + f2);
+                *dst(0) = bd.iclip_pixel(q0 - f1);
+            } else {
+                let f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
+
+                let f1 = cmp::min(f + 4, (128 << bitdepth_min_8) - 1) >> 3;
+                let f2 = cmp::min(f + 3, (128 << bitdepth_min_8) - 1) >> 3;
+
+                *dst(-1) = bd.iclip_pixel(p0 + f2);
+                *dst(0) = bd.iclip_pixel(q0 - f1);
+
+                let f = (f1 + 1) >> 1;
+                *dst(-2) = bd.iclip_pixel(p1 + f);
+                *dst(1) = bd.iclip_pixel(q1 - f);
+            }
+        }
+    }
+}
+
+#[derive(FromRepr)]
+enum HV {
+    H,
+    V,
+}
+
+#[derive(FromRepr)]
+enum YUV {
+    Y,
+    UV,
+}
+
+unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
+    mut dst: *mut BD::Pixel,
+    stride: isize,
+    vmask: &[u32; 3],
+    mut l: *const [u8; 4],
+    b4_stride: usize,
+    lut: &Align16<Av1FilterLUT>,
+    _wh: c_int,
+    bd: BD,
+) {
+    let hv = HV::from_repr(HV).unwrap();
+    let yuv = YUV::from_repr(YUV).unwrap();
+
+    let stride = BD::pxstride(stride);
+    let (stridea, strideb) = match hv {
+        HV::H => (stride, 1),
+        HV::V => (1, stride),
+    };
+    let (b4_stridea, b4_strideb) = match hv {
+        HV::H => (b4_stride, 1),
+        HV::V => (1, b4_stride),
+    };
+
+    let vm = match yuv {
+        YUV::Y => vmask[0] | vmask[1] | vmask[2],
+        YUV::UV => vmask[0] | vmask[1],
+    };
+    let mut xy = 1u32;
+    while vm & !xy.wrapping_sub(1) != 0 {
+        'block: {
+            if vm & xy == 0 {
+                break 'block;
+            }
+            let L = if (*l.offset(0))[0] != 0 {
+                (*l.offset(0))[0]
+            } else {
+                (*l.sub(b4_strideb))[0]
+            };
+            if L == 0 {
+                break 'block;
+            }
+            let H = L >> 4;
+            let E = lut.0.e[L as usize];
+            let I = lut.0.i[L as usize];
+            let idx = match yuv {
+                YUV::Y => {
+                    let idx = if vmask[2] & xy != 0 {
+                        2
+                    } else {
+                        (vmask[1] & xy != 0) as c_int
+                    };
+                    4 << idx
                 }
-
-                if hev != 0 {
-                    let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
-                    f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
-
-                    let f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    let f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-
-                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2);
-                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1);
-                } else {
-                    let mut f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
-
-                    let f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    let f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-
-                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2);
-                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1);
-
-                    f = (f1 + 1) >> 1;
-                    *dst.offset(strideb * -(2 as c_int) as isize) = bd.iclip_pixel(p1 + f);
-                    *dst.offset((strideb * 1) as isize) = bd.iclip_pixel(q1 - f);
+                YUV::UV => {
+                    let idx = (vmask[1] & xy != 0) as c_int;
+                    4 + 2 * idx
                 }
-            }
+            };
+            loop_filter(dst, E, I, H, stridea, strideb, idx, bd);
         }
-        i += 1;
-        dst = dst.offset(stridea as isize);
+        xy <<= 1;
+        dst = dst.offset(4 * stridea);
+        l = l.add(b4_stridea);
     }
 }
 
-unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, const YUV: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: &[u32; 3],
     l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
+    b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
-    h: c_int,
+    wh: c_int,
     bitdepth_max: c_int,
 ) {
-    loop_filter_h_sb128y_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        h,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    _h: c_int,
-    bd: BD,
-) {
-    let vm: c_uint = vmask[0] | vmask[1] | vmask[2];
-    let mut y: c_uint = 1 as c_int as c_uint;
-    while vm & !y.wrapping_sub(1 as c_int as c_uint) != 0 {
-        if vm & y != 0 {
-            let L = if (*l.offset(0))[0] as c_int != 0 {
-                (*l.offset(0))[0] as c_int
-            } else {
-                (*l.offset(-(1 as c_int) as isize))[0] as c_int
-            };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
-                let idx = if vmask[2] & y != 0 {
-                    2 as c_int
-                } else {
-                    (vmask[1] & y != 0) as c_int
-                };
-                loop_filter(
-                    dst,
-                    E,
-                    I,
-                    H,
-                    BD::pxstride(stride),
-                    1 as c_int as ptrdiff_t,
-                    (4 as c_int) << idx,
-                    bd,
-                );
-            }
-        }
-        y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.offset(b4_stride as isize);
-    }
-}
-
-unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    w: c_int,
-    bitdepth_max: c_int,
-) {
-    loop_filter_v_sb128y_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        w,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    _w: c_int,
-    bd: BD,
-) {
-    let vm: c_uint = vmask[0] | vmask[1] | vmask[2];
-    let mut x: c_uint = 1 as c_int as c_uint;
-    while vm & !x.wrapping_sub(1 as c_int as c_uint) != 0 {
-        if vm & x != 0 {
-            let L = if (*l.offset(0))[0] as c_int != 0 {
-                (*l.offset(0))[0] as c_int
-            } else {
-                (*l.offset(-b4_stride as isize))[0] as c_int
-            };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
-                let idx = if vmask[2] & x != 0 {
-                    2 as c_int
-                } else {
-                    (vmask[1] & x != 0) as c_int
-                };
-                loop_filter(
-                    dst,
-                    E,
-                    I,
-                    H,
-                    1 as c_int as ptrdiff_t,
-                    BD::pxstride(stride),
-                    (4 as c_int) << idx,
-                    bd,
-                );
-            }
-        }
-        x <<= 1;
-        dst = dst.offset(4);
-        l = l.offset(1);
-    }
-}
-
-unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    h: c_int,
-    bitdepth_max: c_int,
-) {
-    loop_filter_h_sb128uv_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        h,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    _h: c_int,
-    bd: BD,
-) {
-    let vm: c_uint = vmask[0] | vmask[1];
-    let mut y: c_uint = 1 as c_int as c_uint;
-    while vm & !y.wrapping_sub(1 as c_int as c_uint) != 0 {
-        if vm & y != 0 {
-            let L = if (*l.offset(0))[0] as c_int != 0 {
-                (*l.offset(0))[0] as c_int
-            } else {
-                (*l.offset(-(1 as c_int) as isize))[0] as c_int
-            };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
-                let idx = (vmask[1] & y != 0) as c_int;
-                loop_filter(
-                    dst,
-                    E,
-                    I,
-                    H,
-                    BD::pxstride(stride),
-                    1 as c_int as ptrdiff_t,
-                    4 + 2 * idx,
-                    bd,
-                );
-            }
-        }
-        y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride));
-        l = l.offset(b4_stride as isize);
-    }
-}
-
-unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    w: c_int,
-    bitdepth_max: c_int,
-) {
-    loop_filter_v_sb128uv_rust(
-        dst.cast(),
-        stride,
-        vmask,
-        l,
-        b4_stride,
-        lut,
-        w,
-        BD::from_c(bitdepth_max),
-    )
-}
-
-unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    vmask: &[u32; 3],
-    mut l: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    lut: &Align16<Av1FilterLUT>,
-    _w: c_int,
-    bd: BD,
-) {
-    let vm: c_uint = vmask[0] | vmask[1];
-    let mut x: c_uint = 1 as c_int as c_uint;
-    while vm & !x.wrapping_sub(1 as c_int as c_uint) != 0 {
-        if vm & x != 0 {
-            let L = if (*l.offset(0))[0] as c_int != 0 {
-                (*l.offset(0))[0] as c_int
-            } else {
-                (*l.offset(-b4_stride as isize))[0] as c_int
-            };
-            if !(L == 0) {
-                let H = L >> 4;
-                let E = lut.0.e[L as usize] as c_int;
-                let I = lut.0.i[L as usize] as c_int;
-                let idx = (vmask[1] & x != 0) as c_int;
-                loop_filter(
-                    dst,
-                    E,
-                    I,
-                    H,
-                    1 as c_int as ptrdiff_t,
-                    BD::pxstride(stride),
-                    4 + 2 * idx,
-                    bd,
-                );
-            }
-        }
-        x <<= 1;
-        dst = dst.offset(4);
-        l = l.offset(1);
-    }
+    let dst = dst.cast();
+    let b4_stride = b4_stride as usize;
+    let bd = BD::from_c(bitdepth_max);
+    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, stride, vmask, l, b4_stride, lut, wh, bd)
 }
 
 impl Rav1dLoopFilterDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
+        use HV::*;
+        use YUV::*;
         Self {
             loop_filter_sb: [
                 [
-                    loopfilter_sb::Fn::new(loop_filter_h_sb128y_c_erased::<BD>),
-                    loopfilter_sb::Fn::new(loop_filter_v_sb128y_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { H as _ }, { Y as _ }>,
+                    ),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { V as _ }, { Y as _ }>,
+                    ),
                 ],
                 [
-                    loopfilter_sb::Fn::new(loop_filter_h_sb128uv_c_erased::<BD>),
-                    loopfilter_sb::Fn::new(loop_filter_v_sb128uv_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { H as _ }, { UV as _ }>,
+                    ),
+                    loopfilter_sb::Fn::new(
+                        loop_filter_sb128_c_erased::<BD, { V as _ }, { UV as _ }>,
+                    ),
                 ],
             ],
         }
