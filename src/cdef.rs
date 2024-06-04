@@ -13,6 +13,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ptr;
+use std::slice;
 
 #[cfg(all(
     feature = "asm",
@@ -203,7 +204,7 @@ unsafe fn padding<BD: BitDepth>(
 
 #[inline(never)]
 unsafe fn cdef_filter_block_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
     top: *const BD::Pixel,
@@ -237,8 +238,10 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
             let sec_shift = damping - sec_strength.ilog2() as c_int;
             for y in 0..h {
                 let tmp = &mut tmp[y * TMP_STRIDE..];
+                let dst =
+                    slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
-                    let px = (*dst.offset(x as isize)).as_::<c_int>();
+                    let px = dst[x].as_::<c_int>();
                     let mut sum = 0;
                     let mut max = px;
                     let mut min = px;
@@ -276,18 +279,18 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
                         min = cmp::min(s3 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(s3, max);
                     }
-                    *dst.offset(x as isize) =
-                        iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max)
-                            .as_::<BD::Pixel>();
+                    dst[x] = iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max)
+                        .as_::<BD::Pixel>();
                 }
-                dst = dst.offset(BD::pxstride(dst_stride));
             }
         } else {
             // pri_strength only
             for y in 0..h {
                 let tmp = &mut tmp[y * TMP_STRIDE..];
+                let dst =
+                    slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
-                    let px = (*dst.offset(x as isize)).as_::<c_int>();
+                    let px = dst[x].as_::<c_int>();
                     let mut sum = 0;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
@@ -298,10 +301,8 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
                     }
-                    *dst.offset(x as isize) =
-                        (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
+                    dst[x] = (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                 }
-                dst = dst.offset(BD::pxstride(dst_stride));
             }
         }
     } else {
@@ -309,8 +310,10 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
         let sec_shift = damping - sec_strength.ilog2() as c_int;
         for y in 0..h {
             let tmp = &mut tmp[y * TMP_STRIDE..];
+            let dst =
+                slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
             for x in 0..w {
-                let px = (*dst.offset(x as isize)).as_::<c_int>();
+                let px = dst[x].as_::<c_int>();
                 let mut sum = 0;
                 for k in 0..2 {
                     let off1 = dav1d_cdef_directions[dir + 4][k] as isize;
@@ -325,10 +328,8 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
                     sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
                     sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
                 }
-                *dst.offset(x as isize) =
-                    (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
+                dst[x] = (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
             }
-            dst = dst.offset(BD::pxstride(dst_stride));
         }
     };
 }
