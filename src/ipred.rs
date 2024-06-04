@@ -896,23 +896,24 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             max_base_x = width + cmp::min(width, height) - 1;
         }
     }
-    let base_inc = 1 + upsample_above as c_int;
+    let width = width as usize;
+    let max_base_x = max_base_x as usize;
+    let base_inc = 1 + upsample_above as usize;
     for y in 0..height {
         let xpos = (y + 1) * dx;
         let dst = dst.offset(BD::pxstride(stride) * y as isize);
         let frac = xpos & 0x3e;
 
-        for x in 0..width {
-            let base = (xpos >> 6) + base_inc * x;
+        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
                 let v = (*top.offset(base as isize)).as_::<c_int>() * (64 - frac)
                     + (*top.offset((base + 1) as isize)).as_::<c_int>() * frac;
-                *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
+                *dst = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
-                let width = width.try_into().unwrap();
-                let x = x as usize;
                 BD::pixel_set(
-                    &mut slice::from_raw_parts_mut(dst, width)[x..],
+                    &mut dst_slice[x..],
                     *top.offset(max_base_x as isize),
                     width - x,
                 );
