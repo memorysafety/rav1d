@@ -1053,9 +1053,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                     + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x;
             } else {
                 let base_y = ypos >> 6;
-                if !(base_y >= -(1 + upsample_left as c_int)) {
-                    unreachable!();
-                }
+                assert!(base_y >= -(1 + upsample_left as c_int));
                 let frac_y = ypos & 0x3e;
                 v = (*left.offset(-base_y as isize)).as_::<c_int>() * (64 - frac_y)
                     + (*left.offset(-(base_y + 1) as isize)).as_::<c_int>() * frac_y;
