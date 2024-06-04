@@ -846,14 +846,14 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
-    let enable_intra_edge_filter = angle >> 10;
+    let enable_intra_edge_filter = angle >> 10 != 0;
     angle &= 511;
     assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
     let mut top_out = [0.into(); 64 + 64];
     let top: *const BD::Pixel;
     let max_base_x;
-    let upsample_above = if enable_intra_edge_filter != 0 {
+    let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
         false
@@ -872,7 +872,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
     } else {
-        let filter_strength = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter {
             get_filter_strength(width + height, 90 - angle, is_sm)
         } else {
             0
