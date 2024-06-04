@@ -900,10 +900,10 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     let base_inc = 1 + upsample_above as usize;
     for y in 0..height {
         let xpos = (y + 1) * dx;
-        let dst = dst.offset(BD::pxstride(stride) * y as isize);
         let frac = xpos & 0x3e;
 
-        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        let dst_slice =
+            slice::from_raw_parts_mut(dst.offset(BD::pxstride(stride) * y as isize), width);
         for (x, dst) in dst_slice.iter_mut().enumerate() {
             let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
