@@ -1236,9 +1236,8 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     bd: BD,
 ) {
     filt_idx &= 511 as c_int;
-    if !(filt_idx < 5) {
-        unreachable!();
-    }
+    assert!(filt_idx < 5);
+
     let filter = &dav1d_filter_intra_taps[filt_idx as usize];
     let mut top: *const BD::Pixel = &*topleft_in.offset(1) as *const BD::Pixel;
     let mut y = 0;
@@ -1258,6 +1257,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             let p6 = (*left.offset((1 * left_stride) as isize)).as_::<c_int>();
             let mut ptr: *mut BD::Pixel = &mut *dst.offset(x as isize) as *mut BD::Pixel;
             let mut flt_ptr = filter.as_slice();
+
             let mut yy = 0;
             while yy < 2 {
                 let mut xx = 0;
