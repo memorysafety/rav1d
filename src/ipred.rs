@@ -990,7 +990,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 filter_strength,
             );
         } else {
-            let width = width.try_into().unwrap();
+            let width = width as usize;
             BD::pixel_copy(
                 &mut edge[topleft + 1..][..width],
                 &topleft_in[topleft_in_off + 1..][..width],
@@ -1028,10 +1028,11 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 filter_strength_0,
             );
         } else {
+            let height = height as usize;
             BD::pixel_copy(
-                &mut edge[topleft - height as usize..][..height as usize],
-                &topleft_in[topleft_in_off - height as usize..][..height as usize],
-                height.try_into().unwrap(),
+                &mut edge[topleft - height..][..height],
+                &topleft_in[topleft_in_off - height..][..height],
+                height,
             );
         }
     }
