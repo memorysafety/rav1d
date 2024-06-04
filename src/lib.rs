@@ -732,28 +732,20 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
             }
             if self.fc.len() > 1 && !self.frame_thread.out_delayed.is_empty() {
-                let mut n = 0;
-                while n < self.fc.len() {
-                    if self.frame_thread.out_delayed[n as usize]
-                        .p
-                        .frame_hdr
-                        .is_some()
-                    {
+                for n in 0..self.fc.len() {
+                    if self.frame_thread.out_delayed[n].p.frame_hdr.is_some() {
                         let _ = mem::take(&mut self.frame_thread.out_delayed[n as usize]);
                     }
-                    n = n.wrapping_add(1);
                 }
                 let _ = mem::take(&mut self.frame_thread.out_delayed);
             }
             let _ = mem::take(&mut self.tiles);
-            let mut n = 0;
-            while n < 8 {
-                if self.refs[n as usize].p.p.frame_hdr.is_some() {
+            for n in 0..8 {
+                if self.refs[n].p.p.frame_hdr.is_some() {
                     let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n as isize)).p);
                 }
-                let _ = mem::take(&mut self.refs[n as usize].refmvs);
-                let _ = mem::take(&mut self.refs[n as usize].segmap);
-                n += 1;
+                let _ = mem::take(&mut self.refs[n].refmvs);
+                let _ = mem::take(&mut self.refs[n].segmap);
             }
             let _ = mem::take(&mut self.seq_hdr);
             let _ = mem::take(&mut self.frame_hdr);
