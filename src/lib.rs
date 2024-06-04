@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::c_box::FnFree;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::decode::rav1d_decode_frame_exit;
@@ -824,7 +825,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     buf: *mut Dav1dData,
     ptr: *const u8,
     sz: usize,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
+    free_callback: Option<FnFree>,
     user_data: *mut c_void,
 ) -> Dav1dResult {
     || -> Rav1dResult {
@@ -843,7 +844,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
 pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: *mut Dav1dData,
     user_data: *const u8,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
+    free_callback: Option<FnFree>,
     cookie: *mut c_void,
 ) -> Dav1dResult {
     || -> Rav1dResult {
