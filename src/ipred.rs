@@ -1048,18 +1048,16 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         let mut x = 0;
         let mut ypos = (y << 6 + upsample_left as c_int) - dy;
         while x < width {
-            let v;
-            if base_x >= 0 {
-                v = edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
-                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x;
+            let v = if base_x >= 0 {
+                edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
+                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x
             } else {
                 let base_y = ypos >> 6;
                 assert!(base_y >= -(1 + upsample_left as c_int));
                 let frac_y = ypos & 0x3e;
-                v = edge[left.wrapping_add_signed(-base_y as isize)].as_::<c_int>() * (64 - frac_y)
-                    + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>()
-                        * frac_y;
-            }
+                edge[left.wrapping_add_signed(-base_y as isize)].as_::<c_int>() * (64 - frac_y)
+                    + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>() * frac_y
+            };
             *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
             x += 1;
             base_x += base_inc_x;
