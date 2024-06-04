@@ -792,17 +792,13 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
-    let _ = mem::take(p);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     if validate_input!(!p.is_null()).is_err() {
         return;
     }
-    let mut p_rust = p.read().into();
-    rav1d_picture_unref(&mut p_rust);
+    let mut p_rust = p.read().to::<Rav1dPicture>();
+    let _ = mem::take(&mut p_rust);
     p.write(p_rust.into());
 }
 
