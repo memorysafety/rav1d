@@ -6,6 +6,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
@@ -1055,10 +1056,9 @@ fn emu_edge_rust<BD: BitDepth>(
 }
 
 unsafe fn resize_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
+    dst_ptr: *mut BD::Pixel,
     dst_stride: isize,
-    mut src_ptr: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     dst_w: i32,
     h: i32,
     src_w: i32,
@@ -1067,10 +1067,12 @@ unsafe fn resize_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let max = src_w - 1;
-    for _ in 0..h {
+    for y in 0..h {
         let mut mx = mx0;
         let mut src_x = -1;
-        let src = slice::from_raw_parts(src_ptr, src_w as usize);
+        let dst_ptr = dst_ptr.offset(y as isize * BD::pxstride(dst_stride));
+        let src = src + (y as isize * src.data.pixel_stride::<BD>());
+        let src = &*src.data.slice::<BD, _>((src.offset.., ..src_w as usize));
         let dst = slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
         for dst in dst {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
@@ -1090,8 +1092,6 @@ unsafe fn resize_rust<BD: BitDepth>(
             src_x += mx >> 14;
             mx &= 0x3fff;
         }
-        dst_ptr = dst_ptr.offset(BD::pxstride(dst_stride));
-        src_ptr = src_ptr.offset(BD::pxstride(src_stride));
     }
 }
 
@@ -1523,7 +1523,7 @@ impl emu_edge::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     dst: *mut DynPixel,
     dst_stride: isize,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     dst_w: i32,
     h: i32,
@@ -1531,6 +1531,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     dx: i32,
     mx: i32,
     bitdepth_max: i32,
+    _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl resize::Fn {
@@ -1538,8 +1539,7 @@ impl resize::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: isize,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         dst_w: i32,
         h: i32,
         src_w: i32,
@@ -1548,10 +1548,12 @@ impl resize::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let src = src.cast();
+        let src_ptr = src.data.as_ptr_at::<BD>(src.offset).cast();
+        let src_stride = src.data.stride();
         let bd = bd.into_c();
+        let src = FFISafe::new(&src);
         self.get()(
-            dst, dst_stride, src, src_stride, dst_w, h, src_w, dx, mx, bd,
+            dst, dst_stride, src_ptr, src_stride, dst_w, h, src_w, dx, mx, bd, src,
         )
     }
 }
@@ -1953,27 +1955,21 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
 unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: isize,
-    src: *const DynPixel,
-    src_stride: isize,
+    _src_ptr: *const DynPixel,
+    _src_stride: isize,
     dst_w: i32,
     h: i32,
     src_w: i32,
     dx: i32,
     mx0: i32,
     bitdepth_max: i32,
+    src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    resize_rust(
-        dst.cast(),
-        dst_stride,
-        src.cast(),
-        src_stride,
-        dst_w,
-        h,
-        src_w,
-        dx,
-        mx0,
-        BD::from_c(bitdepth_max),
-    )
+    let dst = dst.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `resize::Fn::call`.
+    let src = *unsafe { FFISafe::get(src) };
+    let bd = BD::from_c(bitdepth_max);
+    resize_rust(dst, dst_stride, src, dst_w, h, src_w, dx, mx0, bd)
 }
 
 impl Rav1dMCDSPContext {

@@ -88,8 +88,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
             dsp.mc.resize.call::<BD>(
                 dst_guard.as_mut_ptr(),
                 dst_stride,
-                src.data.as_ptr_at::<BD>(src.offset),
-                src.data.stride(),
+                src,
                 dst_w as c_int,
                 n_lines,
                 src_w as c_int,

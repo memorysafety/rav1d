@@ -4285,8 +4285,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         f.dsp.mc.resize.call::<BD>(
             dst.data.as_mut_ptr_at::<BD>(dst.offset),
             dst.data.stride(),
-            src.data.as_ptr_at::<BD>(src.offset),
-            src.data.stride(),
+            src,
             dst_w,
             cmp::min(img_h, h_end) + h_start,
             src_w,
