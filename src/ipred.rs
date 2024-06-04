@@ -847,7 +847,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
+    angle &= 511;
     assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
     let mut top_out = [0.into(); 64 + 64];
@@ -864,7 +864,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             width + height,
             topleft_in,
             topleft_in_off + 1,
-            -(1 as c_int),
+            -1,
             width + cmp::min(width, height),
             bd,
         );
@@ -875,17 +875,17 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, 90 - angle, is_sm)
         } else {
-            0 as c_int
+            0
         };
         if filter_strength != 0 {
             filter_edge::<BD>(
                 &mut top_out,
                 width + height,
-                0 as c_int,
+                0,
                 width + height,
                 topleft_in,
                 topleft_in_off + 1,
-                -(1 as c_int),
+                -1,
                 width + cmp::min(width, height),
                 filter_strength,
             );
@@ -900,7 +900,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     let mut y = 0;
     let mut xpos = dx;
     while y < height {
-        let frac = xpos & 0x3e as c_int;
+        let frac = xpos & 0x3e;
         let mut x = 0;
         let mut base = xpos >> 6;
         while x < width {
