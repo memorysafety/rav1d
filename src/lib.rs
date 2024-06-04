@@ -702,16 +702,6 @@ impl Drop for Rav1dContext {
                 }
             }
         }
-        let _ = mem::take(&mut self.fc);
-        let _ = mem::take(&mut self.frame_thread.out_delayed);
-        let _ = mem::take(&mut self.tiles);
-        let _ = mem::take(&mut self.refs);
-        let _ = mem::take(&mut self.seq_hdr);
-        let _ = mem::take(&mut self.frame_hdr);
-        let _ = mem::take(&mut self.mastering_display);
-        let _ = mem::take(&mut self.content_light);
-        let _ = mem::take(&mut self.itut_t35);
-        let _ = mem::take(&mut self.picture_pool);
     }
 }
 
