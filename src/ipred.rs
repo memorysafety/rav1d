@@ -957,8 +957,9 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     } else {
         false
     };
-    let mut edge = [0.into(); 129];
+    let mut edge = [0.into(); 64 + 64 +1];
     let topleft = 64;
+
     if upsample_above {
         upsample_edge::<BD>(
             &mut edge[topleft..],
@@ -1035,6 +1036,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         }
     }
     edge[topleft] = topleft_in[topleft_in_off];
+
     let base_inc_x = 1 + upsample_above as c_int;
     let left = edge[topleft - (1 + upsample_left as usize)..].as_mut_ptr();
     let mut y = 0;
