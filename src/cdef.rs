@@ -4,7 +4,6 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::ulog2;
 use crate::src::cpu::CpuFlags;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -131,15 +130,13 @@ pub fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
 
 #[inline]
 pub unsafe fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
+    // Use a value that's a large positive number when interpreted as unsigned,
+    // and a large negative number when interpreted as signed.
+    for _ in 0..h {
+        for x in 0..w {
             *tmp.offset(x as isize) = i16::MIN;
-            x += 1;
         }
-        tmp = tmp.offset(stride as isize);
-        y += 1;
+        tmp = tmp.offset(stride);
     }
 }
 
@@ -155,91 +152,74 @@ unsafe fn padding<BD: BitDepth>(
     h: c_int,
     edges: CdefEdgeFlags,
 ) {
-    let mut x_start = -(2 as c_int);
+    // Fill extended input buffer.
+    let mut x_start = -2;
     let mut x_end = w + 2;
-    let mut y_start = -(2 as c_int);
+    let mut y_start = -2;
     let mut y_end = h + 2;
     if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
         fill(
-            tmp.offset(-2).offset(-((2 * tmp_stride) as isize)),
+            tmp.offset(-2).offset(-(2 * tmp_stride)),
             tmp_stride,
             w + 4,
-            2 as c_int,
+            2,
         );
-        y_start = 0 as c_int;
+        y_start = 0;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
         fill(
-            tmp.offset((h as isize * tmp_stride) as isize)
-                .offset(-(2 as c_int as isize)),
+            tmp.offset(h as isize * tmp_stride).offset(-2),
             tmp_stride,
             w + 4,
-            2 as c_int,
+            2,
         );
-        y_end -= 2 as c_int;
+        y_end -= 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_LEFT) {
         fill(
-            tmp.offset((y_start as isize * tmp_stride) as isize)
-                .offset(-(2 as c_int as isize)),
+            tmp.offset(y_start as isize * tmp_stride).offset(-2),
             tmp_stride,
-            2 as c_int,
+            2,
             y_end - y_start,
         );
-        x_start = 0 as c_int;
+        x_start = 0;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
         fill(
-            tmp.offset((y_start as isize * tmp_stride) as isize)
-                .offset(w as isize),
+            tmp.offset(y_start as isize * tmp_stride).offset(w as isize),
             tmp_stride,
-            2 as c_int,
+            2,
             y_end - y_start,
         );
-        x_end -= 2 as c_int;
+        x_end -= 2;
     }
-    let mut y = y_start;
-    while y < 0 {
-        let mut x = x_start;
-        while x < x_end {
-            *tmp.offset((x as isize + y as isize * tmp_stride) as isize) =
+
+    for y in y_start..0 {
+        for x in x_start..x_end {
+            *tmp.offset(x as isize + y as isize * tmp_stride) =
                 (*top.offset(x as isize)).as_::<i16>();
-            x += 1;
         }
         top = top.offset(BD::pxstride(src_stride));
-        y += 1;
     }
-    let mut y_0 = 0;
-    while y_0 < h {
-        let mut x_0 = x_start;
-        while x_0 < 0 {
-            *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
-                left[y_0 as usize][(2 + x_0) as usize].as_::<i16>();
-            x_0 += 1;
+    for y in 0..h as usize {
+        for x in x_start..0 {
+            *tmp.offset(x as isize + y as isize * tmp_stride) =
+                left[y][(2 + x) as usize].as_::<i16>();
         }
-        y_0 += 1;
     }
-    let mut y_1 = 0;
-    while y_1 < h {
-        let mut x_1 = if y_1 < h { 0 as c_int } else { x_start };
-        while x_1 < x_end {
-            *tmp.offset(x_1 as isize) = (*src.offset(x_1 as isize)).as_::<i16>();
-            x_1 += 1;
+    for y in 0..h {
+        for x in if y < h { 0 } else { x_start }..x_end {
+            *tmp.offset(x as isize) = (*src.offset(x as isize)).as_::<i16>();
         }
         src = src.offset(BD::pxstride(src_stride));
-        tmp = tmp.offset(tmp_stride as isize);
-        y_1 += 1;
+        tmp = tmp.offset(tmp_stride);
     }
-    let mut y_2 = h;
-    while y_2 < y_end {
-        let mut x_2 = x_start;
-        while x_2 < x_end {
-            *tmp.offset(x_2 as isize) = (*bottom.offset(x_2 as isize)).as_::<i16>();
-            x_2 += 1;
+    for _ in h..y_end {
+        for x in x_start..x_end {
+            *tmp.offset(x as isize) = (*bottom.offset(x as isize)).as_::<i16>();
         }
         bottom = bottom.offset(BD::pxstride(src_stride));
-        tmp = tmp.offset(tmp_stride as isize);
-        y_2 += 1;
+        tmp = tmp.offset(tmp_stride);
     }
 }
 
@@ -255,55 +235,54 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     dir: c_int,
     damping: c_int,
     w: c_int,
-    mut h: c_int,
+    h: c_int,
     edges: CdefEdgeFlags,
     bd: BD,
 ) {
-    let tmp_stride: ptrdiff_t = 12 as c_int as ptrdiff_t;
-    if !((w == 4 || w == 8) && (h == 4 || h == 8)) {
-        unreachable!();
-    }
-    let mut tmp_buf: [i16; 144] = [0; 144];
-    let mut tmp: *mut i16 = tmp_buf
-        .as_mut_ptr()
-        .offset((2 * tmp_stride) as isize)
-        .offset(2);
+    let dir = dir as usize;
+
+    let tmp_stride = 12;
+    assert!((w == 4 || w == 8) && (h == 4 || h == 8));
+    let mut tmp_buf = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
+    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * tmp_stride).offset(2);
+
     padding::<BD>(
         tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
     );
+
     if pri_strength != 0 {
         let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
-        let pri_shift = cmp::max(0 as c_int, damping - ulog2(pri_strength as c_uint));
+        let pri_shift = cmp::max(0, damping - pri_strength.ilog2() as c_int);
         if sec_strength != 0 {
-            let sec_shift = damping - ulog2(sec_strength as c_uint);
-            loop {
-                let mut x = 0;
-                while x < w {
+            let sec_shift = damping - sec_strength.ilog2() as c_int;
+            for _ in 0..h {
+                for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
                     let mut sum = 0;
                     let mut max = px;
                     let mut min = px;
                     let mut pri_tap_k = pri_tap;
-                    let mut k = 0;
-                    while k < 2 {
-                        let off1 = dav1d_cdef_directions[(dir + 2) as usize][k as usize] as c_int;
+                    for k in 0..2 {
+                        let off1 = dav1d_cdef_directions[dir + 2][k] as c_int; // dir
                         let p0 = *tmp.offset((x + off1) as isize) as c_int;
                         let p1 = *tmp.offset((x - off1) as isize) as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
+                        // If `pri_tap_k == 4`, then it becomes 2, else it remains 3.
                         pri_tap_k = pri_tap_k & 3 | 2;
                         min = cmp::min(p0 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p0, max);
                         min = cmp::min(p1 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p1, max);
-                        let off2 = dav1d_cdef_directions[(dir + 4) as usize][k as usize] as c_int;
-                        let off3 = dav1d_cdef_directions[(dir + 0) as usize][k as usize] as c_int;
+                        let off2 = dav1d_cdef_directions[dir + 4][k] as c_int;
+                        let off3 = dav1d_cdef_directions[dir + 0][k] as c_int;
                         let s0 = *tmp.offset((x + off2) as isize) as c_int;
                         let s1 = *tmp.offset((x - off2) as isize) as c_int;
                         let s2 = *tmp.offset((x + off3) as isize) as c_int;
                         let s3 = *tmp.offset((x - off3) as isize) as c_int;
-                        let sec_tap = 2 - k;
+                        // `sec_tap` starts at 2 and becomes 1.
+                        let sec_tap = 2 - k as c_int;
                         sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
@@ -316,84 +295,61 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         max = cmp::max(s2, max);
                         min = cmp::min(s3 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(s3, max);
-                        k += 1;
                     }
                     *dst.offset(x as isize) =
                         iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max)
                             .as_::<BD::Pixel>();
-                    x += 1;
                 }
                 dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.offset(tmp_stride as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
+                tmp = tmp.offset(tmp_stride);
             }
         } else {
-            loop {
-                let mut x_0 = 0;
-                while x_0 < w {
-                    let px_0 = (*dst.offset(x_0 as isize)).as_::<c_int>();
-                    let mut sum_0 = 0;
-                    let mut pri_tap_k_0 = pri_tap;
-                    let mut k_0 = 0;
-                    while k_0 < 2 {
-                        let off = dav1d_cdef_directions[(dir + 2) as usize][k_0 as usize] as c_int;
-                        let p0_0 = *tmp.offset((x_0 + off) as isize) as c_int;
-                        let p1_0 = *tmp.offset((x_0 - off) as isize) as c_int;
-                        sum_0 += pri_tap_k_0 * constrain(p0_0 - px_0, pri_strength, pri_shift);
-                        sum_0 += pri_tap_k_0 * constrain(p1_0 - px_0, pri_strength, pri_shift);
-                        pri_tap_k_0 = pri_tap_k_0 & 3 | 2;
-                        k_0 += 1;
+            // pri_strength only
+            for _ in 0..h {
+                for x in 0..w {
+                    let px = (*dst.offset(x as isize)).as_::<c_int>();
+                    let mut sum = 0;
+                    let mut pri_tap_k = pri_tap;
+                    for k in 0..2 {
+                        let off = dav1d_cdef_directions[dir + 2][k] as c_int;
+                        let p0 = *tmp.offset((x + off) as isize) as c_int;
+                        let p1 = *tmp.offset((x - off) as isize) as c_int;
+                        sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
+                        sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
+                        pri_tap_k = pri_tap_k & 3 | 2;
                     }
-                    *dst.offset(x_0 as isize) =
-                        (px_0 + (sum_0 - (sum_0 < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
-                    x_0 += 1;
+                    *dst.offset(x as isize) =
+                        (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                 }
                 dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.offset(tmp_stride as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
+                tmp = tmp.offset(tmp_stride);
             }
         }
     } else {
-        if sec_strength == 0 {
-            unreachable!();
-        }
-        let sec_shift_0 = damping - ulog2(sec_strength as c_uint);
-        loop {
-            let mut x_1 = 0;
-            while x_1 < w {
-                let px_1 = (*dst.offset(x_1 as isize)).as_::<c_int>();
-                let mut sum_1 = 0;
-                let mut k_1 = 0;
-                while k_1 < 2 {
-                    let off1_0 = dav1d_cdef_directions[(dir + 4) as usize][k_1 as usize] as c_int;
-                    let off2_0 = dav1d_cdef_directions[(dir + 0) as usize][k_1 as usize] as c_int;
-                    let s0_0 = *tmp.offset((x_1 + off1_0) as isize) as c_int;
-                    let s1_0 = *tmp.offset((x_1 - off1_0) as isize) as c_int;
-                    let s2_0 = *tmp.offset((x_1 + off2_0) as isize) as c_int;
-                    let s3_0 = *tmp.offset((x_1 - off2_0) as isize) as c_int;
-                    let sec_tap_0 = 2 - k_1;
-                    sum_1 += sec_tap_0 * constrain(s0_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s1_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s2_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s3_0 - px_1, sec_strength, sec_shift_0);
-                    k_1 += 1;
+        // sec_strength only
+        let sec_shift = damping - sec_strength.ilog2() as c_int;
+        for _ in 0..h {
+            for x in 0..w {
+                let px = (*dst.offset(x as isize)).as_::<c_int>();
+                let mut sum = 0;
+                for k in 0..2 {
+                    let off1 = dav1d_cdef_directions[dir + 4][k] as c_int;
+                    let off2 = dav1d_cdef_directions[dir + 0][k] as c_int;
+                    let s0 = *tmp.offset((x + off1) as isize) as c_int;
+                    let s1 = *tmp.offset((x - off1) as isize) as c_int;
+                    let s2 = *tmp.offset((x + off2) as isize) as c_int;
+                    let s3 = *tmp.offset((x - off2) as isize) as c_int;
+                    let sec_tap = 2 - k as c_int;
+                    sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
+                    sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
+                    sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
+                    sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
                 }
-                *dst.offset(x_1 as isize) =
-                    (px_1 + (sum_1 - (sum_1 < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
-                x_1 += 1;
+                *dst.offset(x as isize) =
+                    (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
             }
             dst = dst.offset(BD::pxstride(dst_stride));
-            tmp = tmp.offset(tmp_stride as isize);
-            h -= 1;
-            if !(h != 0) {
-                break;
-            }
+            tmp = tmp.offset(tmp_stride);
         }
     };
 }
@@ -450,109 +406,72 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     bd: BD,
 ) -> c_int {
     let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
-    let mut partial_sum_hv: [[c_int; 8]; 2] = [[0 as c_int, 0, 0, 0, 0, 0, 0, 0], [0; 8]];
-    let mut partial_sum_diag: [[c_int; 15]; 2] = [
-        [0 as c_int, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0; 15],
-    ];
-    let mut partial_sum_alt: [[c_int; 11]; 4] = [
-        [0 as c_int, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0; 11],
-        [0; 11],
-        [0; 11],
-    ];
-    let mut y = 0;
-    while y < 8 {
-        let mut x = 0;
-        while x < 8 {
+    let mut partial_sum_hv = [[0; 8]; 2];
+    let mut partial_sum_diag = [[0; 15]; 2];
+    let mut partial_sum_alt = [[0; 11]; 4];
+
+    for y in 0..8 {
+        for x in 0..8 {
             let px = ((*img.offset(x as isize)).as_::<c_int>() >> bitdepth_min_8) - 128;
-            partial_sum_diag[0][(y + x) as usize] += px;
-            partial_sum_alt[0][(y + (x >> 1)) as usize] += px;
-            partial_sum_hv[0][y as usize] += px;
-            partial_sum_alt[1][(3 + y - (x >> 1)) as usize] += px;
-            partial_sum_diag[1][(7 + y - x) as usize] += px;
-            partial_sum_alt[2][(3 - (y >> 1) + x) as usize] += px;
-            partial_sum_hv[1][x as usize] += px;
-            partial_sum_alt[3][((y >> 1) + x) as usize] += px;
-            x += 1;
+
+            partial_sum_diag[0][y + x] += px;
+            partial_sum_alt[0][y + (x >> 1)] += px;
+            partial_sum_hv[0][y] += px;
+            partial_sum_alt[1][3 + y - (x >> 1)] += px;
+            partial_sum_diag[1][7 + y - x] += px;
+            partial_sum_alt[2][3 - (y >> 1) + x] += px;
+            partial_sum_hv[1][x] += px;
+            partial_sum_alt[3][(y >> 1) + x] += px;
         }
         img = img.offset(BD::pxstride(stride));
-        y += 1;
     }
-    let mut cost: [c_uint; 8] = [0 as c_int as c_uint, 0, 0, 0, 0, 0, 0, 0];
-    let mut n = 0;
-    while n < 8 {
-        cost[2] = (cost[2]).wrapping_add(
-            (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as c_uint,
-        );
-        cost[6] = (cost[6]).wrapping_add(
-            (partial_sum_hv[1][n as usize] * partial_sum_hv[1][n as usize]) as c_uint,
-        );
-        n += 1;
+
+    let mut cost = [0; 8];
+    for n in 0..8 {
+        cost[2] += (partial_sum_hv[0][n] * partial_sum_hv[0][n]) as c_uint;
+        cost[6] += (partial_sum_hv[1][n] * partial_sum_hv[1][n]) as c_uint;
     }
-    cost[2] = (cost[2]).wrapping_mul(105 as c_int as c_uint);
-    cost[6] = (cost[6]).wrapping_mul(105 as c_int as c_uint);
+    cost[2] *= 105;
+    cost[6] *= 105;
+
     static div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
-    let mut n_0 = 0;
-    while n_0 < 7 {
-        let d = div_table[n_0 as usize] as c_int;
-        cost[0] = (cost[0]).wrapping_add(
-            ((partial_sum_diag[0][n_0 as usize] * partial_sum_diag[0][n_0 as usize]
-                + partial_sum_diag[0][(14 - n_0) as usize]
-                    * partial_sum_diag[0][(14 - n_0) as usize])
-                * d) as c_uint,
-        );
-        cost[4] = (cost[4]).wrapping_add(
-            ((partial_sum_diag[1][n_0 as usize] * partial_sum_diag[1][n_0 as usize]
-                + partial_sum_diag[1][(14 - n_0) as usize]
-                    * partial_sum_diag[1][(14 - n_0) as usize])
-                * d) as c_uint,
-        );
-        n_0 += 1;
+    for n in 0..7 {
+        let d = div_table[n] as c_int;
+        cost[0] += ((partial_sum_diag[0][n] * partial_sum_diag[0][n]
+            + partial_sum_diag[0][14 - n] * partial_sum_diag[0][14 - n])
+            * d) as c_uint;
+        cost[4] += ((partial_sum_diag[1][n] * partial_sum_diag[1][n]
+            + partial_sum_diag[1][14 - n] * partial_sum_diag[1][14 - n])
+            * d) as c_uint;
     }
-    cost[0] =
-        (cost[0]).wrapping_add((partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as c_uint);
-    cost[4] =
-        (cost[4]).wrapping_add((partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint);
-    let mut n_1 = 0;
-    while n_1 < 4 {
-        let cost_ptr: *mut c_uint =
-            &mut *cost.as_mut_ptr().offset((n_1 * 2 + 1) as isize) as *mut c_uint;
-        let mut m = 0;
-        while m < 5 {
-            *cost_ptr = (*cost_ptr).wrapping_add(
-                (partial_sum_alt[n_1 as usize][(3 + m) as usize]
-                    * partial_sum_alt[n_1 as usize][(3 + m) as usize]) as c_uint,
-            );
-            m += 1;
+    cost[0] += (partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as c_uint;
+    cost[4] += (partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as c_uint;
+
+    for n in 0..4 {
+        let cost_ptr = &mut cost[n * 2 + 1];
+        for m in 0..5 {
+            *cost_ptr += (partial_sum_alt[n][3 + m] * partial_sum_alt[n][3 + m]) as c_uint;
         }
-        *cost_ptr = (*cost_ptr).wrapping_mul(105 as c_int as c_uint);
-        let mut m_0 = 0;
-        while m_0 < 3 {
-            let d_0 = div_table[(2 * m_0 + 1) as usize] as c_int;
-            *cost_ptr = (*cost_ptr).wrapping_add(
-                ((partial_sum_alt[n_1 as usize][m_0 as usize]
-                    * partial_sum_alt[n_1 as usize][m_0 as usize]
-                    + partial_sum_alt[n_1 as usize][(10 - m_0) as usize]
-                        * partial_sum_alt[n_1 as usize][(10 - m_0) as usize])
-                    * d_0) as c_uint,
-            );
-            m_0 += 1;
+        *cost_ptr *= 105;
+        for m in 0..3 {
+            let d = div_table[2 * m + 1] as c_int;
+            *cost_ptr += ((partial_sum_alt[n][m] * partial_sum_alt[n][m]
+                + partial_sum_alt[n][10 - m] * partial_sum_alt[n][10 - m])
+                * d) as c_uint;
         }
-        n_1 += 1;
     }
+
     let mut best_dir = 0;
-    let mut best_cost: c_uint = cost[0];
-    let mut n_2 = 1;
-    while n_2 < 8 {
-        if cost[n_2 as usize] > best_cost {
-            best_cost = cost[n_2 as usize];
-            best_dir = n_2;
+    let mut best_cost = cost[0];
+    for n in 0..8 {
+        if cost[n] > best_cost {
+            best_cost = cost[n];
+            best_dir = n;
         }
-        n_2 += 1;
     }
-    *variance = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
-    return best_dir;
+
+    *variance = (best_cost - cost[best_dir ^ 4]) >> 10;
+    best_dir as c_int
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -604,7 +523,7 @@ unsafe extern "C" fn cdef_filter_neon_erased<
     use crate::src::align::Align16;
 
     let mut tmp_buf = Align16([0; TMP_LEN]);
-    let tmp = tmp_buf.0.as_mut_ptr().add(2 * TMP_STRIDE + 8);
+    let tmp = tmp_buf.0[2 * TMP_STRIDE + 8..].as_mut_ptr();
     let (padding, filter) = match W {
         4 => (
             bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
