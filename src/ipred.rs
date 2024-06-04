@@ -1187,8 +1187,8 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     )
 }
 
-unsafe fn filter_fn(
-    flt_ptr: *const i8,
+fn filter_fn(
+    flt_ptr: &[i8],
     p0: c_int,
     p1: c_int,
     p2: c_int,
@@ -1198,21 +1198,21 @@ unsafe fn filter_fn(
     p6: c_int,
 ) -> c_int {
     if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-        *flt_ptr.offset(0) as c_int * p0
-            + *flt_ptr.offset(1) as c_int * p1
-            + *flt_ptr.offset(16) as c_int * p2
-            + *flt_ptr.offset(17) as c_int * p3
-            + *flt_ptr.offset(32) as c_int * p4
-            + *flt_ptr.offset(33) as c_int * p5
-            + *flt_ptr.offset(48) as c_int * p6
+        flt_ptr[0] as c_int * p0
+            + flt_ptr[1] as c_int * p1
+            + flt_ptr[16] as c_int * p2
+            + flt_ptr[17] as c_int * p3
+            + flt_ptr[32] as c_int * p4
+            + flt_ptr[33] as c_int * p5
+            + flt_ptr[48] as c_int * p6
     } else {
-        *flt_ptr.offset(0) as c_int * p0
-            + *flt_ptr.offset(8) as c_int * p1
-            + *flt_ptr.offset(16) as c_int * p2
-            + *flt_ptr.offset(24) as c_int * p3
-            + *flt_ptr.offset(32) as c_int * p4
-            + *flt_ptr.offset(40) as c_int * p5
-            + *flt_ptr.offset(48) as c_int * p6
+        flt_ptr[0] as c_int * p0
+            + flt_ptr[8] as c_int * p1
+            + flt_ptr[16] as c_int * p2
+            + flt_ptr[24] as c_int * p3
+            + flt_ptr[32] as c_int * p4
+            + flt_ptr[40] as c_int * p5
+            + flt_ptr[48] as c_int * p6
     }
 }
 
@@ -1262,7 +1262,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             while yy < 2 {
                 let mut xx = 0;
                 while xx < 4 {
-                    let acc = filter_fn(flt_ptr.as_ptr(), p0, p1, p2, p3, p4, p5, p6);
+                    let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
                     *ptr.offset(xx as isize) = bd.iclip_pixel(acc + 8 >> 4);
                     xx += 1;
                     flt_ptr = &flt_ptr[FLT_INCR..];
