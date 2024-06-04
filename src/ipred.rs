@@ -1038,17 +1038,20 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     }
     edge[topleft] = topleft_in[topleft_in_off];
 
-    let base_inc_x = 1 + upsample_above as c_int;
+    let base_inc_x = 1 + upsample_above as usize;
     let left = topleft - (1 + upsample_left as usize);
     for y in 0..height {
         let xpos = (1 + (upsample_above as c_int) << 6) - (dx * (y + 1));
         let base_x = xpos >> 6;
         let frac_x = xpos & 0x3e;
-        let dst = dst.offset(BD::pxstride(stride) * y as isize);
 
-        for x in 0..width {
-            let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1));
-            let base_x = base_x + base_inc_x * x;
+        let dst_slice = slice::from_raw_parts_mut(
+            dst.offset(BD::pxstride(stride) * y as isize),
+            width as usize,
+        );
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1) as c_int);
+            let base_x = base_x + (base_inc_x * x) as c_int;
             let v = if base_x >= 0 {
                 edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
                     + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x
@@ -1059,7 +1062,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 edge[left.wrapping_add_signed(-base_y as isize)].as_::<c_int>() * (64 - frac_y)
                     + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>() * frac_y
             };
-            *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
+            *dst = (v + 32 >> 6).as_::<BD::Pixel>();
         }
     }
 }
