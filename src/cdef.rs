@@ -233,7 +233,7 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
     let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
     if pri_strength != 0 {
-        let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
+        let bitdepth_min_8 = bd.bitdepth() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = cmp::max(0, damping - pri_strength.ilog2() as c_int);
         if sec_strength != 0 {
@@ -387,7 +387,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
-    let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
+    let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut partial_sum_hv = [[0; 8]; 2];
     let mut partial_sum_diag = [[0; 15]; 2];
     let mut partial_sum_alt = [[0; 11]; 4];
