@@ -226,25 +226,18 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     edges: CdefEdgeFlags,
     bd: BD,
 ) {
-    let dir = dir as usize;
+    let [dir, w, h] = [dir, w, h].map(|it| it as usize);
 
     let tmp_stride = 12;
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
-    let mut tmp_buf = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
-    let mut tmp = tmp_buf.as_mut_ptr().add(2 * tmp_stride).add(2);
+    let mut tmp = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
 
     padding::<BD>(
-        &mut tmp_buf,
-        tmp_stride,
-        dst,
-        dst_stride,
-        left,
-        top,
-        bottom,
-        w as usize,
-        h as usize,
-        edges,
+        &mut tmp, tmp_stride, dst, dst_stride, left, top, bottom, w as usize, h as usize, edges,
     );
+
+    let tmp_offset = 2 * tmp_stride + 2;
+    let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
     if pri_strength != 0 {
         let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
@@ -252,7 +245,8 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
         let pri_shift = cmp::max(0, damping - pri_strength.ilog2() as c_int);
         if sec_strength != 0 {
             let sec_shift = damping - sec_strength.ilog2() as c_int;
-            for _ in 0..h {
+            for y in 0..h {
+                let tmp = &mut tmp[y * tmp_stride..];
                 for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
                     let mut sum = 0;
@@ -260,9 +254,9 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                     let mut min = px;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off1 = dav1d_cdef_directions[dir + 2][k] as c_int; // dir
-                        let p0 = *tmp.offset((x + off1) as isize) as c_int;
-                        let p1 = *tmp.offset((x - off1) as isize) as c_int;
+                        let off1 = dav1d_cdef_directions[dir + 2][k] as isize; // dir
+                        let p0 = tmp[tmp_index(x, off1)] as c_int;
+                        let p1 = tmp[tmp_index(x, -off1)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         // If `pri_tap_k == 4`, then it becomes 2, else it remains 3.
@@ -271,12 +265,12 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         max = cmp::max(p0, max);
                         min = cmp::min(p1 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p1, max);
-                        let off2 = dav1d_cdef_directions[dir + 4][k] as c_int;
-                        let off3 = dav1d_cdef_directions[dir + 0][k] as c_int;
-                        let s0 = *tmp.offset((x + off2) as isize) as c_int;
-                        let s1 = *tmp.offset((x - off2) as isize) as c_int;
-                        let s2 = *tmp.offset((x + off3) as isize) as c_int;
-                        let s3 = *tmp.offset((x - off3) as isize) as c_int;
+                        let off2 = dav1d_cdef_directions[dir + 4][k] as isize;
+                        let off3 = dav1d_cdef_directions[dir + 0][k] as isize;
+                        let s0 = tmp[tmp_index(x, off2)] as c_int;
+                        let s1 = tmp[tmp_index(x, -off2)] as c_int;
+                        let s2 = tmp[tmp_index(x, off3)] as c_int;
+                        let s3 = tmp[tmp_index(x, -off3)] as c_int;
                         // `sec_tap` starts at 2 and becomes 1.
                         let sec_tap = 2 - k as c_int;
                         sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
@@ -297,19 +291,19 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                             .as_::<BD::Pixel>();
                 }
                 dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.add(tmp_stride);
             }
         } else {
             // pri_strength only
-            for _ in 0..h {
+            for y in 0..h {
+                let tmp = &mut tmp[y * tmp_stride..];
                 for x in 0..w {
                     let px = (*dst.offset(x as isize)).as_::<c_int>();
                     let mut sum = 0;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off = dav1d_cdef_directions[dir + 2][k] as c_int;
-                        let p0 = *tmp.offset((x + off) as isize) as c_int;
-                        let p1 = *tmp.offset((x - off) as isize) as c_int;
+                        let off = dav1d_cdef_directions[dir + 2][k] as isize;
+                        let p0 = tmp[tmp_index(x, off)] as c_int;
+                        let p1 = tmp[tmp_index(x, -off)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
@@ -318,23 +312,23 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                 }
                 dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.add(tmp_stride);
             }
         }
     } else {
         // sec_strength only
         let sec_shift = damping - sec_strength.ilog2() as c_int;
-        for _ in 0..h {
+        for y in 0..h {
+            let tmp = &mut tmp[y * tmp_stride..];
             for x in 0..w {
                 let px = (*dst.offset(x as isize)).as_::<c_int>();
                 let mut sum = 0;
                 for k in 0..2 {
-                    let off1 = dav1d_cdef_directions[dir + 4][k] as c_int;
-                    let off2 = dav1d_cdef_directions[dir + 0][k] as c_int;
-                    let s0 = *tmp.offset((x + off1) as isize) as c_int;
-                    let s1 = *tmp.offset((x - off1) as isize) as c_int;
-                    let s2 = *tmp.offset((x + off2) as isize) as c_int;
-                    let s3 = *tmp.offset((x - off2) as isize) as c_int;
+                    let off1 = dav1d_cdef_directions[dir + 4][k] as isize;
+                    let off2 = dav1d_cdef_directions[dir + 0][k] as isize;
+                    let s0 = tmp[tmp_index(x, off1)] as c_int;
+                    let s1 = tmp[tmp_index(x, -off1)] as c_int;
+                    let s2 = tmp[tmp_index(x, off2)] as c_int;
+                    let s3 = tmp[tmp_index(x, -off2)] as c_int;
                     let sec_tap = 2 - k as c_int;
                     sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
                     sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
@@ -345,7 +339,6 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                     (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
             }
             dst = dst.offset(BD::pxstride(dst_stride));
-            tmp = tmp.add(tmp_stride);
         }
     };
 }
