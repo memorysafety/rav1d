@@ -709,8 +709,7 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
             }
             mem::take(fc.in_cdf.get_mut()); // TODO: remove when context is owned
-            mem::take(fc.frame_thread_progress.frame.get_mut()); // TODO: remove when context is owned
-            mem::take(fc.frame_thread_progress.copy_lpf.get_mut()); // TODO: remove when context is owned
+            mem::take(&mut fc.frame_thread_progress);
             let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
             mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
             let _ = mem::take(&mut f.ts); // TODO: remove when context is owned
