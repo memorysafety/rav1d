@@ -221,19 +221,17 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
     sec_strength: c_int,
     dir: c_int,
     damping: c_int,
-    w: c_int,
-    h: c_int,
+    w: usize,
+    h: usize,
     edges: CdefEdgeFlags,
     bd: BD,
 ) {
-    let [dir, w, h] = [dir, w, h].map(|it| it as usize);
+    let dir = dir as usize;
 
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
     let mut tmp = [0; TMP_STRIDE * TMP_STRIDE]; // `12 * 12` is the maximum value of `TMP_STRIDE * (h + 4)`.
 
-    padding::<BD>(
-        &mut tmp, dst, left, top, bottom, w as usize, h as usize, edges,
-    );
+    padding::<BD>(&mut tmp, dst, left, top, bottom, w, h, edges);
 
     let tmp = tmp;
     let tmp_offset = 2 * TMP_STRIDE + 2;
@@ -378,8 +376,8 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
         sec_strength,
         dir,
         damping,
-        W as c_int,
-        H as c_int,
+        W,
+        H,
         edges,
         bd,
     )
