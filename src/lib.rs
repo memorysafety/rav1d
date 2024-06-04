@@ -702,30 +702,7 @@ impl Drop for Rav1dContext {
                 }
             }
         }
-        let fc_len = self.fc.len();
-        for fc in self.fc.iter_mut() {
-            let f = fc.data.get_mut();
-            if fc_len > 1 {
-                let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
-            }
-            mem::take(fc.in_cdf.get_mut()); // TODO: remove when context is owned
-            mem::take(&mut fc.frame_thread_progress);
-            let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
-            mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.ts); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.ipred_edge); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.a); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.out_cdf); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.tiles);
-            let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.lf.lr_mask); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.lf.level);
-            let _ = mem::take(&mut f.lf.tx_lpf_right_edge); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.lf.start_of_tile_row); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.rf);
-            let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
-            let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
-        }
+        let _ = mem::take(&mut self.fc);
         let _ = mem::take(&mut self.frame_thread.out_delayed);
         let _ = mem::take(&mut self.tiles);
         let _ = mem::take(&mut self.refs);
