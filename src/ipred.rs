@@ -851,7 +851,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     assert!(angle < 90);
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
     let mut top_out = [0.into(); 64 + 64];
-    let top: *const BD::Pixel;
+    let top;
     let max_base_x;
     let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
@@ -868,7 +868,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             width + cmp::min(width, height),
             bd,
         );
-        top = top_out.as_mut_ptr();
+        top = top_out.as_slice();
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
     } else {
@@ -889,10 +889,10 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
                 width + cmp::min(width, height),
                 filter_strength,
             );
-            top = top_out.as_mut_ptr();
+            top = top_out.as_slice();
             max_base_x = width + height - 1;
         } else {
-            top = topleft_in[topleft_in_off + 1..].as_ptr();
+            top = &topleft_in[topleft_in_off + 1..];
             max_base_x = width + cmp::min(width, height) - 1;
         }
     }
@@ -908,15 +908,11 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         for (x, dst) in dst_slice.iter_mut().enumerate() {
             let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
-                let v = (*top.offset(base as isize)).as_::<c_int>() * (64 - frac)
-                    + (*top.offset((base + 1) as isize)).as_::<c_int>() * frac;
+                let v =
+                    top[base].as_::<c_int>() * (64 - frac) + top[base + 1].as_::<c_int>() * frac;
                 *dst = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
-                BD::pixel_set(
-                    &mut dst_slice[x..],
-                    *top.offset(max_base_x as isize),
-                    width - x,
-                );
+                BD::pixel_set(&mut dst_slice[x..], top[max_base_x], width - x);
                 break;
             }
         }
