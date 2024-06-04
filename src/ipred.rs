@@ -852,7 +852,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         unreachable!();
     }
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
-    let mut top_out: [BD::Pixel; 128] = [0.into(); 128];
+    let mut top_out = [0.into(); 64 + 64];
     let top: *const BD::Pixel;
     let max_base_x;
     let upsample_above = if enable_intra_edge_filter != 0 {
