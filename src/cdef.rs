@@ -197,7 +197,7 @@ unsafe fn padding<BD: BitDepth>(
     for y in 0..h {
         let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
         let src = src + (y as isize * stride);
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..x_end));
+        let src = &*src.data.slice::<BD, _>((src.offset.., ..x_end - 2));
         for x in 2..x_end {
             tmp[x] = src[x - 2].as_::<i16>();
         }
