@@ -13,6 +13,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ptr;
+use std::slice;
 
 #[cfg(all(
     feature = "asm",
@@ -128,104 +129,83 @@ pub fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
     )
 }
 
+const TMP_STRIDE: usize = 12;
+
 #[inline]
-pub unsafe fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
+pub fn fill(tmp: &mut [i16], w: usize, h: usize) {
     // Use a value that's a large positive number when interpreted as unsigned,
     // and a large negative number when interpreted as signed.
-    for _ in 0..h {
-        for x in 0..w {
-            *tmp.offset(x as isize) = i16::MIN;
-        }
-        tmp = tmp.offset(stride);
+    for y in 0..h {
+        tmp[y * TMP_STRIDE..][..w].fill(i16::MIN);
     }
 }
 
 unsafe fn padding<BD: BitDepth>(
-    mut tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
-    mut src: *const BD::Pixel,
+    tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
+    src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    mut top: *const BD::Pixel,
-    mut bottom: *const BD::Pixel,
-    w: c_int,
-    h: c_int,
+    top: *const BD::Pixel,
+    bottom: *const BD::Pixel,
+    w: usize,
+    h: usize,
     edges: CdefEdgeFlags,
 ) {
+    let [top, bottom] = [top, bottom].map(|it| it.sub(2));
+
     // Fill extended input buffer.
-    let mut x_start = -2;
-    let mut x_end = w + 2;
-    let mut y_start = -2;
-    let mut y_end = h + 2;
+    let mut x_start = 2 - 2;
+    let mut x_end = w + 2 + 2;
+    let mut y_start = 2 - 2;
+    let mut y_end = h + 2 + 2;
     if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
-        fill(
-            tmp.offset(-2).offset(-(2 * tmp_stride)),
-            tmp_stride,
-            w + 4,
-            2,
-        );
-        y_start = 0;
+        fill(tmp, w + 4, 2);
+        y_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
-        fill(
-            tmp.offset(h as isize * tmp_stride).offset(-2),
-            tmp_stride,
-            w + 4,
-            2,
-        );
+        fill(&mut tmp[(h + 2) * TMP_STRIDE..], w + 4, 2);
         y_end -= 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_LEFT) {
-        fill(
-            tmp.offset(y_start as isize * tmp_stride).offset(-2),
-            tmp_stride,
-            2,
-            y_end - y_start,
-        );
-        x_start = 0;
+        fill(&mut tmp[y_start * TMP_STRIDE..], 2, y_end - y_start);
+        x_start += 2;
     }
     if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
-        fill(
-            tmp.offset(y_start as isize * tmp_stride).offset(w as isize),
-            tmp_stride,
-            2,
-            y_end - y_start,
-        );
+        fill(&mut tmp[y_start * TMP_STRIDE + w + 2..], 2, y_end - y_start);
         x_end -= 2;
     }
 
-    for y in y_start..0 {
+    for (i, y) in (y_start..2).enumerate() {
+        let top = slice::from_raw_parts(top.offset(i as isize * BD::pxstride(src_stride)), x_end);
         for x in x_start..x_end {
-            *tmp.offset(x as isize + y as isize * tmp_stride) =
-                (*top.offset(x as isize)).as_::<i16>();
-        }
-        top = top.offset(BD::pxstride(src_stride));
-    }
-    for y in 0..h as usize {
-        for x in x_start..0 {
-            *tmp.offset(x as isize + y as isize * tmp_stride) =
-                left[y][(2 + x) as usize].as_::<i16>();
+            tmp[x + y * TMP_STRIDE] = top[x].as_::<i16>();
         }
     }
     for y in 0..h {
-        for x in if y < h { 0 } else { x_start }..x_end {
-            *tmp.offset(x as isize) = (*src.offset(x as isize)).as_::<i16>();
+        for x in x_start..2 {
+            tmp[x + (y + 2) * TMP_STRIDE] = left[y][x].as_::<i16>();
         }
-        src = src.offset(BD::pxstride(src_stride));
-        tmp = tmp.offset(tmp_stride);
     }
-    for _ in h..y_end {
-        for x in x_start..x_end {
-            *tmp.offset(x as isize) = (*bottom.offset(x as isize)).as_::<i16>();
+    for y in 0..h {
+        let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
+        let src = slice::from_raw_parts(src.offset(y as isize * BD::pxstride(src_stride)), x_end);
+        for x in 2..x_end {
+            tmp[x] = src[x - 2].as_::<i16>();
         }
-        bottom = bottom.offset(BD::pxstride(src_stride));
-        tmp = tmp.offset(tmp_stride);
+    }
+    for (i, y) in (h + 2..y_end).enumerate() {
+        let tmp = &mut tmp[y * TMP_STRIDE..];
+        let bottom =
+            slice::from_raw_parts(bottom.offset(i as isize * BD::pxstride(src_stride)), x_end);
+        for x in x_start..x_end {
+            tmp[x] = bottom[x].as_::<i16>();
+        }
     }
 }
 
 #[inline(never)]
-unsafe fn cdef_filter_block_c<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+unsafe fn cdef_filter_block_rust<BD: BitDepth>(
+    dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
     top: *const BD::Pixel,
@@ -239,34 +219,39 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     edges: CdefEdgeFlags,
     bd: BD,
 ) {
-    let dir = dir as usize;
+    let [dir, w, h] = [dir, w, h].map(|it| it as usize);
 
-    let tmp_stride = 12;
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
-    let mut tmp_buf = [0; 12 * 12]; // `12 * 12` is the maximum value of `tmp_stride * (h + 4)`.
-    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * tmp_stride).offset(2);
+    let mut tmp = [0; TMP_STRIDE * TMP_STRIDE]; // `12 * 12` is the maximum value of `TMP_STRIDE * (h + 4)`.
 
     padding::<BD>(
-        tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
+        &mut tmp, dst, dst_stride, left, top, bottom, w as usize, h as usize, edges,
     );
 
+    let tmp = tmp;
+    let tmp_offset = 2 * TMP_STRIDE + 2;
+    let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
+
     if pri_strength != 0 {
-        let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
+        let bitdepth_min_8 = bd.bitdepth() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = cmp::max(0, damping - pri_strength.ilog2() as c_int);
         if sec_strength != 0 {
             let sec_shift = damping - sec_strength.ilog2() as c_int;
-            for _ in 0..h {
+            for y in 0..h {
+                let tmp = &tmp[y * TMP_STRIDE..];
+                let dst =
+                    slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
-                    let px = (*dst.offset(x as isize)).as_::<c_int>();
+                    let px = dst[x].as_::<c_int>();
                     let mut sum = 0;
                     let mut max = px;
                     let mut min = px;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off1 = dav1d_cdef_directions[dir + 2][k] as c_int; // dir
-                        let p0 = *tmp.offset((x + off1) as isize) as c_int;
-                        let p1 = *tmp.offset((x - off1) as isize) as c_int;
+                        let off1 = dav1d_cdef_directions[dir + 2][k] as isize; // dir
+                        let p0 = tmp[tmp_index(x, off1)] as c_int;
+                        let p1 = tmp[tmp_index(x, -off1)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         // If `pri_tap_k == 4`, then it becomes 2, else it remains 3.
@@ -275,12 +260,12 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         max = cmp::max(p0, max);
                         min = cmp::min(p1 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p1, max);
-                        let off2 = dav1d_cdef_directions[dir + 4][k] as c_int;
-                        let off3 = dav1d_cdef_directions[dir + 0][k] as c_int;
-                        let s0 = *tmp.offset((x + off2) as isize) as c_int;
-                        let s1 = *tmp.offset((x - off2) as isize) as c_int;
-                        let s2 = *tmp.offset((x + off3) as isize) as c_int;
-                        let s3 = *tmp.offset((x - off3) as isize) as c_int;
+                        let off2 = dav1d_cdef_directions[dir + 4][k] as isize;
+                        let off3 = dav1d_cdef_directions[dir + 0][k] as isize;
+                        let s0 = tmp[tmp_index(x, off2)] as c_int;
+                        let s1 = tmp[tmp_index(x, -off2)] as c_int;
+                        let s2 = tmp[tmp_index(x, off3)] as c_int;
+                        let s3 = tmp[tmp_index(x, -off3)] as c_int;
                         // `sec_tap` starts at 2 and becomes 1.
                         let sec_tap = 2 - k as c_int;
                         sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
@@ -296,60 +281,57 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         min = cmp::min(s3 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(s3, max);
                     }
-                    *dst.offset(x as isize) =
-                        iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max)
-                            .as_::<BD::Pixel>();
+                    dst[x] = iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max)
+                        .as_::<BD::Pixel>();
                 }
-                dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.offset(tmp_stride);
             }
         } else {
             // pri_strength only
-            for _ in 0..h {
+            for y in 0..h {
+                let tmp = &tmp[y * TMP_STRIDE..];
+                let dst =
+                    slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
                 for x in 0..w {
-                    let px = (*dst.offset(x as isize)).as_::<c_int>();
+                    let px = dst[x].as_::<c_int>();
                     let mut sum = 0;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off = dav1d_cdef_directions[dir + 2][k] as c_int;
-                        let p0 = *tmp.offset((x + off) as isize) as c_int;
-                        let p1 = *tmp.offset((x - off) as isize) as c_int;
+                        let off = dav1d_cdef_directions[dir + 2][k] as isize;
+                        let p0 = tmp[tmp_index(x, off)] as c_int;
+                        let p1 = tmp[tmp_index(x, -off)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
                     }
-                    *dst.offset(x as isize) =
-                        (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
+                    dst[x] = (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                 }
-                dst = dst.offset(BD::pxstride(dst_stride));
-                tmp = tmp.offset(tmp_stride);
             }
         }
     } else {
         // sec_strength only
         let sec_shift = damping - sec_strength.ilog2() as c_int;
-        for _ in 0..h {
+        for y in 0..h {
+            let tmp = &tmp[y * TMP_STRIDE..];
+            let dst =
+                slice::from_raw_parts_mut(dst.offset(y as isize * BD::pxstride(dst_stride)), w);
             for x in 0..w {
-                let px = (*dst.offset(x as isize)).as_::<c_int>();
+                let px = dst[x].as_::<c_int>();
                 let mut sum = 0;
                 for k in 0..2 {
-                    let off1 = dav1d_cdef_directions[dir + 4][k] as c_int;
-                    let off2 = dav1d_cdef_directions[dir + 0][k] as c_int;
-                    let s0 = *tmp.offset((x + off1) as isize) as c_int;
-                    let s1 = *tmp.offset((x - off1) as isize) as c_int;
-                    let s2 = *tmp.offset((x + off2) as isize) as c_int;
-                    let s3 = *tmp.offset((x - off2) as isize) as c_int;
+                    let off1 = dav1d_cdef_directions[dir + 4][k] as isize;
+                    let off2 = dav1d_cdef_directions[dir + 0][k] as isize;
+                    let s0 = tmp[tmp_index(x, off1)] as c_int;
+                    let s1 = tmp[tmp_index(x, -off1)] as c_int;
+                    let s2 = tmp[tmp_index(x, off2)] as c_int;
+                    let s3 = tmp[tmp_index(x, -off2)] as c_int;
                     let sec_tap = 2 - k as c_int;
                     sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
                     sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
                     sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
                     sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
                 }
-                *dst.offset(x as isize) =
-                    (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
+                dst[x] = (px + (sum - (sum < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
             }
-            dst = dst.offset(BD::pxstride(dst_stride));
-            tmp = tmp.offset(tmp_stride);
         }
     };
 }
@@ -373,7 +355,7 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     let top = top.cast();
     let bottom = bottom.cast();
     let bd = BD::from_c(bitdepth_max);
-    cdef_filter_block_c(
+    cdef_filter_block_rust(
         dst,
         stride,
         left,
@@ -400,19 +382,21 @@ unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
 }
 
 unsafe fn cdef_find_dir_rust<BD: BitDepth>(
-    mut img: *const BD::Pixel,
+    img: *const BD::Pixel,
     stride: ptrdiff_t,
     variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
-    let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
+    let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut partial_sum_hv = [[0; 8]; 2];
     let mut partial_sum_diag = [[0; 15]; 2];
     let mut partial_sum_alt = [[0; 11]; 4];
 
-    for y in 0..8 {
-        for x in 0..8 {
-            let px = ((*img.offset(x as isize)).as_::<c_int>() >> bitdepth_min_8) - 128;
+    let (w, h) = (8, 8);
+    for y in 0..h {
+        let img = slice::from_raw_parts(img.offset(y as isize * BD::pxstride(stride)), w);
+        for x in 0..w {
+            let px = (img[x].as_::<c_int>() >> bitdepth_min_8) - 128;
 
             partial_sum_diag[0][y + x] += px;
             partial_sum_alt[0][y + (x >> 1)] += px;
@@ -423,7 +407,6 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
             partial_sum_hv[1][x] += px;
             partial_sum_alt[3][(y >> 1) + x] += px;
         }
-        img = img.offset(BD::pxstride(stride));
     }
 
     let mut cost = [0; 8];
