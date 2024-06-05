@@ -265,12 +265,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.dsp.cdef.dir.call::<BD>(
-                                bptrs[0].data.as_ptr_at::<BD>(bptrs[0].offset),
-                                bptrs[0].data.stride(),
-                                &mut variance,
-                                bd,
-                            )
+                            f.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };
@@ -340,8 +335,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
                                 f.dsp.cdef.fb[0].call::<BD>(
-                                    bptrs[0].data.as_mut_ptr_at::<BD>(bptrs[0].offset),
-                                    bptrs[0].data.stride(),
+                                    bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
                                     bot,
@@ -355,8 +349,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             }
                         } else if y_sec_lvl != 0 {
                             f.dsp.cdef.fb[0].call::<BD>(
-                                bptrs[0].data.as_mut_ptr_at::<BD>(bptrs[0].offset),
-                                bptrs[0].data.stride(),
+                                bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
                                 bot,
@@ -440,8 +433,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 }
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
-                                    bptrs[pl].data.as_mut_ptr_at::<BD>(bptrs[pl].offset),
-                                    bptrs[pl].data.stride(),
+                                    bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,
                                     bot,
