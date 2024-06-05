@@ -25,7 +25,6 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::extensions::OptionError as _;
 use crate::src::fg_apply;
@@ -181,7 +180,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.operating_point <= 31, EINVAL))?;
     validate_input!((
         !s.allocator.is_default() || s.allocator.cookie.is_null(),
-        ENOMEM
+        EINVAL
     ))?;
 
     // TODO fallible allocation
