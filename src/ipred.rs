@@ -1238,6 +1238,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
 ) {
     let width = width as usize;
     let height = height as usize;
+    let stride = BD::pxstride(stride);
     let filt_idx = filt_idx & 511;
     assert!(filt_idx < 5);
 
@@ -1264,15 +1265,15 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
                     *ptr.add(xx) = bd.iclip_pixel(acc + 8 >> 4);
                     flt_ptr = &flt_ptr[FLT_INCR..];
                 }
-                ptr = ptr.offset(BD::pxstride(stride));
+                ptr = ptr.offset(stride);
             }
             left = dst.add(x + 4 - 1);
-            left_stride = BD::pxstride(stride);
+            left_stride = stride;
             top = top.offset(4);
             topleft = top.sub(1);
         }
-        top = dst.offset(BD::pxstride(stride));
-        dst = dst.offset(BD::pxstride(stride) * 2);
+        top = dst.offset(stride);
+        dst = dst.offset(stride * 2);
     }
 }
 
