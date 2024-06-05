@@ -1231,14 +1231,14 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     topleft_off: usize,
     width: c_int,
     height: c_int,
-    mut filt_idx: c_int,
+    filt_idx: c_int,
     _max_width: c_int,
     _max_height: c_int,
     bd: BD,
 ) {
     let width = width as usize;
     let height = height as usize;
-    filt_idx &= 511;
+    let filt_idx = filt_idx & 511;
     assert!(filt_idx < 5);
 
     let filter = &dav1d_filter_intra_taps[filt_idx as usize];
