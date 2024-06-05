@@ -687,80 +687,21 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: bool) {
 
 impl Drop for Rav1dContext {
     fn drop(&mut self) {
-        // SAFETY: TODO(SJC): This is not safe and will be made safe once we
-        // remove all pointers from the structure. We can't make the drop
-        // function unsafe because the Drop trait requires a safe function.
-        unsafe {
-            if self.tc.len() > 1 {
-                let ttd: &TaskThreadData = &*self.task_thread;
-                let task_thread_lock = ttd.lock.lock();
-                for tc in self.tc.iter() {
-                    tc.thread_data.die.store(true, Ordering::Relaxed);
-                }
-                ttd.cond.notify_all();
-                drop(task_thread_lock);
-                let tc = mem::take(&mut self.tc);
-                for task_thread in tc.into_vec() {
-                    if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
-                        handle.join().expect("Could not join task thread");
-                    }
-                }
+        if self.tc.is_empty() {
+            return;
+        }
+        let ttd = &*self.task_thread;
+        let task_thread_lock = ttd.lock.lock();
+        for tc in self.tc.iter() {
+            tc.thread_data.die.store(true, Ordering::Relaxed);
+        }
+        ttd.cond.notify_all();
+        drop(task_thread_lock);
+        let tc = mem::take(&mut self.tc);
+        for task_thread in tc.into_vec() {
+            if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
+                handle.join().expect("Could not join task thread");
             }
-            let fc_len = self.fc.len();
-            for fc in self.fc.iter_mut() {
-                let f = fc.data.get_mut();
-                if fc_len > 1 {
-                    let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
-                }
-                mem::take(fc.in_cdf.get_mut()); // TODO: remove when context is owned
-                mem::take(fc.frame_thread_progress.frame.get_mut()); // TODO: remove when context is owned
-                mem::take(fc.frame_thread_progress.copy_lpf.get_mut()); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
-                mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.ts); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.ipred_edge); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.a); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.out_cdf); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.tiles);
-                let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.lf.lr_mask); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.lf.level);
-                let _ = mem::take(&mut f.lf.tx_lpf_right_edge); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.lf.start_of_tile_row); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.rf);
-                let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
-                let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
-            }
-            if self.fc.len() > 1 && !self.frame_thread.out_delayed.is_empty() {
-                let mut n_2 = 0;
-                while n_2 < self.fc.len() {
-                    if self.frame_thread.out_delayed[n_2 as usize]
-                        .p
-                        .frame_hdr
-                        .is_some()
-                    {
-                        let _ = mem::take(&mut self.frame_thread.out_delayed[n_2 as usize]);
-                    }
-                    n_2 = n_2.wrapping_add(1);
-                }
-                let _ = mem::take(&mut self.frame_thread.out_delayed);
-            }
-            let _ = mem::take(&mut self.tiles);
-            let mut n_4 = 0;
-            while n_4 < 8 {
-                if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
-                    let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p);
-                }
-                let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
-                let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
-                n_4 += 1;
-            }
-            let _ = mem::take(&mut self.seq_hdr);
-            let _ = mem::take(&mut self.frame_hdr);
-            let _ = mem::take(&mut self.mastering_display);
-            let _ = mem::take(&mut self.content_light);
-            let _ = mem::take(&mut self.itut_t35);
-            let _ = mem::take(&mut self.picture_pool);
         }
     }
 }
