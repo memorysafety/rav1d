@@ -10,5 +10,9 @@ cfg_if::cfg_if! {
         pub unsafe fn errno_location() -> *mut c_int {
             libc::__error()
         }
+    } else if #[cfg(target_os = "android")] {
+        pub unsafe fn errno_location() -> *mut c_int {
+            libc::__errno()
+        }
     }
 }
