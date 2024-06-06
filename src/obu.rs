@@ -61,6 +61,7 @@ use crate::src::error::Rav1dError::ERANGE;
 use crate::src::error::Rav1dResult;
 use crate::src::getbits::GetBits;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dState;
 use crate::src::internal::Rav1dTileGroup;
 use crate::src::internal::Rav1dTileGroupHeader;
 use crate::src::levels::ObuMetaType;
@@ -602,7 +603,7 @@ pub(crate) fn rav1d_parse_sequence_header(
 }
 
 fn parse_frame_size(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     refidx: Option<&[i8; RAV1D_REFS_PER_FRAME]>,
     frame_size_override: bool,
@@ -611,7 +612,7 @@ fn parse_frame_size(
     if let Some(refidx) = refidx {
         for i in 0..7 {
             if gb.get_bit() {
-                let r#ref = &c.refs[refidx[i as usize] as usize].p;
+                let r#ref = &state.refs[refidx[i as usize] as usize].p;
                 let ref_size = &r#ref.p.frame_hdr.as_ref().ok_or(EINVAL)?.size;
                 let width1 = ref_size.width[1];
                 let height = ref_size.height;
@@ -703,7 +704,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 };
 
 fn parse_refidx(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     frame_ref_short_signaling: u8,
     frame_offset: u8,
@@ -722,7 +723,7 @@ fn parse_refidx(
             shifted_frame_offset[i as usize] = current_frame_offset
                 + get_poc_diff(
                     seqhdr.order_hint_n_bits,
-                    c.refs[i as usize]
+                    state.refs[i as usize]
                         .p
                         .p
                         .frame_hdr
@@ -824,7 +825,7 @@ fn parse_refidx(
             let delta_ref_frame_id = gb.get_bits(seqhdr.delta_frame_id_n_bits.into()) as u32 + 1;
             let ref_frame_id = frame_id + (1 << seqhdr.frame_id_n_bits) - delta_ref_frame_id
                 & (1 << seqhdr.frame_id_n_bits) - 1;
-            c.refs[refidx[i as usize] as usize]
+            state.refs[refidx[i as usize] as usize]
                 .p
                 .p
                 .frame_hdr
@@ -1124,7 +1125,7 @@ fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
 }
 
 fn parse_segmentation(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     primary_ref_frame: u8,
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
     quant: &Rav1dFrameHeader_quant,
@@ -1157,7 +1158,7 @@ fn parse_segmentation(
             // segmentation data from the reference frame.
             assert!(primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
             let pri_ref = refidx[primary_ref_frame as usize];
-            c.refs[pri_ref as usize]
+            state.refs[pri_ref as usize]
                 .p
                 .p
                 .frame_hdr
@@ -1244,7 +1245,7 @@ fn parse_delta(
 }
 
 fn parse_loopfilter(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
     allow_intrabc: bool,
@@ -1284,7 +1285,7 @@ fn parse_loopfilter(
             mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
             let r#ref = refidx[primary_ref_frame as usize];
-            mode_ref_deltas = c.refs[r#ref as usize]
+            mode_ref_deltas = state.refs[r#ref as usize]
                 .p
                 .p
                 .frame_hdr
@@ -1427,7 +1428,7 @@ fn parse_restoration(
 }
 
 fn parse_skip_mode(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     switchable_comp_refs: u8,
     frame_type: Rav1dFrameType,
@@ -1445,7 +1446,7 @@ fn parse_skip_mode(
         let mut off_before_idx = 0;
         let mut off_after_idx = 0;
         for i in 0..7 {
-            let refpoc = c.refs[refidx[i as usize] as usize]
+            let refpoc = state.refs[refidx[i as usize] as usize]
                 .p
                 .p
                 .frame_hdr
@@ -1484,7 +1485,7 @@ fn parse_skip_mode(
             let mut off_before2 = 0xffffffff;
             let mut off_before2_idx = 0;
             for i in 0..7 {
-                let refpoc = c.refs[refidx[i as usize] as usize]
+                let refpoc = state.refs[refidx[i as usize] as usize]
                     .p
                     .p
                     .frame_hdr
@@ -1529,7 +1530,7 @@ fn parse_skip_mode(
 }
 
 fn parse_gmv(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     frame_type: Rav1dFrameType,
     primary_ref_frame: u8,
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
@@ -1559,7 +1560,7 @@ fn parse_gmv(
                 &default_gmv
             } else {
                 let pri_ref = refidx[primary_ref_frame as usize];
-                &c.refs[pri_ref as usize]
+                &state.refs[pri_ref as usize]
                     .p
                     .p
                     .frame_hdr
@@ -1709,7 +1710,7 @@ fn parse_film_grain_data(
 }
 
 fn parse_film_grain(
-    c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     show_frame: u8,
     showable_frame: u8,
@@ -1739,7 +1740,7 @@ fn parse_film_grain(
             }
             Rav1dFilmGrainData {
                 seed,
-                ..c.refs[refidx as usize]
+                ..state.refs[refidx as usize]
                     .p
                     .p
                     .frame_hdr
@@ -1768,6 +1769,7 @@ fn parse_film_grain(
 
 fn parse_frame_hdr(
     c: &Rav1dContext,
+    state: &Rav1dState,
     seqhdr: &Rav1dSequenceHeader,
     temporal_id: u8,
     spatial_id: u8,
@@ -1791,7 +1793,7 @@ fn parse_frame_hdr(
         let frame_id;
         if seqhdr.frame_id_numbers_present != 0 {
             frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
-            c.refs[existing_frame_idx as usize]
+            state.refs[existing_frame_idx as usize]
                 .p
                 .p
                 .frame_hdr
@@ -1937,7 +1939,7 @@ fn parse_frame_hdr(
         {
             return Err(EINVAL);
         }
-        size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
+        size = parse_frame_size(state, seqhdr, None, frame_size_override, gb)?;
         allow_intrabc = allow_screen_content_tools && !size.super_res.enabled && gb.get_bit();
         use_ref_frame_mvs = 0;
 
@@ -1961,7 +1963,7 @@ fn parse_frame_hdr(
         }
         frame_ref_short_signaling = (seqhdr.order_hint != 0 && gb.get_bit()) as u8;
         refidx = parse_refidx(
-            c,
+            state,
             seqhdr,
             frame_ref_short_signaling,
             frame_offset,
@@ -1970,7 +1972,7 @@ fn parse_frame_hdr(
         )?;
         let use_ref = error_resilient_mode == 0 && frame_size_override;
         size = parse_frame_size(
-            c,
+            state,
             seqhdr,
             Some(&refidx).filter(|_| use_ref),
             frame_size_override,
@@ -1998,11 +2000,11 @@ fn parse_frame_hdr(
 
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
     let quant = parse_quant(seqhdr, &debug, gb);
-    let segmentation = parse_segmentation(c, primary_ref_frame, &refidx, &quant, &debug, gb)?;
+    let segmentation = parse_segmentation(state, primary_ref_frame, &refidx, &quant, &debug, gb)?;
     let all_lossless = segmentation.lossless.iter().all(|&it| it);
     let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
     let loopfilter = parse_loopfilter(
-        c,
+        state,
         seqhdr,
         all_lossless,
         allow_intrabc,
@@ -2036,7 +2038,7 @@ fn parse_frame_hdr(
     };
     debug.post(gb, "refmode");
     let skip_mode = parse_skip_mode(
-        c,
+        state,
         seqhdr,
         switchable_comp_refs,
         frame_type,
@@ -2053,9 +2055,17 @@ fn parse_frame_hdr(
     let reduced_txtp_set = gb.get_bit() as u8;
     debug.post(gb, "reducedtxtpset");
 
-    let gmv = parse_gmv(c, frame_type, primary_ref_frame, &refidx, hp, &debug, gb)?;
+    let gmv = parse_gmv(
+        state,
+        frame_type,
+        primary_ref_frame,
+        &refidx,
+        hp,
+        &debug,
+        gb,
+    )?;
     let film_grain = parse_film_grain(
-        c,
+        state,
         seqhdr,
         show_frame,
         showable_frame,
@@ -2134,23 +2144,24 @@ fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTi
 }
 
 fn parse_obus(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
+    state: &mut Rav1dState,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
     gb: &mut GetBits,
 ) -> Rav1dResult<()> {
-    fn skip(c: &mut Rav1dContext) {
+    fn skip(state: &mut Rav1dState) {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
-            if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
-                let _ = mem::take(&mut c.refs[i as usize].p);
-                c.refs[i as usize].p.p.frame_hdr = c.frame_hdr.clone();
-                c.refs[i as usize].p.p.seq_hdr = c.seq_hdr.clone();
+            if state.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
+                let _ = mem::take(&mut state.refs[i as usize].p);
+                state.refs[i as usize].p.p.frame_hdr = state.frame_hdr.clone();
+                state.refs[i as usize].p.p.seq_hdr = state.seq_hdr.clone();
             }
         }
 
-        let _ = mem::take(&mut c.frame_hdr);
-        c.n_tiles = 0;
+        let _ = mem::take(&mut state.frame_hdr);
+        state.n_tiles = 0;
     }
 
     // obu header
@@ -2190,22 +2201,22 @@ fn parse_obus(
     // skip obu not belonging to the selected temporal/spatial layer
     if !matches!(r#type, Some(Rav1dObuType::SeqHdr | Rav1dObuType::Td))
         && has_extension
-        && c.operating_point_idc != 0
+        && state.operating_point_idc != 0
     {
-        let in_temporal_layer = (c.operating_point_idc >> temporal_id & 1) as c_int;
-        let in_spatial_layer = (c.operating_point_idc >> spatial_id + 8 & 1) as c_int;
+        let in_temporal_layer = (state.operating_point_idc >> temporal_id & 1) as c_int;
+        let in_spatial_layer = (state.operating_point_idc >> spatial_id + 8 & 1) as c_int;
         if in_temporal_layer == 0 || in_spatial_layer == 0 {
             return Ok(());
         }
     }
 
     fn parse_tile_grp(
-        c: &mut Rav1dContext,
+        state: &mut Rav1dState,
         r#in: &CArc<[u8]>,
         props: &Rav1dDataProps,
         gb: &mut GetBits,
     ) -> Rav1dResult {
-        let hdr = parse_tile_hdr(&c.frame_hdr.as_ref().ok_or(EINVAL)?.tiling, gb);
+        let hdr = parse_tile_hdr(&state.frame_hdr.as_ref().ok_or(EINVAL)?.tiling, gb);
         // Align to the next byte boundary and check for overrun.
         gb.bytealign();
         if gb.has_error() != 0 {
@@ -2216,16 +2227,16 @@ fn parse_obus(
         data.slice_in_place(gb.byte_pos()..);
         data.slice_in_place(..gb.remaining_len());
         // Ensure tile groups are in order and sane; see 6.10.1.
-        if hdr.start > hdr.end || hdr.start != c.n_tiles {
-            c.tiles.clear();
-            c.n_tiles = 0;
+        if hdr.start > hdr.end || hdr.start != state.n_tiles {
+            state.tiles.clear();
+            state.n_tiles = 0;
             return Err(EINVAL);
         }
-        if let Err(_) = c.tiles.try_reserve_exact(1) {
+        if let Err(_) = state.tiles.try_reserve_exact(1) {
             return Err(EINVAL);
         }
-        c.n_tiles += 1 + hdr.end - hdr.start;
-        c.tiles.push(Rav1dTileGroup {
+        state.n_tiles += 1 + hdr.end - hdr.start;
+        state.tiles.push(Rav1dTileGroup {
             data: Rav1dData {
                 data: Some(data),
                 // TODO(kkysen) Are props needed here?
@@ -2252,9 +2263,9 @@ fn parse_obus(
             } else {
                 0
             };
-            c.operating_point_idc = seq_hdr.operating_points[op_idx as usize].idc as c_uint;
-            let spatial_mask = c.operating_point_idc >> 8;
-            c.max_spatial_id = if spatial_mask != 0 {
+            state.operating_point_idc = seq_hdr.operating_points[op_idx as usize].idc as c_uint;
+            let spatial_mask = state.operating_point_idc >> 8;
+            state.max_spatial_id = if spatial_mask != 0 {
                 ulog2(spatial_mask) as u8
             } else {
                 0
@@ -2264,57 +2275,55 @@ fn parse_obus(
             // this is a new video sequence and can't use any previous state.
             // Free that state.
 
-            match &c.seq_hdr {
+            match &state.seq_hdr {
                 None => {
-                    c.frame_hdr = None;
-                    c.frame_flags
-                        .fetch_or(PictureFlags::NEW_SEQUENCE, Ordering::Relaxed);
+                    state.frame_hdr = None;
+                    state.frame_flags |= PictureFlags::NEW_SEQUENCE;
                 }
                 Some(c_seq_hdr) if !seq_hdr.eq_without_operating_parameter_info(&c_seq_hdr) => {
                     // See 7.5, `operating_parameter_info` is allowed to change in
                     // sequence headers of a single sequence.
-                    c.frame_hdr = None;
-                    let _ = mem::take(&mut c.content_light);
-                    let _ = mem::take(&mut c.mastering_display);
+                    state.frame_hdr = None;
+                    let _ = mem::take(&mut state.content_light);
+                    let _ = mem::take(&mut state.mastering_display);
                     for i in 0..8 {
-                        if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                            let _ = mem::take(&mut c.refs[i as usize].p);
+                        if state.refs[i as usize].p.p.frame_hdr.is_some() {
+                            let _ = mem::take(&mut state.refs[i as usize].p);
                         }
-                        let _ = mem::take(&mut c.refs[i as usize].segmap);
-                        let _ = mem::take(&mut c.refs[i as usize].refmvs);
-                        let _ = mem::take(&mut c.cdf[i]);
+                        let _ = mem::take(&mut state.refs[i as usize].segmap);
+                        let _ = mem::take(&mut state.refs[i as usize].refmvs);
+                        let _ = mem::take(&mut state.cdf[i]);
                     }
-                    c.frame_flags
-                        .fetch_or(PictureFlags::NEW_SEQUENCE, Ordering::Relaxed);
+                    state.frame_flags |= PictureFlags::NEW_SEQUENCE;
                 }
                 Some(c_seq_hdr)
                     if seq_hdr.operating_parameter_info != c_seq_hdr.operating_parameter_info =>
                 {
                     // If operating_parameter_info changed, signal it
-                    c.frame_flags
-                        .fetch_or(PictureFlags::NEW_OP_PARAMS_INFO, Ordering::Relaxed);
+                    state.frame_flags |= PictureFlags::NEW_OP_PARAMS_INFO;
                 }
                 _ => {}
             }
-            c.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
+            state.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
         }
-        Some(Rav1dObuType::RedundantFrameHdr) if c.frame_hdr.is_some() => {}
+        Some(Rav1dObuType::RedundantFrameHdr) if state.frame_hdr.is_some() => {}
         Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr) => {
-            c.frame_hdr = None;
+            state.frame_hdr = None;
             // TODO(kkysen) C originally re-used this allocation,
             // but it was also pooling, which we've dropped for now.
 
             let frame_hdr = parse_frame_hdr(
                 c,
-                c.seq_hdr.as_ref().ok_or(EINVAL)?,
+                state,
+                state.seq_hdr.as_ref().ok_or(EINVAL)?,
                 temporal_id,
                 spatial_id,
                 gb,
             )
             .inspect_err(|_| writeln!(c.logger, "Error parsing frame header"))?;
 
-            c.tiles.clear();
-            c.n_tiles = 0;
+            state.tiles.clear();
+            state.n_tiles = 0;
             if r#type != Some(Rav1dObuType::Frame) {
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
@@ -2340,18 +2349,18 @@ fn parse_obus(
                 }
             }
 
-            c.frame_hdr = Some(Arc::new(DRav1d::from_rav1d(frame_hdr))); // TODO(kkysen) fallible allocation
+            state.frame_hdr = Some(Arc::new(DRav1d::from_rav1d(frame_hdr))); // TODO(kkysen) fallible allocation
 
             if r#type == Some(Rav1dObuType::Frame) {
                 // This is the frame header at the start of a frame OBU.
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 gb.bytealign();
-                parse_tile_grp(c, r#in, props, gb)?;
+                parse_tile_grp(state, r#in, props, gb)?;
             }
         }
         Some(Rav1dObuType::TileGrp) => {
-            parse_tile_grp(c, r#in, props, gb)?;
+            parse_tile_grp(state, r#in, props, gb)?;
         }
         Some(Rav1dObuType::Metadata) => {
             let debug = Debug::new(false, "OBU", &gb);
@@ -2380,7 +2389,7 @@ fn parse_obus(
 
                     check_trailing_bits(gb, c.strict_std_compliance)?;
 
-                    c.content_light = Some(Arc::new(Rav1dContentLightLevel {
+                    state.content_light = Some(Arc::new(Rav1dContentLightLevel {
                         max_content_light_level,
                         max_frame_average_light_level,
                     })); // TODO(kkysen) fallible allocation
@@ -2403,7 +2412,7 @@ fn parse_obus(
                     debug.log(&gb, format_args!("min-luminance: {min_luminance}"));
                     check_trailing_bits(gb, c.strict_std_compliance)?;
 
-                    c.mastering_display = Some(Arc::new(Rav1dMasteringDisplay {
+                    state.mastering_display = Some(Arc::new(Rav1dMasteringDisplay {
                         primaries,
                         white_point,
                         max_luminance,
@@ -2437,7 +2446,7 @@ fn parse_obus(
                             country_code_extension_byte,
                             payload,
                         };
-                        c.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
+                        state.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
@@ -2447,10 +2456,7 @@ fn parse_obus(
                 }
             }
         }
-        Some(Rav1dObuType::Td) => {
-            c.frame_flags
-                .fetch_or(PictureFlags::NEW_TEMPORAL_UNIT, Ordering::Relaxed);
-        }
+        Some(Rav1dObuType::Td) => state.frame_flags |= PictureFlags::NEW_TEMPORAL_UNIT,
         Some(Rav1dObuType::Padding) => {} // Ignore OBUs we don't care about.
         None => {
             // Print a warning, but don't fail for unknown types.
@@ -2459,10 +2465,10 @@ fn parse_obus(
         }
     }
 
-    if let (Some(_), Some(frame_hdr)) = (c.seq_hdr.as_ref(), c.frame_hdr.as_ref()) {
+    if let (Some(_), Some(frame_hdr)) = (state.seq_hdr.as_ref(), state.frame_hdr.as_ref()) {
         let frame_hdr = &***frame_hdr;
         if frame_hdr.show_existing_frame != 0 {
-            match c.refs[frame_hdr.existing_frame_idx as usize]
+            match state.refs[frame_hdr.existing_frame_idx as usize]
                 .p
                 .p
                 .frame_hdr
@@ -2472,17 +2478,17 @@ fn parse_obus(
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
-                        return Ok(skip(c));
+                        return Ok(skip(state));
                     }
                 }
                 Rav1dFrameType::Intra => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
-                        return Ok(skip(c));
+                        return Ok(skip(state));
                     }
                 }
                 _ => {}
             }
-            if c.refs[frame_hdr.existing_frame_idx as usize]
+            if state.refs[frame_hdr.existing_frame_idx as usize]
                 .p
                 .p
                 .data
@@ -2490,32 +2496,36 @@ fn parse_obus(
             {
                 return Err(EINVAL);
             }
-            if c.strict_std_compliance && !c.refs[frame_hdr.existing_frame_idx as usize].p.showable
+            if c.strict_std_compliance
+                && !state.refs[frame_hdr.existing_frame_idx as usize].p.showable
             {
                 return Err(EINVAL);
             }
             if c.fc.len() == 1 {
-                c.out = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
+                state.out = state.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 rav1d_picture_copy_props(
-                    &mut (*c).out.p,
-                    c.content_light.clone(),
-                    c.mastering_display.clone(),
+                    &mut state.out.p,
+                    state.content_light.clone(),
+                    state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut c.itut_t35)),
+                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
                     props.clone(),
                 );
-                c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
+                state.event_flags |= state.refs[frame_hdr.existing_frame_idx as usize]
+                    .p
+                    .flags
+                    .into();
             } else {
                 let mut task_thread_lock = c.task_thread.lock.lock();
                 // Need to append this to the frame output queue.
-                let next = c.frame_thread.next;
-                c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
+                let next = state.frame_thread.next;
+                state.frame_thread.next = (state.frame_thread.next + 1) % c.fc.len() as u32;
 
                 let fc = &c.fc[next as usize];
                 while !fc.task_thread.finished.load(Ordering::SeqCst) {
                     fc.task_thread.cond.wait(&mut task_thread_lock);
                 }
-                let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
+                let out_delayed = &mut state.frame_thread.out_delayed[next as usize];
                 if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
@@ -2538,31 +2548,31 @@ fn parse_obus(
                 }
                 let error = &mut *fc.task_thread.retval.try_lock().unwrap();
                 if error.is_some() {
-                    c.cached_error = mem::take(error);
-                    *c.cached_error_props.get_mut() = out_delayed.p.m.clone();
+                    state.cached_error = mem::take(error);
+                    state.cached_error_props = out_delayed.p.m.clone();
                     let _ = mem::take(out_delayed);
                 } else if out_delayed.p.data.is_some() {
                     let progress =
                         out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                     if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR
                     {
-                        c.out = out_delayed.clone();
-                        c.event_flags |= out_delayed.flags.into();
+                        state.out = out_delayed.clone();
+                        state.event_flags |= out_delayed.flags.into();
                     }
                     let _ = mem::take(out_delayed);
                 }
-                *out_delayed = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
+                *out_delayed = state.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 out_delayed.visible = true;
                 rav1d_picture_copy_props(
                     &mut out_delayed.p,
-                    c.content_light.clone(),
-                    c.mastering_display.clone(),
+                    state.content_light.clone(),
+                    state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut c.itut_t35)),
+                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
                     props.clone(),
                 );
             }
-            if c.refs[frame_hdr.existing_frame_idx as usize]
+            if state.refs[frame_hdr.existing_frame_idx as usize]
                 .p
                 .p
                 .frame_hdr
@@ -2572,32 +2582,32 @@ fn parse_obus(
                 == Rav1dFrameType::Key
             {
                 let r = frame_hdr.existing_frame_idx;
-                c.refs[r as usize].p.showable = false;
+                state.refs[r as usize].p.showable = false;
                 for i in 0..8 {
                     if i == r {
                         continue;
                     }
 
-                    if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                        let _ = mem::take(&mut c.refs[i as usize].p);
+                    if state.refs[i as usize].p.p.frame_hdr.is_some() {
+                        let _ = mem::take(&mut state.refs[i as usize].p);
                     }
-                    c.refs[i as usize].p = c.refs[r as usize].p.clone();
+                    state.refs[i as usize].p = state.refs[r as usize].p.clone();
 
-                    c.cdf[i as usize] = c.cdf[r as usize].clone();
+                    state.cdf[i as usize] = state.cdf[r as usize].clone();
 
-                    c.refs[i as usize].segmap = c.refs[r as usize].segmap.clone();
-                    let _ = mem::take(&mut c.refs[i as usize].refmvs);
+                    state.refs[i as usize].segmap = state.refs[r as usize].segmap.clone();
+                    let _ = mem::take(&mut state.refs[i as usize].refmvs);
                 }
             }
-            c.frame_hdr = None;
-        } else if c.n_tiles == frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int {
+            state.frame_hdr = None;
+        } else if state.n_tiles == frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int {
             match frame_hdr.frame_type {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(c));
+                        return Ok(skip(state));
                     }
                 }
                 Rav1dFrameType::Intra => {
@@ -2605,18 +2615,18 @@ fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(c));
+                        return Ok(skip(state));
                     }
                 }
                 _ => {}
             }
-            if c.tiles.is_empty() {
+            if state.tiles.is_empty() {
                 return Err(EINVAL);
             }
-            rav1d_submit_frame(c)?;
-            assert!(c.tiles.is_empty());
-            c.frame_hdr = None;
-            c.n_tiles = 0;
+            rav1d_submit_frame(c, state)?;
+            assert!(state.tiles.is_empty());
+            state.frame_hdr = None;
+            state.n_tiles = 0;
         }
     }
 
@@ -2624,15 +2634,16 @@ fn parse_obus(
 }
 
 pub(crate) fn rav1d_parse_obus(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
+    state: &mut Rav1dState,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
 ) -> Rav1dResult<usize> {
     let gb = &mut GetBits::new(r#in);
 
-    parse_obus(c, r#in, props, gb)
+    parse_obus(c, state, r#in, props, gb)
         .inspect_err(|_| {
-            *c.cached_error_props.get_mut() = props.clone();
+            state.cached_error_props = props.clone();
             writeln!(
                 c.logger,
                 "{}",

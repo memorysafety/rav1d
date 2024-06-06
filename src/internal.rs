@@ -368,16 +368,15 @@ impl Rav1dContextTaskThread {
     }
 }
 
+/// State that was formerly part of [`Rav1dContext`]
+/// that is flushed/reset in [`rav1d_flush`] and other `DAV1D_API`s.
+/// It is not accessed by other threads
+/// (not in the call tree of [`rav1d_worker_task`]).
+///
+/// [`rav1d_flush`]: crate::src::lib::rav1d_flush
+/// [`rav1d_worker_task`]: crate::src::thread_task::rav1d_worker_task
 #[derive(Default)]
-#[repr(C)]
-#[repr(align(64))]
-pub struct Rav1dContext {
-    pub(crate) fc: Box<[Rav1dFrameContext]>,
-
-    /// Worker thread join handles and communication, or main thread task
-    /// context if single-threaded
-    pub(crate) tc: Box<[Rav1dContextTaskThread]>,
-
+pub struct Rav1dState {
     /// Cache of OBUs that make up a single frame before we submit them
     /// to a frame worker to be decoded.
     pub(crate) tiles: Vec<Rav1dTileGroup>,
@@ -392,34 +391,49 @@ pub struct Rav1dContext {
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
-    pub(crate) flush: AtomicBool,
     pub(crate) frame_thread: Rav1dContext_frame_thread,
-
-    // task threading (refer to tc[] for per_thread thingies)
-    pub(crate) task_thread: Arc<TaskThreadData>,
 
     // reference/entropy state
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
+
+    pub(crate) operating_point_idc: c_uint,
+    pub(crate) max_spatial_id: u8,
+    pub(crate) drain: bool,
+    pub(crate) frame_flags: PictureFlags,
+    pub(crate) event_flags: Rav1dEventFlags,
+    pub(crate) cached_error_props: Rav1dDataProps,
+    pub(crate) cached_error: Option<Rav1dError>,
+}
+
+#[derive(Default)]
+#[repr(C)]
+#[repr(align(64))]
+pub struct Rav1dContext {
+    pub(crate) state: Mutex<Rav1dState>,
+
+    pub(crate) fc: Box<[Rav1dFrameContext]>,
+
+    /// Worker thread join handles and communication, or main thread task
+    /// context if single-threaded
+    pub(crate) tc: Box<[Rav1dContextTaskThread]>,
+
+    pub(crate) flush: AtomicBool,
+
+    // task threading (refer to tc[] for per_thread thingies)
+    pub(crate) task_thread: Arc<TaskThreadData>,
 
     pub dsp: &'static Rav1dDSPContext,
 
     pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: bool,
     pub(crate) operating_point: u8,
-    pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
-    pub(crate) max_spatial_id: u8,
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: bool,
     pub(crate) output_invisible_frames: bool,
     pub(crate) inloop_filters: Rav1dInloopFilterType,
     pub(crate) decode_frame_type: Rav1dDecodeFrameType,
-    pub(crate) drain: bool,
-    pub(crate) frame_flags: Atomic<PictureFlags>,
-    pub(crate) event_flags: Rav1dEventFlags,
-    pub(crate) cached_error_props: Mutex<Rav1dDataProps>,
-    pub(crate) cached_error: Option<Rav1dError>,
 
     pub(crate) logger: Option<Rav1dLogger>,
 

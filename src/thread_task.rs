@@ -185,7 +185,7 @@ impl Rav1dTasks {
         b: Rav1dTaskIndex,
         cond_signal: c_int,
     ) {
-        let ttd: &TaskThreadData = &*c.task_thread;
+        let ttd = &*c.task_thread;
         if c.flush.load(Ordering::SeqCst) {
             return;
         }
@@ -280,12 +280,12 @@ impl Rav1dTasks {
         Rav1dTaskIndex(NonZeroU32::new(tasks.len() as u32))
     }
 
-    pub fn clear(&mut self) {
-        self.tasks.get_mut().clear();
-        self.pending_tasks.get_mut().clear();
-        self.pending_tasks_merge = AtomicBool::new(false);
-        self.head = Default::default();
-        self.cur_prev = Default::default();
+    pub fn clear(&self) {
+        self.tasks.try_write().unwrap().clear();
+        self.pending_tasks.try_lock().unwrap().clear();
+        self.pending_tasks_merge.store(false, Ordering::SeqCst);
+        self.head.store(Default::default(), Ordering::Relaxed);
+        self.cur_prev.store(Default::default(), Ordering::Relaxed);
     }
 
     pub fn remove(&self, t: Rav1dTaskIndex, prev_t: Rav1dTaskIndex) -> Option<Rav1dTask> {
@@ -488,12 +488,8 @@ pub(crate) fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) {
     fc.task_thread.insert_task(c, init_task, 1);
 }
 
-pub(crate) fn rav1d_task_delayed_fg(
-    c: &mut Rav1dContext,
-    out: &mut Rav1dPicture,
-    in_0: &Rav1dPicture,
-) {
-    let ttd: &TaskThreadData = &c.task_thread;
+pub(crate) fn rav1d_task_delayed_fg(c: &Rav1dContext, out: &mut Rav1dPicture, in_0: &Rav1dPicture) {
+    let ttd = &*c.task_thread;
     {
         let mut delayed_fg = ttd.delayed_fg.try_write().unwrap();
         delayed_fg.in_0 = in_0.clone();
