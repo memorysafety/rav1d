@@ -1,6 +1,6 @@
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
-    if #[cfg(target_os = "linux")] {
+    if #[cfg(any(target_os = "linux", target_os = "android"))] {
         extern "C" {
             pub static mut stdout: *mut libc::FILE;
 
