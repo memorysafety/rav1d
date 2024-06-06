@@ -1163,15 +1163,17 @@ pub(crate) struct Rav1dTaskContext_task_thread {
     pub ttd: Arc<TaskThreadData>,
     pub flushed: AtomicBool,
     pub die: AtomicBool,
+    pub c: Mutex<Option<Arc<Rav1dContext>>>,
 }
 
 impl Rav1dTaskContext_task_thread {
-    pub(crate) fn new(ttd: Arc<TaskThreadData>) -> Self {
+    pub(crate) const fn new(ttd: Arc<TaskThreadData>) -> Self {
         Self {
             cond: Condvar::new(),
             ttd,
             flushed: AtomicBool::new(false),
             die: AtomicBool::new(false),
+            c: Mutex::new(None),
         }
     }
 }

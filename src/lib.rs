@@ -173,7 +173,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
+pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     static initted: Once = Once::new();
     initted.call_once(|| init_internal());
 
@@ -185,48 +185,36 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         EINVAL
     ))?;
 
-    // TODO fallible allocation
-    let c = Box::new(Default::default());
-    let c = Box::into_raw(c);
-    *c_out = c;
-    (*c).allocator = s.allocator.clone();
-    (*c).logger = s.logger.clone();
-    (*c).apply_grain = s.apply_grain;
-    (*c).operating_point = s.operating_point;
-    (*c).all_layers = s.all_layers;
-    (*c).frame_size_limit = s.frame_size_limit;
-    (*c).strict_std_compliance = s.strict_std_compliance;
-    (*c).output_invisible_frames = s.output_invisible_frames;
-    (*c).inloop_filters = s.inloop_filters;
-    (*c).decode_frame_type = s.decode_frame_type;
-
-    if (*c).allocator.is_default() {
-        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
-        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
-        (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
-            .cast::<c_void>()
-            .cast_mut();
-    }
+    let mut c = Rav1dContext::default();
+    c.allocator = s.allocator.clone();
+    c.logger = s.logger.clone();
+    c.apply_grain = s.apply_grain;
+    c.operating_point = s.operating_point;
+    c.all_layers = s.all_layers;
+    c.frame_size_limit = s.frame_size_limit;
+    c.strict_std_compliance = s.strict_std_compliance;
+    c.output_invisible_frames = s.output_invisible_frames;
+    c.inloop_filters = s.inloop_filters;
+    c.decode_frame_type = s.decode_frame_type;
 
     // On 32-bit systems, extremely large frame sizes can cause overflows in
     // `rav1d_decode_frame` alloc size calculations. Prevent that from occuring
     // by enforcing a maximum frame size limit, chosen to roughly correspond to
     // the largest size possible to decode without exhausting virtual memory.
     if mem::size_of::<usize>() < 8 && s.frame_size_limit.wrapping_sub(1) >= 8192 * 8192 {
-        (*c).frame_size_limit = 8192 * 8192;
+        c.frame_size_limit = 8192 * 8192;
         if s.frame_size_limit != 0 {
             writeln!(
-                (*c).logger,
+                c.logger,
                 "Frame size limit reduced from {} to {}.",
-                s.frame_size_limit,
-                (*c).frame_size_limit,
+                s.frame_size_limit, c.frame_size_limit,
             );
         }
     }
 
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
-    (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
+    c.fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
     let ttd = TaskThreadData {
         lock: Mutex::new(()),
         cond: Condvar::new(),
@@ -239,8 +227,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
         delayed_fg: Default::default(),
     };
-    (*c).task_thread = Arc::new(ttd);
-    (*c).state = Mutex::new(Rav1dState {
+    c.task_thread = Arc::new(ttd);
+    c.state = Mutex::new(Rav1dState {
         frame_thread: Rav1dContext_frame_thread {
             out_delayed: if n_fc > 1 {
                 (0..n_fc).map(|_| Default::default()).collect()
@@ -251,42 +239,56 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         },
         ..Default::default()
     });
-    for fc in (*c).fc.iter_mut() {
+    for fc in c.fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
-        fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
+        fc.task_thread.ttd = Arc::clone(&c.task_thread);
         let f = fc.data.get_mut();
         f.lf.last_sharpness = u8::MAX;
     }
-    (*c).tc = (0..n_tc)
+
+    c.tc = (0..n_tc)
         .map(|n| {
-            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
-                &(*c).task_thread,
-            )));
-            if n_tc > 1 {
-                // TODO(SJC): can be removed when c is not a raw pointer
-                let context_borrow = &*c;
-                let thread_data_copy = Arc::clone(&thread_data);
+            let task_thread = Arc::clone(&c.task_thread);
+            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(task_thread));
+            let thread_data_copy = Arc::clone(&thread_data);
+            let task = if n_tc > 1 {
                 let handle = thread::Builder::new()
                     // Don't set stack size like `dav1d` does.
                     // See <https://github.com/memorysafety/rav1d/issues/889>.
                     .name(format!("rav1d-worker-{n}"))
-                    .spawn(|| rav1d_worker_task(context_borrow, thread_data_copy))
+                    .spawn(|| rav1d_worker_task(thread_data_copy))
                     .unwrap();
-                Rav1dContextTaskThread {
-                    task: Rav1dContextTaskType::Worker(handle),
-                    thread_data,
-                }
+                Rav1dContextTaskType::Worker(handle)
             } else {
-                Rav1dContextTaskThread {
-                    task: Rav1dContextTaskType::Single(Mutex::new(Box::new(
-                        Rav1dTaskContext::new(Arc::clone(&thread_data)),
-                    ))),
-                    thread_data,
-                }
-            }
+                Rav1dContextTaskType::Single(Mutex::new(Box::new(Rav1dTaskContext::new(
+                    thread_data_copy,
+                ))))
+            };
+            Rav1dContextTaskThread { task, thread_data }
         })
         .collect();
-    Ok(())
+
+    // TODO fallible allocation
+    let mut c = Arc::new(c);
+
+    if c.allocator.is_default() {
+        let c = Arc::get_mut(&mut c).unwrap();
+        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
+        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
+        // Note also that we must do this after we created the `Arc` so that `c` has a stable address.
+        c.allocator.cookie = ptr::from_ref(&c.picture_pool).cast::<c_void>().cast_mut();
+    }
+    let c = c;
+
+    for tc in c.tc.iter() {
+        if let Rav1dContextTaskType::Worker(handle) = &tc.task {
+            // Unpark each thread once we set its `thread_data.c`.
+            *tc.thread_data.c.lock() = Some(Arc::clone(&c));
+            handle.thread().unpark();
+        }
+    }
+
+    Ok(c)
 }
 
 #[no_mangle]
@@ -298,11 +300,12 @@ pub unsafe extern "C" fn dav1d_open(
     (|| {
         validate_input!((!c_out.is_null(), EINVAL))?;
         validate_input!((!s.is_null(), EINVAL))?;
-        let c_out = &mut *c_out;
         let s = s.read().try_into()?;
-        rav1d_open(c_out, &s).inspect_err(|_| {
+        let c = rav1d_open(&s).inspect_err(|_| {
             *c_out = ptr::null_mut();
         })?;
+        let c = Arc::into_raw(c);
+        *c_out = c;
         Ok(())
     })()
     .into()
