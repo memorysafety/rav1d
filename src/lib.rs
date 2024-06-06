@@ -32,6 +32,7 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dContext_frame_thread;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dState;
 use crate::src::internal::Rav1dTaskContext;
@@ -239,11 +240,17 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         delayed_fg: Default::default(),
     };
     (*c).task_thread = Arc::new(ttd);
-    (*c).state.try_lock().unwrap().frame_thread.out_delayed = if n_fc > 1 {
-        (0..n_fc).map(|_| Default::default()).collect()
-    } else {
-        Box::new([])
-    };
+    (*c).state = Mutex::new(Rav1dState {
+        frame_thread: Rav1dContext_frame_thread {
+            out_delayed: if n_fc > 1 {
+                (0..n_fc).map(|_| Default::default()).collect()
+            } else {
+                Box::new([])
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    });
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
