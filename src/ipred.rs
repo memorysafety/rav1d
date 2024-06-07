@@ -1645,7 +1645,7 @@ mod neon {
     ) {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
-        angle &= 511 as c_int;
+        angle &= 511;
         let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
         const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
         let mut top_out: [BD::Pixel; top_out_size] = [0.into(); top_out_size];
@@ -1669,7 +1669,7 @@ mod neon {
             let filter_strength = if enable_intra_edge_filter != 0 {
                 get_filter_strength(width + height, 90 - angle, is_sm)
             } else {
-                0 as c_int
+                0
             };
             if filter_strength != 0 {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
@@ -1694,7 +1694,7 @@ mod neon {
         rav1d_ipred_pixel_set_neon::<BD>(
             top_out.as_mut_ptr().offset((max_base_x + 1) as isize),
             top_out[max_base_x as usize],
-            (pad_pixels * base_inc) as c_int,
+            pad_pixels * base_inc,
         );
         if upsample_above {
             bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill2, neon).call::<BD>(
@@ -1732,7 +1732,7 @@ mod neon {
     ) {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
-        angle &= 511 as c_int;
+        angle &= 511;
         if !(angle > 90 && angle < 180) {
             unreachable!();
         }
@@ -1769,7 +1769,7 @@ mod neon {
             let filter_strength = if enable_intra_edge_filter != 0 {
                 get_filter_strength(width + height, angle - 90, is_sm)
             } else {
-                0 as c_int
+                0
             };
 
             if filter_strength != 0 {
@@ -1816,7 +1816,7 @@ mod neon {
             let filter_strength = if enable_intra_edge_filter != 0 {
                 get_filter_strength(width + height, 180 - angle, is_sm)
             } else {
-                0 as c_int
+                0
             };
             if filter_strength != 0 {
                 buf[flipped_offset as usize] = *topleft_in;
@@ -1908,7 +1908,7 @@ mod neon {
     ) {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
-        angle &= 511 as c_int;
+        angle &= 511;
         if !(angle > 180) {
             unreachable!();
         }
@@ -1941,7 +1941,7 @@ mod neon {
             let filter_strength = if enable_intra_edge_filter != 0 {
                 get_filter_strength(width + height, angle - 180, is_sm)
             } else {
-                0 as c_int
+                0
             };
             if filter_strength != 0 {
                 flipped[0] = *topleft_in.offset(0);
@@ -1972,7 +1972,7 @@ mod neon {
         rav1d_ipred_pixel_set_neon::<BD>(
             left_out.as_mut_ptr().offset((max_base_y + 1) as isize),
             left_out[max_base_y as usize],
-            (pad_pixels * base_inc) as c_int,
+            pad_pixels * base_inc,
         );
         if upsample_left {
             bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill2, neon).call::<BD>(
