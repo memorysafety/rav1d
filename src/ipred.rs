@@ -1913,8 +1913,8 @@ mod neon {
             unreachable!();
         }
         let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
-        let mut flipped = [0.into(); 144];
-        let mut left_out = [0.into(); 286];
+        let mut flipped = [0.into(); 64 + 64 + 16];
+        let mut left_out = [0.into(); 64 + 64 + (64 + 15) * 2];
         let max_base_y;
         let upsample_left = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, angle - 180, is_sm)
