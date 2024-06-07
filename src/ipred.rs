@@ -1733,9 +1733,7 @@ mod neon {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
-        if !(angle > 90 && angle < 180) {
-            unreachable!();
-        }
+        assert!(angle > 90 && angle < 180);
         let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as c_int;
         let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as c_int;
         let mut buf = [0.to::<BD::Pixel>(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
@@ -1909,9 +1907,7 @@ mod neon {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
-        if !(angle > 180) {
-            unreachable!();
-        }
+        assert!(angle > 180);
         let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
         let mut flipped = [0.into(); 64 + 64 + 16];
         let mut left_out = [0.into(); 64 + 64 + (64 + 15) * 2];
