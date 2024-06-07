@@ -1437,7 +1437,7 @@ fn parse_skip_mode(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSkipMode> {
-    let mut allowed = 0;
+    let mut allowed = false;
     let mut refs = Default::default();
     if switchable_comp_refs != 0 && frame_type.is_inter_or_switch() && seqhdr.order_hint != 0 {
         let poc = frame_offset as c_uint;
@@ -1480,7 +1480,7 @@ fn parse_skip_mode(
                 cmp::min(off_before_idx, off_after_idx),
                 cmp::max(off_before_idx, off_after_idx),
             ];
-            allowed = 1;
+            allowed = true;
         } else if off_before != 0xffffffff {
             let mut off_before2 = 0xffffffff;
             let mut off_before2_idx = 0;
@@ -1516,11 +1516,11 @@ fn parse_skip_mode(
                     cmp::min(off_before_idx, off_before2_idx),
                     cmp::max(off_before_idx, off_before2_idx),
                 ];
-                allowed = 1;
+                allowed = true;
             }
         }
     }
-    let enabled = if allowed != 0 { gb.get_bit() as u8 } else { 0 };
+    let enabled = if allowed { gb.get_bit() } else { false };
     debug.post(gb, "extskip");
     Ok(Rav1dFrameSkipMode {
         allowed,

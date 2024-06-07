@@ -2495,8 +2495,8 @@ pub struct Rav1dFrameSize {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameSkipMode {
-    pub allowed: u8,
-    pub enabled: u8,
+    pub allowed: bool,
+    pub enabled: bool,
     pub refs: [i8; 2],
 }
 
@@ -2650,8 +2650,8 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             txfm_mode: txfm_mode.try_into().unwrap(),
             switchable_comp_refs,
             skip_mode: Rav1dFrameSkipMode {
-                allowed: skip_mode_allowed,
-                enabled: skip_mode_enabled,
+                allowed: skip_mode_allowed != 0,
+                enabled: skip_mode_enabled != 0,
                 refs: skip_mode_refs,
             },
             warp_motion,
@@ -2766,8 +2766,8 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             restoration: restoration.into(),
             txfm_mode: txfm_mode.into(),
             switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
+            skip_mode_allowed: skip_mode_allowed.into(),
+            skip_mode_enabled: skip_mode_enabled.into(),
             skip_mode_refs,
             warp_motion,
             reduced_txtp_set,
