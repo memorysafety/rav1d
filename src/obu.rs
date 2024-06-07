@@ -1049,7 +1049,7 @@ fn parse_quant(
 }
 
 fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
-    let mut preskip = 0;
+    let mut preskip = false;
     let mut last_active_segid = -1 as i8;
     let d = array::from_fn(|i| {
         let i = i as i8;
@@ -1092,19 +1092,19 @@ fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
         if gb.get_bit() {
             r#ref = gb.get_bits(3) as i8;
             last_active_segid = i;
-            preskip = 1;
+            preskip = true;
         } else {
             r#ref = -1;
         }
-        let skip = gb.get_bit() as u8;
-        if skip != 0 {
+        let skip = gb.get_bit();
+        if skip {
             last_active_segid = i;
-            preskip = 1;
+            preskip = true;
         }
-        let globalmv = gb.get_bit() as u8;
-        if globalmv != 0 {
+        let globalmv = gb.get_bit();
+        if globalmv {
             last_active_segid = i;
-            preskip = 1;
+            preskip = true;
         }
         Rav1dSegmentationData {
             delta_q,

@@ -1441,7 +1441,6 @@ pub struct Dav1dSegmentationData {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
 pub struct Rav1dSegmentationData {
     pub delta_q: i16,
     pub delta_lf_y_v: i8,
@@ -1449,8 +1448,8 @@ pub struct Rav1dSegmentationData {
     pub delta_lf_u: i8,
     pub delta_lf_v: i8,
     pub r#ref: i8,
-    pub skip: u8,
-    pub globalmv: u8,
+    pub skip: bool,
+    pub globalmv: bool,
 }
 
 impl From<Dav1dSegmentationData> for Rav1dSegmentationData {
@@ -1472,8 +1471,8 @@ impl From<Dav1dSegmentationData> for Rav1dSegmentationData {
             delta_lf_u,
             delta_lf_v,
             r#ref,
-            skip,
-            globalmv,
+            skip: skip != 0,
+            globalmv: globalmv != 0,
         }
     }
 }
@@ -1497,8 +1496,8 @@ impl From<Rav1dSegmentationData> for Dav1dSegmentationData {
             delta_lf_u,
             delta_lf_v,
             r#ref,
-            skip,
-            globalmv,
+            skip: skip.into(),
+            globalmv: globalmv.into(),
         }
     }
 }
@@ -1512,10 +1511,9 @@ pub struct Dav1dSegmentationDataSet {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
 pub struct Rav1dSegmentationDataSet {
     pub d: [Rav1dSegmentationData; SegmentId::COUNT],
-    pub preskip: u8,
+    pub preskip: bool,
     pub last_active_segid: i8,
 }
 
@@ -1528,7 +1526,7 @@ impl From<Dav1dSegmentationDataSet> for Rav1dSegmentationDataSet {
         } = value;
         Self {
             d: d.map(|c| c.into()),
-            preskip,
+            preskip: preskip != 0,
             last_active_segid,
         }
     }
@@ -1543,7 +1541,7 @@ impl From<Rav1dSegmentationDataSet> for Dav1dSegmentationDataSet {
         } = value;
         Self {
             d: d.map(|rust| rust.into()),
-            preskip,
+            preskip: preskip.into(),
             last_active_segid,
         }
     }
