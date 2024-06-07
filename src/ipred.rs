@@ -1644,7 +1644,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
-        let topleft_in = topleft_in.as_ptr().add(topleft_off);
+        let topleft_in = &topleft_in[topleft_off..];
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -1661,7 +1661,7 @@ mod neon {
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
                 top_out.as_mut_ptr(),
                 width + height,
-                topleft_in,
+                topleft_in.as_ptr(),
                 width + cmp::min(width, height),
                 bd,
             );
@@ -1677,18 +1677,15 @@ mod neon {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
                     top_out.as_mut_ptr(),
                     width + height,
-                    topleft_in,
+                    topleft_in.as_ptr(),
                     width + cmp::min(width, height),
                     filter_strength,
                 );
                 max_base_x = width + height - 1;
             } else {
                 max_base_x = width + cmp::min(width, height) - 1;
-                memcpy(
-                    top_out.as_mut_ptr() as *mut c_void,
-                    &*topleft_in.offset(1) as *const BD::Pixel as *const c_void,
-                    ((max_base_x + 1) as usize).wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
-                );
+                let len = max_base_x as usize + 1;
+                top_out[..len].copy_from_slice(&topleft_in[1..][..len]);
             }
         }
         let base_inc = 1 + upsample_above as c_int;
