@@ -25,7 +25,6 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::extensions::OptionError as _;
 use crate::src::fg_apply;
@@ -173,25 +172,22 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 
 #[cold]
 pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
-    unsafe fn error(c: *mut Rav1dContext, c_out: &mut *mut Rav1dContext) -> Rav1dResult {
-        if !c.is_null() {
-            close_internal(c_out, false);
-        }
-        return Err(ENOMEM);
-    }
-
     static initted: Once = Once::new();
     initted.call_once(|| init_internal());
+
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point <= 31, EINVAL))?;
+    validate_input!((
+        !s.allocator.is_default() || s.allocator.cookie.is_null(),
+        EINVAL
+    ))?;
+
+    // TODO fallible allocation
     let c = Box::new(Default::default());
     let c = Box::into_raw(c);
     *c_out = c;
     let c: *mut Rav1dContext = *c_out;
-    if c.is_null() {
-        return error(c, c_out);
-    }
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -204,9 +200,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).decode_frame_type = s.decode_frame_type;
 
     if (*c).allocator.is_default() {
-        if !(*c).allocator.cookie.is_null() {
-            return error(c, c_out);
-        }
         // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
         // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
         (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
