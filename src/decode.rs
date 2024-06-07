@@ -1407,7 +1407,7 @@ fn decode_b(
     if seg
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
-        && frame_hdr.skip_mode.enabled != 0
+        && frame_hdr.skip_mode.enabled
         && cmp::min(bw4, bh4) > 1
     {
         let smctx = *f.a[t.a].skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
