@@ -1647,8 +1647,8 @@ mod neon {
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
         let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
-        const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
-        let mut top_out: [BD::Pixel; top_out_size] = [0.into(); top_out_size];
+        const TOP_OUT_SIZE: usize = 64 + 64 * (64 + 15) * 2 + 16;
+        let mut top_out: [BD::Pixel; TOP_OUT_SIZE] = [0.into(); TOP_OUT_SIZE];
         let max_base_x;
         let upsample_above = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, 90 - angle, is_sm)
