@@ -1648,7 +1648,7 @@ mod neon {
         angle &= 511;
         let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
         const TOP_OUT_SIZE: usize = 64 + 64 * (64 + 15) * 2 + 16;
-        let mut top_out: [BD::Pixel; TOP_OUT_SIZE] = [0.into(); TOP_OUT_SIZE];
+        let mut top_out = [0.into(); TOP_OUT_SIZE];
         let max_base_x;
         let upsample_above = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, 90 - angle, is_sm)
@@ -1738,13 +1738,13 @@ mod neon {
         }
         let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as c_int;
         let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as c_int;
-        let mut buf: [BD::Pixel; 3 * (64 + 1)] = [0.into(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
+        let mut buf = [0.to::<BD::Pixel>(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
 
         // The asm can underread below the start of top[] and left[]; to avoid
         // surprising behaviour, make sure this is within the allocated stack space.
-        let left_offset: isize = 2 * (64 + 1);
-        let top_offset: isize = 1 * (64 + 1);
-        let flipped_offset: isize = 0 * (64 + 1);
+        let left_offset = 2 * (64 + 1);
+        let top_offset = 1 * (64 + 1);
+        let flipped_offset = 0 * (64 + 1);
 
         let upsample_left = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, 180 - angle, is_sm)
@@ -1913,8 +1913,8 @@ mod neon {
             unreachable!();
         }
         let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
-        let mut flipped: [BD::Pixel; 144] = [0.into(); 144];
-        let mut left_out: [BD::Pixel; 286] = [0.into(); 286];
+        let mut flipped = [0.into(); 144];
+        let mut left_out = [0.into(); 286];
         let max_base_y;
         let upsample_left = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, angle - 180, is_sm)
