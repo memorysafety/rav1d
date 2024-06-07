@@ -1635,7 +1635,8 @@ mod neon {
     unsafe fn ipred_z1_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        topleft_in: *const BD::Pixel,
+        topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        topleft_off: usize,
         width: c_int,
         height: c_int,
         mut angle: c_int,
@@ -1643,6 +1644,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
+        let topleft_in = topleft_in.as_ptr().add(topleft_off);
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -1722,7 +1724,8 @@ mod neon {
     unsafe fn ipred_z2_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        topleft_in: *const BD::Pixel,
+        topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        topleft_off: usize,
         width: c_int,
         height: c_int,
         mut angle: c_int,
@@ -1730,6 +1733,7 @@ mod neon {
         max_height: c_int,
         bd: BD,
     ) {
+        let topleft_in = topleft_in.as_ptr().add(topleft_off);
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -1896,7 +1900,8 @@ mod neon {
     unsafe fn ipred_z3_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        topleft_in: *const BD::Pixel,
+        topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        topleft_off: usize,
         width: c_int,
         height: c_int,
         mut angle: c_int,
@@ -1904,6 +1909,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
+        let topleft_in = topleft_in.as_ptr().add(topleft_off);
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -2003,12 +2009,15 @@ mod neon {
         max_width: c_int,
         max_height: c_int,
         bitdepth_max: c_int,
-        _topleft_off: usize,
+        topleft_off: usize,
     ) {
+        // SAFETY: Reconstructed from args passed by `angular_ipred::Fn::call`.
+        let topleft_in = unsafe { reconstruct_topleft::<BD>(topleft_in, topleft_off) };
         [ipred_z1_neon, ipred_z2_neon, ipred_z3_neon][Z - 1](
             dst.cast(),
             stride,
-            topleft_in.cast(),
+            topleft_in,
+            topleft_off,
             width,
             height,
             angle,
