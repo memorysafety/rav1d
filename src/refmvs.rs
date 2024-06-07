@@ -1582,7 +1582,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
     n_tile_threads: u32,
     n_frame_threads: u32,
 ) -> Rav1dResult {
-    rf.sbsz = 16 << seq_hdr.sb128;
+    rf.sbsz = 16 << seq_hdr.sb128 as u8;
     rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
     rf.ih8 = frm_hdr.size.height + 7 >> 3;
     rf.iw4 = rf.iw8 << 1;

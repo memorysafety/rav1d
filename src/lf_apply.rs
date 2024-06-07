@@ -28,7 +28,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     mut src: Rav1dPictureDataComponentOffset,
     ss_ver: c_int,
-    sb128: u8,
+    sb128: bool,
     mut row: c_int,
     row_h: c_int,
     src_w: c_int,
@@ -54,7 +54,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     src += (stripe_h - 2) as isize * src.pixel_stride::<BD>();
     if c.tc.len() == 1 {
         if row != 0 {
-            let top = 4 << sb128;
+            let top = 4 << sb128 as u8;
             let px_abs_stride = BD::pxstride(dst_stride.unsigned_abs());
             let top_size = top * px_abs_stride;
             // Copy the top part of the stored loop filtered pixels from the
@@ -159,7 +159,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset_y = 8 * (sby != 0) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let tt_off = have_tt * sby * (4 << seq_hdr.sb128);
+    let tt_off = have_tt * sby * (4 << (seq_hdr.sb128 as i32));
     let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
     let dst = array::from_fn::<_, 3, _>(|i| {
         let data = &sr_cur_data[i];
@@ -171,11 +171,11 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
 
-    if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_Y as c_int != 0 {
+    if seq_hdr.cdef || restore_planes & LR_RESTORE_Y as c_int != 0 {
         let h = f.cur.p.h;
         let w = f.bw << 2;
-        let row_h = cmp::min((sby + 1) << 6 + seq_hdr.sb128, h - 1);
-        let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
+        let row_h = cmp::min((sby + 1) << 6 + seq_hdr.sb128 as i32, h - 1);
+        let y_stripe = (sby << 6 + seq_hdr.sb128 as i32) - offset_y;
         if restore_planes & LR_RESTORE_Y as c_int != 0 || resize == 0 {
             backup_lpf::<BD>(
                 c,
@@ -225,7 +225,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             );
         }
     }
-    if (seq_hdr.cdef != 0 || restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0)
+    if (seq_hdr.cdef || restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0)
         && f.cur.p.layout != Rav1dPixelLayout::I400
     {
         let ss_ver = (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -236,7 +236,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let offset_uv = offset_y >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
         let cdef_off_uv = sby as isize * 4 * src[1].pixel_stride::<BD>();
-        if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
+        if seq_hdr.cdef || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
                     c,
@@ -286,7 +286,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 );
             }
         }
-        if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_V as c_int != 0 {
+        if seq_hdr.cdef || restore_planes & LR_RESTORE_V as c_int != 0 {
             if restore_planes & LR_RESTORE_V as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
                     c,
@@ -502,7 +502,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let lflvl = &f.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
+    let is_sb64 = !seq_hdr.sb128 as c_int;
     let starty4 = ((sby & is_sb64) as u32) << 4;
     let sbsz = 32 >> is_sb64;
     let sbl2 = 5 - is_sb64;
@@ -656,7 +656,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     // Don't filter outside the frame
     let have_top = sby > 0;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
+    let is_sb64 = !seq_hdr.sb128 as c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
