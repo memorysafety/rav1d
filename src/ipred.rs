@@ -1730,7 +1730,7 @@ mod neon {
         max_height: c_int,
         bd: BD,
     ) {
-        let topleft_in = topleft_in.as_ptr().add(topleft_off);
+        let topleft_in = &topleft_in[topleft_off..];
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -1760,7 +1760,7 @@ mod neon {
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
                 buf.as_mut_ptr().offset(top_offset),
                 width,
-                topleft_in,
+                topleft_in.as_ptr(),
                 bd,
             );
             dx <<= 1;
@@ -1775,33 +1775,30 @@ mod neon {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
                     buf.as_mut_ptr().offset(1 + top_offset),
                     cmp::min(max_width, width),
-                    topleft_in,
+                    topleft_in.as_ptr(),
                     width,
                     filter_strength,
                 );
 
                 if max_width < width {
-                    memcpy(
-                        buf.as_mut_ptr().offset(top_offset + 1 + max_width as isize) as *mut c_void,
-                        topleft_in.offset(1 + max_width as isize) as *const c_void,
-                        ((width - max_width) as usize)
-                            .wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
-                    );
+                    let len = (width - max_width) as usize;
+                    buf[top_offset as usize + 1 + max_width as usize..][..len]
+                        .copy_from_slice(&topleft_in[1 + max_width as usize..][..len]);
                 }
             } else {
                 BD::pixel_copy(
                     &mut buf[1 + top_offset as usize..],
-                    core::slice::from_raw_parts(topleft_in.offset(1), width as usize),
+                    &topleft_in[1..][..width as usize],
                     width as usize,
                 );
             }
         }
 
         if upsample_left {
-            buf[flipped_offset as usize] = *topleft_in;
+            buf[flipped_offset as usize] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                 buf.as_mut_ptr().offset(1 + flipped_offset),
-                topleft_in,
+                topleft_in.as_ptr(),
                 height,
             );
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
@@ -1818,10 +1815,10 @@ mod neon {
                 0
             };
             if filter_strength != 0 {
-                buf[flipped_offset as usize] = *topleft_in;
+                buf[flipped_offset as usize] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                     buf.as_mut_ptr().offset(1 + flipped_offset),
-                    topleft_in,
+                    topleft_in.as_ptr(),
                     height,
                 );
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
@@ -1846,13 +1843,13 @@ mod neon {
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                     buf.as_mut_ptr().offset(left_offset + 1),
-                    topleft_in,
+                    topleft_in.as_ptr(),
                     height,
                 );
             }
         }
-        buf[top_offset as usize] = *topleft_in;
-        buf[left_offset as usize] = *topleft_in;
+        buf[top_offset as usize] = topleft_in[0];
+        buf[left_offset as usize] = topleft_in[0];
 
         if upsample_above && upsample_left {
             unreachable!();
