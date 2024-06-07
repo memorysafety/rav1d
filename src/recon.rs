@@ -2443,7 +2443,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         &mut angle,
                         uv_t_dim.w as c_int,
                         uv_t_dim.h as c_int,
-                        0,
+                        false,
                         edge_array,
                         edge_offset,
                         bd,
@@ -3102,7 +3102,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 &mut angle,
                 bw4,
                 bh4,
-                0,
+                false,
                 tl_edge_array,
                 tl_edge_offset,
                 bd,
@@ -3386,7 +3386,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut angle,
                             cbw4,
                             cbh4,
-                            0,
+                            false,
                             tl_edge_array,
                             tl_edge_offset,
                             bd,
@@ -3653,7 +3653,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     let y = sby * f.sb_step * 4;
     let p = f.cur.lf_offsets::<BD>(y);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
+    let mask_offset = (sby >> !seq_hdr.sb128 as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
         p,
@@ -3674,14 +3674,14 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
-    let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
+    let mask_offset = (sby >> !sb128 as c_int) * f.sb128w;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y != [0; 2])
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, p, mask_offset as usize, sby);
     }
-    if cdef != 0 || f.lf.restore_planes != 0 {
+    if cdef || f.lf.restore_planes != 0 {
         // Store loop filtered pixels required by CDEF / LR.
         rav1d_copy_lpf::<BD>(c, f, p, sby);
     }
@@ -3701,8 +3701,8 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     let y = sby * sbsz * 4;
     let p = f.cur.lf_offsets::<BD>(y);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
-    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
+    let prev_mask = (sby - 1 >> !seq_hdr.sb128 as c_int) * f.sb128w;
+    let mask_offset = (sby >> !seq_hdr.sb128 as c_int) * f.sb128w;
     let start = sby * sbsz;
     if sby != 0 {
         let p_up = array::from_fn(|i| {
@@ -3784,7 +3784,7 @@ pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
     rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    if seq_hdr.cdef != 0 {
+    if seq_hdr.cdef {
         rav1d_filter_sbrow_cdef::<BD>(c, f, t, sby);
     }
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();

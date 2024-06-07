@@ -419,7 +419,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
         TaskType::EntropyProgress
     } else if has_deblock != 0 {
         TaskType::DeblockCols
-    } else if has_cdef != 0 || has_lr != 0 {
+    } else if has_cdef || has_lr != 0 {
         TaskType::DeblockRows
     } else if has_resize != 0 {
         TaskType::SuperResolution
@@ -1243,7 +1243,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
-                        } else if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
+                        } else if seq_hdr.cdef || f.lf.restore_planes != 0 {
                             drop(f);
                             let copy_lpf = fc.frame_thread_progress.copy_lpf.try_read().unwrap();
                             copy_lpf[(sby >> 5) as usize]
@@ -1273,7 +1273,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                     TaskType::Cdef => {
                         let f = fc.data.try_read().unwrap();
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-                        if seq_hdr.cdef != 0 {
+                        if seq_hdr.cdef {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 // SAFETY: TODO make safe
                                 unsafe {
