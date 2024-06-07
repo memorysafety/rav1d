@@ -184,7 +184,7 @@ fn init_quant_tables(
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
-    let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
+    let segmentation_is_enabled = frame_hdr.segmentation.enabled;
     let len = if segmentation_is_enabled {
         SegmentId::COUNT
     } else {
@@ -1335,8 +1335,8 @@ fn decode_b(
     // segment_id (if seg_feature for skip/ref/gmv is enabled)
     let mut seg_pred = false;
     let frame_hdr: &Rav1dFrameHeader = &f.frame_hdr.as_ref().unwrap();
-    if frame_hdr.segmentation.enabled != 0 {
-        if frame_hdr.segmentation.update_map == 0 {
+    if frame_hdr.segmentation.enabled {
+        if !frame_hdr.segmentation.update_map {
             b.seg_id = f
                 .prev_segmap
                 .as_ref()
@@ -1346,7 +1346,7 @@ fn decode_b(
                 .unwrap_or_default();
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
         } else if frame_hdr.segmentation.seg_data.preskip {
-            if frame_hdr.segmentation.temporal != 0 && {
+            if frame_hdr.segmentation.temporal && {
                 let index =
                     *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
                 seg_pred = rav1d_msac_decode_bool_adapt(
@@ -1435,11 +1435,11 @@ fn decode_b(
     }
 
     // segment_id
-    if frame_hdr.segmentation.enabled != 0
-        && frame_hdr.segmentation.update_map != 0
+    if frame_hdr.segmentation.enabled
+        && frame_hdr.segmentation.update_map
         && !frame_hdr.segmentation.seg_data.preskip
     {
-        if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
+        if b.skip == 0 && frame_hdr.segmentation.temporal && {
             let index = *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
@@ -2693,17 +2693,13 @@ fn decode_b(
             let inter_mode;
             let mut mv1d0;
             let mut drl_idx;
-            if seg
-                .map(|seg| seg.skip || seg.globalmv)
-                .unwrap_or(false)
+            if seg.map(|seg| seg.skip || seg.globalmv).unwrap_or(false)
                 || rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.newmv_mode[(ctx & 7) as usize],
                 )
             {
-                if seg
-                    .map(|seg| seg.skip || seg.globalmv)
-                    .unwrap_or(false)
+                if seg.map(|seg| seg.skip || seg.globalmv).unwrap_or(false)
                     || !rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.m.globalmv_mode[(ctx >> 3 & 1) as usize],
@@ -3167,7 +3163,7 @@ fn decode_b(
 
     // update contexts
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
+    if frame_hdr.segmentation.enabled && frame_hdr.segmentation.update_map {
         // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
         let [by, bx, bh4, bw4] = [t.b.y, t.b.x, bh4, bw4].map(|it| usize::try_from(it).unwrap());
         let b4_stride = usize::try_from(f.b4_stride).unwrap();
@@ -4275,9 +4271,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         }
     }
 
-    if f.seq_hdr().ref_frame_mvs
-        && c.tc.len() > 1
-        && f.frame_hdr().frame_type.is_inter_or_switch()
+    if f.seq_hdr().ref_frame_mvs && c.tc.len() > 1 && f.frame_hdr().frame_type.is_inter_or_switch()
     {
         c.dsp.refmvs.save_tmvs.call(
             &t.rt,
@@ -5238,13 +5232,13 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     }
 
     // segmap
-    if frame_hdr.segmentation.enabled != 0 {
+    if frame_hdr.segmentation.enabled {
         // By default, the previous segmentation map is not initialised.
         f.prev_segmap = None;
 
         // We might need a previous frame's segmentation map.
         // This happens if there is either no update or a temporal update.
-        if frame_hdr.segmentation.temporal != 0 || frame_hdr.segmentation.update_map == 0 {
+        if frame_hdr.segmentation.temporal || !frame_hdr.segmentation.update_map {
             let pri_ref = frame_hdr.primary_ref_frame as usize;
             assert!(pri_ref != RAV1D_PRIMARY_REF_NONE as usize);
             let ref_w = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
@@ -5258,7 +5252,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
 
         f.cur_segmap = Some(
             match (
-                frame_hdr.segmentation.update_map != 0,
+                frame_hdr.segmentation.update_map,
                 f.prev_segmap.as_mut(),
             ) {
                 (true, _) | (false, None) => {

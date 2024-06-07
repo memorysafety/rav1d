@@ -656,7 +656,7 @@ pub(crate) fn rav1d_calc_lf_values(
     hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
-    let n_seg = if hdr.segmentation.enabled != 0 {
+    let n_seg = if hdr.segmentation.enabled {
         SegmentId::COUNT
     } else {
         1
@@ -674,7 +674,7 @@ pub(crate) fn rav1d_calc_lf_values(
         None
     };
     for s in 0..n_seg {
-        let segd = if hdr.segmentation.enabled != 0 {
+        let segd = if hdr.segmentation.enabled {
             Some(&hdr.segmentation.seg_data.d[s])
         } else {
             None

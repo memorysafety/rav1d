@@ -1132,26 +1132,26 @@ fn parse_segmentation(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_segmentation> {
-    let enabled = gb.get_bit() as u8;
+    let enabled = gb.get_bit();
     let update_map;
     let temporal;
     let update_data;
-    let seg_data = if enabled != 0 {
+    let seg_data = if enabled {
         if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-            update_map = 1;
-            temporal = 0;
-            update_data = 1;
+            update_map = true;
+            temporal = false;
+            update_data = true;
         } else {
-            update_map = gb.get_bit() as u8;
-            temporal = if update_map != 0 {
-                gb.get_bit() as u8
+            update_map = gb.get_bit();
+            temporal = if update_map {
+                gb.get_bit()
             } else {
-                0
+                false
             };
-            update_data = gb.get_bit() as u8;
+            update_data = gb.get_bit();
         }
 
-        if update_data != 0 {
+        if update_data {
             parse_seg_data(gb)
         } else {
             // segmentation.update_data was false so we should copy
@@ -1189,7 +1189,7 @@ fn parse_segmentation(
         && quant.vdc_delta == 0
         && quant.vac_delta == 0;
     let qidx = array::from_fn(|i| {
-        if enabled != 0 {
+        if enabled {
             clip_u8(quant.yac as c_int + seg_data.d[i].delta_q as c_int)
         } else {
             quant.yac

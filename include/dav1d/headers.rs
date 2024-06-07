@@ -2108,10 +2108,10 @@ pub struct Dav1dFrameHeader_segmentation {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_segmentation {
-    pub enabled: u8,
-    pub update_map: u8,
-    pub temporal: u8,
-    pub update_data: u8,
+    pub enabled: bool,
+    pub update_map: bool,
+    pub temporal: bool,
+    pub update_data: bool,
     pub seg_data: Rav1dSegmentationDataSet,
     /// TODO compress `[bool; 8]` into `u8`.
     pub lossless: [bool; SegmentId::COUNT],
@@ -2130,10 +2130,10 @@ impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
             qidx,
         } = value;
         Self {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
+            enabled: enabled != 0,
+            update_map: update_map != 0,
+            temporal: temporal != 0,
+            update_data: update_data != 0,
             seg_data: seg_data.into(),
             lossless: lossless.map(|e| e != 0),
             qidx,
@@ -2153,10 +2153,10 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
             qidx,
         } = value;
         Self {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
+            enabled: enabled.into(),
+            update_map: update_map.into(),
+            temporal: temporal.into(),
+            update_data: update_data.into(),
             seg_data: seg_data.into(),
             lossless: lossless.map(|e| e as u8),
             qidx,
