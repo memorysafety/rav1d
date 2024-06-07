@@ -1626,16 +1626,19 @@ fn decode_b(
     let intra = if b.skip_mode != 0 {
         false
     } else if frame_hdr.frame_type.is_inter_or_switch() {
-        if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv) {
-            seg.r#ref == 0
-        } else {
-            let ictx = get_intra_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-            let intra =
-                !rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.intra[ictx.into()]);
-            if debug_block_info!(f, t.b) {
-                println!("Post-intra[{}]: r={}", intra, ts_c.msac.rng);
+        match seg {
+            Some(seg) if seg.r#ref >= 0 || seg.globalmv => seg.r#ref == 0,
+            _ => {
+                let ictx = get_intra_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                let intra = !rav1d_msac_decode_bool_adapt(
+                    &mut ts_c.msac,
+                    &mut ts_c.cdf.m.intra[ictx.into()],
+                );
+                if debug_block_info!(f, t.b) {
+                    println!("Post-intra[{}]: r={}", intra, ts_c.msac.rng);
+                }
+                intra
             }
-            intra
         }
     } else if frame_hdr.allow_intrabc {
         let intra = !rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.intrabc.0);
