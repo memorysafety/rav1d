@@ -1345,7 +1345,7 @@ fn decode_b(
                 })
                 .unwrap_or_default();
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
-        } else if frame_hdr.segmentation.seg_data.preskip != 0 {
+        } else if frame_hdr.segmentation.seg_data.preskip {
             if frame_hdr.segmentation.temporal != 0 && {
                 let index =
                     *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
@@ -1405,7 +1405,7 @@ fn decode_b(
 
     // skip_mode
     if seg
-        .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
+        .map(|seg| !seg.globalmv && seg.r#ref == -1 && !seg.skip)
         .unwrap_or(true)
         && frame_hdr.skip_mode.enabled
         && cmp::min(bw4, bh4) > 1
@@ -1423,7 +1423,7 @@ fn decode_b(
     }
 
     // skip
-    if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
+    if b.skip_mode != 0 || seg.map(|seg| seg.skip).unwrap_or(false) {
         b.skip = 1;
     } else {
         let sctx = *f.a[t.a].skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
@@ -1437,7 +1437,7 @@ fn decode_b(
     // segment_id
     if frame_hdr.segmentation.enabled != 0
         && frame_hdr.segmentation.update_map != 0
-        && frame_hdr.segmentation.seg_data.preskip == 0
+        && !frame_hdr.segmentation.seg_data.preskip
     {
         if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
             let index = *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
@@ -1626,7 +1626,7 @@ fn decode_b(
     let intra = if b.skip_mode != 0 {
         false
     } else if frame_hdr.frame_type.is_inter_or_switch() {
-        if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
+        if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv) {
             seg.r#ref == 0
         } else {
             let ictx = get_intra_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
@@ -2213,7 +2213,7 @@ fn decode_b(
         let is_comp = if b.skip_mode != 0 {
             true
         } else if seg
-            .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
+            .map(|seg| seg.r#ref == -1 && !seg.globalmv && !seg.skip)
             .unwrap_or(true)
             && frame_hdr.switchable_comp_refs != 0
             && cmp::min(bw4, bh4) > 1
@@ -2620,7 +2620,7 @@ fn decode_b(
             // ref
             let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
                 seg.r#ref as i8 - 1
-            } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
+            } else if let Some(_) = seg.filter(|seg| seg.globalmv || seg.skip) {
                 0
             } else {
                 let ctx1 = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
@@ -2694,7 +2694,7 @@ fn decode_b(
             let mut mv1d0;
             let mut drl_idx;
             if seg
-                .map(|seg| seg.skip != 0 || seg.globalmv != 0)
+                .map(|seg| seg.skip || seg.globalmv)
                 .unwrap_or(false)
                 || rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
@@ -2702,7 +2702,7 @@ fn decode_b(
                 )
             {
                 if seg
-                    .map(|seg| seg.skip != 0 || seg.globalmv != 0)
+                    .map(|seg| seg.skip || seg.globalmv)
                     .unwrap_or(false)
                     || !rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
