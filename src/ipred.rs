@@ -1594,7 +1594,7 @@ mod neon {
     }
 
     unsafe fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(
-        out: *mut BD::Pixel,
+        out: &mut [BD::Pixel],
         px: BD::Pixel,
         n: c_int,
     ) {
@@ -1618,7 +1618,7 @@ mod neon {
             );
         }
 
-        let out = out.cast();
+        let out = out.as_mut_ptr().cast();
         match BD::BPC {
             BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
                 out,
@@ -1688,9 +1688,10 @@ mod neon {
         }
         let base_inc = 1 + upsample_above as c_int;
         let pad_pixels = width + 15;
+        let px = top_out[max_base_x as usize];
         rav1d_ipred_pixel_set_neon::<BD>(
-            top_out.as_mut_ptr().offset((max_base_x + 1) as isize),
-            top_out[max_base_x as usize],
+            &mut top_out[max_base_x as usize + 1..],
+            px,
             pad_pixels * base_inc,
         );
         if upsample_above {
@@ -1955,9 +1956,10 @@ mod neon {
         }
         let base_inc = 1 + upsample_left as c_int;
         let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
+        let px = left_out[max_base_y as usize];
         rav1d_ipred_pixel_set_neon::<BD>(
-            left_out.as_mut_ptr().offset((max_base_y + 1) as isize),
-            left_out[max_base_y as usize],
+            &mut left_out[max_base_y as usize + 1..],
+            px,
             pad_pixels * base_inc,
         );
         if upsample_left {
