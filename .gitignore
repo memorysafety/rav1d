@@ -11,3 +11,12 @@ compile_commands.json
 
 # Rust
 target/
+
+# Too Large Tests
+/tests/argon
+/tests/large
+
+/retranspile/
+
+.gdb_history
+.gdbinit
