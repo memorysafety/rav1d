@@ -1893,7 +1893,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
-        let topleft_in = topleft_in.as_ptr().add(topleft_off);
+        let topleft_in = &topleft_in[topleft_off..];
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
@@ -1908,10 +1908,10 @@ mod neon {
             false
         };
         if upsample_left {
-            flipped[0] = *topleft_in.offset(0);
+            flipped[0] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                 flipped.as_mut_ptr().offset(1),
-                topleft_in.offset(0),
+                topleft_in.as_ptr(),
                 height + cmp::max(width, height),
             );
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
@@ -1930,10 +1930,10 @@ mod neon {
                 0
             };
             if filter_strength != 0 {
-                flipped[0] = *topleft_in.offset(0);
+                flipped[0] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                     flipped.as_mut_ptr().offset(1),
-                    topleft_in.offset(0),
+                    topleft_in.as_ptr(),
                     height + cmp::max(width, height),
                 );
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
@@ -1947,7 +1947,7 @@ mod neon {
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                     left_out.as_mut_ptr(),
-                    topleft_in.offset(0),
+                    topleft_in.as_ptr(),
                     height + cmp::min(width, height),
                 );
                 max_base_y = height + cmp::min(width, height) - 1;
