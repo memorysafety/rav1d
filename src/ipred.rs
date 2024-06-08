@@ -1440,8 +1440,6 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
 mod neon {
     use super::*;
 
-    use libc::memcpy;
-    use std::ffi::c_void;
     use to_method::To;
 
     #[cfg(feature = "bitdepth_8")]
@@ -1829,14 +1827,10 @@ mod neon {
                     filter_strength,
                 );
                 if max_height < height {
-                    memcpy(
-                        buf.as_mut_ptr().add(left_offset + 1 + max_height as usize) as *mut c_void,
-                        buf.as_mut_ptr()
-                            .add(flipped_offset + 1 + max_height as usize)
-                            as *const c_void,
-                        ((height - max_height) as usize)
-                            .wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
-                    );
+                    let len = (height - max_height) as usize;
+                    let (front, back) = buf.split_at_mut(left_offset + 1 + max_height as usize);
+                    back[..len]
+                        .copy_from_slice(&front[flipped_offset + 1 + max_height as usize..][..len]);
                 }
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
