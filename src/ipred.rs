@@ -1843,9 +1843,7 @@ mod neon {
         buf[top_offset as usize] = topleft_in[0];
         buf[left_offset as usize] = topleft_in[0];
 
-        if upsample_above && upsample_left {
-            unreachable!();
-        }
+        assert!(!(upsample_above && upsample_left));
 
         if !upsample_above && !upsample_left {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill1, neon).call::<BD>(
