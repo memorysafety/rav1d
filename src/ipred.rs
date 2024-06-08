@@ -1758,7 +1758,7 @@ mod neon {
 
         if upsample_above {
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
-                buf.as_mut_ptr().offset(top_offset),
+                buf[top_offset..].as_mut_ptr(),
                 width,
                 topleft_in.as_ptr(),
                 bd,
@@ -1773,7 +1773,7 @@ mod neon {
 
             if filter_strength != 0 {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    buf.as_mut_ptr().offset(1 + top_offset),
+                    buf[1 + top_offset..].as_mut_ptr(),
                     cmp::min(max_width, width),
                     topleft_in.as_ptr(),
                     width,
@@ -1795,16 +1795,16 @@ mod neon {
         }
 
         if upsample_left {
-            buf[flipped_offset as usize] = topleft_in[0];
+            buf[flipped_offset] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                buf.as_mut_ptr().offset(1 + flipped_offset),
+                buf[1 + flipped_offset..].as_mut_ptr(),
                 topleft_in.as_ptr(),
                 height,
             );
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
-                buf.as_mut_ptr().offset(left_offset),
+                buf[left_offset..].as_mut_ptr(),
                 height,
-                buf.as_ptr().offset(flipped_offset),
+                buf[flipped_offset..].as_ptr(),
                 bd,
             );
             dy <<= 1;
@@ -1817,24 +1817,22 @@ mod neon {
             if filter_strength != 0 {
                 buf[flipped_offset as usize] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    buf.as_mut_ptr().offset(1 + flipped_offset),
+                    buf[1 + flipped_offset..].as_mut_ptr(),
                     topleft_in.as_ptr(),
                     height,
                 );
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    buf.as_mut_ptr().offset(1 + left_offset),
+                    buf[1 + left_offset..].as_mut_ptr(),
                     cmp::min(max_height, height),
-                    buf.as_ptr().offset(flipped_offset),
+                    buf[flipped_offset..].as_ptr(),
                     height,
                     filter_strength,
                 );
                 if max_height < height {
                     memcpy(
+                        buf.as_mut_ptr().add(left_offset + 1 + max_height as usize) as *mut c_void,
                         buf.as_mut_ptr()
-                            .offset(left_offset + 1 + max_height as isize)
-                            as *mut c_void,
-                        buf.as_mut_ptr()
-                            .offset(flipped_offset + 1 + max_height as isize)
+                            .add(flipped_offset + 1 + max_height as usize)
                             as *const c_void,
                         ((height - max_height) as usize)
                             .wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
@@ -1842,7 +1840,7 @@ mod neon {
                 }
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    buf.as_mut_ptr().offset(left_offset + 1),
+                    buf[left_offset + 1..].as_mut_ptr(),
                     topleft_in.as_ptr(),
                     height,
                 );
@@ -1859,8 +1857,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill1, neon).call::<BD>(
                 dst,
                 stride,
-                buf.as_ptr().offset(top_offset),
-                buf.as_ptr().offset(left_offset),
+                buf[top_offset..].as_ptr(),
+                buf[left_offset..].as_ptr(),
                 width,
                 height,
                 dx,
@@ -1870,8 +1868,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill2, neon).call::<BD>(
                 dst,
                 stride,
-                buf.as_ptr().offset(top_offset),
-                buf.as_ptr().offset(left_offset),
+                buf[top_offset..].as_ptr(),
+                buf[left_offset..].as_ptr(),
                 width,
                 height,
                 dx,
@@ -1881,8 +1879,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill3, neon).call::<BD>(
                 dst,
                 stride,
-                buf.as_ptr().offset(top_offset),
-                buf.as_ptr().offset(left_offset),
+                buf[top_offset..].as_ptr(),
+                buf[left_offset..].as_ptr(),
                 width,
                 height,
                 dx,
