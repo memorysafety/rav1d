@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::c_arc::RawArc;
 use crate::src::c_box::FnFree;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
@@ -294,7 +295,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_open(
-    c_out: *mut *const Dav1dContext,
+    c_out: *mut Option<Dav1dContext>,
     s: *const Dav1dSettings,
 ) -> Dav1dResult {
     (|| {
@@ -302,10 +303,9 @@ pub unsafe extern "C" fn dav1d_open(
         validate_input!((!s.is_null(), EINVAL))?;
         let s = s.read().try_into()?;
         let c = rav1d_open(&s).inspect_err(|_| {
-            *c_out = ptr::null_mut();
+            *c_out = None;
         })?;
-        let c = Arc::into_raw(c);
-        *c_out = c;
+        *c_out = Some(RawArc::from_arc(c));
         Ok(())
     })()
     .into()
@@ -507,13 +507,13 @@ pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dRe
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_send_data(
-    c: *const Rav1dContext,
+    c: Option<Dav1dContext>,
     in_0: *mut Dav1dData,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let mut in_rust = in_0.read().into();
         let result = rav1d_send_data(c, &mut in_rust);
         in_0.write(in_rust.into());
@@ -538,13 +538,13 @@ pub(crate) unsafe fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture)
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dPicture,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let mut out_rust = Default::default(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_picture(c, &mut out_rust);
         out.write(out_rust.into());
@@ -598,15 +598,15 @@ pub(crate) fn rav1d_apply_grain(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let in_0 = in_0.read();
         // Don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
@@ -668,35 +668,24 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_flush(c: *const Dav1dContext) {
-    rav1d_flush(&*c)
+pub unsafe extern "C" fn dav1d_flush(c: Dav1dContext) {
+    let c = c.as_ref();
+    rav1d_flush(c)
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_close(c_out: &mut *const Rav1dContext) {
-    close_internal(c_out, true);
+pub(crate) fn rav1d_close(c: Arc<Rav1dContext>) {
+    rav1d_flush(&c);
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_close(c_out: *mut *const Dav1dContext) {
+pub unsafe extern "C" fn dav1d_close(c_out: *mut Option<Dav1dContext>) {
     if validate_input!(!c_out.is_null()).is_err() {
         return;
     }
-    rav1d_close(&mut *c_out)
-}
-
-#[cold]
-unsafe fn close_internal(c_out: &mut *const Rav1dContext, flush: bool) {
-    let c: *const Rav1dContext = *c_out;
-    if c.is_null() {
-        return;
-    }
-    *c_out = ptr::null_mut();
-    let c = Arc::from_raw(c);
-    if flush {
-        rav1d_flush(&c);
-    }
+    let c_out = &mut *c_out;
+    mem::take(c_out).map(|c| rav1d_close(c.into_arc()));
 }
 
 impl Drop for Rav1dContext {
@@ -722,13 +711,13 @@ impl Drop for Rav1dContext {
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     flags: *mut Dav1dEventFlags,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let state = &mut *c.state.try_lock().unwrap();
         flags.write(mem::take(&mut state.event_flags).into());
         Ok(())
@@ -738,13 +727,13 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dDataProps,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let state = &mut *c.state.try_lock().unwrap();
         out.write(mem::take(&mut state.cached_error_props).into());
         Ok(())
