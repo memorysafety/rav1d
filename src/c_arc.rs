@@ -142,6 +142,24 @@ impl<T: ?Sized> CArc<T> {
 #[repr(transparent)]
 pub struct RawArc<T>(NonNull<PhantomData<T>>);
 
+/// We need a manual `impl` since we don't require `T: Clone`.
+///
+/// # Safety
+///
+/// Note that this [`RawArc::clone`] does not call [`Arc::clone`],
+/// since implicit clones/copies are expected to be done outside of Rust,
+/// for which there is no way to force [`RawArc::clone`] to be called.
+/// Instead, [`RawArc::as_ref`] and [`RawArc::into_arc`] are `unsafe`,
+/// and require [`RawArc::clone`]s (actual explicit calls
+/// or implicit ones outside of Rust) to respect the rules of [`Arc`].
+impl<T> Clone for RawArc<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for RawArc<T> {}
+
 impl<T> RawArc<T> {
     pub fn from_arc(arc: Arc<T>) -> Self {
         Self(arc_into_raw(arc).cast())
