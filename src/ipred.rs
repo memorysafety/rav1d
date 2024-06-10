@@ -1829,9 +1829,8 @@ mod neon {
                 );
                 if max_height < height {
                     let len = (height - max_height) as usize;
-                    let (front, back) = buf.split_at_mut(left_offset + 1 + max_height as usize);
-                    back[..len]
-                        .copy_from_slice(&front[flipped_offset + 1 + max_height as usize..][..len]);
+                    let (front, back) = buf[1 + max_height as usize..].split_at_mut(left_offset);
+                    back[..len].copy_from_slice(&front[flipped_offset..][..len]);
                 }
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
