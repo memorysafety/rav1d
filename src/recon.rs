@@ -1359,10 +1359,8 @@ fn decode_coefs<BD: BitDepth>(
         cul_level = 0;
         dc_sign_level = 1 << 6;
         if qm_tbl.is_some() {
-            // goto ac_qm;
             ac = Some(Ac::Qm);
         } else {
-            // goto ac_noqm;
             ac = Some(Ac::NoQm);
         }
     } else {
@@ -1447,7 +1445,6 @@ fn decode_coefs<BD: BitDepth>(
         }
     }
     match ac {
-        // ac_qm:
         Some(Ac::Qm) => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
@@ -1499,7 +1496,6 @@ fn decode_coefs<BD: BitDepth>(
                 }
             }
         }
-        // ac_noqm:
         Some(Ac::NoQm) => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
