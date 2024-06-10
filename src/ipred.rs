@@ -1910,7 +1910,7 @@ mod neon {
         if upsample_left {
             flipped[0] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                flipped.as_mut_ptr().offset(1),
+                flipped[1..].as_mut_ptr(),
                 topleft_in.as_ptr(),
                 height + cmp::max(width, height),
             );
@@ -1932,7 +1932,7 @@ mod neon {
             if filter_strength != 0 {
                 flipped[0] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    flipped.as_mut_ptr().offset(1),
+                    flipped[1..].as_mut_ptr(),
                     topleft_in.as_ptr(),
                     height + cmp::max(width, height),
                 );
