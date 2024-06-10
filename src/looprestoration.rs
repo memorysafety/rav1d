@@ -1612,25 +1612,25 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate5_x2(sumsq_ptrs: &mut [*mut i32; 5], sum_ptrs: &mut [*mut i16; 5]) {
+fn rotate5_x2(sumsq_ptrs: &mut [*mut i32; 5], sum_ptrs: &mut [*mut i16; 5]) {
     sumsq_ptrs.rotate_left(2);
     sum_ptrs.rotate_left(2);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_2(A_ptrs: &mut [*mut i32; 2], B_ptrs: &mut [*mut i16; 2]) {
+fn rotate_ab_2(A_ptrs: &mut [*mut i32; 2], B_ptrs: &mut [*mut i16; 2]) {
     A_ptrs.rotate_left(1);
     B_ptrs.rotate_left(1);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_3(A_ptrs: &mut [*mut i32; 3], B_ptrs: &mut [*mut i16; 3]) {
+fn rotate_ab_3(A_ptrs: &mut [*mut i32; 3], B_ptrs: &mut [*mut i16; 3]) {
     A_ptrs.rotate_left(1);
     B_ptrs.rotate_left(1);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
+fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
     A_ptrs.rotate_left(1);
     B_ptrs.rotate_left(1);
 }
