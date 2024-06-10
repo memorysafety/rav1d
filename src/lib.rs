@@ -49,7 +49,6 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use parking_lot::Condvar;
 use parking_lot::Mutex;
 use std::cmp;
 use std::ffi::c_char;
@@ -62,7 +61,6 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -217,16 +215,9 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     // TODO fallible allocation
     c.fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
     let ttd = TaskThreadData {
-        lock: Mutex::new(()),
-        cond: Condvar::new(),
-        first: AtomicU32::new(0),
         cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
-        cond_signaled: AtomicI32::new(0),
-        delayed_fg_exec: AtomicI32::new(0),
-        delayed_fg_cond: Condvar::new(),
-        delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
-        delayed_fg: Default::default(),
+        ..Default::default()
     };
     c.task_thread = Arc::new(ttd);
     c.state = Mutex::new(Rav1dState {
