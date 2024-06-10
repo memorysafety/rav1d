@@ -184,43 +184,47 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         EINVAL
     ))?;
 
-    let mut c = Rav1dContext::default();
-    c.allocator = s.allocator.clone();
-    c.logger = s.logger.clone();
-    c.apply_grain = s.apply_grain;
-    c.operating_point = s.operating_point;
-    c.all_layers = s.all_layers;
-    c.frame_size_limit = s.frame_size_limit;
-    c.strict_std_compliance = s.strict_std_compliance;
-    c.output_invisible_frames = s.output_invisible_frames;
-    c.inloop_filters = s.inloop_filters;
-    c.decode_frame_type = s.decode_frame_type;
-
     // On 32-bit systems, extremely large frame sizes can cause overflows in
     // `rav1d_decode_frame` alloc size calculations. Prevent that from occuring
     // by enforcing a maximum frame size limit, chosen to roughly correspond to
     // the largest size possible to decode without exhausting virtual memory.
+    let frame_size_limit;
     if mem::size_of::<usize>() < 8 && s.frame_size_limit.wrapping_sub(1) >= 8192 * 8192 {
-        c.frame_size_limit = 8192 * 8192;
+        frame_size_limit = 8192 * 8192;
         if s.frame_size_limit != 0 {
             writeln!(
-                c.logger,
+                s.logger,
                 "Frame size limit reduced from {} to {}.",
-                s.frame_size_limit, c.frame_size_limit,
+                s.frame_size_limit, frame_size_limit,
             );
         }
+    } else {
+        frame_size_limit = s.frame_size_limit;
     }
 
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
-    // TODO fallible allocation
-    c.fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
+
     let ttd = TaskThreadData {
         cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
         ..Default::default()
     };
-    c.task_thread = Arc::new(ttd);
-    c.state = Mutex::new(Rav1dState {
+    // TODO fallible allocation
+    let task_thread = Arc::new(ttd);
+
+    let fc = (0..n_fc)
+        .map(|i| {
+            let mut fc = Rav1dFrameContext::default(i);
+            fc.task_thread.finished = AtomicBool::new(true);
+            fc.task_thread.ttd = Arc::clone(&task_thread);
+            let f = fc.data.get_mut();
+            f.lf.last_sharpness = u8::MAX;
+            fc
+        })
+        // TODO fallible allocation
+        .collect();
+
+    let state = Mutex::new(Rav1dState {
         frame_thread: Rav1dContext_frame_thread {
             out_delayed: if n_fc > 1 {
                 (0..n_fc).map(|_| Default::default()).collect()
@@ -231,16 +235,10 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         },
         ..Default::default()
     });
-    for fc in c.fc.iter_mut() {
-        fc.task_thread.finished = AtomicBool::new(true);
-        fc.task_thread.ttd = Arc::clone(&c.task_thread);
-        let f = fc.data.get_mut();
-        f.lf.last_sharpness = u8::MAX;
-    }
 
-    c.tc = (0..n_tc)
+    let tc = (0..n_tc)
         .map(|n| {
-            let task_thread = Arc::clone(&c.task_thread);
+            let task_thread = Arc::clone(&task_thread);
             let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(task_thread));
             let thread_data_copy = Arc::clone(&thread_data);
             let task = if n_tc > 1 {
@@ -258,7 +256,26 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
             };
             Rav1dContextTaskThread { task, thread_data }
         })
+        // TODO fallible allocation
         .collect();
+
+    let c = Rav1dContext {
+        allocator: s.allocator.clone(),
+        logger: s.logger.clone(),
+        apply_grain: s.apply_grain,
+        operating_point: s.operating_point,
+        all_layers: s.all_layers,
+        frame_size_limit,
+        strict_std_compliance: s.strict_std_compliance,
+        output_invisible_frames: s.output_invisible_frames,
+        inloop_filters: s.inloop_filters,
+        decode_frame_type: s.decode_frame_type,
+        fc,
+        task_thread,
+        state,
+        tc,
+        ..Default::default()
+    };
 
     // TODO fallible allocation
     let mut c = Arc::new(c);
