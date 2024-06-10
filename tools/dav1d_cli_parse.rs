@@ -39,6 +39,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::process::exit;
+use std::ptr::NonNull;
 
 use cfg_if::cfg_if;
 
@@ -627,7 +628,7 @@ pub unsafe fn parse(
         0 as c_int,
         ::core::mem::size_of::<CLISettings>(),
     );
-    dav1d_default_settings(lib_settings);
+    dav1d_default_settings(NonNull::new(lib_settings).unwrap());
     (*lib_settings).strict_std_compliance = 1 as c_int;
     let mut grain_specified = 0;
     loop {

@@ -207,14 +207,14 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
             match current_block {
                 11545648641752300099 => {}
                 _ => {
-                    dav1d_picture_unref(p);
+                    dav1d_picture_unref(NonNull::new(p));
                     return 0 as c_int;
                 }
             }
         }
         _ => {}
     }
-    dav1d_picture_unref(p);
+    dav1d_picture_unref(NonNull::new(p));
     fprintf(
         stderr,
         b"Failed to write frame data: %s\n\0" as *const u8 as *const c_char,

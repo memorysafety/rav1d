@@ -168,6 +168,9 @@ impl<T> RawArc<T> {
     /// # Safety
     ///
     /// The [`RawArc`] must be originally from [`Self::from_arc`].
+    ///
+    /// This must be called before ever calling [`Self::into_arc`],
+    /// including on [`Clone`]s.
     pub unsafe fn as_ref(&self) -> &T {
         // SAFETY: `self` must be from `Self::from_arc`,
         // which calls `Arc::into_raw`,
@@ -183,6 +186,8 @@ impl<T> RawArc<T> {
     /// # Safety
     ///
     /// The [`RawArc`] must be originally from [`Self::from_arc`].
+    ///
+    /// After calling this, the [`RawArc`] and [`Clone`]s of it may not be used anymore.
     pub unsafe fn into_arc(self) -> Arc<T> {
         let raw = self.0.cast().as_ptr();
         // SAFETY: `self` must be from `Self::from_arc`,
