@@ -32,7 +32,6 @@ use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -1176,8 +1175,8 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     )
 }
 
-unsafe fn filter_fn(
-    flt_ptr: *const i8,
+fn filter_fn(
+    flt_ptr: &[i8],
     p0: c_int,
     p1: c_int,
     p2: c_int,
@@ -1186,88 +1185,84 @@ unsafe fn filter_fn(
     p5: c_int,
     p6: c_int,
 ) -> c_int {
+    let flt_ptr = &flt_ptr[..48 + 1];
     if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-        *flt_ptr.offset(0) as c_int * p0
-            + *flt_ptr.offset(1) as c_int * p1
-            + *flt_ptr.offset(16) as c_int * p2
-            + *flt_ptr.offset(17) as c_int * p3
-            + *flt_ptr.offset(32) as c_int * p4
-            + *flt_ptr.offset(33) as c_int * p5
-            + *flt_ptr.offset(48) as c_int * p6
+        flt_ptr[0] as c_int * p0
+            + flt_ptr[1] as c_int * p1
+            + flt_ptr[16] as c_int * p2
+            + flt_ptr[17] as c_int * p3
+            + flt_ptr[32] as c_int * p4
+            + flt_ptr[33] as c_int * p5
+            + flt_ptr[48] as c_int * p6
     } else {
-        *flt_ptr.offset(0) as c_int * p0
-            + *flt_ptr.offset(8) as c_int * p1
-            + *flt_ptr.offset(16) as c_int * p2
-            + *flt_ptr.offset(24) as c_int * p3
-            + *flt_ptr.offset(32) as c_int * p4
-            + *flt_ptr.offset(40) as c_int * p5
-            + *flt_ptr.offset(48) as c_int * p6
+        flt_ptr[0] as c_int * p0
+            + flt_ptr[8] as c_int * p1
+            + flt_ptr[16] as c_int * p2
+            + flt_ptr[24] as c_int * p3
+            + flt_ptr[32] as c_int * p4
+            + flt_ptr[40] as c_int * p5
+            + flt_ptr[48] as c_int * p6
     }
 }
 
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        const FLT_INCR: isize = 2;
-    } else {
-        const FLT_INCR: isize = 1;
-    }
-}
+const FLT_INCR: usize = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+    2
+} else {
+    1
+};
 
 unsafe fn ipred_filter_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft_in: *const BD::Pixel,
+    topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
-    mut filt_idx: c_int,
+    filt_idx: c_int,
     _max_width: c_int,
     _max_height: c_int,
     bd: BD,
 ) {
-    filt_idx &= 511 as c_int;
-    if !(filt_idx < 5) {
-        unreachable!();
-    }
-    let filter: *const i8 = (dav1d_filter_intra_taps[filt_idx as usize]).as_ptr();
-    let mut top: *const BD::Pixel = &*topleft_in.offset(1) as *const BD::Pixel;
-    let mut y = 0;
-    while y < height {
-        let mut topleft: *const BD::Pixel = &*topleft_in.offset(-y as isize) as *const BD::Pixel;
-        let mut left: *const BD::Pixel =
-            &*topleft.offset(-(1 as c_int) as isize) as *const BD::Pixel;
-        let mut left_stride: ptrdiff_t = -(1 as c_int) as ptrdiff_t;
-        let mut x = 0;
-        while x < width {
+    let width = width as usize;
+    let height = height as usize;
+    let stride = BD::pxstride(stride);
+    let filt_idx = filt_idx & 511;
+    assert!(filt_idx < 5);
+
+    let filter = &dav1d_filter_intra_taps[filt_idx as usize];
+    let mut top = topleft_in[topleft_off + 1..].as_ptr();
+    for y in (0..height).step_by(2) {
+        let mut topleft = topleft_in.as_ptr().add(topleft_off - y);
+        let mut left = topleft.sub(1);
+        let mut left_stride = -1;
+        for x in (0..width).step_by(4) {
+            let top_slice = slice::from_raw_parts(top, 4);
             let p0 = (*topleft).as_::<c_int>();
-            let p1 = (*top.offset(0)).as_::<c_int>();
-            let p2 = (*top.offset(1)).as_::<c_int>();
-            let p3 = (*top.offset(2)).as_::<c_int>();
-            let p4 = (*top.offset(3)).as_::<c_int>();
-            let p5 = (*left.offset((0 * left_stride) as isize)).as_::<c_int>();
-            let p6 = (*left.offset((1 * left_stride) as isize)).as_::<c_int>();
-            let mut ptr: *mut BD::Pixel = &mut *dst.offset(x as isize) as *mut BD::Pixel;
-            let mut flt_ptr: *const i8 = filter;
-            let mut yy = 0;
-            while yy < 2 {
-                let mut xx = 0;
-                while xx < 4 {
+            let p1 = top_slice[0].as_::<c_int>();
+            let p2 = top_slice[1].as_::<c_int>();
+            let p3 = top_slice[2].as_::<c_int>();
+            let p4 = top_slice[3].as_::<c_int>();
+            let p5 = (*left.offset(0 * left_stride)).as_::<c_int>();
+            let p6 = (*left.offset(1 * left_stride)).as_::<c_int>();
+            let mut ptr = dst.add(x);
+            let mut flt_ptr = filter.as_slice();
+
+            for _yy in 0..2 {
+                let ptr_slice = slice::from_raw_parts_mut(ptr, 4);
+                for xx in ptr_slice {
                     let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
-                    *ptr.offset(xx as isize) = bd.iclip_pixel(acc + 8 >> 4);
-                    xx += 1;
-                    flt_ptr = flt_ptr.offset(FLT_INCR);
+                    *xx = bd.iclip_pixel(acc + 8 >> 4);
+                    flt_ptr = &flt_ptr[FLT_INCR..];
                 }
-                ptr = ptr.offset(BD::pxstride(stride));
-                yy += 1;
+                ptr = ptr.offset(stride);
             }
-            left = &mut *dst.offset((x + 4 - 1) as isize) as *mut BD::Pixel;
-            left_stride = BD::pxstride(stride);
+            left = dst.add(x + 4 - 1);
+            left_stride = stride;
             top = top.offset(4);
-            topleft = &*top.offset(-(1 as c_int) as isize) as *const BD::Pixel;
-            x += 4 as c_int;
+            topleft = top.sub(1);
         }
-        top = &mut *dst.offset(BD::pxstride(stride)) as *mut BD::Pixel;
-        dst = &mut *dst.offset(BD::pxstride(stride) * 2) as *mut BD::Pixel;
-        y += 2 as c_int;
+        top = dst.offset(stride);
+        dst = dst.offset(stride * 2);
     }
 }
 
@@ -1281,12 +1276,14 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
+    let topleft = reconstruct_topleft::<BD>(topleft_in, topleft_off);
     ipred_filter_rust(
         dst.cast(),
         stride,
-        topleft_in.cast(),
+        topleft,
+        topleft_off,
         width,
         height,
         filt_idx,
