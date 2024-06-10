@@ -58,7 +58,6 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
-use std::process::abort;
 use std::ptr;
 use std::ptr::NonNull;
 use std::slice;
@@ -625,26 +624,16 @@ pub(crate) fn rav1d_apply_grain(
         if c.tc.len() > 1 {
             rav1d_task_delayed_fg(c, out, in_0);
         } else {
-            match out.p.bpc {
+            let bpc = out.p.bpc;
+            let dsp = Rav1dBitDepthDSPContext::get(bpc).unwrap();
+            let fg = &dsp.fg;
+            use fg_apply::rav1d_apply_grain;
+            match bpc {
                 #[cfg(feature = "bitdepth_8")]
-                bpc @ 8 => {
-                    fg_apply::rav1d_apply_grain::<BitDepth8>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        out,
-                        in_0,
-                    );
-                }
+                8 => rav1d_apply_grain::<BitDepth8>(fg, out, in_0),
                 #[cfg(feature = "bitdepth_16")]
-                bpc @ 10 | bpc @ 12 => {
-                    fg_apply::rav1d_apply_grain::<BitDepth16>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        out,
-                        in_0,
-                    );
-                }
-                _ => {
-                    abort();
-                }
+                10 | 12 => rav1d_apply_grain::<BitDepth16>(fg, out, in_0),
+                _ => {}
             }
         }
         return Ok(());
