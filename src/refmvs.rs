@@ -434,6 +434,14 @@ impl Rav1dRefmvsDSPContext {
                 return ptr::null();
             }
             // SAFETY: `.add` is in-bounds; checked above.
+            // Also note that asm may read 12-byte `refmvs_block`s in 16-byte chunks.
+            // This is safe because we allocate `rf.r` with an extra `R_PAD` (1) elements.
+            // These ptrs are only read, so these overlapping reads are safe
+            // (only read is only checked in the fallback Rust `fn`).
+            // Furthermore, this is provenance safe because
+            // we derive the ptrs from `rf.r.as_mut_ptr()`,
+            // as opposed to materializing intermediate references.
+            const _: () = assert!(mem::size_of::<refmvs_block>() * (1 + R_PAD) > 16);
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 
