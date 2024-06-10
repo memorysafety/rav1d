@@ -192,6 +192,8 @@ pub(crate) struct refmvs_frame<'a> {
     pub n_frame_threads: i32,
 }
 
+const R_PAD: usize = 1; // number of elements added to RefMvsFrame.r to avoid overread
+
 #[derive(Default)]
 pub struct RefMvsFrame {
     pub iw4: i32,
@@ -428,10 +430,18 @@ impl Rav1dRefmvsDSPContext {
         // For the Rust fallback fn, the extra args `&rf.r` and `ri`
         // are passed to allow for disjointedness checking.
         let rr = &ri.map(|ri| {
-            if ri > rf.r.len() {
+            if ri > rf.r.len() - R_PAD {
                 return ptr::null();
             }
             // SAFETY: `.add` is in-bounds; checked above.
+            // Also note that asm may read 12-byte `refmvs_block`s in 16-byte chunks.
+            // This is safe because we allocate `rf.r` with an extra `R_PAD` (1) elements.
+            // These ptrs are only read, so these overlapping reads are safe
+            // (only read is only checked in the fallback Rust `fn`).
+            // Furthermore, this is provenance safe because
+            // we derive the ptrs from `rf.r.as_mut_ptr()`,
+            // as opposed to materializing intermediate references.
+            const _: () = assert!(mem::size_of::<refmvs_block>() * (1 + R_PAD) > 16);
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 
@@ -487,7 +497,7 @@ impl Rav1dRefmvsDSPContext {
 
         for i in 0..len {
             let ri = r_indices[i];
-            if ri < rf.r.len() {
+            if ri < rf.r.len() - R_PAD {
                 // This is the range that will actually be accessed,
                 // but `splat_mv` expects a pointer offset `bx4` backwards.
                 let guard = rf.r.index_mut((ri + bx4.., ..bw4));
@@ -1645,8 +1655,10 @@ pub(crate) fn rav1d_refmvs_init_frame(
     };
     let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
     // TODO fallible allocation
+    // mem::size_of::<refmvs_block>() == 12 but it's accessed using 16-byte loads in asm,
+    // so add R_PAD elements to avoid buffer overreads.
     rf.r.resize(
-        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass),
+        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass) + R_PAD,
         FromZeroes::new_zeroed(),
     );
     rf.r_stride = r_stride;
