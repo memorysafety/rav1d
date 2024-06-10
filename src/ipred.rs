@@ -1781,12 +1781,12 @@ mod neon {
 
                 if max_width < width {
                     let len = (width - max_width) as usize;
-                    buf[top_offset as usize + 1 + max_width as usize..][..len]
+                    buf[top_offset + 1 + max_width as usize..][..len]
                         .copy_from_slice(&topleft_in[1 + max_width as usize..][..len]);
                 }
             } else {
                 BD::pixel_copy(
-                    &mut buf[1 + top_offset as usize..],
+                    &mut buf[1 + top_offset..],
                     &topleft_in[1..][..width as usize],
                     width as usize,
                 );
@@ -1814,7 +1814,7 @@ mod neon {
                 0
             };
             if filter_strength != 0 {
-                buf[flipped_offset as usize] = topleft_in[0];
+                buf[flipped_offset] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                     buf[1 + flipped_offset..].as_mut_ptr(),
                     topleft_in.as_ptr(),
@@ -1841,8 +1841,8 @@ mod neon {
                 );
             }
         }
-        buf[top_offset as usize] = topleft_in[0];
-        buf[left_offset as usize] = topleft_in[0];
+        buf[top_offset] = topleft_in[0];
+        buf[left_offset] = topleft_in[0];
 
         assert!(!(upsample_above && upsample_left));
 
