@@ -675,7 +675,9 @@ pub unsafe extern "C" fn dav1d_flush(c: Dav1dContext) {
 
 #[cold]
 pub(crate) fn rav1d_close(c: Arc<Rav1dContext>) {
-    rav1d_flush(&c);
+    let c = &*c;
+    rav1d_flush(c);
+    c.tell_worker_threads_to_die();
 }
 
 #[no_mangle]
@@ -688,24 +690,17 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut Option<Dav1dContext>) {
     mem::take(c_out).map(|c| rav1d_close(c.into_arc()));
 }
 
-impl Drop for Rav1dContext {
-    fn drop(&mut self) {
+impl Rav1dContext {
+    fn tell_worker_threads_to_die(&self) {
         if self.tc.is_empty() {
             return;
         }
         let ttd = &*self.task_thread;
-        let task_thread_lock = ttd.lock.lock();
+        let _task_thread_lock = ttd.lock.lock();
         for tc in self.tc.iter() {
             tc.thread_data.die.store(true, Ordering::Relaxed);
         }
         ttd.cond.notify_all();
-        drop(task_thread_lock);
-        let tc = mem::take(&mut self.tc);
-        for task_thread in tc.into_vec() {
-            if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
-                handle.join().expect("Could not join task thread");
-            }
-        }
     }
 }
 
