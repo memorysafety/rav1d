@@ -1984,6 +1984,9 @@ mod neon {
         };
     }
 
+    /// # Safety
+    ///
+    /// Must be called from [`angular_ipred::Fn::call`].
     pub unsafe extern "C" fn ipred_z_neon_erased<BD: BitDepth, const Z: usize>(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
