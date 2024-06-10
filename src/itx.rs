@@ -64,9 +64,7 @@ use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use libc::ptrdiff_t;
 use std::cmp;
-use std::ffi::c_int;
 use std::num::NonZeroUsize;
 use std::slice;
 
@@ -79,14 +77,14 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int);
+pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
 
 #[inline(never)]
 fn inv_txfm_add<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     mut dst_offset: usize,
     coeff: &mut [BD::Coef],
-    eob: c_int,
+    eob: i32,
     w: usize,
     h: usize,
     shift: u8,
@@ -95,7 +93,7 @@ fn inv_txfm_add<BD: BitDepth>(
     has_dc_only: bool,
     bd: BD,
 ) {
-    let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
+    let bitdepth_max = bd.bitdepth_max().as_::<i32>();
 
     assert!(w >= 4 && w <= 64);
     assert!(h >= 4 && h <= 64);
@@ -104,8 +102,8 @@ fn inv_txfm_add<BD: BitDepth>(
     let is_rect2 = w * 2 == h || h * 2 == w;
     let rnd = 1 << shift >> 1;
 
-    if eob < has_dc_only as c_int {
-        let mut dc = coeff[0].as_::<c_int>();
+    if eob < has_dc_only as i32 {
+        let mut dc = coeff[0].as_::<i32>();
         coeff[0] = 0.as_();
         if is_rect2 {
             dc = dc * 181 + 128 >> 8;
@@ -145,7 +143,7 @@ fn inv_txfm_add<BD: BitDepth>(
     for y in 0..sh {
         if is_rect2 {
             for x in 0..sw {
-                c[x] = coeff[y + x * sh].as_::<c_int>() * 181 + 128 >> 8;
+                c[x] = coeff[y + x * sh].as_::<i32>() * 181 + 128 >> 8;
             }
         } else {
             for x in 0..sw {
@@ -183,7 +181,7 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
     dst: &Rav1dPictureDataComponent,
     dst_offset: usize,
     coeff: &mut [BD::Coef],
-    eob: c_int,
+    eob: i32,
     bd: BD,
 ) {
     let shift = match (W, H) {
@@ -291,10 +289,10 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
     BD: BitDepth,
 >(
     dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    _stride: isize,
     coeff: *mut DynCoef,
-    eob: c_int,
-    bitdepth_max: c_int,
+    eob: i32,
+    bitdepth_max: i32,
     coeff_len: u16,
     dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
@@ -311,10 +309,10 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
 
 wrap_fn_ptr!(unsafe extern "C" fn itxfm(
     dst_ptr: *mut DynPixel,
-    dst_stride: ptrdiff_t,
+    dst_stride: isize,
     coeff: *mut DynCoef,
-    eob: c_int,
-    bitdepth_max: c_int,
+    eob: i32,
+    bitdepth_max: i32,
     _coeff_len: u16,
     _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
@@ -325,7 +323,7 @@ impl itxfm::Fn {
         dst: &Rav1dPictureDataComponent,
         dst_offset: usize,
         coeff: &mut [BD::Coef],
-        eob: c_int,
+        eob: i32,
         bd: BD,
     ) {
         let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
