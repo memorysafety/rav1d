@@ -440,6 +440,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
 ) {
     // filter edges between columns (e.g. block1 | block2)
     let mask = &mask[..w];
+    let lvl = &lvl[..w];
     for x in 0..w {
         if !have_left && x == 0 {
             continue;
@@ -456,18 +457,19 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
         let hmask = [hmask[0], hmask[1], 0];
+        let lvl = &lvl[x..];
         f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
             f,
             u_dst + x * 4,
             &hmask,
-            unaligned_lvl_slice(&lvl[x as usize..], 2),
+            unaligned_lvl_slice(lvl, 2),
             endy4 - starty4,
         );
         f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
             f,
             v_dst + x * 4,
             &hmask,
-            unaligned_lvl_slice(&lvl[x as usize..], 3),
+            unaligned_lvl_slice(lvl, 3),
             endy4 - starty4,
         );
     }
