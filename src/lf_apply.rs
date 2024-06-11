@@ -418,10 +418,11 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride)) {
         if !(!have_top && y == 0) {
+            let mask = &mask[y];
             let vmask = [
-                mask[y][0][0].get() as u32 | (mask[y][0][1].get() as u32) << 16,
-                mask[y][1][0].get() as u32 | (mask[y][1][1].get() as u32) << 16,
-                mask[y][2][0].get() as u32 | (mask[y][2][1].get() as u32) << 16,
+                mask[0][0].get() as u32 | (mask[0][1].get() as u32) << 16,
+                mask[1][0].get() as u32 | (mask[1][1].get() as u32) << 16,
+                mask[2][0].get() as u32 | (mask[2][1].get() as u32) << 16,
             ];
             f.dsp.lf.loop_filter_sb.y.v.call::<BD>(
                 f,
