@@ -494,11 +494,10 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
-            let vmask: [u32; 3] = [
-                mask[y][0][0].get() as u32 | (mask[y][0][1].get() as u32) << (16 >> ss_hor),
-                mask[y][1][0].get() as u32 | (mask[y][1][1].get() as u32) << (16 >> ss_hor),
-                0,
-            ];
+            let vmask = mask[y]
+                .each_ref()
+                .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
+            let vmask = [vmask[0], vmask[1], 0];
             f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
                 f,
                 u_dst,
