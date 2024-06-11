@@ -367,30 +367,31 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
 ) {
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w {
-        if !(!have_left && x == 0) {
-            let mut hmask: [u32; 3] = [0; 3];
-            if starty4 == 0 {
-                hmask[0] = mask[x][0][0].get() as u32;
-                hmask[1] = mask[x][1][0].get() as u32;
-                hmask[2] = mask[x][2][0].get() as u32;
-                if endy4 > 16 {
-                    hmask[0] |= (mask[x][0][1].get() as u32) << 16;
-                    hmask[1] |= (mask[x][1][1].get() as u32) << 16;
-                    hmask[2] |= (mask[x][2][1].get() as u32) << 16;
-                }
-            } else {
-                hmask[0] = mask[x][0][1].get() as u32;
-                hmask[1] = mask[x][1][1].get() as u32;
-                hmask[2] = mask[x][2][1].get() as u32;
-            }
-            f.dsp.lf.loop_filter_sb.y.h.call::<BD>(
-                f,
-                y_dst + x * 4,
-                &hmask,
-                &lvl[x..],
-                endy4 - starty4,
-            );
+        if !have_left && x == 0 {
+            continue;
         }
+        let mut hmask: [u32; 3] = [0; 3];
+        if starty4 == 0 {
+            hmask[0] = mask[x][0][0].get() as u32;
+            hmask[1] = mask[x][1][0].get() as u32;
+            hmask[2] = mask[x][2][0].get() as u32;
+            if endy4 > 16 {
+                hmask[0] |= (mask[x][0][1].get() as u32) << 16;
+                hmask[1] |= (mask[x][1][1].get() as u32) << 16;
+                hmask[2] |= (mask[x][2][1].get() as u32) << 16;
+            }
+        } else {
+            hmask[0] = mask[x][0][1].get() as u32;
+            hmask[1] = mask[x][1][1].get() as u32;
+            hmask[2] = mask[x][2][1].get() as u32;
+        }
+        f.dsp.lf.loop_filter_sb.y.h.call::<BD>(
+            f,
+            y_dst + x * 4,
+            &hmask,
+            &lvl[x..],
+            endy4 - starty4,
+        );
     }
 }
 
