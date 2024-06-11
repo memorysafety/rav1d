@@ -399,7 +399,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
-    mut y_dst: Rav1dPictureDataComponentOffset,
+    y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
     starty4: usize,
     endy4: usize,
@@ -407,21 +407,24 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride)) {
+    let len = endy4 - starty4;
+    for i in 0..len {
+        let y = i + starty4;
+        let y_dst = y_dst + (i as isize * 4 * y_dst.data.pixel_stride::<BD>());
         if !(!have_top && y == 0) {
             let mask = &mask[y];
             let vmask = mask
                 .each_ref()
                 .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
+            let lvl = &lvl[i * b4_stride..];
             f.dsp.lf.loop_filter_sb.y.v.call::<BD>(
                 f,
                 y_dst,
                 &vmask,
-                unaligned_lvl_slice(&lvl[0..], 1),
+                unaligned_lvl_slice(lvl, 1),
                 w,
             );
         }
-        y_dst += 4 * y_dst.data.pixel_stride::<BD>();
     }
 }
 
@@ -482,8 +485,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
-    mut u_dst: Rav1dPictureDataComponentOffset,
-    mut v_dst: Rav1dPictureDataComponentOffset,
+    u_dst: Rav1dPictureDataComponentOffset,
+    v_dst: Rav1dPictureDataComponentOffset,
     w: usize,
     starty4: usize,
     endy4: usize,
@@ -492,30 +495,32 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
+    let len = endy4 - starty4;
+    for i in 0..len {
+        let y = i + starty4;
+        let u_dst = u_dst + (i as isize * 4 * u_dst.data.pixel_stride::<BD>());
+        let v_dst = v_dst + (i as isize * 4 * v_dst.data.pixel_stride::<BD>());
         if !(!have_top && y == 0) {
             let vmask = mask[y]
                 .each_ref()
                 .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
             let vmask = [vmask[0], vmask[1], 0];
+            let lvl = &lvl[i * b4_stride..];
             f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
                 f,
                 u_dst,
                 &vmask,
-                unaligned_lvl_slice(&lvl[0..], 2),
+                unaligned_lvl_slice(lvl, 2),
                 w,
             );
             f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
                 f,
                 v_dst,
                 &vmask,
-                unaligned_lvl_slice(&lvl[0..], 3),
+                unaligned_lvl_slice(lvl, 3),
                 w,
             );
         }
-
-        u_dst += 4 * u_dst.data.pixel_stride::<BD>();
-        v_dst += 4 * v_dst.data.pixel_stride::<BD>();
     }
 }
 
