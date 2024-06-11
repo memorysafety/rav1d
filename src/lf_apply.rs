@@ -411,20 +411,20 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     for i in 0..len {
         let y = i + starty4;
         let y_dst = y_dst + (i as isize * 4 * y_dst.data.pixel_stride::<BD>());
-        if !(!have_top && y == 0) {
-            let mask = &mask[y];
-            let vmask = mask
-                .each_ref()
-                .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
-            let lvl = &lvl[i * b4_stride..];
-            f.dsp.lf.loop_filter_sb.y.v.call::<BD>(
-                f,
-                y_dst,
-                &vmask,
-                unaligned_lvl_slice(lvl, 1),
-                w,
-            );
+        if !have_top && y == 0 {
+            continue;
         }
+        let mask = &mask[y];
+        let vmask = mask
+            .each_ref()
+            .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
+        let lvl = &lvl[i * b4_stride..];
+        f.dsp
+            .lf
+            .loop_filter_sb
+            .y
+            .v
+            .call::<BD>(f, y_dst, &vmask, unaligned_lvl_slice(lvl, 1), w);
     }
 }
 
@@ -500,27 +500,26 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
         let y = i + starty4;
         let u_dst = u_dst + (i as isize * 4 * u_dst.data.pixel_stride::<BD>());
         let v_dst = v_dst + (i as isize * 4 * v_dst.data.pixel_stride::<BD>());
-        if !(!have_top && y == 0) {
-            let vmask = mask[y]
-                .each_ref()
-                .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
-            let vmask = [vmask[0], vmask[1], 0];
-            let lvl = &lvl[i * b4_stride..];
-            f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
-                f,
-                u_dst,
-                &vmask,
-                unaligned_lvl_slice(lvl, 2),
-                w,
-            );
-            f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
-                f,
-                v_dst,
-                &vmask,
-                unaligned_lvl_slice(lvl, 3),
-                w,
-            );
+        if !have_top && y == 0 {
+            continue;
         }
+        let vmask = mask[y]
+            .each_ref()
+            .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
+        let vmask = [vmask[0], vmask[1], 0];
+        let lvl = &lvl[i * b4_stride..];
+        f.dsp
+            .lf
+            .loop_filter_sb
+            .uv
+            .v
+            .call::<BD>(f, u_dst, &vmask, unaligned_lvl_slice(lvl, 2), w);
+        f.dsp
+            .lf
+            .loop_filter_sb
+            .uv
+            .v
+            .call::<BD>(f, v_dst, &vmask, unaligned_lvl_slice(lvl, 3), w);
     }
 }
 
