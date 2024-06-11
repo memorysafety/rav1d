@@ -267,7 +267,18 @@ impl Rav1dPictureDataComponent {
     /// Bounds checked, but not [`DisjointMut`]-checked.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
-        assert!(pixel_offset <= self.pixel_len::<BD>());
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(pixel_offset: usize, pixel_len: usize) -> ! {
+            panic!(
+                "pixel offset {pixel_offset} out of range for slice of pixel length {pixel_len}"
+            );
+        }
+
+        let pixel_len = self.pixel_len::<BD>();
+        if pixel_offset > pixel_len {
+            out_of_bounds(pixel_offset, pixel_len);
+        }
         // SAFETY: We just checked that `pixel_offset` is in bounds.
         unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
     }
