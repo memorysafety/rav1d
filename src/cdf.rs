@@ -5077,7 +5077,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_2d!(BlockSize::COUNT, 2, m.motion_mode);
     update_bit_1d!(BlockSize::COUNT, m.obmc);
 
-    update_cdf_1d!(MVJoint::COUNT - 1, mv.joint.0);
+    update_cdf_1d!(MVJoint::all().bits() as usize, mv.joint.0);
     for k in 0..2 {
         update_cdf_1d!(10, mv.comp[k].classes.0);
         update_bit_0d!(mv.comp[k].class0);

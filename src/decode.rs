@@ -219,46 +219,38 @@ fn init_quant_tables(
 }
 
 fn read_mv_component_diff(
-    f: &Rav1dFrameData,
     msac: &mut MsacContext,
     mv_comp: &mut CdfMvComponent,
-    have_fp: bool,
+    mv_prec: i32,
 ) -> c_int {
-    let have_hp = f.frame_hdr.as_ref().unwrap().hp;
     let sign = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.sign.0);
     let cl = rav1d_msac_decode_symbol_adapt16(msac, &mut mv_comp.classes.0, 10);
     let mut up;
-    let fp;
-    let hp;
+    let mut fp = 3;
+    let mut hp = true;
 
     if cl == 0 {
         up = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0.0) as c_uint;
-        if have_fp {
+        if mv_prec >= 0 {
+            // !force_integer_mv
             fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.class0_fp[up as usize], 3);
-            hp = if have_hp {
-                rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0_hp.0)
-            } else {
-                true
-            };
-        } else {
-            fp = 3;
-            hp = true;
+            if mv_prec > 0 {
+                // allow_high_precision_mv
+                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0_hp.0);
+            }
         }
     } else {
         up = 1 << cl;
         for n in 0..cl as usize {
             up |= (rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN[n]) as c_uint) << n;
         }
-        if have_fp {
+        if mv_prec >= 0 {
+            // !force_integer_mv
             fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.classN_fp.0, 3);
-            hp = if have_hp {
-                rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN_hp.0)
-            } else {
-                true
-            };
-        } else {
-            fp = 3;
-            hp = true;
+            if mv_prec > 0 {
+                // allow_high_precision_mv
+                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN_hp.0);
+            }
         }
     }
     let hp = hp as c_uint;
@@ -272,38 +264,21 @@ fn read_mv_component_diff(
     }
 }
 
-fn read_mv_residual(
-    f: &Rav1dFrameData,
-    ts_c: &mut Rav1dTileStateContext,
-    ref_mv: &mut mv,
-    have_fp: bool,
-) {
-    let mv_joint = MVJoint::from_repr(rav1d_msac_decode_symbol_adapt4(
+fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut mv, mv_prec: i32) {
+    let mv_joint = MVJoint::from_bits_truncate(rav1d_msac_decode_symbol_adapt4(
         &mut ts_c.msac,
         &mut ts_c.cdf.mv.joint.0,
-        MVJoint::COUNT - 1,
-    ) as usize)
-    .expect("valid variant");
+        MVJoint::all().bits().into(),
+    ) as u8);
 
     let mv_cdf = &mut ts_c.cdf.mv;
 
-    match mv_joint {
-        MVJoint::HV => {
-            ref_mv.y +=
-                read_mv_component_diff(f, &mut ts_c.msac, &mut mv_cdf.comp[0], have_fp) as i16;
-            ref_mv.x +=
-                read_mv_component_diff(f, &mut ts_c.msac, &mut mv_cdf.comp[1], have_fp) as i16;
-        }
-        MVJoint::H => {
-            ref_mv.x +=
-                read_mv_component_diff(f, &mut ts_c.msac, &mut mv_cdf.comp[1], have_fp) as i16;
-        }
-        MVJoint::V => {
-            ref_mv.y +=
-                read_mv_component_diff(f, &mut ts_c.msac, &mut mv_cdf.comp[0], have_fp) as i16;
-        }
-        MVJoint::Zero => {}
-    };
+    if mv_joint.contains(MVJoint::V) {
+        ref_mv.y += read_mv_component_diff(&mut ts_c.msac, &mut mv_cdf.comp[0], mv_prec) as i16;
+    }
+    if mv_joint.contains(MVJoint::H) {
+        ref_mv.x += read_mv_component_diff(&mut ts_c.msac, &mut mv_cdf.comp[1], mv_prec) as i16;
+    }
 }
 
 fn read_tx_tree(
@@ -2123,7 +2098,7 @@ fn decode_b(
             }
         };
 
-        read_mv_residual(f, ts_c, &mut r#ref, false);
+        read_mv_residual(ts_c, &mut r#ref, -1);
 
         // clip intrabc motion vector to decoded parts of current tile
         let mut border_left = ts.tiling.col_start * 4;
@@ -2272,6 +2247,8 @@ fn decode_b(
         }
     } else {
         // inter-specific mode/mv coding
+        let mv_prec = || frame_hdr.hp as i32 - frame_hdr.force_integer_mv as i32;
+
         let mut has_subpel_filter;
 
         let is_comp = if b.skip_mode != 0 {
@@ -2550,7 +2527,7 @@ fn decode_b(
                 }
                 NEWMV => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
-                    read_mv_residual(f, ts_c, &mut mv1d, !frame_hdr.force_integer_mv);
+                    read_mv_residual(ts_c, &mut mv1d, mv_prec());
                     mv1d
                 }
                 _ => unreachable!(),
@@ -2871,7 +2848,7 @@ fn decode_b(
                         inter_mode, drl_idx, ts_c.msac.rng,
                     );
                 }
-                read_mv_residual(f, ts_c, &mut mv1d0, !frame_hdr.force_integer_mv);
+                read_mv_residual(ts_c, &mut mv1d0, mv_prec());
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-residualmv[mv=y:{},x:{}]: r={}",
