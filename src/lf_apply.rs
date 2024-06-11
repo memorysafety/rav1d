@@ -433,13 +433,13 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
-    w: c_int,
+    w: usize,
     starty4: c_int,
     endy4: c_int,
     ss_ver: c_int,
 ) {
     // filter edges between columns (e.g. block1 | block2)
-    for x in 0..w as usize {
+    for x in 0..w {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
@@ -662,7 +662,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             &lflvl[x].filter_uv[0],
             pu + x * (128 >> ss_hor),
             pv + x * (128 >> ss_hor),
-            cmp::min(32, f.w4 - x as c_int * 32) + ss_hor >> ss_hor,
+            (cmp::min(32, f.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
             starty4 as c_int >> ss_ver,
             uv_endy4 as c_int,
             ss_ver,
