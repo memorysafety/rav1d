@@ -5044,15 +5044,6 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_bit_1d!(4, m.txtp_inter3);
 
     if hdr.frame_type.is_key_or_intra() {
-        update_bit_0d!(m.intrabc);
-
-        update_cdf_1d!(MVJoint::COUNT - 1, dmv.joint.0);
-        for k in 0..2 {
-            update_cdf_1d!(10, dmv.comp[k].classes.0);
-            update_bit_0d!(dmv.comp[k].class0);
-            update_bit_1d!(10, dmv.comp[k].classN);
-            update_bit_0d!(dmv.comp[k].sign);
-        }
         return;
     }
 
