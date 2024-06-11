@@ -8,6 +8,8 @@ use crate::src::cpu::CpuFlags;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::unstable_extensions::as_chunks;
+use crate::src::unstable_extensions::flatten;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -32,6 +34,18 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
+/// Slice `[u8; 4]`s from `lvl`, but "unaligned",
+/// meaning the `[u8; 4]`s can straddle
+/// adjacent `[u8; 4]`s in the `lvl` slice.
+///
+/// Note that this does not result in actual unaligned reads,
+/// since `[u8; 4]` has an alignment of 1.
+/// This optimizes to a single slice with a bounds check.
+#[inline(always)]
+fn unaligned_lvl_slice(lvl: &[[u8; 4]], y: usize) -> &[[u8; 4]] {
+    as_chunks(&flatten(lvl)[y..]).0
+}
+
 impl loopfilter_sb::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
@@ -39,11 +53,12 @@ impl loopfilter_sb::Fn {
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
+        lvl_y_offset: usize,
         w: usize,
     ) {
         let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
         let stride = dst.data.stride();
-        let lvl = lvl.as_ptr();
+        let lvl = unaligned_lvl_slice(lvl, lvl_y_offset).as_ptr();
         let b4_stride = f.b4_stride;
         let lut = &f.lf.lim_lut;
         let w = w as c_int;

@@ -11,8 +11,6 @@ use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::unstable_extensions::as_chunks;
-use crate::src::unstable_extensions::flatten;
 use libc::ptrdiff_t;
 use std::array;
 use std::cmp;
@@ -342,18 +340,6 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     }
 }
 
-/// Slice `[u8; 4]`s from `lvl`, but "unaligned",
-/// meaning the `[u8; 4]`s can straddle
-/// adjacent `[u8; 4]`s in the `lvl` slice.
-///
-/// Note that this does not result in actual unaligned reads,
-/// since `[u8; 4]` has an alignment of 1.
-/// This optimizes to a single slice with a bounds check.
-#[inline(always)]
-fn unaligned_lvl_slice(lvl: &[[u8; 4]], y: usize) -> &[[u8; 4]] {
-    as_chunks(&flatten(lvl)[y..]).0
-}
-
 #[inline]
 unsafe fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
@@ -387,6 +373,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
             y_dst + x * 4,
             &hmask,
             &lvl[x..],
+            0,
             endy4 - starty4,
         );
     }
@@ -424,7 +411,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
             .loop_filter_sb
             .y
             .v
-            .call::<BD>(f, y_dst, &vmask, unaligned_lvl_slice(lvl, 1), w);
+            .call::<BD>(f, y_dst, &vmask, lvl, 1, w);
     }
 }
 
@@ -461,20 +448,18 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         };
         let hmask = [hmask[0], hmask[1], 0];
         let lvl = &lvl[x..];
-        f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
-            f,
-            u_dst + x * 4,
-            &hmask,
-            unaligned_lvl_slice(lvl, 2),
-            endy4 - starty4,
-        );
-        f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
-            f,
-            v_dst + x * 4,
-            &hmask,
-            unaligned_lvl_slice(lvl, 3),
-            endy4 - starty4,
-        );
+        f.dsp
+            .lf
+            .loop_filter_sb
+            .uv
+            .h
+            .call::<BD>(f, u_dst + x * 4, &hmask, lvl, 2, endy4 - starty4);
+        f.dsp
+            .lf
+            .loop_filter_sb
+            .uv
+            .h
+            .call::<BD>(f, v_dst + x * 4, &hmask, lvl, 3, endy4 - starty4);
     }
 }
 
@@ -513,13 +498,13 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             .loop_filter_sb
             .uv
             .v
-            .call::<BD>(f, u_dst, &vmask, unaligned_lvl_slice(lvl, 2), w);
+            .call::<BD>(f, u_dst, &vmask, lvl, 2, w);
         f.dsp
             .lf
             .loop_filter_sb
             .uv
             .v
-            .call::<BD>(f, v_dst, &vmask, unaligned_lvl_slice(lvl, 3), w);
+            .call::<BD>(f, v_dst, &vmask, lvl, 3, w);
     }
 }
 
