@@ -485,8 +485,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     mut u_dst: Rav1dPictureDataComponentOffset,
     mut v_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
-    starty4: c_int,
-    endy4: c_int,
+    starty4: usize,
+    endy4: usize,
     ss_hor: c_int,
 ) {
     //                                 block1
@@ -495,10 +495,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 3] = [
-                mask[y as usize][0][0].get() as u32
-                    | (mask[y as usize][0][1].get() as u32) << (16 >> ss_hor),
-                mask[y as usize][1][0].get() as u32
-                    | (mask[y as usize][1][1].get() as u32) << (16 >> ss_hor),
+                mask[y][0][0].get() as u32 | (mask[y][0][1].get() as u32) << (16 >> ss_hor),
+                mask[y][1][0].get() as u32 | (mask[y][1][1].get() as u32) << (16 >> ss_hor),
                 0,
             ];
             f.dsp.lf.loop_filter_sb.uv.v.call::<BD>(
@@ -733,8 +731,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             pu + (x * 128 >> ss_hor),
             pv + (x * 128 >> ss_hor),
             cmp::min(32 as c_int, f.w4 - x as c_int * 32) + ss_hor >> ss_hor,
-            starty4 >> ss_ver,
-            uv_endy4 as c_int,
+            starty4 as usize >> ss_ver,
+            uv_endy4 as usize,
             ss_hor,
         );
         level_ptr = &level_ptr[32 >> ss_hor..];
