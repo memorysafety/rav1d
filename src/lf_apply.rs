@@ -352,6 +352,8 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     endy4: usize,
 ) {
     // filter edges between columns (e.g. block1 | block2)
+    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let len = endy4 - starty4;
     let mask = &mask[..w];
     for x in 0..w {
         if !have_left && x == 0 {
@@ -368,14 +370,9 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         } else {
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
-        f.dsp.lf.loop_filter_sb.y.h.call::<BD>(
-            f,
-            y_dst + x * 4,
-            &hmask,
-            &lvl[x..],
-            0,
-            endy4 - starty4,
-        );
+        let y_dst = y_dst + x * 4;
+        let lvl = &lvl[x..];
+        lf_sb.y.h.call::<BD>(f, y_dst, &hmask, lvl, 0, len);
     }
 }
 
@@ -394,6 +391,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
+    let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     for i in 0..len {
         let y = i + starty4;
@@ -406,12 +404,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
         let lvl = &lvl[i * b4_stride..];
-        f.dsp
-            .lf
-            .loop_filter_sb
-            .y
-            .v
-            .call::<BD>(f, y_dst, &vmask, lvl, 1, w);
+        lf_sb.y.v.call::<BD>(f, y_dst, &vmask, lvl, 1, w);
     }
 }
 
@@ -429,12 +422,16 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     ss_ver: c_int,
 ) {
     // filter edges between columns (e.g. block1 | block2)
+    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let len = endy4 - starty4;
     let mask = &mask[..w];
     let lvl = &lvl[..w];
     for x in 0..w {
         if !have_left && x == 0 {
             continue;
         }
+        let u_dst = u_dst + x * 4;
+        let v_dst = v_dst + x * 4;
         let mask = &mask[x];
         let hmask = if starty4 == 0 {
             if endy4 > 16 >> ss_ver {
@@ -448,18 +445,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         };
         let hmask = [hmask[0], hmask[1], 0];
         let lvl = &lvl[x..];
-        f.dsp
-            .lf
-            .loop_filter_sb
-            .uv
-            .h
-            .call::<BD>(f, u_dst + x * 4, &hmask, lvl, 2, endy4 - starty4);
-        f.dsp
-            .lf
-            .loop_filter_sb
-            .uv
-            .h
-            .call::<BD>(f, v_dst + x * 4, &hmask, lvl, 3, endy4 - starty4);
+        lf_sb.uv.h.call::<BD>(f, u_dst, &hmask, lvl, 2, len);
+        lf_sb.uv.h.call::<BD>(f, v_dst, &hmask, lvl, 3, len);
     }
 }
 
@@ -480,6 +467,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
+    let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     for i in 0..len {
         let y = i + starty4;
@@ -493,18 +481,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
         let vmask = [vmask[0], vmask[1], 0];
         let lvl = &lvl[i * b4_stride..];
-        f.dsp
-            .lf
-            .loop_filter_sb
-            .uv
-            .v
-            .call::<BD>(f, u_dst, &vmask, lvl, 2, w);
-        f.dsp
-            .lf
-            .loop_filter_sb
-            .uv
-            .v
-            .call::<BD>(f, v_dst, &vmask, lvl, 3, w);
+        lf_sb.uv.v.call::<BD>(f, u_dst, &vmask, lvl, 2, w);
+        lf_sb.uv.v.call::<BD>(f, v_dst, &vmask, lvl, 3, w);
     }
 }
 
