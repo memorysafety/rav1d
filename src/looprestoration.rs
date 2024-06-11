@@ -1612,27 +1612,9 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate5_x2(sumsq_ptrs: &mut [*mut i32; 5], sum_ptrs: &mut [*mut i16; 5]) {
-    sumsq_ptrs.rotate_left(2);
-    sum_ptrs.rotate_left(2);
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_2(A_ptrs: &mut [*mut i32; 2], B_ptrs: &mut [*mut i16; 2]) {
-    A_ptrs.rotate_left(1);
-    B_ptrs.rotate_left(1);
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_3(A_ptrs: &mut [*mut i32; 3], B_ptrs: &mut [*mut i16; 3]) {
-    A_ptrs.rotate_left(1);
-    B_ptrs.rotate_left(1);
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
-    A_ptrs.rotate_left(1);
-    B_ptrs.rotate_left(1);
+fn rotate<const LEN: usize, const MID: usize>(a: &mut [*mut i32; LEN], b: &mut [*mut i16; LEN]) {
+    a.rotate_left(MID);
+    b.rotate_left(MID);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
@@ -1799,7 +1781,7 @@ unsafe fn sgr_box3_vert_neon<BD: BitDepth>(
         s,
         bd.into_c(),
     );
-    rotate_ab_3(sumsq, sum);
+    rotate::<3, 1>(sumsq, sum);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -1821,7 +1803,7 @@ unsafe fn sgr_box5_vert_neon<BD: BitDepth>(
         s,
         bd.into_c(),
     );
-    rotate5_x2(sumsq, sum);
+    rotate::<5, 2>(sumsq, sum);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
@@ -2003,7 +1985,7 @@ unsafe fn sgr_finish1_neon<BD: BitDepth>(
 ) {
     rav1d_sgr_finish_weighted1_neon(*dst, A_ptrs, B_ptrs, w, w1, bd);
     *dst += dst.data.pixel_stride::<BD>();
-    rotate_ab_3(A_ptrs, B_ptrs);
+    rotate::<3, 1>(A_ptrs, B_ptrs);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -2018,7 +2000,7 @@ unsafe fn sgr_finish2_neon<BD: BitDepth>(
 ) {
     rav1d_sgr_finish_weighted2_neon(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
     *dst += 2 * dst.data.pixel_stride::<BD>();
-    rotate_ab_2(A_ptrs, B_ptrs);
+    rotate::<2, 1>(A_ptrs, B_ptrs);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -2076,8 +2058,8 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
     );
 
     *dst += h as isize * dst.data.pixel_stride::<BD>();
-    rotate_ab_2(A5_ptrs, B5_ptrs);
-    rotate_ab_4(A3_ptrs, B3_ptrs);
+    rotate::<2, 1>(A5_ptrs, B5_ptrs);
+    rotate::<4, 1>(A3_ptrs, B3_ptrs);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -2156,7 +2138,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 
         left = &left[1..];
         src += stride;
-        rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+        rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
 
         h -= 1;
         if h <= 0 {
@@ -2176,7 +2158,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             );
             left = &left[1..];
             src += stride;
-            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2208,7 +2190,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             sgr.s1 as c_int,
             bd,
         );
-        rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+        rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
 
         h -= 1;
         if h <= 0 {
@@ -2231,7 +2213,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             );
             left = &left[1..];
             src += stride;
-            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2314,7 +2296,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
         }
         Track::vert2 => {
             sumsq_ptrs[2] = sumsq_ptrs[1];
@@ -2451,7 +2433,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+            rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2507,7 +2489,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+            rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2656,7 +2638,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+            rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
         }
         Track::vert2 => {
             // Duplicate the last row twice more
@@ -2878,7 +2860,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sgr.s1 as c_int,
             bd,
         );
-        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+        rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
         h -= 1;
         if h <= 0 {
@@ -2907,7 +2889,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+            rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
 
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
@@ -2918,7 +2900,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2954,7 +2936,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sgr.s1 as i32,
             bd,
         );
-        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+        rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
         h -= 1;
         if h <= 0 {
@@ -2989,7 +2971,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+            rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
 
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
@@ -3000,7 +2982,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -3037,7 +3019,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -3128,7 +3110,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sgr.s1 as c_int,
             bd,
         );
-        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+        rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
         h -= 1;
         if h <= 0 {
@@ -3210,7 +3192,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
             rav1d_sgr_box35_row_h_neon(
                 sumsq3_ptrs[2],
@@ -3241,7 +3223,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s0 as c_int,
                 bd,
             );
-            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+            rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
@@ -3251,7 +3233,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
         }
         Track::vert2 => {
             // Duplicate the last row twice more
@@ -3271,7 +3253,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
 
             sumsq3_ptrs[2] = sumsq3_ptrs[1];
             sum3_ptrs[2] = sum3_ptrs[1];
@@ -3378,7 +3360,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
             // Output only one row
             sgr_finish_mix_neon(
                 &mut dst,
