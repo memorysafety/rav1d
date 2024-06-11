@@ -71,8 +71,8 @@ impl cdef::Fn {
         edges: CdefEdgeFlags,
         bd: BD,
     ) {
-        let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
-        let stride = dst.data.stride();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let stride = dst.stride();
         let left = ptr::from_ref(left).cast();
         let top = top.cast();
         let bottom = bottom.cast();
@@ -112,8 +112,8 @@ impl cdef_dir::Fn {
         variance: &mut c_uint,
         bd: BD,
     ) -> c_int {
-        let dst_ptr = dst.data.as_ptr_at::<BD>(dst.offset).cast();
-        let dst_stride = dst.data.stride();
+        let dst_ptr = dst.as_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let bd = bd.into_c();
         let dst = FFISafe::new(&dst);
         // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
@@ -159,7 +159,7 @@ unsafe fn padding<BD: BitDepth>(
     edges: CdefEdgeFlags,
 ) {
     let [top, bottom] = [top, bottom].map(|it| it.sub(2));
-    let stride = src.data.pixel_stride::<BD>();
+    let stride = src.pixel_stride::<BD>();
 
     // Fill extended input buffer.
     let mut x_start = 2 - 2;
@@ -197,7 +197,7 @@ unsafe fn padding<BD: BitDepth>(
     for y in 0..h {
         let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
         let src = src + (y as isize * stride);
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..x_end - 2));
+        let src = &*src.slice::<BD>(x_end - 2);
         for x in 2..x_end {
             tmp[x] = src[x - 2].as_::<i16>();
         }
@@ -238,8 +238,8 @@ unsafe fn cdef_filter_block_rust<BD: BitDepth>(
     let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
     let dst = |y| {
-        let dst = dst + (y as isize * dst.data.pixel_stride::<BD>());
-        dst.data.slice_mut::<BD, _>((dst.offset.., ..w))
+        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
+        dst.slice_mut::<BD>(w)
     };
 
     if pri_strength != 0 {
@@ -412,8 +412,8 @@ fn cdef_find_dir_rust<BD: BitDepth>(
 
     let (w, h) = (8, 8);
     for y in 0..h {
-        let img = img + (y as isize * img.data.pixel_stride::<BD>());
-        let img = &*img.data.slice::<BD, _>((img.offset.., ..w));
+        let img = img + (y as isize * img.pixel_stride::<BD>());
+        let img = &*img.slice::<BD>(w);
         for x in 0..w {
             let px = (img[x].as_::<c_int>() >> bitdepth_min_8) - 128;
 

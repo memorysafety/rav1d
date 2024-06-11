@@ -114,7 +114,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;
-        p += stripe_h as isize * p.data.pixel_stride::<BD>();
+        p += stripe_h as isize * p.pixel_stride::<BD>();
         edges |= LR_HAVE_TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
@@ -135,8 +135,8 @@ fn backup4xU<BD: BitDepth>(
     for i in 0..u {
         let dst = &mut dst[i];
         let n = dst.len();
-        let src = src + (i as isize * src.data.pixel_stride::<BD>());
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..n));
+        let src = src + (i as isize * src.pixel_stride::<BD>());
+        let src = &*src.slice::<BD>(n);
         BD::pixel_copy(dst, src, n);
     }
 }
@@ -264,7 +264,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         lr_sbrow::<BD>(
             c,
             f,
-            dst[0] - (offset_y as isize * dst[0].data.pixel_stride::<BD>()),
+            dst[0] - (offset_y as isize * dst[0].pixel_stride::<BD>()),
             y_stripe,
             w,
             h,
@@ -285,7 +285,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                dst[1] - (offset_uv as isize * dst[1].data.pixel_stride::<BD>()),
+                dst[1] - (offset_uv as isize * dst[1].pixel_stride::<BD>()),
                 y_stripe,
                 w,
                 h,
@@ -297,7 +297,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                dst[2] - (offset_uv as isize * dst[2].data.pixel_stride::<BD>()),
+                dst[2] - (offset_uv as isize * dst[2].pixel_stride::<BD>()),
                 y_stripe,
                 w,
                 h,

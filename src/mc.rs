@@ -1072,9 +1072,9 @@ unsafe fn resize_rust<BD: BitDepth>(
         let mut mx = mx0;
         let mut src_x = -1;
         let dst_ptr = dst_ptr.offset(y as isize * BD::pxstride(dst_stride));
-        let src = src + (y as isize * src.data.pixel_stride::<BD>());
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..src_w));
-        let dst = slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
+        let src = src + (y as isize * src.pixel_stride::<BD>());
+        let src = &*src.slice::<BD>(src_w);
+        let dst = slice::from_raw_parts_mut(dst_ptr, dst_w);
         for dst in dst {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst = bd.iclip_pixel(
@@ -1549,8 +1549,8 @@ impl resize::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let src_ptr = src.data.as_ptr_at::<BD>(src.offset).cast();
-        let src_stride = src.data.stride();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let dst_w = dst_w as c_int;
         let h = h as c_int;
         let src_w = src_w as c_int;

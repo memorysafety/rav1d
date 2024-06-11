@@ -429,6 +429,62 @@ impl<'a> Sub<isize> for Rav1dPictureDataComponentOffset<'a> {
     }
 }
 
+impl<'a> Rav1dPictureDataComponentOffset<'a> {
+    pub fn stride(&self) -> isize {
+        self.data.stride()
+    }
+
+    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
+        self.data.pixel_stride::<BD>()
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.data.as_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        self.data.as_mut_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index<BD: BitDepth>(
+        &self,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.data.index::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index_mut<BD: BitDepth>(
+        &self,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.data.index_mut::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice<BD: BitDepth>(
+        &self,
+        len: usize,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+        self.data.slice::<BD, _>((self.offset.., ..len))
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice_mut<BD: BitDepth>(
+        &self,
+        len: usize,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+        self.data.slice_mut::<BD, _>((self.offset.., ..len))
+    }
+}
+
 pub struct Rav1dPictureData {
     pub data: [Rav1dPictureDataComponent; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,

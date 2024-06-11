@@ -4220,7 +4220,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     if sby != 0 {
         let p_up = array::from_fn(|i| {
             let ss_ver = f.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
-            p[i] - ((8 * p[i].data.pixel_stride::<BD>()) >> ss_ver as u8)
+            p[i] - ((8 * p[i].pixel_stride::<BD>()) >> ss_ver as u8)
         });
         rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby);
     }
@@ -4247,9 +4247,9 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver;
         let dst = sr_p[pl];
-        let dst = dst - (h_start as isize * dst.data.pixel_stride::<BD>());
+        let dst = dst - (h_start as isize * dst.pixel_stride::<BD>());
         let src = p[pl];
-        let src = src - (h_start as isize * src.data.pixel_stride::<BD>());
+        let src = src - (h_start as isize * src.pixel_stride::<BD>());
         let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.sbh) as c_int) >> ss_ver;
         let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
         let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
@@ -4257,8 +4257,8 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
         f.dsp.mc.resize.call::<BD>(
-            dst.data.as_mut_ptr_at::<BD>(dst.offset),
-            dst.data.stride(),
+            dst.as_mut_ptr::<BD>(),
+            dst.stride(),
             src,
             dst_w as usize,
             (cmp::min(img_h, h_end) + h_start) as usize,
