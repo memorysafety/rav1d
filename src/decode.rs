@@ -1684,7 +1684,7 @@ fn decode_b(
         } else if last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             rav1d_calc_lf_values(
-                &mut *ts.lflvlmem.try_write().unwrap(),
+                &mut (*ts.lflvlmem.try_write().unwrap()),
                 frame_hdr,
                 &last_delta_lf,
             );

@@ -724,8 +724,8 @@ pub struct Rav1dFrameContext_lf {
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
+    pub lvl: [Align16<[[[u8; 2]; 8]; 4]>; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub last_sharpness: u8,
-    pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
     // cdef_line_buf was originally aligned to 32 bytes, but we need to pass
     // both cdef_line_buf and lr_line_buf as the same parameter type to
@@ -929,7 +929,7 @@ pub struct Rav1dTileState {
     pub dq: Atomic<TileStateRef>,
     pub last_qidx: AtomicU8,
     pub last_delta_lf: Atomic<[i8; 4]>,
-    pub lflvlmem: RwLock<[[[[u8; 2]; 8]; 4]; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
+    pub lflvlmem: RwLock<[Align16<[[[u8; 2]; 8]; 4]>; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub lflvl: Atomic<TileStateRef>,
 
     pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,

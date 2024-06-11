@@ -400,7 +400,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
-    filter_level: &[[[u8; 2]; 8]; 4],
+    filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     b: Bxy,
     iw: c_int,
     ih: c_int,
@@ -502,7 +502,7 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
-    filter_level: &[[[u8; 2]; 8]; 4],
+    filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     r#ref: usize,
     is_gmv: bool,
     b: Bxy,
@@ -679,7 +679,7 @@ fn calc_lf_value_chroma(
 }
 
 pub(crate) fn rav1d_calc_lf_values(
-    lflvl_values: &mut [[[[u8; 2]; 8]; 4]; RAV1D_MAX_SEGMENTS as usize],
+    lflvl_values: &mut [Align16<[[[u8; 2]; 8]; 4]>; RAV1D_MAX_SEGMENTS as usize],
     hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
