@@ -520,7 +520,6 @@ fn decode_coefs<BD: BitDepth>(
     let dc_sign_ctx;
     let dc_sign;
     let mut dc_dq;
-    let current_block: u64;
     let ts = &f.ts[ts];
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -1350,16 +1349,16 @@ fn decode_coefs<BD: BitDepth>(
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
 
+    enum Ac {
+        Qm,
+        NoQm,
+    }
+
+    let ac;
     if dc_tok == 0 {
         cul_level = 0;
         dc_sign_level = 1 << 6;
-        if qm_tbl.is_some() {
-            // goto ac_qm;
-            current_block = 1669574575799829731;
-        } else {
-            // goto ac_noqm;
-            current_block = 2404388531445638768;
-        }
+        ac = Some(if qm_tbl.is_some() { Ac::Qm } else { Ac::NoQm });
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as c_int;
         let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
@@ -1404,11 +1403,7 @@ fn decode_coefs<BD: BitDepth>(
                 (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
             );
 
-            if rc != 0 {
-                current_block = 1669574575799829731;
-            } else {
-                current_block = 15494703142406051947;
-            }
+            ac = if rc != 0 { Some(Ac::Qm) } else { None };
         } else {
             // non-qmatrix is the common case and allows for additional optimizations
             if dc_tok == 15 {
@@ -1438,16 +1433,11 @@ fn decode_coefs<BD: BitDepth>(
                 (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
             );
 
-            if rc != 0 {
-                current_block = 2404388531445638768;
-            } else {
-                current_block = 15494703142406051947;
-            }
+            ac = if rc != 0 { Some(Ac::NoQm) } else { None };
         }
     }
-    match current_block {
-        // ac_qm:
-        1669574575799829731 => {
+    match ac {
+        Some(Ac::Qm) => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
@@ -1498,8 +1488,7 @@ fn decode_coefs<BD: BitDepth>(
                 }
             }
         }
-        // ac_noqm:
-        2404388531445638768 => {
+        Some(Ac::NoQm) => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
@@ -1549,7 +1538,7 @@ fn decode_coefs<BD: BitDepth>(
                 }
             }
         }
-        _ => {}
+        None => {}
     }
 
     // context
