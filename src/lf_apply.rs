@@ -366,6 +366,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     endy4: c_int,
 ) {
     // filter edges between columns (e.g. block1 | block2)
+    let mask = &mask[..w];
     for x in 0..w {
         if !have_left && x == 0 {
             continue;
