@@ -441,17 +441,18 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w {
         if !(!have_left && x == 0) {
+            let mask = &mask[x];
             let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
-                hmask[0] = mask[x as usize][0][0].get() as u32;
-                hmask[1] = mask[x as usize][1][0].get() as u32;
+                hmask[0] = mask[0][0].get() as u32;
+                hmask[1] = mask[1][0].get() as u32;
                 if endy4 > 16 >> ss_ver {
-                    hmask[0] |= (mask[x as usize][0][1].get() as u32) << (16 >> ss_ver);
-                    hmask[1] |= (mask[x as usize][1][1].get() as u32) << (16 >> ss_ver);
+                    hmask[0] |= (mask[0][1].get() as u32) << (16 >> ss_ver);
+                    hmask[1] |= (mask[1][1].get() as u32) << (16 >> ss_ver);
                 }
             } else {
-                hmask[0] = mask[x as usize][0][1].get() as u32;
-                hmask[1] = mask[x as usize][1][1].get() as u32;
+                hmask[0] = mask[0][1].get() as u32;
+                hmask[1] = mask[1][1].get() as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
             f.dsp.lf.loop_filter_sb.uv.h.call::<BD>(
