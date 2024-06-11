@@ -302,7 +302,7 @@ impl Rav1dTasks {
                 .ok()?;
         }
         self.index(t).set_next(Rav1dTaskIndex::None);
-        Some(self.index(t).clone())
+        Some(self.index(t).without_next())
     }
 
     #[inline]
@@ -537,7 +537,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
             type_0,
             recon_progress: 0,
             deblock_progress: t.sby,
-            ..t.clone()
+            ..t.without_next()
         };
         f.task_thread.tasks.add_pending(t);
         *task_thread_lock = Some(ttd.lock.lock());
@@ -928,7 +928,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                                 let next_t = Rav1dTask {
                                     sby: t.sby + 1,
                                     recon_progress: t.sby + 2,
-                                    ..t.clone()
+                                    ..t.without_next()
                                 };
                                 let ntr = f.frame_thread.next_tile_row[p as usize]
                                     .load(Ordering::Relaxed)

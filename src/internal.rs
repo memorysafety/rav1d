@@ -485,8 +485,8 @@ impl Rav1dTask {
     }
 }
 
-impl Clone for Rav1dTask {
-    fn clone(&self) -> Self {
+impl Rav1dTask {
+    pub fn without_next(&self) -> Self {
         Self {
             frame_idx: self.frame_idx,
             tile_idx: self.tile_idx,
