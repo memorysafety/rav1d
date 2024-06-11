@@ -362,8 +362,8 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
-    starty4: c_int,
-    endy4: c_int,
+    starty4: usize,
+    endy4: usize,
 ) {
     // filter edges between columns (e.g. block1 | block2)
     let mask = &mask[..w];
@@ -400,7 +400,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     mut y_dst: Rav1dPictureDataComponentOffset,
-    w: c_int,
+    w: usize,
     starty4: usize,
     endy4: usize,
 ) {
@@ -434,8 +434,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
     w: usize,
-    starty4: c_int,
-    endy4: c_int,
+    starty4: usize,
+    endy4: usize,
     ss_ver: c_int,
 ) {
     // filter edges between columns (e.g. block1 | block2)
@@ -484,7 +484,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     mut u_dst: Rav1dPictureDataComponentOffset,
     mut v_dst: Rav1dPictureDataComponentOffset,
-    w: c_int,
+    w: usize,
     starty4: usize,
     endy4: usize,
     ss_hor: c_int,
@@ -640,8 +640,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             &lflvl[x].filter_y[0],
             py + x * 128,
             cmp::min(32, f.w4 - x as c_int * 32) as usize,
-            starty4 as c_int,
-            endy4 as c_int,
+            starty4 as usize,
+            endy4 as usize,
         );
         have_left = true;
         level_ptr = &level_ptr[32..];
@@ -663,8 +663,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             pu + x * (128 >> ss_hor),
             pv + x * (128 >> ss_hor),
             (cmp::min(32, f.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
-            starty4 as c_int >> ss_ver,
-            uv_endy4 as c_int,
+            starty4 as usize >> ss_ver,
+            uv_endy4 as usize,
             ss_ver,
         );
         have_left = true;
@@ -703,7 +703,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             f.b4_stride as usize,
             &lflvl[x].filter_y[1],
             p[0] + 128 * x,
-            cmp::min(32, f.w4 - x as c_int * 32),
+            cmp::min(32, f.w4 - x as c_int * 32) as usize,
             starty4 as usize,
             endy4 as usize,
         );
@@ -729,7 +729,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             &lflvl[x].filter_uv[1],
             pu + (x * 128 >> ss_hor),
             pv + (x * 128 >> ss_hor),
-            cmp::min(32 as c_int, f.w4 - x as c_int * 32) + ss_hor >> ss_hor,
+            (cmp::min(32 as c_int, f.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
             starty4 as usize >> ss_ver,
             uv_endy4 as usize,
             ss_hor,

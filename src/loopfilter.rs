@@ -39,13 +39,14 @@ impl loopfilter_sb::Fn {
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
         lvl: &[[u8; 4]],
-        w: c_int,
+        w: usize,
     ) {
         let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
         let stride = dst.data.stride();
         let lvl = lvl.as_ptr();
         let b4_stride = f.b4_stride;
         let lut = &f.lf.lim_lut;
+        let w = w as c_int;
         let bd = f.bitdepth_max;
         let dst = FFISafe::new(&dst);
         self.get()(dst_ptr, stride, mask, lvl, b4_stride, lut, w, bd, dst)
