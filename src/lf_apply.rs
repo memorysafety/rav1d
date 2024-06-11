@@ -401,8 +401,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
         if !have_top && y == 0 {
             continue;
         }
-        let mask = &mask[y];
-        let vmask = mask
+        let vmask = mask[y % mask.len()] // To elide the bounds check.
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
         let lvl = &lvl[i * b4_stride..];
@@ -483,7 +482,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
         if !have_top && y == 0 {
             continue;
         }
-        let vmask = mask[y]
+        let vmask = mask[y % mask.len()] // To elide the bounds check.
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
         let vmask = [vmask[0], vmask[1], 0];
