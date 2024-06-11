@@ -537,9 +537,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
             type_0,
             recon_progress: 0,
             deblock_progress: t.sby,
-            deps_skip: AtomicI32::new(t.deps_skip.load(Ordering::Relaxed)),
-            next: Default::default(),
-            ..*t
+            ..t.clone()
         };
         f.task_thread.tasks.add_pending(t);
         *task_thread_lock = Some(ttd.lock.lock());
@@ -928,11 +926,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                             if (t.sby + 1) < f.sbh {
                                 // add sby+1 to list to replace this one
                                 let next_t = Rav1dTask {
-                                    next: Default::default(),
                                     sby: t.sby + 1,
                                     recon_progress: t.sby + 2,
-                                    deps_skip: AtomicI32::new(t.deps_skip.load(Ordering::Relaxed)),
-                                    ..*t
+                                    ..t.clone()
                                 };
                                 let ntr = f.frame_thread.next_tile_row[p as usize]
                                     .load(Ordering::Relaxed)

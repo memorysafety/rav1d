@@ -495,7 +495,7 @@ impl Clone for Rav1dTask {
             recon_progress: self.recon_progress,
             deblock_progress: self.deblock_progress,
             deps_skip: AtomicI32::new(self.deps_skip.load(Ordering::Relaxed)),
-            next: Atomic::new(Rav1dTaskIndex::None),
+            next: Default::default(),
         }
     }
 }
