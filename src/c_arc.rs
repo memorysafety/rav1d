@@ -169,7 +169,7 @@ impl<T> RawArc<T> {
     ///
     /// The [`RawArc`] must be originally from [`Self::from_arc`].
     ///
-    /// This must be called before ever calling [`Self::into_arc`],
+    /// This must not be called after [`Self::into_arc`],
     /// including on [`Clone`]s.
     pub unsafe fn as_ref(&self) -> &T {
         // SAFETY: `self` must be from `Self::from_arc`,
