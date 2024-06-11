@@ -373,23 +373,14 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         }
         let mask = &mask[x];
         let hmask = if starty4 == 0 {
-            let mut hmask = [
-                mask[0][0].get() as u32,
-                mask[1][0].get() as u32,
-                mask[2][0].get() as u32,
-            ];
             if endy4 > 16 {
-                hmask[0] |= (mask[0][1].get() as u32) << 16;
-                hmask[1] |= (mask[1][1].get() as u32) << 16;
-                hmask[2] |= (mask[2][1].get() as u32) << 16;
+                mask.each_ref()
+                    .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16))
+            } else {
+                mask.each_ref().map(|[a, _]| a.get() as u32)
             }
-            hmask
         } else {
-            [
-                mask[0][1].get() as u32,
-                mask[1][1].get() as u32,
-                mask[2][1].get() as u32,
-            ]
+            mask.each_ref().map(|[_, b]| b.get() as u32)
         };
         f.dsp.lf.loop_filter_sb.y.h.call::<BD>(
             f,
