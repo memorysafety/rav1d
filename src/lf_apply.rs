@@ -410,18 +410,18 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     mut y_dst: Rav1dPictureDataComponentOffset,
     w: c_int,
-    starty4: c_int,
-    endy4: c_int,
+    starty4: usize,
+    endy4: usize,
 ) {
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
+    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride)) {
         if !(!have_top && y == 0) {
             let vmask = [
-                mask[y as usize][0][0].get() as u32 | (mask[y as usize][0][1].get() as u32) << 16,
-                mask[y as usize][1][0].get() as u32 | (mask[y as usize][1][1].get() as u32) << 16,
-                mask[y as usize][2][0].get() as u32 | (mask[y as usize][2][1].get() as u32) << 16,
+                mask[y][0][0].get() as u32 | (mask[y][0][1].get() as u32) << 16,
+                mask[y][1][0].get() as u32 | (mask[y][1][1].get() as u32) << 16,
+                mask[y][2][0].get() as u32 | (mask[y][2][1].get() as u32) << 16,
             ];
             f.dsp.lf.loop_filter_sb.y.v.call::<BD>(
                 f,
@@ -714,8 +714,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             &lflvl[x].filter_y[1],
             p[0] + 128 * x,
             cmp::min(32, f.w4 - x as c_int * 32),
-            starty4,
-            endy4 as c_int,
+            starty4 as usize,
+            endy4 as usize,
         );
         level_ptr = &level_ptr[32..];
     }
