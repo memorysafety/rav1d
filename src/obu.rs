@@ -2540,10 +2540,10 @@ fn parse_obus(
                         Ordering::SeqCst,
                         Ordering::SeqCst,
                     );
-                    if c.task_thread.cur.load(Ordering::Relaxed) != 0
-                        && (c.task_thread.cur.load(Ordering::Relaxed) as usize) < c.fc.len()
+                    if c.task_thread.cur.get() != 0
+                        && (c.task_thread.cur.get() as usize) < c.fc.len()
                     {
-                        c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
+                        c.task_thread.cur.update(|cur| cur - 1);
                     }
                 }
                 let error = &mut *fc.task_thread.retval.try_lock().unwrap();
