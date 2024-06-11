@@ -701,7 +701,9 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
             fc.task_thread.tasks.clear();
         }
         c.task_thread.first.store(0, Ordering::SeqCst);
-        c.task_thread.cur.store(c.fc.len() as u32, Ordering::SeqCst);
+        c.task_thread
+            .cur
+            .store(c.fc.len() as u32, Ordering::Relaxed);
         c.task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
