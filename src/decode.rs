@@ -273,16 +273,10 @@ fn read_mv_component_diff(
     }
 }
 
-enum MvCdfSelect {
-    Mv,
-    Dmv,
-}
-
 fn read_mv_residual(
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
     ref_mv: &mut mv,
-    mv_cdf: MvCdfSelect,
     have_fp: bool,
 ) {
     let mv_joint = MVJoint::from_repr(rav1d_msac_decode_symbol_adapt4(
@@ -292,10 +286,7 @@ fn read_mv_residual(
     ) as usize)
     .expect("valid variant");
 
-    let mv_cdf = match mv_cdf {
-        MvCdfSelect::Mv => &mut ts_c.cdf.mv,
-        MvCdfSelect::Dmv => &mut ts_c.cdf.dmv,
-    };
+    let mv_cdf = &mut ts_c.cdf.mv;
 
     match mv_joint {
         MVJoint::HV => {
@@ -2137,7 +2128,7 @@ fn decode_b(
             }
         };
 
-        read_mv_residual(f, ts_c, &mut r#ref, MvCdfSelect::Dmv, false);
+        read_mv_residual(f, ts_c, &mut r#ref, false);
 
         // clip intrabc motion vector to decoded parts of current tile
         let mut border_left = ts.tiling.col_start * 4;
@@ -2564,13 +2555,7 @@ fn decode_b(
                 }
                 NEWMV => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
-                    read_mv_residual(
-                        f,
-                        ts_c,
-                        &mut mv1d,
-                        MvCdfSelect::Mv,
-                        !frame_hdr.force_integer_mv,
-                    );
+                    read_mv_residual(f, ts_c, &mut mv1d, !frame_hdr.force_integer_mv);
                     mv1d
                 }
                 _ => unreachable!(),
@@ -2891,13 +2876,7 @@ fn decode_b(
                         inter_mode, drl_idx, ts_c.msac.rng,
                     );
                 }
-                read_mv_residual(
-                    f,
-                    ts_c,
-                    &mut mv1d0,
-                    MvCdfSelect::Mv,
-                    !frame_hdr.force_integer_mv,
-                );
+                read_mv_residual(f, ts_c, &mut mv1d0, !frame_hdr.force_integer_mv);
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-residualmv[mv=y:{},x:{}]: r={}",
