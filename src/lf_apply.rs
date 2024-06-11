@@ -393,6 +393,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block2
     let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
+    let lvl = &lvl[..1 + (len - 1) * b4_stride];
     for i in 0..len {
         let y = i + starty4;
         let y_dst = y_dst + (i as isize * 4 * y_dst.data.pixel_stride::<BD>());
@@ -469,6 +470,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block2
     let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
+    let lvl = &lvl[..1 + (len - 1) * b4_stride];
     for i in 0..len {
         let y = i + starty4;
         let u_dst = u_dst + (i as isize * 4 * u_dst.data.pixel_stride::<BD>());
