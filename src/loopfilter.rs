@@ -56,8 +56,8 @@ impl loopfilter_sb::Fn {
         lvl_y_offset: usize,
         w: usize,
     ) {
-        let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
-        let stride = dst.data.stride();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let stride = dst.stride();
         let lvl = unaligned_lvl_slice(lvl, lvl_y_offset).as_ptr();
         let b4_stride = f.b4_stride;
         let lut = &f.lf.lim_lut;
@@ -102,10 +102,7 @@ unsafe fn loop_filter<BD: BitDepth>(
 
     for i in 0..4 {
         let dst = dst + (i * stridea);
-        let dst = |stride_index: isize| {
-            let dst = dst + (strideb * stride_index);
-            dst.data.index_mut::<BD>(dst.offset)
-        };
+        let dst = |stride_index: isize| (dst + (strideb * stride_index)).index_mut::<BD>();
 
         let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
         let set_dst = |stride_index, pixel: i32| {
@@ -302,7 +299,7 @@ unsafe fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize
     let hv = HV::from_repr(HV).unwrap();
     let yuv = YUV::from_repr(YUV).unwrap();
 
-    let stride = dst.data.pixel_stride::<BD>();
+    let stride = dst.pixel_stride::<BD>();
     let (stridea, strideb) = match hv {
         HV::H => (stride, 1),
         HV::V => (1, stride),

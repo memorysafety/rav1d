@@ -167,8 +167,8 @@ impl loop_restoration_filter::Fn {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let dst_ptr = dst.data.as_mut_ptr_at::<BD>(dst.offset).cast();
-        let dst_stride = dst.data.stride();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let left = left[..h as usize].as_ptr().cast();
         let lpf = lpf.cast();
         let bd = bd.into_c();
@@ -199,7 +199,7 @@ unsafe fn padding<BD: BitDepth>(
 ) {
     let left = &left[..stripe_h];
     assert!(stripe_h > 0);
-    let stride = p.data.pixel_stride::<BD>();
+    let stride = p.pixel_stride::<BD>();
 
     let [have_left, have_right, have_top, have_bottom] =
         [LR_HAVE_LEFT, LR_HAVE_RIGHT, LR_HAVE_TOP, LR_HAVE_BOTTOM]
@@ -229,7 +229,7 @@ unsafe fn padding<BD: BitDepth>(
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w);
     } else {
         // Pad with first row
-        let p = &*p.data.slice::<BD, _>((p.offset.., ..unit_w));
+        let p = &*p.slice::<BD>(unit_w);
         BD::pixel_copy(dst_l, p, unit_w);
         BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w);
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w);
@@ -267,7 +267,7 @@ unsafe fn padding<BD: BitDepth>(
     } else {
         // Pad with last row
         let src = p + ((stripe_h - 1) as isize * stride);
-        let src = &*src.data.slice::<BD, _>((src.offset.., ..unit_w));
+        let src = &*src.slice::<BD>(unit_w);
         BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], src, unit_w);
         BD::pixel_copy(
             &mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..],
@@ -301,7 +301,7 @@ unsafe fn padding<BD: BitDepth>(
         let p = p + have_left_3 + (j as isize * stride);
         BD::pixel_copy(
             &mut dst_tl[j * REST_UNIT_STRIDE + have_left_3..],
-            &p.data.slice::<BD, _>((p.offset.., ..len)),
+            &p.slice::<BD>(len),
             len,
         );
     }
@@ -422,8 +422,8 @@ unsafe fn wiener_rust<BD: BitDepth>(
                 sum += z[k * REST_UNIT_STRIDE] as c_int * filter[1][k] as c_int;
             }
 
-            let p = p + (j as isize * p.data.pixel_stride::<BD>()) + i;
-            *p.data.index_mut::<BD>(p.offset) =
+            let p = p + (j as isize * p.pixel_stride::<BD>()) + i;
+            *p.index_mut::<BD>() =
                 iclip(sum + rounding_off_v >> round_bits_v, 0, bd.into_c()).as_();
         }
     }
@@ -802,8 +802,8 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 
     let w0 = sgr.w0 as c_int;
     for j in 0..h {
-        let p = p + (j as isize * p.data.pixel_stride::<BD>());
-        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
+        let p = p + (j as isize * p.pixel_stride::<BD>());
+        let p = &mut *p.slice_mut::<BD>(w);
         for i in 0..w {
             let v = w0 * dst[j * 384 + i].as_::<c_int>();
             p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
@@ -866,8 +866,8 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
-        let p = p + (j as isize * p.data.pixel_stride::<BD>());
-        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
+        let p = p + (j as isize * p.pixel_stride::<BD>());
+        let p = &mut *p.slice_mut::<BD>(w);
         for i in 0..w {
             let v = w1 * dst[j * 384 + i].as_::<c_int>();
             p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
@@ -942,8 +942,8 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let w0 = sgr.w0 as c_int;
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
-        let p = p + (j as isize * p.data.pixel_stride::<BD>());
-        let p = &mut *p.data.slice_mut::<BD, _>((p.offset.., ..w));
+        let p = p + (j as isize * p.pixel_stride::<BD>());
+        let p = &mut *p.slice_mut::<BD>(w);
         for i in 0..w {
             let v = w0 * dst0[j * 384 + i].as_::<c_int>() + w1 * dst1[j * 384 + i].as_::<c_int>();
             p[i] = bd.iclip_pixel(p[i].as_::<c_int>() + (v + (1 << 10) >> 11));
@@ -1208,8 +1208,8 @@ unsafe fn rav1d_sgr_finish_filter1_neon<BD: BitDepth>(
         BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter1_16bpc_neon),
     })(
         tmp.as_mut_ptr(),
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         a,
         b,
         w,
@@ -1245,8 +1245,8 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         sumsq,
         sum,
         Some(left),
-        src.data.as_ptr_at::<BD>(src.offset),
-        src.data.stride(),
+        src.as_ptr::<BD>(),
+        src.stride(),
         w,
         h,
         edges,
@@ -1257,7 +1257,7 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
             &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
             None,
             lpf,
-            src.data.stride(),
+            src.stride(),
             w,
             2 as c_int,
             edges,
@@ -1268,8 +1268,8 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
             None,
-            lpf.offset(6 * src.data.pixel_stride::<BD>()),
-            src.data.stride(),
+            lpf.offset(6 * src.pixel_stride::<BD>()),
+            src.stride(),
             w,
             2 as c_int,
             edges,
@@ -1354,8 +1354,8 @@ unsafe fn rav1d_sgr_finish_filter2_neon<BD: BitDepth>(
         BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter2_16bpc_neon),
     })(
         tmp.as_mut_ptr(),
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         a,
         b,
         w,
@@ -1391,8 +1391,8 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
         sumsq,
         sum,
         Some(left),
-        src.data.as_ptr_at::<BD>(src.offset),
-        src.data.stride(),
+        src.as_ptr::<BD>(),
+        src.stride(),
         w,
         h,
         edges,
@@ -1403,7 +1403,7 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
             &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
             None,
             lpf,
-            src.data.stride(),
+            src.stride(),
             w,
             2,
             edges,
@@ -1414,8 +1414,8 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
             None,
-            lpf.offset(6 * src.data.pixel_stride::<BD>()),
-            src.data.stride(),
+            lpf.offset(6 * src.pixel_stride::<BD>()),
+            src.stride(),
             w,
             2,
             edges,
@@ -1458,10 +1458,10 @@ unsafe fn rav1d_sgr_weighted1_neon<BD: BitDepth>(
         BPC::BPC8 => asm_fn!(dav1d_sgr_weighted1_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_weighted1_16bpc_neon),
     })(
-        dst.data.as_mut_ptr_at::<BD>(dst.offset).cast(),
-        dst.data.stride(),
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        dst.as_mut_ptr::<BD>().cast(),
+        dst.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         t1.as_mut_ptr(),
         w,
         h,
@@ -1504,10 +1504,10 @@ unsafe fn rav1d_sgr_weighted2_neon<BD: BitDepth>(
         BPC::BPC8 => asm_fn!(dav1d_sgr_weighted2_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_weighted2_16bpc_neon),
     })(
-        dst.data.as_mut_ptr_at::<BD>(dst.offset).cast(),
-        dst.data.stride(),
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        dst.as_mut_ptr::<BD>().cast(),
+        dst.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         t1.as_mut_ptr(),
         t2.as_mut_ptr(),
         w,
@@ -1831,7 +1831,7 @@ unsafe fn rav1d_sgr_finish_weighted1_neon<BD: BitDepth>(
         }};
     }
     bd_fn!(asm_fn, BD, sgr_finish_weighted1, neon)(
-        dst.data.as_mut_ptr_at::<BD>(dst.offset).cast(),
+        dst.as_mut_ptr::<BD>().cast(),
         A_ptrs.as_mut_ptr(),
         B_ptrs.as_mut_ptr(),
         w,
@@ -1868,8 +1868,8 @@ unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
         }};
     }
     bd_fn!(asm_fn, BD, sgr_finish_weighted2, neon)(
-        dst.data.as_mut_ptr_at::<BD>(dst.offset).cast(),
-        dst.data.stride(),
+        dst.as_mut_ptr::<BD>().cast(),
+        dst.stride(),
         A_ptrs.as_mut_ptr(),
         B_ptrs.as_mut_ptr(),
         w,
@@ -1908,8 +1908,8 @@ unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
     }
     bd_fn!(asm_fn, BD, sgr_finish_filter1_2rows, neon)(
         tmp,
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         A_ptrs.as_mut_ptr(),
         B_ptrs.as_mut_ptr(),
         w,
@@ -1947,8 +1947,8 @@ unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
     }
     bd_fn!(asm_fn, BD, sgr_finish_filter2_2rows, neon)(
         tmp,
-        src.data.as_ptr_at::<BD>(src.offset).cast(),
-        src.data.stride(),
+        src.as_ptr::<BD>().cast(),
+        src.stride(),
         A_ptrs.as_mut_ptr(),
         B_ptrs.as_mut_ptr(),
         w,
@@ -1984,7 +1984,7 @@ unsafe fn sgr_finish1_neon<BD: BitDepth>(
     bd: BD,
 ) {
     rav1d_sgr_finish_weighted1_neon(*dst, A_ptrs, B_ptrs, w, w1, bd);
-    *dst += dst.data.pixel_stride::<BD>();
+    *dst += dst.pixel_stride::<BD>();
     rotate::<3, 1>(A_ptrs, B_ptrs);
 }
 
@@ -1999,7 +1999,7 @@ unsafe fn sgr_finish2_neon<BD: BitDepth>(
     bd: BD,
 ) {
     rav1d_sgr_finish_weighted2_neon(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
-    *dst += 2 * dst.data.pixel_stride::<BD>();
+    *dst += 2 * dst.pixel_stride::<BD>();
     rotate::<2, 1>(A_ptrs, B_ptrs);
 }
 
@@ -2045,10 +2045,10 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
         }};
     }
     bd_fn!(asm_fn, BD, sgr_weighted2, neon)(
-        dst.data.as_mut_ptr_at::<BD>(dst.offset).cast(),
-        dst.data.stride(),
-        dst.data.as_ptr_at::<BD>(dst.offset).cast(),
-        dst.data.stride(),
+        dst.as_mut_ptr::<BD>().cast(),
+        dst.stride(),
+        dst.as_ptr::<BD>().cast(),
+        dst.stride(),
         tmp5.0.as_mut_ptr(),
         tmp3.0.as_mut_ptr(),
         w,
@@ -2057,7 +2057,7 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
         bd.into_c(),
     );
 
-    *dst += h as isize * dst.data.pixel_stride::<BD>();
+    *dst += h as isize * dst.pixel_stride::<BD>();
     rotate::<2, 1>(A5_ptrs, B5_ptrs);
     rotate::<4, 1>(A3_ptrs, B3_ptrs);
 }
@@ -2076,7 +2076,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     let w = w as c_int;
     let mut h = h as c_int;
 
-    let stride = dst.data.pixel_stride::<BD>();
+    let stride = dst.pixel_stride::<BD>();
 
     const BUF_STRIDE: usize = 384 + 16;
 
@@ -2129,7 +2129,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             A_ptrs[2],
             B_ptrs[2],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             sgr.s1 as c_int,
             edges,
@@ -2150,7 +2150,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 A_ptrs[2],
                 B_ptrs[2],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 sgr.s1 as c_int,
                 edges,
@@ -2173,7 +2173,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             sumsq_rows[0],
             sum_rows[0],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2205,7 +2205,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 A_ptrs[2],
                 B_ptrs[2],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 sgr.s1 as c_int,
                 edges,
@@ -2234,7 +2234,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             A_ptrs[2],
             B_ptrs[2],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             sgr.s1 as c_int,
             edges,
@@ -2346,7 +2346,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     let w = w as c_int;
     let mut h = h as c_int;
 
-    let stride = dst.data.pixel_stride::<BD>();
+    let stride = dst.pixel_stride::<BD>();
 
     const BUF_STRIDE: usize = 384 + 16;
 
@@ -2400,7 +2400,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             sumsq_rows[2],
             sum_rows[2],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2417,7 +2417,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sumsq_rows[3],
                 sum_rows[3],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,
@@ -2453,7 +2453,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             sumsq_rows[0],
             sum_rows[0],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2472,7 +2472,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sumsq_rows[1],
                 sum_rows[1],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,
@@ -2504,7 +2504,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                     sumsq_rows[2],
                     sum_rows[2],
                     Some(left),
-                    src.data.as_ptr_at::<BD>(src.offset),
+                    src.as_ptr::<BD>(),
                     w,
                     edges,
                     bd,
@@ -2520,7 +2520,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                         sumsq_rows[3],
                         sum_rows[3],
                         Some(left),
-                        src.data.as_ptr_at::<BD>(src.offset),
+                        src.as_ptr::<BD>(),
                         w,
                         edges,
                         bd,
@@ -2569,7 +2569,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             sumsq_ptrs[3],
             sum_ptrs[3],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2585,7 +2585,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 sumsq_ptrs[4],
                 sum_ptrs[4],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,
@@ -2737,7 +2737,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     let w = w as c_int;
     let mut h = h as c_int;
 
-    let stride = dst.data.pixel_stride::<BD>();
+    let stride = dst.pixel_stride::<BD>();
 
     const BUF_STRIDE: usize = 384 + 16;
 
@@ -2842,7 +2842,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sumsq5_rows[2],
             sum5_rows[2],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2872,7 +2872,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sumsq5_rows[3],
                 sum5_rows[3],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,
@@ -2919,7 +2919,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sumsq5_rows[0],
             sum5_rows[0],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -2954,7 +2954,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sumsq5_rows[1],
                 sum5_rows[1],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,
@@ -3002,7 +3002,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                     sumsq5_rows[2],
                     sum5_rows[2],
                     Some(left),
-                    src.data.as_ptr_at::<BD>(src.offset),
+                    src.as_ptr::<BD>(),
                     w,
                     edges,
                     bd,
@@ -3031,7 +3031,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                         sumsq5_rows[3],
                         sum5_rows[3],
                         Some(left),
-                        src.data.as_ptr_at::<BD>(src.offset),
+                        src.as_ptr::<BD>(),
                         w,
                         edges,
                         bd,
@@ -3093,7 +3093,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sumsq5_ptrs[3],
             sum5_ptrs[3],
             Some(left),
-            src.data.as_ptr_at::<BD>(src.offset),
+            src.as_ptr::<BD>(),
             w,
             edges,
             bd,
@@ -3122,7 +3122,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sumsq5_ptrs[4],
                 sum5_ptrs[4],
                 Some(left),
-                src.data.as_ptr_at::<BD>(src.offset),
+                src.as_ptr::<BD>(),
                 w,
                 edges,
                 bd,

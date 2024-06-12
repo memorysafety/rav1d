@@ -267,7 +267,18 @@ impl Rav1dPictureDataComponent {
     /// Bounds checked, but not [`DisjointMut`]-checked.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
-        assert!(pixel_offset <= self.pixel_len::<BD>());
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(pixel_offset: usize, pixel_len: usize) -> ! {
+            panic!(
+                "pixel offset {pixel_offset} out of range for slice of pixel length {pixel_len}"
+            );
+        }
+
+        let pixel_len = self.pixel_len::<BD>();
+        if pixel_offset > pixel_len {
+            out_of_bounds(pixel_offset, pixel_len);
+        }
         // SAFETY: We just checked that `pixel_offset` is in bounds.
         unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
     }
@@ -426,6 +437,62 @@ impl<'a> Sub<isize> for Rav1dPictureDataComponentOffset<'a> {
     fn sub(mut self, rhs: isize) -> Self::Output {
         self -= rhs;
         self
+    }
+}
+
+impl<'a> Rav1dPictureDataComponentOffset<'a> {
+    pub fn stride(&self) -> isize {
+        self.data.stride()
+    }
+
+    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
+        self.data.pixel_stride::<BD>()
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.data.as_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        self.data.as_mut_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index<BD: BitDepth>(
+        &self,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.data.index::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index_mut<BD: BitDepth>(
+        &self,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.data.index_mut::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice<BD: BitDepth>(
+        &self,
+        len: usize,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+        self.data.slice::<BD, _>((self.offset.., ..len))
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice_mut<BD: BitDepth>(
+        &self,
+        len: usize,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+        self.data.slice_mut::<BD, _>((self.offset.., ..len))
     }
 }
 
