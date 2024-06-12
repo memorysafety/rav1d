@@ -1583,12 +1583,12 @@ mod neon {
     impl reverse::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
-            dst: *mut BD::Pixel,
-            src: *const BD::Pixel,
+            dst: &mut [BD::Pixel],
+            src: &[BD::Pixel],
             n: c_int,
         ) {
-            let dst = dst.cast();
-            let src = src.cast();
+            let dst = dst.as_mut_ptr().cast();
+            let src = src.as_ptr().cast();
             self.get()(dst, src, n)
         }
     }
@@ -1796,8 +1796,8 @@ mod neon {
         if upsample_left {
             buf[flipped_offset] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                buf[1 + flipped_offset..].as_mut_ptr(),
-                topleft_in.as_ptr(),
+                &mut buf[1 + flipped_offset..],
+                topleft_in,
                 height,
             );
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
@@ -1816,8 +1816,8 @@ mod neon {
             if filter_strength != 0 {
                 buf[flipped_offset] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    buf[1 + flipped_offset..].as_mut_ptr(),
-                    topleft_in.as_ptr(),
+                    &mut buf[1 + flipped_offset..],
+                    topleft_in,
                     height,
                 );
                 let (front, back) = buf.split_at_mut(1 + left_offset);
@@ -1835,8 +1835,8 @@ mod neon {
                 }
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    buf[left_offset + 1..].as_mut_ptr(),
-                    topleft_in.as_ptr(),
+                    &mut buf[left_offset + 1..],
+                    topleft_in,
                     height,
                 );
             }
@@ -1911,8 +1911,8 @@ mod neon {
         if upsample_left {
             flipped[0] = topleft_in[0];
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                flipped[1..].as_mut_ptr(),
-                topleft_in.as_ptr(),
+                &mut flipped[1..],
+                topleft_in,
                 height + cmp::max(width, height),
             );
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
@@ -1933,8 +1933,8 @@ mod neon {
             if filter_strength != 0 {
                 flipped[0] = topleft_in[0];
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    flipped[1..].as_mut_ptr(),
-                    topleft_in.as_ptr(),
+                    &mut flipped[1..],
+                    topleft_in,
                     height + cmp::max(width, height),
                 );
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
@@ -1947,8 +1947,8 @@ mod neon {
                 max_base_y = width + height - 1;
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
-                    left_out.as_mut_ptr(),
-                    topleft_in.as_ptr(),
+                    &mut left_out,
+                    topleft_in,
                     height + cmp::min(width, height),
                 );
                 max_base_y = height + cmp::min(width, height) - 1;
