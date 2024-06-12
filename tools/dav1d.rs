@@ -315,7 +315,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
     let mut out: *mut MuxerContext = 0 as *mut MuxerContext;
     let mut p = Default::default();
-    let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
+    let mut c: *const Dav1dContext = 0 as *const Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
         data: None,
         sz: 0,

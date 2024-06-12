@@ -25,9 +25,6 @@ use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::MemPool;
-use atomig::Atom;
-use atomig::AtomLogic;
-use atomig::Atomic;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use parking_lot::Mutex;
@@ -37,11 +34,10 @@ use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use to_method::To as _;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Atom, AtomLogic)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PictureFlags(u8);
 
 bitflags! {
@@ -246,7 +242,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
     mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     output_invisible_frames: bool,
     max_spatial_id: u8,
-    frame_flags: &Atomic<PictureFlags>,
+    frame_flags: &mut PictureFlags,
     f: &mut Rav1dFrameData,
     bpc: u8,
     itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
@@ -282,7 +278,8 @@ pub(crate) fn rav1d_thread_picture_alloc(
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
-    p.flags = frame_flags.fetch_and(flags_mask, Ordering::Relaxed);
+    p.flags = *frame_flags;
+    *frame_flags &= flags_mask;
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
     p.progress = if have_frame_mt {

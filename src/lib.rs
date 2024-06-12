@@ -32,7 +32,9 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dContext_frame_thread;
 use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dState;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
@@ -171,7 +173,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
+pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
     static initted: Once = Once::new();
     initted.call_once(|| init_internal());
 
@@ -187,7 +189,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     let c = Box::new(Default::default());
     let c = Box::into_raw(c);
     *c_out = c;
-    let c: *mut Rav1dContext = *c_out;
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -239,11 +240,17 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg: Default::default(),
     };
     (*c).task_thread = Arc::new(ttd);
-    (*c).frame_thread.out_delayed = if n_fc > 1 {
-        (0..n_fc).map(|_| Default::default()).collect()
-    } else {
-        Box::new([])
-    };
+    (*c).state = Mutex::new(Rav1dState {
+        frame_thread: Rav1dContext_frame_thread {
+            out_delayed: if n_fc > 1 {
+                (0..n_fc).map(|_| Default::default()).collect()
+            } else {
+                Box::new([])
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    });
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
@@ -285,13 +292,18 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_open(
-    c_out: *mut *mut Dav1dContext,
+    c_out: *mut *const Dav1dContext,
     s: *const Dav1dSettings,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c_out.is_null(), EINVAL))?;
         validate_input!((!s.is_null(), EINVAL))?;
-        rav1d_open(&mut *c_out, &s.read().try_into()?)
+        let c_out = &mut *c_out;
+        let s = s.read().try_into()?;
+        rav1d_open(c_out, &s).inspect_err(|_| {
+            *c_out = ptr::null_mut();
+        })?;
+        Ok(())
     })()
     .into()
 }
@@ -328,13 +340,17 @@ impl Rav1dPicture {
     }
 }
 
-unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
+unsafe fn output_image(
+    c: &Rav1dContext,
+    state: &mut Rav1dState,
+    out: &mut Rav1dPicture,
+) -> Rav1dResult {
     let mut res = Ok(());
 
-    let r#in: *mut Rav1dThreadPicture = if c.all_layers || c.max_spatial_id == 0 {
-        &mut c.out
+    let r#in: *mut Rav1dThreadPicture = if c.all_layers || state.max_spatial_id == 0 {
+        &mut state.out
     } else {
-        &mut c.cache
+        &mut state.cache
     };
     if !c.apply_grain || !(*r#in).p.has_grain() {
         *out = mem::take(&mut (*r#in).p);
@@ -343,49 +359,53 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     }
     let _ = mem::take(&mut *r#in);
 
-    if !c.all_layers && c.max_spatial_id != 0 && c.out.p.data.is_some() {
-        *r#in = mem::take(&mut c.out);
+    if !c.all_layers && state.max_spatial_id != 0 && state.out.p.data.is_some() {
+        *r#in = mem::take(&mut state.out);
     }
     res
 }
 
-fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
-    if c.cached_error.is_some() {
+fn output_picture_ready(c: &Rav1dContext, state: &mut Rav1dState, drain: bool) -> bool {
+    if state.cached_error.is_some() {
         return true;
     }
-    if !c.all_layers && c.max_spatial_id != 0 {
-        if c.out.p.data.is_some() && c.cache.p.data.is_some() {
-            if c.max_spatial_id == c.cache.p.frame_hdr.as_ref().unwrap().spatial_id
-                || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
+    if !c.all_layers && state.max_spatial_id != 0 {
+        if state.out.p.data.is_some() && state.cache.p.data.is_some() {
+            if state.max_spatial_id == state.cache.p.frame_hdr.as_ref().unwrap().spatial_id
+                || state.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return true;
             }
-            c.cache = mem::take(&mut c.out);
+            state.cache = mem::take(&mut state.out);
             return false;
         } else {
-            if c.cache.p.data.is_some() && drain {
+            if state.cache.p.data.is_some() && drain {
                 return true;
             } else {
-                if c.out.p.data.is_some() {
-                    c.cache = mem::take(&mut c.out);
+                if state.out.p.data.is_some() {
+                    state.cache = mem::take(&mut state.out);
                     return false;
                 }
             }
         }
     }
-    c.out.p.data.is_some()
+    state.out.p.data.is_some()
 }
 
-unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
+unsafe fn drain_picture(
+    c: &Rav1dContext,
+    state: &mut Rav1dState,
+    out: &mut Rav1dPicture,
+) -> Rav1dResult {
     let mut drained = false;
     for _ in 0..c.fc.len() {
-        let next = c.frame_thread.next;
+        let next = state.frame_thread.next;
         let fc = &c.fc[next as usize];
         let mut task_thread_lock = c.task_thread.lock.lock();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
             fc.task_thread.cond.wait(&mut task_thread_lock);
         }
-        let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
+        let out_delayed = &mut state.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first = c.task_thread.first.load(Ordering::SeqCst);
             if first as usize + 1 < c.fc.len() {
@@ -407,52 +427,52 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         } else if drained {
             break;
         }
-        c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
+        state.frame_thread.next = (state.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
         mem::take(&mut *fc.task_thread.retval.try_lock().unwrap())
             .err_or(())
             .inspect_err(|_| {
-                *c.cached_error_props.get_mut() = out_delayed.p.m.clone();
+                state.cached_error_props = out_delayed.p.m.clone();
                 let _ = mem::take(out_delayed);
             })?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                c.out = out_delayed.clone();
-                c.event_flags |= out_delayed.flags.into();
+                state.out = out_delayed.clone();
+                state.event_flags |= out_delayed.flags.into();
             }
             let _ = mem::take(out_delayed);
-            if output_picture_ready(c, false) {
-                return output_image(c, out);
+            if output_picture_ready(c, state, false) {
+                return output_image(c, state, out);
             }
         }
     }
-    if output_picture_ready(c, true) {
-        return output_image(c, out);
+    if output_picture_ready(c, state, true) {
+        return output_image(c, state, out);
     }
     Err(EAGAIN)
 }
 
-fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
-    if output_picture_ready(c, false) {
+fn gen_picture(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResult {
+    if output_picture_ready(c, state, false) {
         return Ok(());
     }
     // Take so we don't have 2 `&mut`s.
     let Rav1dData {
         data: r#in,
         m: props,
-    } = mem::take(&mut c.in_0);
+    } = mem::take(&mut state.in_0);
     let Some(mut r#in) = r#in else { return Ok(()) };
     while !r#in.is_empty() {
-        let len = rav1d_parse_obus(c, &r#in, &props);
+        let len = rav1d_parse_obus(c, state, &r#in, &props);
         if let Ok(len) = len {
             r#in.slice_in_place(len..);
         }
         // Note that [`output_picture_ready`] doesn't read [`Rav1dContext::in_0`].
-        if output_picture_ready(c, false) {
+        if output_picture_ready(c, state, false) {
             // Restore into `c` when there's still data left.
             if !r#in.is_empty() {
-                c.in_0 = Rav1dData {
+                state.in_0 = Rav1dData {
                     data: Some(r#in),
                     m: props,
                 }
@@ -464,64 +484,64 @@ fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
     Ok(())
 }
 
-pub(crate) fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
+pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
+    let state = &mut *c.state.try_lock().unwrap();
     if in_0.data.is_some() {
         let sz = in_0.data.as_ref().unwrap().len();
         validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
-        c.drain = false;
+        state.drain = false;
     }
-    if c.in_0.data.is_some() {
+    if state.in_0.data.is_some() {
         return Err(EAGAIN);
     }
-    c.in_0 = in_0.clone();
-    let res = gen_picture(c);
+    state.in_0 = in_0.clone();
+    let res = gen_picture(c, state);
     if res.is_ok() {
         let _ = mem::take(in_0);
     }
-    return res;
+    res
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_send_data(
-    c: *mut Rav1dContext,
+    c: *const Rav1dContext,
     in_0: *mut Dav1dData,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
+        let c = &*c;
         let mut in_rust = in_0.read().into();
-        let result = rav1d_send_data(&mut *c, &mut in_rust);
+        let result = rav1d_send_data(c, &mut in_rust);
         in_0.write(in_rust.into());
         result
     })()
     .into()
 }
 
-pub(crate) unsafe fn rav1d_get_picture(
-    c: &mut Rav1dContext,
-    out: &mut Rav1dPicture,
-) -> Rav1dResult {
-    let drain = mem::replace(&mut c.drain, true);
-    gen_picture(c)?;
-    mem::take(&mut c.cached_error).err_or(())?;
-    if output_picture_ready(c, c.fc.len() == 1) {
-        return output_image(c, out);
+pub(crate) unsafe fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
+    let state = &mut *c.state.try_lock().unwrap();
+    let drain = mem::replace(&mut state.drain, true);
+    gen_picture(c, state)?;
+    mem::take(&mut state.cached_error).err_or(())?;
+    if output_picture_ready(c, state, c.fc.len() == 1) {
+        return output_image(c, state, out);
     }
     if c.fc.len() > 1 && drain {
-        return drain_picture(c, out);
+        return drain_picture(c, state, out);
     }
     Err(EAGAIN)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(
-    c: *mut Dav1dContext,
+    c: *const Dav1dContext,
     out: *mut Dav1dPicture,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let c = &mut *c;
+        let c = &*c;
         let mut out_rust = Default::default(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_picture(c, &mut out_rust);
         out.write(out_rust.into());
@@ -531,7 +551,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
 }
 
 pub(crate) fn rav1d_apply_grain(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
 ) -> Rav1dResult {
@@ -575,7 +595,7 @@ pub(crate) fn rav1d_apply_grain(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain(
-    c: *mut Dav1dContext,
+    c: *const Dav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> Dav1dResult {
@@ -583,7 +603,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
-        let c = &mut *c;
+        let c = &*c;
         let in_0 = in_0.read();
         // Don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
@@ -597,20 +617,18 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     .into()
 }
 
-pub(crate) fn rav1d_flush(c: &mut Rav1dContext) {
-    let _ = mem::take(&mut c.in_0);
-    let _ = mem::take(&mut c.out);
-    let _ = mem::take(&mut c.cache);
-    c.drain = false;
-    c.cached_error = None;
-    let _ = mem::take(&mut c.refs);
-    let _ = mem::take(&mut c.cdf);
-    let _ = mem::take(&mut c.frame_hdr);
-    let _ = mem::take(&mut c.seq_hdr);
-    let _ = mem::take(&mut c.content_light);
-    let _ = mem::take(&mut c.mastering_display);
-    let _ = mem::take(&mut c.itut_t35);
-    let _ = mem::take(&mut c.cached_error_props);
+pub(crate) fn rav1d_flush(c: &Rav1dContext) {
+    let state = &mut *c.state.try_lock().unwrap();
+
+    let old_state = mem::take(state);
+    state.tiles = old_state.tiles;
+    state.n_tiles = old_state.n_tiles;
+    state.frame_thread = old_state.frame_thread;
+    state.operating_point_idc = old_state.operating_point_idc;
+    state.max_spatial_id = old_state.max_spatial_id;
+    state.frame_flags = old_state.frame_flags;
+    state.event_flags = old_state.event_flags;
+
     if c.fc.len() == 1 && c.tc.len() == 1 {
         return;
     }
@@ -622,7 +640,7 @@ pub(crate) fn rav1d_flush(c: &mut Rav1dContext) {
                 tc.thread_data.cond.wait(&mut task_thread_lock);
             }
         }
-        for fc in c.fc.iter_mut() {
+        for fc in c.fc.iter() {
             fc.task_thread.tasks.clear();
         }
         c.task_thread.first.store(0, Ordering::SeqCst);
@@ -633,32 +651,32 @@ pub(crate) fn rav1d_flush(c: &mut Rav1dContext) {
         c.task_thread.cond_signaled.store(0, Ordering::SeqCst);
     }
     if c.fc.len() > 1 {
-        for fc in wrapping_iter(c.fc.iter(), c.frame_thread.next as usize) {
+        for fc in wrapping_iter(c.fc.iter(), state.frame_thread.next as usize) {
             let _ = rav1d_decode_frame_exit(c, fc, Err(EGeneric));
             *fc.task_thread.retval.try_lock().unwrap() = None;
-            let out_delayed = &mut c.frame_thread.out_delayed[fc.index];
+            let out_delayed = &mut state.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
                 let _ = mem::take(out_delayed);
             }
         }
-        c.frame_thread.next = 0;
+        state.frame_thread.next = 0;
     }
     c.flush.store(false, Ordering::SeqCst);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
-    rav1d_flush(&mut *c)
+pub unsafe extern "C" fn dav1d_flush(c: *const Dav1dContext) {
+    rav1d_flush(&*c)
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_close(c_out: &mut *mut Rav1dContext) {
+pub(crate) unsafe fn rav1d_close(c_out: &mut *const Rav1dContext) {
     close_internal(c_out, true);
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
+pub unsafe extern "C" fn dav1d_close(c_out: *mut *const Dav1dContext) {
     if validate_input!(!c_out.is_null()).is_err() {
         return;
     }
@@ -666,15 +684,15 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
 }
 
 #[cold]
-unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: bool) {
-    let c: *mut Rav1dContext = *c_out;
+unsafe fn close_internal(c_out: &mut *const Rav1dContext, flush: bool) {
+    let c: *const Rav1dContext = *c_out;
     if c.is_null() {
         return;
     }
     *c_out = ptr::null_mut();
-    let mut c = Box::from_raw(c);
+    let c = Arc::from_raw(c);
     if flush {
-        rav1d_flush(&mut c);
+        rav1d_flush(&c);
     }
 }
 
@@ -701,13 +719,15 @@ impl Drop for Rav1dContext {
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
-    c: *mut Dav1dContext,
+    c: *const Dav1dContext,
     flags: *mut Dav1dEventFlags,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        flags.write(mem::take(&mut (*c).event_flags).into());
+        let c = &*c;
+        let state = &mut *c.state.try_lock().unwrap();
+        flags.write(mem::take(&mut state.event_flags).into());
         Ok(())
     })()
     .into()
@@ -715,13 +735,15 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
-    c: *mut Dav1dContext,
+    c: *const Dav1dContext,
     out: *mut Dav1dDataProps,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        out.write(mem::take(&mut *((*c).cached_error_props).get_mut()).into());
+        let c = &*c;
+        let state = &mut *c.state.try_lock().unwrap();
+        out.write(mem::take(&mut state.cached_error_props).into());
         Ok(())
     })()
     .into()
