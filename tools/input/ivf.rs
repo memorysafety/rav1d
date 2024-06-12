@@ -18,6 +18,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ptr::NonNull;
 
 #[repr(C)]
 pub struct DemuxerPriv {
@@ -229,7 +230,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
     if ivf_read_header(c, &mut sz, &mut off, &mut ts) != 0 {
         return -1;
     }
-    ptr = dav1d_data_create(buf, sz as usize);
+    ptr = dav1d_data_create(NonNull::new(buf), sz as usize);
     if ptr.is_null() {
         return -1;
     }
@@ -239,7 +240,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
-        dav1d_data_unref(buf);
+        dav1d_data_unref(NonNull::new(buf));
         return -1;
     }
     (*buf).m.offset = off;

@@ -71,6 +71,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::ptr::NonNull;
 
 unsafe fn get_seed() -> c_uint {
     let mut ts: libc::timespec = libc::timespec {
@@ -112,7 +113,7 @@ unsafe fn decode_frame(
 ) -> c_int {
     let mut res: c_int;
     libc::memset(p as *mut c_void, 0, ::core::mem::size_of::<Dav1dPicture>());
-    res = dav1d_send_data(c, data).0;
+    res = dav1d_send_data(c, NonNull::new(data)).0;
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
@@ -123,7 +124,7 @@ unsafe fn decode_frame(
             return res;
         }
     }
-    res = dav1d_get_picture(c, p).0;
+    res = dav1d_get_picture(c, NonNull::new(p)).0;
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
@@ -134,7 +135,7 @@ unsafe fn decode_frame(
             return res;
         }
     } else {
-        dav1d_picture_unref(p);
+        dav1d_picture_unref(NonNull::new(p));
     }
     return 0 as c_int;
 }
@@ -264,9 +265,7 @@ unsafe fn seek(
         if res != 0 {
             break;
         }
-        if !(dav1d_parse_sequence_header(&mut seq, (*data).data.unwrap().as_ptr(), (*data).sz).0
-            != 0)
-        {
+        if !(dav1d_parse_sequence_header(NonNull::new(&mut seq), (*data).data, (*data).sz).0 != 0) {
             break;
         }
     }
@@ -362,7 +361,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     {
         return libc::EXIT_SUCCESS;
     }
-    if dav1d_open(&mut c, &mut lib_settings).0 != 0 {
+    if dav1d_open(NonNull::new(&mut c), NonNull::new(&mut lib_settings)).0 != 0 {
         return libc::EXIT_FAILURE;
     }
     timebase = i_timebase[1] as c_double / i_timebase[0] as c_double;
@@ -498,7 +497,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         }
     }
     input_close(in_0);
-    dav1d_close(&mut c);
+    dav1d_close(NonNull::new(&mut c));
     return libc::EXIT_SUCCESS;
 }
 

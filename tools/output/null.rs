@@ -4,6 +4,7 @@ use rav1d::src::lib::dav1d_picture_unref;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ptr::NonNull;
 
 extern "C" {
     pub type MuxerPriv;
@@ -30,7 +31,7 @@ pub struct Muxer {
 pub type NullOutputContext = MuxerPriv;
 
 unsafe extern "C" fn null_write(_c: *mut NullOutputContext, p: *mut Dav1dPicture) -> c_int {
-    dav1d_picture_unref(p);
+    dav1d_picture_unref(NonNull::new(p));
     return 0 as c_int;
 }
 

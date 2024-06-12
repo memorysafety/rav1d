@@ -21,6 +21,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ptr::NonNull;
 
 #[repr(C)]
 pub struct DemuxerPriv {
@@ -281,7 +282,7 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
     if res < 0 || len.wrapping_add(res as usize) > (*c).frame_unit_size {
         return -1;
     }
-    let ptr: *mut u8 = dav1d_data_create(data, len);
+    let ptr: *mut u8 = dav1d_data_create(NonNull::new(data), len);
     if ptr.is_null() {
         return -1;
     }
@@ -295,7 +296,7 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
-        dav1d_data_unref(data);
+        dav1d_data_unref(NonNull::new(data));
         return -1;
     }
     return 0 as c_int;

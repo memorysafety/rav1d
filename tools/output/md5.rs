@@ -569,7 +569,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> c_
             pl += 1;
         }
     }
-    dav1d_picture_unref(p);
+    dav1d_picture_unref(NonNull::new(p));
     return 0 as c_int;
 }
 

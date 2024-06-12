@@ -379,7 +379,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             return 1 as c_int;
         }
         if i < cli_settings.skip {
-            dav1d_data_unref(&mut data);
+            dav1d_data_unref(NonNull::new(&mut data));
         }
         i = i.wrapping_add(1);
     }
@@ -459,7 +459,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             }; 32],
         };
         let mut seq_skip: c_uint = 0 as c_int as c_uint;
-        while dav1d_parse_sequence_header(&mut seq, data.data.unwrap().as_ptr(), data.sz).0 != 0 {
+        while dav1d_parse_sequence_header(NonNull::new(&mut seq), data.data, data.sz).0 != 0 {
             res = input_read(in_0, &mut data);
             if res < 0 {
                 input_close(in_0);
@@ -479,7 +479,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     if cli_settings.limit != 0 as c_int as c_uint && cli_settings.limit < total {
         total = cli_settings.limit;
     }
-    res = dav1d_open(&mut c, &mut lib_settings).0;
+    res = dav1d_open(NonNull::new(&mut c), NonNull::new(&mut lib_settings)).0;
     if res != 0 {
         return 1 as c_int;
     }
@@ -510,10 +510,10 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             0 as c_int,
             ::core::mem::size_of::<Dav1dPicture>(),
         );
-        res = dav1d_send_data(c, &mut data).0;
+        res = dav1d_send_data(c, NonNull::new(&mut data)).0;
         if res < 0 {
             if res != -EAGAIN {
-                dav1d_data_unref(&mut data);
+                dav1d_data_unref(NonNull::new(&mut data));
                 fprintf(
                     stderr,
                     b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
@@ -524,7 +524,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                 }
             }
         }
-        res = dav1d_get_picture(c, &mut p).0;
+        res = dav1d_get_picture(c, NonNull::new(&mut p)).0;
         if res < 0 {
             if res != -EAGAIN {
                 fprintf(
@@ -581,11 +581,11 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         }
     }
     if data.sz > 0 {
-        dav1d_data_unref(&mut data);
+        dav1d_data_unref(NonNull::new(&mut data));
     }
     if res == 0 {
         while cli_settings.limit == 0 || n_out < cli_settings.limit {
-            res = dav1d_get_picture(c, &mut p).0;
+            res = dav1d_get_picture(c, NonNull::new(&mut p)).0;
             if res < 0 {
                 if res != -EAGAIN {
                     fprintf(
@@ -655,7 +655,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         fprintf(stderr, b"No data decoded\n\0" as *const u8 as *const c_char);
         res = 1 as c_int;
     }
-    dav1d_close(&mut c);
+    dav1d_close(NonNull::new(&mut c));
     return if res == 0 { 0 as c_int } else { 1 as c_int };
 }
 
