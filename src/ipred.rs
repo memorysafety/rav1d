@@ -1540,14 +1540,14 @@ mod neon {
     impl z1_filter_edge::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
-            out: *mut BD::Pixel,
+            out: &mut [BD::Pixel],
             sz: c_int,
-            in_0: *const BD::Pixel,
+            in_0: &[BD::Pixel],
             end: c_int,
             strength: c_int,
         ) {
-            let out = out.cast();
-            let in_0 = in_0.cast();
+            let out = out.as_mut_ptr().cast();
+            let in_0 = in_0.as_ptr().cast();
             self.get()(out, sz, in_0, end, strength)
         }
     }
@@ -1673,9 +1673,9 @@ mod neon {
             };
             if filter_strength != 0 {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    top_out.as_mut_ptr(),
+                    &mut top_out,
                     width + height,
-                    topleft_in.as_ptr(),
+                    topleft_in,
                     width + cmp::min(width, height),
                     filter_strength,
                 );
@@ -1772,9 +1772,9 @@ mod neon {
 
             if filter_strength != 0 {
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    buf[1 + top_offset..].as_mut_ptr(),
+                    &mut buf[1 + top_offset..],
                     cmp::min(max_width, width),
-                    topleft_in.as_ptr(),
+                    topleft_in,
                     width,
                     filter_strength,
                 );
@@ -1820,10 +1820,11 @@ mod neon {
                     topleft_in.as_ptr(),
                     height,
                 );
+                let (front, back) = buf.split_at_mut(1 + left_offset);
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    buf[1 + left_offset..].as_mut_ptr(),
+                    back,
                     cmp::min(max_height, height),
-                    buf[flipped_offset..].as_ptr(),
+                    &front[flipped_offset..],
                     height,
                     filter_strength,
                 );
@@ -1937,9 +1938,9 @@ mod neon {
                     height + cmp::max(width, height),
                 );
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    left_out.as_mut_ptr(),
+                    &mut left_out,
                     width + height,
-                    flipped.as_mut_ptr(),
+                    &flipped,
                     height + cmp::min(width, height),
                     filter_strength,
                 );
