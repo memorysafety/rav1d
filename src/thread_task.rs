@@ -47,6 +47,7 @@ use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::thread;
 
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
@@ -781,7 +782,10 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
     }
 }
 
-pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
+pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
+    // The main thread will unpark us once `task_thread.c` is set.
+    thread::park();
+    let c = &*task_thread.c.lock().take().unwrap();
     let mut tc = Rav1dTaskContext::new(task_thread);
 
     // We clone the Arc here for the lifetime of this function to avoid an

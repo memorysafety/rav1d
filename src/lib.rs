@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::c_arc::RawArc;
 use crate::src::c_box::FnFree;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
@@ -48,7 +49,6 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use parking_lot::Condvar;
 use parking_lot::Mutex;
 use std::cmp;
 use std::ffi::c_char;
@@ -61,7 +61,6 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -173,7 +172,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
+pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     static initted: Once = Once::new();
     initted.call_once(|| init_internal());
 
@@ -185,62 +184,47 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         EINVAL
     ))?;
 
-    // TODO fallible allocation
-    let c = Box::new(Default::default());
-    let c = Box::into_raw(c);
-    *c_out = c;
-    (*c).allocator = s.allocator.clone();
-    (*c).logger = s.logger.clone();
-    (*c).apply_grain = s.apply_grain;
-    (*c).operating_point = s.operating_point;
-    (*c).all_layers = s.all_layers;
-    (*c).frame_size_limit = s.frame_size_limit;
-    (*c).strict_std_compliance = s.strict_std_compliance;
-    (*c).output_invisible_frames = s.output_invisible_frames;
-    (*c).inloop_filters = s.inloop_filters;
-    (*c).decode_frame_type = s.decode_frame_type;
-
-    if (*c).allocator.is_default() {
-        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
-        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
-        (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
-            .cast::<c_void>()
-            .cast_mut();
-    }
-
     // On 32-bit systems, extremely large frame sizes can cause overflows in
     // `rav1d_decode_frame` alloc size calculations. Prevent that from occuring
     // by enforcing a maximum frame size limit, chosen to roughly correspond to
     // the largest size possible to decode without exhausting virtual memory.
+    let frame_size_limit;
     if mem::size_of::<usize>() < 8 && s.frame_size_limit.wrapping_sub(1) >= 8192 * 8192 {
-        (*c).frame_size_limit = 8192 * 8192;
+        frame_size_limit = 8192 * 8192;
         if s.frame_size_limit != 0 {
             writeln!(
-                (*c).logger,
+                s.logger,
                 "Frame size limit reduced from {} to {}.",
-                s.frame_size_limit,
-                (*c).frame_size_limit,
+                s.frame_size_limit, frame_size_limit,
             );
         }
+    } else {
+        frame_size_limit = s.frame_size_limit;
     }
 
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
-    // TODO fallible allocation
-    (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
+
     let ttd = TaskThreadData {
-        lock: Mutex::new(()),
-        cond: Condvar::new(),
-        first: AtomicU32::new(0),
         cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
-        cond_signaled: AtomicI32::new(0),
-        delayed_fg_exec: AtomicI32::new(0),
-        delayed_fg_cond: Condvar::new(),
-        delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
-        delayed_fg: Default::default(),
+        ..Default::default()
     };
-    (*c).task_thread = Arc::new(ttd);
-    (*c).state = Mutex::new(Rav1dState {
+    // TODO fallible allocation
+    let task_thread = Arc::new(ttd);
+
+    let fc = (0..n_fc)
+        .map(|i| {
+            let mut fc = Rav1dFrameContext::default(i);
+            fc.task_thread.finished = AtomicBool::new(true);
+            fc.task_thread.ttd = Arc::clone(&task_thread);
+            let f = fc.data.get_mut();
+            f.lf.last_sharpness = u8::MAX;
+            fc
+        })
+        // TODO fallible allocation
+        .collect();
+
+    let state = Mutex::new(Rav1dState {
         frame_thread: Rav1dContext_frame_thread {
             out_delayed: if n_fc > 1 {
                 (0..n_fc).map(|_| Default::default()).collect()
@@ -251,58 +235,85 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *const Rav1dContext, s: &Rav1dSettin
         },
         ..Default::default()
     });
-    for fc in (*c).fc.iter_mut() {
-        fc.task_thread.finished = AtomicBool::new(true);
-        fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
-        let f = fc.data.get_mut();
-        f.lf.last_sharpness = u8::MAX;
-    }
-    (*c).tc = (0..n_tc)
+
+    let tc = (0..n_tc)
         .map(|n| {
-            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
-                &(*c).task_thread,
-            )));
-            if n_tc > 1 {
-                // TODO(SJC): can be removed when c is not a raw pointer
-                let context_borrow = &*c;
-                let thread_data_copy = Arc::clone(&thread_data);
+            let task_thread = Arc::clone(&task_thread);
+            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(task_thread));
+            let thread_data_copy = Arc::clone(&thread_data);
+            let task = if n_tc > 1 {
                 let handle = thread::Builder::new()
                     // Don't set stack size like `dav1d` does.
                     // See <https://github.com/memorysafety/rav1d/issues/889>.
                     .name(format!("rav1d-worker-{n}"))
-                    .spawn(|| rav1d_worker_task(context_borrow, thread_data_copy))
+                    .spawn(|| rav1d_worker_task(thread_data_copy))
                     .unwrap();
-                Rav1dContextTaskThread {
-                    task: Rav1dContextTaskType::Worker(handle),
-                    thread_data,
-                }
+                Rav1dContextTaskType::Worker(handle)
             } else {
-                Rav1dContextTaskThread {
-                    task: Rav1dContextTaskType::Single(Mutex::new(Box::new(
-                        Rav1dTaskContext::new(Arc::clone(&thread_data)),
-                    ))),
-                    thread_data,
-                }
-            }
+                Rav1dContextTaskType::Single(Mutex::new(Box::new(Rav1dTaskContext::new(
+                    thread_data_copy,
+                ))))
+            };
+            Rav1dContextTaskThread { task, thread_data }
         })
+        // TODO fallible allocation
         .collect();
-    Ok(())
+
+    let c = Rav1dContext {
+        allocator: s.allocator.clone(),
+        logger: s.logger.clone(),
+        apply_grain: s.apply_grain,
+        operating_point: s.operating_point,
+        all_layers: s.all_layers,
+        frame_size_limit,
+        strict_std_compliance: s.strict_std_compliance,
+        output_invisible_frames: s.output_invisible_frames,
+        inloop_filters: s.inloop_filters,
+        decode_frame_type: s.decode_frame_type,
+        fc,
+        task_thread,
+        state,
+        tc,
+        ..Default::default()
+    };
+
+    // TODO fallible allocation
+    let mut c = Arc::new(c);
+
+    if c.allocator.is_default() {
+        let c = Arc::get_mut(&mut c).unwrap();
+        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
+        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
+        // Note also that we must do this after we created the `Arc` so that `c` has a stable address.
+        c.allocator.cookie = ptr::from_ref(&c.picture_pool).cast::<c_void>().cast_mut();
+    }
+    let c = c;
+
+    for tc in c.tc.iter() {
+        if let Rav1dContextTaskType::Worker(handle) = &tc.task {
+            // Unpark each thread once we set its `thread_data.c`.
+            *tc.thread_data.c.lock() = Some(Arc::clone(&c));
+            handle.thread().unpark();
+        }
+    }
+
+    Ok(c)
 }
 
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_open(
-    c_out: *mut *const Dav1dContext,
+    c_out: *mut Option<Dav1dContext>,
     s: *const Dav1dSettings,
 ) -> Dav1dResult {
     (|| {
         validate_input!((!c_out.is_null(), EINVAL))?;
         validate_input!((!s.is_null(), EINVAL))?;
-        let c_out = &mut *c_out;
         let s = s.read().try_into()?;
-        rav1d_open(c_out, &s).inspect_err(|_| {
-            *c_out = ptr::null_mut();
+        let c = rav1d_open(&s).inspect_err(|_| {
+            *c_out = None;
         })?;
+        *c_out = Some(RawArc::from_arc(c));
         Ok(())
     })()
     .into()
@@ -504,13 +515,13 @@ pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dRe
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_send_data(
-    c: *const Rav1dContext,
+    c: Option<Dav1dContext>,
     in_0: *mut Dav1dData,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let mut in_rust = in_0.read().into();
         let result = rav1d_send_data(c, &mut in_rust);
         in_0.write(in_rust.into());
@@ -535,13 +546,13 @@ pub(crate) unsafe fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture)
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dPicture,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let mut out_rust = Default::default(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_picture(c, &mut out_rust);
         out.write(out_rust.into());
@@ -595,15 +606,15 @@ pub(crate) fn rav1d_apply_grain(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let in_0 = in_0.read();
         // Don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
@@ -665,67 +676,51 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_flush(c: *const Dav1dContext) {
-    rav1d_flush(&*c)
+pub unsafe extern "C" fn dav1d_flush(c: Dav1dContext) {
+    let c = c.as_ref();
+    rav1d_flush(c)
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_close(c_out: &mut *const Rav1dContext) {
-    close_internal(c_out, true);
+pub(crate) fn rav1d_close(c: Arc<Rav1dContext>) {
+    let c = &*c;
+    rav1d_flush(c);
+    c.tell_worker_threads_to_die();
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_close(c_out: *mut *const Dav1dContext) {
+pub unsafe extern "C" fn dav1d_close(c_out: *mut Option<Dav1dContext>) {
     if validate_input!(!c_out.is_null()).is_err() {
         return;
     }
-    rav1d_close(&mut *c_out)
+    let c_out = &mut *c_out;
+    mem::take(c_out).map(|c| rav1d_close(c.into_arc()));
 }
 
-#[cold]
-unsafe fn close_internal(c_out: &mut *const Rav1dContext, flush: bool) {
-    let c: *const Rav1dContext = *c_out;
-    if c.is_null() {
-        return;
-    }
-    *c_out = ptr::null_mut();
-    let c = Arc::from_raw(c);
-    if flush {
-        rav1d_flush(&c);
-    }
-}
-
-impl Drop for Rav1dContext {
-    fn drop(&mut self) {
+impl Rav1dContext {
+    fn tell_worker_threads_to_die(&self) {
         if self.tc.is_empty() {
             return;
         }
         let ttd = &*self.task_thread;
-        let task_thread_lock = ttd.lock.lock();
+        let _task_thread_lock = ttd.lock.lock();
         for tc in self.tc.iter() {
             tc.thread_data.die.store(true, Ordering::Relaxed);
         }
         ttd.cond.notify_all();
-        drop(task_thread_lock);
-        let tc = mem::take(&mut self.tc);
-        for task_thread in tc.into_vec() {
-            if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
-                handle.join().expect("Could not join task thread");
-            }
-        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     flags: *mut Dav1dEventFlags,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let state = &mut *c.state.try_lock().unwrap();
         flags.write(mem::take(&mut state.event_flags).into());
         Ok(())
@@ -735,13 +730,13 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     out: *mut Dav1dDataProps,
 ) -> Dav1dResult {
     (|| {
-        validate_input!((!c.is_null(), EINVAL))?;
+        let c = validate_input!(c.ok_or(EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let c = &*c;
+        let c = c.as_ref();
         let state = &mut *c.state.try_lock().unwrap();
         out.write(mem::take(&mut state.cached_error_props).into());
         Ok(())

@@ -1,5 +1,6 @@
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
+use crate::src::c_arc::RawArc;
 use crate::src::error::Rav1dError;
 use crate::src::internal::Rav1dContext;
 pub use crate::src::log::Dav1dLogger;
@@ -9,7 +10,8 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use strum::FromRepr;
 
-pub type Dav1dContext = Rav1dContext;
+pub type Dav1dContext = RawArc<Rav1dContext>;
+
 pub type Dav1dRef = ();
 
 pub type Dav1dInloopFilterType = c_uint;

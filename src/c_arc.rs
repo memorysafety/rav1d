@@ -142,6 +142,24 @@ impl<T: ?Sized> CArc<T> {
 #[repr(transparent)]
 pub struct RawArc<T>(NonNull<PhantomData<T>>);
 
+/// We need a manual `impl` since we don't require `T: Clone`.
+///
+/// # Safety
+///
+/// Note that this [`RawArc::clone`] does not call [`Arc::clone`],
+/// since implicit clones/copies are expected to be done outside of Rust,
+/// for which there is no way to force [`RawArc::clone`] to be called.
+/// Instead, [`RawArc::as_ref`] and [`RawArc::into_arc`] are `unsafe`,
+/// and require [`RawArc::clone`]s (actual explicit calls
+/// or implicit ones outside of Rust) to respect the rules of [`Arc`].
+impl<T> Clone for RawArc<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for RawArc<T> {}
+
 impl<T> RawArc<T> {
     pub fn from_arc(arc: Arc<T>) -> Self {
         Self(arc_into_raw(arc).cast())
@@ -149,10 +167,28 @@ impl<T> RawArc<T> {
 
     /// # Safety
     ///
-    /// The [`RawArc`] must be originally from [`Self::from_arc`].F
+    /// The [`RawArc`] must be originally from [`Self::from_arc`].
+    pub unsafe fn as_ref(&self) -> &T {
+        // SAFETY: `self` must be from `Self::from_arc`,
+        // which calls `Arc::into_raw`,
+        // which returns a ptr to its `T`.
+        // `Arc` allows us to get a `&T` from it,
+        // so this is allowed (unlike `&mut T`).
+        // We don't call `Self::into_arc` since that's consuming,
+        // so we'd have to `mem::forget` the `Arc`
+        // and also do a redundant dereference.
+        unsafe { self.0.cast().as_ref() }
+    }
+
+    /// # Safety
+    ///
+    /// The [`RawArc`] must be originally from [`Self::from_arc`].
     pub unsafe fn into_arc(self) -> Arc<T> {
         let raw = self.0.cast().as_ptr();
-        Arc::from_raw(raw)
+        // SAFETY: `self` must be from `Self::from_arc`,
+        // which calls `Arc::into_raw`.
+        // Thus, it is safe to call the inverse `Arc::from_raw` on it.
+        unsafe { Arc::from_raw(raw) }
     }
 }
 

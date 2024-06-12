@@ -107,7 +107,7 @@ unsafe fn xor128_rand() -> c_int {
 #[inline]
 unsafe fn decode_frame(
     p: *mut Dav1dPicture,
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     data: *mut Dav1dData,
 ) -> c_int {
     let mut res: c_int;
@@ -141,7 +141,7 @@ unsafe fn decode_frame(
 
 unsafe fn decode_rand(
     in_0: *mut DemuxerContext,
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     data: *mut Dav1dData,
     fps: c_double,
 ) -> c_int {
@@ -164,7 +164,7 @@ unsafe fn decode_rand(
 
 unsafe fn decode_all(
     in_0: *mut DemuxerContext,
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     data: *mut Dav1dData,
 ) -> c_int {
     let mut res: c_int;
@@ -183,7 +183,7 @@ unsafe fn decode_all(
 
 unsafe fn seek(
     in_0: *mut DemuxerContext,
-    c: *const Dav1dContext,
+    c: Option<Dav1dContext>,
     pts: u64,
     data: *mut Dav1dData,
 ) -> c_int {
@@ -270,7 +270,7 @@ unsafe fn seek(
             break;
         }
     }
-    dav1d_flush(c);
+    dav1d_flush(c.unwrap());
     return res;
 }
 
@@ -322,7 +322,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         reserved: [0; 16],
     };
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
-    let mut c: *const Dav1dContext = 0 as *const Dav1dContext;
+    let mut c: Option<Dav1dContext> = None;
     let mut data: Dav1dData = Dav1dData {
         data: None,
         sz: 0,
@@ -488,7 +488,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                                 if num_flush == 0 {
                                     break;
                                 }
-                                dav1d_flush(c);
+                                dav1d_flush(c.unwrap());
                             }
                             i_1 += 1;
                         }
