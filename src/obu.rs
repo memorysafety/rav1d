@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::common::Rav1dDataProps;
