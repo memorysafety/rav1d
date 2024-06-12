@@ -1491,16 +1491,16 @@ mod neon {
             &self,
             dst: *mut BD::Pixel,
             stride: ptrdiff_t,
-            top: *const BD::Pixel,
-            left: *const BD::Pixel,
+            top: &[BD::Pixel],
+            left: &[BD::Pixel],
             width: c_int,
             height: c_int,
             dx: c_int,
             dy: c_int,
         ) {
             let dst = dst.cast();
-            let top = top.cast();
-            let left = left.cast();
+            let top = top.as_ptr().cast();
+            let left = left.as_ptr().cast();
             self.get()(dst, stride, top, left, width, height, dx, dy)
         }
     }
@@ -1837,8 +1837,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill1, neon).call::<BD>(
                 dst,
                 stride,
-                buf[top_offset..].as_ptr(),
-                buf[left_offset..].as_ptr(),
+                &buf[top_offset..],
+                &buf[left_offset..],
                 width,
                 height,
                 dx,
@@ -1848,8 +1848,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill2, neon).call::<BD>(
                 dst,
                 stride,
-                buf[top_offset..].as_ptr(),
-                buf[left_offset..].as_ptr(),
+                &buf[top_offset..],
+                &buf[left_offset..],
                 width,
                 height,
                 dx,
@@ -1859,8 +1859,8 @@ mod neon {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill3, neon).call::<BD>(
                 dst,
                 stride,
-                buf[top_offset..].as_ptr(),
-                buf[left_offset..].as_ptr(),
+                &buf[top_offset..],
+                &buf[left_offset..],
                 width,
                 height,
                 dx,
