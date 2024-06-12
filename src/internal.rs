@@ -86,6 +86,7 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::thread_task::Rav1dTaskIndex;
 use crate::src::thread_task::Rav1dTasks;
 use atomig::Atom;
@@ -102,10 +103,7 @@ use std::ops::Deref;
 use std::ops::Range;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
-use std::sync::atomic::AtomicU16;
 use std::sync::atomic::AtomicU32;
-use std::sync::atomic::AtomicU8;
-use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -319,14 +317,14 @@ pub(crate) struct TaskThreadData {
     pub lock: Mutex<()>,
     pub cond: Condvar,
     pub first: AtomicU32,
-    pub cur: AtomicU32,
+    pub cur: RelaxedAtomic<u32>,
     /// This is used for delayed reset of the task cur pointer when
     /// such operation is needed but the thread doesn't enter a critical
     /// section (typically when executing the next sbrow task locklessly).
     /// See [`crate::src::thread_task::reset_task_cur`].
     pub reset_task_cur: AtomicU32,
     pub cond_signaled: AtomicI32,
-    pub delayed_fg_exec: AtomicI32,
+    pub delayed_fg_exec: RelaxedAtomic<i32>,
     pub delayed_fg_cond: Condvar,
     pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub delayed_fg: RwLock<TaskThreadData_delayed_fg>,
@@ -364,7 +362,7 @@ pub(crate) struct Rav1dContextTaskThread {
 
 impl Rav1dContextTaskThread {
     pub fn flushed(&self) -> bool {
-        self.thread_data.flushed.load(Ordering::Relaxed)
+        self.thread_data.flushed.get()
     }
 }
 
@@ -459,7 +457,7 @@ pub struct Rav1dTask {
     // task dependencies
     pub recon_progress: c_int,
     pub deblock_progress: c_int,
-    pub deps_skip: AtomicI32,
+    pub deps_skip: RelaxedAtomic<i32>,
     // only used in task queue
     pub next: Atomic<Rav1dTaskIndex>,
 }
@@ -485,8 +483,8 @@ impl Rav1dTask {
     }
 }
 
-impl Clone for Rav1dTask {
-    fn clone(&self) -> Self {
+impl Rav1dTask {
+    pub fn without_next(&self) -> Self {
         Self {
             frame_idx: self.frame_idx,
             tile_idx: self.tile_idx,
@@ -494,8 +492,8 @@ impl Clone for Rav1dTask {
             sby: self.sby,
             recon_progress: self.recon_progress,
             deblock_progress: self.deblock_progress,
-            deps_skip: AtomicI32::new(self.deps_skip.load(Ordering::Relaxed)),
-            next: Atomic::new(Rav1dTaskIndex::None),
+            deps_skip: self.deps_skip.clone(),
+            next: Default::default(),
         }
     }
 }
@@ -658,12 +656,12 @@ impl Pal {
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
-    pub next_tile_row: [AtomicI32; 2],
+    pub next_tile_row: [RelaxedAtomic<i32>; 2],
 
     /// Indexed using `t.b.y * f.b4_stride + t.b.x`.
     pub b: DisjointMut<Vec<Av1Block>>,
 
-    pub cbi: Vec<Atomic<CodedBlockInfo>>,
+    pub cbi: Vec<RelaxedAtomic<CodedBlockInfo>>,
 
     /// Indexed using `(t.b.y >> 1) * (f.b4_stride >> 1) + (t.b.x >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
@@ -772,8 +770,8 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub init_done: AtomicI32,
     pub done: [AtomicI32; 2],
     pub retval: Mutex<Option<Rav1dError>>,
-    pub finished: AtomicBool,   // true when FrameData.tiles is cleared
-    pub update_set: AtomicBool, // whether we need to update CDF reference
+    pub finished: AtomicBool, // true when FrameData.tiles is cleared
+    pub update_set: RelaxedAtomic<bool>, // whether we need to update CDF reference
     pub error: AtomicI32,
     pub task_counter: AtomicI32,
 }
@@ -868,9 +866,9 @@ pub(crate) struct Rav1dFrameData {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub qm: [[Option<&'static [u8]>; 3]; 19],                   /* [3 plane][19] */
-    pub a: Vec<BlockContext>,                                   /* len = w*tile_rows */
+    pub dq: [[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub qm: [[Option<&'static [u8]>; 3]; 19],                            /* [3 plane][19] */
+    pub a: Vec<BlockContext>,                                            /* len = w*tile_rows */
     pub rf: RefMvsFrame,
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
@@ -912,9 +910,9 @@ pub struct Rav1dTileState_tiling {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: AtomicUsize, // Offset into `f.frame_thread.pal_idx`
-    pub cbi_idx: AtomicUsize, // Offset into `f.frame_thread.cbi`
-    pub cf: AtomicUsize,      // Offset into `f.frame_thread.cf`
+    pub pal_idx: RelaxedAtomic<usize>, // Offset into `f.frame_thread.pal_idx`
+    pub cbi_idx: RelaxedAtomic<usize>, // Offset into `f.frame_thread.cbi`
+    pub cf: RelaxedAtomic<usize>,      // Offset into `f.frame_thread.cf`
 }
 
 #[derive(Default)]
@@ -939,12 +937,12 @@ pub struct Rav1dTileState {
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: usize,
 
-    pub dqmem: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub dq: Atomic<TileStateRef>,
-    pub last_qidx: AtomicU8,
-    pub last_delta_lf: Atomic<[i8; 4]>,
+    pub dqmem: [[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dq: RelaxedAtomic<TileStateRef>,
+    pub last_qidx: RelaxedAtomic<u8>,
+    pub last_delta_lf: RelaxedAtomic<[i8; 4]>,
     pub lflvlmem: RwLock<[Align16<[[[u8; 2]; 8]; 4]>; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
-    pub lflvl: Atomic<TileStateRef>,
+    pub lflvl: RelaxedAtomic<TileStateRef>,
 
     pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
 }
@@ -1161,19 +1159,19 @@ pub struct Rav1dTaskContext_frame_thread {
 pub(crate) struct Rav1dTaskContext_task_thread {
     pub cond: Condvar,
     pub ttd: Arc<TaskThreadData>,
-    pub flushed: AtomicBool,
-    pub die: AtomicBool,
+    pub flushed: RelaxedAtomic<bool>,
+    pub die: RelaxedAtomic<bool>,
     pub c: Mutex<Option<Arc<Rav1dContext>>>,
 }
 
 impl Rav1dTaskContext_task_thread {
-    pub(crate) const fn new(ttd: Arc<TaskThreadData>) -> Self {
+    pub(crate) fn new(ttd: Arc<TaskThreadData>) -> Self {
         Self {
             cond: Condvar::new(),
             ttd,
-            flushed: AtomicBool::new(false),
-            die: AtomicBool::new(false),
-            c: Mutex::new(None),
+            flushed: Default::default(),
+            die: Default::default(),
+            c: Default::default(),
         }
     }
 }

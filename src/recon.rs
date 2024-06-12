@@ -107,7 +107,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitOr;
 use std::ptr;
-use std::sync::atomic::Ordering;
 
 impl Bxy {
     pub fn debug_block_info(&self) -> bool {
@@ -1330,7 +1329,7 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     // residual and sign
-    let dq = match ts.dq.load(Ordering::Relaxed) {
+    let dq = match ts.dq.get() {
         TileStateRef::Frame => &f.dq,
         TileStateRef::Local => &ts.dqmem,
     };
@@ -1370,7 +1369,7 @@ fn decode_coefs<BD: BitDepth>(
             );
         }
 
-        dc_dq = dq_tbl[0].load(Ordering::Relaxed) as c_int;
+        dc_dq = dq_tbl[0].get() as c_int;
         dc_sign_level = (dc_sign - 1 & 2 << 6) as c_uint;
 
         if let Some(qm_tbl) = qm_tbl {
@@ -1438,7 +1437,7 @@ fn decode_coefs<BD: BitDepth>(
     }
     match ac {
         Some(Ac::Qm) => {
-            let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
+            let ac_dq: c_uint = dq_tbl[1].get() as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
                 if dbg {
@@ -1489,7 +1488,7 @@ fn decode_coefs<BD: BitDepth>(
             }
         }
         Some(Ac::NoQm) => {
-            let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
+            let ac_dq: c_uint = dq_tbl[1].get() as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
                 if dbg {
@@ -1688,12 +1687,11 @@ unsafe fn read_coef_tree<BD: BitDepth>(
 
         if t.frame_thread.pass != 0 {
             let p = t.frame_thread.pass & 1;
-            let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
+            let cf_idx = ts.frame_thread[p as usize].cf.get();
             cf = CfSelect::Frame(cf_idx);
-            ts.frame_thread[p as usize].cf.store(
-                cf_idx + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16,
-                Ordering::Relaxed,
-            );
+            ts.frame_thread[p as usize]
+                .cf
+                .set(cf_idx + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16);
         } else {
             cf = CfSelect::Task;
         }
@@ -1741,13 +1739,12 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if t.frame_thread.pass == 1 {
-                let cbi_idx = ts.frame_thread[1].cbi_idx.fetch_add(1, Ordering::Relaxed);
-                f.frame_thread.cbi[cbi_idx]
-                    .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
+                let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
+                f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
             }
         } else {
-            let cbi_idx = ts.frame_thread[0].cbi_idx.fetch_add(1, Ordering::Relaxed);
-            let cbi = f.frame_thread.cbi[cbi_idx].load(Ordering::Relaxed);
+            let cbi_idx = ts.frame_thread[0].cbi_idx.get_update(|i| i + 1);
+            let cbi = f.frame_thread.cbi[cbi_idx].get();
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -1895,7 +1892,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let a_len = t_dim.w as usize;
                             let l_start = by4 + y as usize;
                             let l_len = t_dim.h as usize;
-                            let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
+                            let cf_idx = ts.frame_thread[1].cf.get();
                             let eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
@@ -1919,16 +1916,13 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     intra.tx, txtp, eob, ts_c.msac.rng,
                                 );
                             }
-                            let cbi_idx =
-                                ts.frame_thread[1].cbi_idx.fetch_add(1, Ordering::Relaxed);
-                            f.frame_thread.cbi[cbi_idx]
-                                .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
-                            ts.frame_thread[1].cf.store(
+                            let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
+                            f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
+                            ts.frame_thread[1].cf.set(
                                 cf_idx
                                     + cmp::min(t_dim.w as usize, 8)
                                         * cmp::min(t_dim.h as usize, 8)
                                         * 16,
-                                Ordering::Relaxed,
                             );
                             CaseSet::<16, true>::many(
                                 [&t.l.lcoef, &f.a[t.a].lcoef],
@@ -1984,7 +1978,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         let l_start = cby4 + y as usize;
                         let l_len = uv_t_dim.h as usize;
                         let l_ccoef = &t.l.ccoef[pl];
-                        let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
+                        let cf_idx = ts.frame_thread[1].cf.get();
                         let eob = decode_coefs::<BD>(
                             f,
                             t.ts,
@@ -2008,13 +2002,11 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 pl, b.uvtx, txtp, eob, ts_c.msac.rng,
                             );
                         }
-                        let cbi_idx = ts.frame_thread[1].cbi_idx.fetch_add(1, Ordering::Relaxed);
-                        f.frame_thread.cbi[cbi_idx]
-                            .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
-                        ts.frame_thread[1].cf.store(
-                            cf_idx + uv_t_dim.w as usize * uv_t_dim.h as usize * 16,
-                            Ordering::Relaxed,
-                        );
+                        let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
+                        f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
+                        ts.frame_thread[1]
+                            .cf
+                            .set(cf_idx + uv_t_dim.w as usize * uv_t_dim.h as usize * 16);
                         CaseSet::<16, true>::many(
                             [l_ccoef, a_ccoef],
                             [
@@ -2503,9 +2495,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let p = (t.frame_thread.pass & 1) as usize;
                     let frame_thread = &ts.frame_thread[p];
                     let len = (bw4 * bh4 * 8) as usize;
-                    let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
+                    let pal_idx = frame_thread.pal_idx.get();
                     pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx.., ..len));
-                    frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
+                    frame_thread.pal_idx.set(pal_idx + len);
                     &*pal_idx_guard
                 } else {
                     &scratch.pal_idx_y
@@ -2675,13 +2667,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 * 4
                                 * cmp::min(t_dim.w as usize, 8)
                                 * 4;
-                            let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
+                            let cf_idx = ts.frame_thread[p].cf.get();
                             cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                             cf = &mut *cf_guard;
-                            ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
-                            let cbi_idx =
-                                ts.frame_thread[p].cbi_idx.fetch_add(1, Ordering::Relaxed);
-                            let cbi = f.frame_thread.cbi[cbi_idx].load(Ordering::Relaxed);
+                            ts.frame_thread[p].cf.set(cf_idx + len);
+                            let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
+                            let cbi = f.frame_thread.cbi[cbi_idx].get();
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -2898,12 +2889,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let y = t.b.y as usize;
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-                    let pal_idx_offset = ts.frame_thread[p].pal_idx.load(Ordering::Relaxed);
+                    let pal_idx_offset = ts.frame_thread[p].pal_idx.get();
                     let len = (cbw4 * cbh4 * 8) as usize;
                     pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx_offset.., ..len));
-                    ts.frame_thread[p]
-                        .pal_idx
-                        .store(pal_idx_offset + len, Ordering::Relaxed);
+                    ts.frame_thread[p].pal_idx.set(pal_idx_offset + len);
                     pal_guard = f.frame_thread.pal.index::<BD>(index);
                     (&*pal_guard, &*pal_idx_guard)
                 } else {
@@ -3102,13 +3091,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if t.frame_thread.pass != 0 {
                                 let p = (t.frame_thread.pass & 1) as usize;
                                 let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
-                                let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
+                                let cf_idx = ts.frame_thread[p].cf.get();
                                 cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
-                                ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
-                                let cbi_idx =
-                                    ts.frame_thread[p].cbi_idx.fetch_add(1, Ordering::Relaxed);
-                                let cbi = f.frame_thread.cbi[cbi_idx].load(Ordering::Relaxed);
+                                ts.frame_thread[p].cf.set(cf_idx + len);
+                                let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
+                                let cbi = f.frame_thread.cbi[cbi_idx].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
@@ -4056,16 +4044,13 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if t.frame_thread.pass != 0 {
                                 let p = t.frame_thread.pass & 1;
                                 let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
-                                let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
+                                let cf_idx = ts.frame_thread[p as usize].cf.get();
                                 cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
-                                ts.frame_thread[p as usize]
-                                    .cf
-                                    .store(cf_idx + len, Ordering::Relaxed);
-                                let cbi_idx = ts.frame_thread[p as usize]
-                                    .cbi_idx
-                                    .fetch_add(1, Ordering::Relaxed);
-                                let cbi = f.frame_thread.cbi[cbi_idx].load(Ordering::Relaxed);
+                                ts.frame_thread[p as usize].cf.set(cf_idx + len);
+                                let cbi_idx =
+                                    ts.frame_thread[p as usize].cbi_idx.get_update(|i| i + 1);
+                                let cbi = f.frame_thread.cbi[cbi_idx].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {

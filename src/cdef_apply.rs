@@ -15,7 +15,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::sync::atomic::Ordering;
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -208,7 +207,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx = f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
-                .load(atomig::Ordering::Relaxed) as c_int;
+                .get() as c_int;
             if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
                     && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
@@ -218,8 +217,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 // Create a complete 32-bit mask for the sb row ahead of time.
                 let noskip_row =
                     &f.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
-                let noskip_mask = (noskip_row[1].load(Ordering::Relaxed) as u32) << 16
-                    | noskip_row[0].load(Ordering::Relaxed) as u32;
+                let noskip_mask = (noskip_row[1].get() as u32) << 16 | noskip_row[0].get() as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 let uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];

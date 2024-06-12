@@ -218,7 +218,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
 
     let ttd = TaskThreadData {
-        cur: AtomicU32::new(n_fc as u32),
+        cur: (n_fc as u32).into(),
         reset_task_cur: AtomicU32::new(u32::MAX),
         ..Default::default()
     };
@@ -455,9 +455,9 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             );
-            let cur = c.task_thread.cur.load(Ordering::Relaxed);
+            let cur = c.task_thread.cur.get();
             if cur != 0 && (cur as usize) < c.fc.len() {
-                c.task_thread.cur.store(cur - 1, Ordering::Relaxed);
+                c.task_thread.cur.set(cur - 1);
             }
             drained = true;
         } else if drained {
@@ -701,7 +701,7 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
             fc.task_thread.tasks.clear();
         }
         c.task_thread.first.store(0, Ordering::SeqCst);
-        c.task_thread.cur.store(c.fc.len() as u32, Ordering::SeqCst);
+        c.task_thread.cur.set(c.fc.len() as u32);
         c.task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
@@ -766,7 +766,7 @@ impl Rav1dContext {
         let ttd = &*self.task_thread;
         let _task_thread_lock = ttd.lock.lock();
         for tc in self.tc.iter() {
-            tc.thread_data.die.store(true, Ordering::Relaxed);
+            tc.thread_data.die.set(true);
         }
         ttd.cond.notify_all();
     }

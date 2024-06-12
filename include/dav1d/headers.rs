@@ -1,5 +1,5 @@
 use crate::src::enum_map::EnumKey;
-use atomig::Atomic;
+use crate::src::relaxed_atomic::RelaxedAtomic;
 use parking_lot::Mutex;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -10,7 +10,6 @@ use std::fmt::Formatter;
 use std::ops::BitAnd;
 use std::ops::Deref;
 use std::ops::Sub;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use strum::EnumCount;
 use strum::FromRepr;
@@ -319,34 +318,11 @@ impl Dav1dWarpedMotionParams {
     }
 }
 
-#[derive(Default)]
-pub struct Abcd(Atomic<[i16; 4]>);
-
-impl Abcd {
-    pub fn new(abcd: [i16; 4]) -> Self {
-        Self(Atomic::new(abcd))
-    }
-
-    pub fn get(&self) -> [i16; 4] {
-        self.0.load(Ordering::Relaxed)
-    }
-
-    pub fn set(&self, abcd: [i16; 4]) {
-        self.0.store(abcd, Ordering::Relaxed);
-    }
-}
-
-impl Clone for Abcd {
-    fn clone(&self) -> Self {
-        Self::new(self.get())
-    }
-}
-
 #[derive(Clone)]
 pub struct Rav1dWarpedMotionParams {
     pub r#type: Rav1dWarpedMotionType,
     pub matrix: [i32; 6],
-    pub abcd: Abcd,
+    pub abcd: RelaxedAtomic<[i16; 4]>,
 }
 
 impl Rav1dWarpedMotionParams {
@@ -379,7 +355,7 @@ impl TryFrom<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
         Ok(Self {
             r#type: Rav1dWarpedMotionType::from_repr(r#type as usize).ok_or(())?,
             matrix,
-            abcd: Abcd::new(abcd),
+            abcd: abcd.into(),
         })
     }
 }

@@ -147,6 +147,7 @@ use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
@@ -178,8 +179,6 @@ use std::ffi::c_uint;
 use std::iter;
 use std::mem;
 use std::sync::atomic::AtomicI32;
-use std::sync::atomic::AtomicU16;
-use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
 use strum::EnumCount;
 
@@ -187,7 +186,7 @@ fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &[[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
+    dq: &[[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
@@ -210,12 +209,12 @@ fn init_quant_tables(
         let vdc = clip_u8(yac + frame_hdr.quant.vdc_delta as i16);
 
         let dq = &dq[i];
-        dq[0][0].store(tbl[ydc as usize][0], Ordering::Relaxed);
-        dq[0][1].store(tbl[yac as usize][1], Ordering::Relaxed);
-        dq[1][0].store(tbl[udc as usize][0], Ordering::Relaxed);
-        dq[1][1].store(tbl[uac as usize][1], Ordering::Relaxed);
-        dq[2][0].store(tbl[vdc as usize][0], Ordering::Relaxed);
-        dq[2][1].store(tbl[vac as usize][1], Ordering::Relaxed);
+        dq[0][0].set(tbl[ydc as usize][0]);
+        dq[0][1].set(tbl[yac as usize][1]);
+        dq[1][0].set(tbl[udc as usize][0]);
+        dq[1][1].set(tbl[uac as usize][1]);
+        dq[2][0].set(tbl[vdc as usize][0]);
+        dq[2][1].set(tbl[vac as usize][1]);
     }
 }
 
@@ -1563,23 +1562,23 @@ fn decode_b(
         } as usize;
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         let cur_idx = t.cur_sb_cdef_idx + idx;
-        if cdef_idx[cur_idx].load(Ordering::Relaxed) == -1 {
+        if cdef_idx[cur_idx].get() == -1 {
             let v = rav1d_msac_decode_bools(&mut ts_c.msac, frame_hdr.cdef.n_bits as c_uint) as i8;
-            cdef_idx[cur_idx].store(v, Ordering::Relaxed);
+            cdef_idx[cur_idx].set(v);
             if bw4 > 16 {
-                cdef_idx[cur_idx + 1].store(v, Ordering::Relaxed)
+                cdef_idx[cur_idx + 1].set(v)
             }
             if bh4 > 16 {
-                cdef_idx[cur_idx + 2].store(v, Ordering::Relaxed)
+                cdef_idx[cur_idx + 2].set(v)
             }
             if bw4 == 32 && bh4 == 32 {
-                cdef_idx[cur_idx + 3].store(v, Ordering::Relaxed)
+                cdef_idx[cur_idx + 3].set(v)
             }
 
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-cdef_idx[{}]: r={}",
-                    cdef_idx[t.cur_sb_cdef_idx].load(Ordering::Relaxed),
+                    cdef_idx[t.cur_sb_cdef_idx].get(),
                     ts_c.msac.rng
                 );
             }
@@ -1589,7 +1588,7 @@ fn decode_b(
     // delta-q/lf
     let not_sb128 = (seq_hdr.sb128 == 0) as c_int;
     if t.b.x & (31 >> not_sb128) == 0 && t.b.y & (31 >> not_sb128) == 0 {
-        let prev_qidx = ts.last_qidx.load(Ordering::Relaxed);
+        let prev_qidx = ts.last_qidx.get();
         let have_delta_q = frame_hdr.delta.q.present != 0
             && (bs
                 != (if seq_hdr.sb128 != 0 {
@@ -1599,7 +1598,7 @@ fn decode_b(
                 })
                 || b.skip == 0);
 
-        let prev_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
+        let prev_delta_lf = ts.last_delta_lf.get();
 
         if have_delta_q {
             let mut delta_q =
@@ -1616,12 +1615,8 @@ fn decode_b(
                 }
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
             }
-            let last_qidx = clip(
-                ts.last_qidx.load(Ordering::Relaxed) as c_int + delta_q,
-                1,
-                255,
-            );
-            ts.last_qidx.store(last_qidx, Ordering::Relaxed);
+            let last_qidx = clip(ts.last_qidx.get() as c_int + delta_q, 1, 255);
+            ts.last_qidx.set(last_qidx);
             if have_delta_q && debug_block_info!(f, t.b) {
                 println!(
                     "Post-delta_q[{}->{}]: r={}",
@@ -1640,7 +1635,7 @@ fn decode_b(
                     1
                 };
 
-                let mut last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
+                let mut last_delta_lf = ts.last_delta_lf.get();
                 for i in 0..n_lfs as usize {
                     let delta_lf_index = i + frame_hdr.delta.lf.multi as usize;
                     let mut delta_lf = rav1d_msac_decode_symbol_adapt4(
@@ -1665,22 +1660,22 @@ fn decode_b(
                         println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts_c.msac.rng);
                     }
                 }
-                ts.last_delta_lf.store(last_delta_lf, Ordering::Relaxed);
+                ts.last_delta_lf.set(last_delta_lf);
             }
         }
-        let last_qidx = ts.last_qidx.load(Ordering::Relaxed);
+        let last_qidx = ts.last_qidx.get();
         if last_qidx == frame_hdr.quant.yac {
             // assign frame-wide q values to this sb
-            ts.dq.store(TileStateRef::Frame, Ordering::Relaxed);
+            ts.dq.set(TileStateRef::Frame);
         } else if last_qidx != prev_qidx {
             // find sb-specific quant parameters
             init_quant_tables(seq_hdr, frame_hdr, last_qidx, &ts.dqmem);
-            ts.dq.store(TileStateRef::Local, Ordering::Relaxed);
+            ts.dq.set(TileStateRef::Local);
         }
-        let last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
+        let last_delta_lf = ts.last_delta_lf.get();
         if last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb
-            ts.lflvl.store(TileStateRef::Frame, Ordering::Relaxed);
+            ts.lflvl.set(TileStateRef::Frame);
         } else if last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             rav1d_calc_lf_values(
@@ -1688,7 +1683,7 @@ fn decode_b(
                 frame_hdr,
                 &last_delta_lf,
             );
-            ts.lflvl.store(TileStateRef::Local, Ordering::Relaxed);
+            ts.lflvl.set(TileStateRef::Local);
         }
     }
 
@@ -1893,9 +1888,9 @@ fn decode_b(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 8).unwrap();
-                let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
+                let pal_idx = frame_thread.pal_idx.get();
                 pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
-                frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
+                frame_thread.pal_idx.set(pal_idx + len);
                 &mut *pal_idx_guard
             } else {
                 &mut scratch.pal_idx_y
@@ -1925,9 +1920,9 @@ fn decode_b(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
-                let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
+                let pal_idx = frame_thread.pal_idx.get();
                 pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
-                frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
+                frame_thread.pal_idx.set(pal_idx + len);
                 Some(&mut *pal_idx_guard)
             } else {
                 None
@@ -2002,7 +1997,7 @@ fn decode_b(
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
             let lflvlmem_guard;
-            let lflvl = match ts.lflvl.load(Ordering::Relaxed) {
+            let lflvl = match ts.lflvl.get() {
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => {
                     lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
@@ -3172,7 +3167,7 @@ fn decode_b(
                 uvtx = TX_4X4;
             }
             let lflvlmem_guard;
-            let lflvl = match ts.lflvl.load(Ordering::Relaxed) {
+            let lflvl = match ts.lflvl.get() {
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => {
                     lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
@@ -3282,10 +3277,10 @@ fn decode_b(
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
             [..(bh4 as usize + 1) / 2]
         {
-            noskip_mask[bx_idx as usize].fetch_or(mask as u16, Ordering::Relaxed);
+            noskip_mask[bx_idx as usize].update(|it| it | mask as u16);
             if bw4 == 32 {
                 // this should be mask >> 16, but it's 0xffffffff anyway
-                noskip_mask[1].fetch_or(mask as u16, Ordering::Relaxed);
+                noskip_mask[1].update(|it| it | mask as u16);
             }
         }
     }
@@ -3665,10 +3660,7 @@ fn decode_sb(
                             // In 8-bit mode coef is 2 bytes wide, so we align to 32
                             // elements to get 64 byte alignment.
                             let p = (t.frame_thread.pass & 1) as usize;
-                            let cf = ts.frame_thread[p].cf.load(Ordering::Relaxed);
-                            ts.frame_thread[p]
-                                .cf
-                                .store((cf + 31) & !31, Ordering::Relaxed);
+                            ts.frame_thread[p].cf.update(|cf| (cf + 31) & !31);
                         }
                     }
                     Some(next_bl) => {
@@ -3965,38 +3957,31 @@ fn setup_tile(
 
     let size_mul = &ss_size_mul[cur.p.layout];
     for p in 0..2 {
-        ts.frame_thread[p].pal_idx.store(
-            if !frame_thread.pal_idx.is_empty() {
+        ts.frame_thread[p]
+            .pal_idx
+            .set(if !frame_thread.pal_idx.is_empty() {
                 tile_start_off * size_mul[1] as usize / 8
             } else {
                 0
-            },
-            Ordering::Relaxed,
-        );
-        ts.frame_thread[p].cbi_idx.store(
-            if !frame_thread.cbi.is_empty() {
+            });
+        ts.frame_thread[p]
+            .cbi_idx
+            .set(if !frame_thread.cbi.is_empty() {
                 tile_start_off * size_mul[0] as usize / 64
             } else {
                 0
-            },
-            Ordering::Relaxed,
-        );
-        ts.frame_thread[p].cf.store(
-            if !frame_thread.cf.is_empty() {
-                let bpc = BPC::from_bitdepth_max(bitdepth_max);
-                bpc.coef_stride(
-                    tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int,
-                )
-            } else {
-                0
-            },
-            Ordering::Relaxed,
-        );
+            });
+        ts.frame_thread[p].cf.set(if !frame_thread.cf.is_empty() {
+            let bpc = BPC::from_bitdepth_max(bitdepth_max);
+            bpc.coef_stride(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int)
+        } else {
+            0
+        });
     }
 
     let ts_c = &mut *ts.context.try_lock().unwrap();
     ts_c.cdf = rav1d_cdf_thread_copy(in_cdf);
-    ts.last_qidx = AtomicU8::new(frame_hdr.quant.yac);
+    ts.last_qidx = frame_hdr.quant.yac.into();
     ts.last_delta_lf = Default::default();
 
     // SAFETY: `data` comes from `f.tiles`, which will live at least as long as the created `MsacContext`.
@@ -4266,13 +4251,13 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         if root_bl == BlockLevel::Bl128x128 {
             for cdef_idx in cdef_idx {
-                cdef_idx.store(-1, Ordering::Relaxed);
+                cdef_idx.set(-1);
             }
             t.cur_sb_cdef_idx = 0;
         } else {
             t.cur_sb_cdef_idx = (((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize;
             let cdef_idx = &cdef_idx[t.cur_sb_cdef_idx..];
-            cdef_idx[0].store(-1, Ordering::Relaxed);
+            cdef_idx[0].set(-1);
         }
         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter
@@ -4723,7 +4708,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
     // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
-    fc.task_thread.update_set.store(false, Ordering::Relaxed);
+    fc.task_thread.update_set.set(false);
     for tile in &f.tiles {
         let start = tile.hdr.start.try_into().unwrap();
         let end: usize = tile.hdr.end.try_into().unwrap();
@@ -4791,7 +4776,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 tile_row += 1;
             }
             if j == tiling.update as usize && frame_hdr.refresh_context != 0 {
-                fc.task_thread.update_set.store(true, Ordering::Relaxed);
+                fc.task_thread.update_set.set(true);
             }
             data = rest_data;
         }
@@ -4966,9 +4951,7 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
             } else {
                 res = rav1d_decode_frame_main(c, &mut f);
                 let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                if res.is_ok()
-                    && frame_hdr.refresh_context != 0
-                    && fc.task_thread.update_set.load(Ordering::Relaxed)
+                if res.is_ok() && frame_hdr.refresh_context != 0 && fc.task_thread.update_set.get()
                 {
                     rav1d_cdf_thread_update(
                         frame_hdr,
@@ -5018,9 +5001,9 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 Ordering::SeqCst,
             );
             // `cur` is not actually mutated from multiple threads concurrently
-            let cur = c.task_thread.cur.load(Ordering::Relaxed);
+            let cur = c.task_thread.cur.get();
             if cur != 0 && (cur as usize) < c.fc.len() {
-                c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
+                c.task_thread.cur.update(|cur| cur - 1);
             }
         }
         let error = &mut *fc.task_thread.retval.try_lock().unwrap();
