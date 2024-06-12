@@ -5100,18 +5100,8 @@ pub(crate) fn rav1d_cdf_thread_update(
     }
 }
 
-#[inline]
-const fn get_qcat_idx(q: u8) -> u32 {
-    match q {
-        ..=20 => 0,
-        ..=60 => 1,
-        ..=120 => 2,
-        _ => 3,
-    }
-}
-
 pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
-    CdfThreadContext::QCat(get_qcat_idx(qidx))
+    CdfThreadContext::QCat((qidx > 20) as u32 + (qidx > 60) as u32 + (qidx > 120) as u32)
 }
 
 pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
