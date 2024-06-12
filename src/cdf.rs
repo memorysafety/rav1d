@@ -32,7 +32,6 @@ pub struct CdfContext {
     pub kfym: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
     pub coef: CdfCoefContext,
     pub mv: CdfMvContext,
-    pub dmv: CdfMvContext,
 }
 
 #[derive(Clone)]
@@ -55,13 +54,13 @@ impl Default for CdfMvContext {
 #[repr(C)]
 pub struct CdfMvComponent {
     pub classes: Align32<[u16; 16]>,
-    pub class0_fp: Align8<[[u16; 4]; 2]>,
-    pub classN_fp: Align8<[u16; 4]>,
-    pub class0_hp: Align4<[u16; 2]>,
-    pub classN_hp: Align4<[u16; 2]>,
-    pub class0: Align4<[u16; 2]>,
-    pub classN: Align4<[[u16; 2]; 10]>,
     pub sign: Align4<[u16; 2]>,
+    pub class0: Align4<[u16; 2]>,
+    pub class0_fp: Align8<[[u16; 4]; 2]>,
+    pub class0_hp: Align4<[u16; 2]>,
+    pub classN_fp: Align8<[u16; 4]>,
+    pub classN_hp: Align4<[u16; 2]>,
+    pub classN: Align4<[[u16; 2]; 10]>,
 }
 
 impl Default for CdfMvComponent {
@@ -5103,7 +5102,6 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
             kfym: default_kf_y_mode_cdf,
             coef: av1_default_coef_cdf[*i as usize].clone(),
             mv: Default::default(),
-            dmv: Default::default(),
         },
     }
 }
