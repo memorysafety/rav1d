@@ -6,8 +6,10 @@ use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
 use crate::src::cursor::CursorMut;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::tables::dav1d_sgr_x_by_x;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -136,13 +138,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
     dst_ptr: *mut DynPixel,
     dst_stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
-    lpf: *const DynPixel,
+    lpf_ptr: *const DynPixel,
     w: c_int,
     h: c_int,
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) -> ());
 
 impl loop_restoration_filter::Fn {
@@ -160,7 +163,8 @@ impl loop_restoration_filter::Fn {
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
-        lpf: *const BD::Pixel,
+        lpf: &DisjointMut<AlignedVec64<u8>>,
+        lpf_off: isize,
         w: c_int,
         h: c_int,
         params: &LooprestorationParams,
@@ -170,10 +174,16 @@ impl loop_restoration_filter::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let left = left[..h as usize].as_ptr().cast();
-        let lpf = lpf.cast();
+        // NOTE: The calculated pointer may point to before the beginning of
+        // `lpf`, so we must use `.wrapping_offset` here. `.wrapping_offset` is
+        // needed since `.offset` requires the pointer is in bounds, which
+        // `.wrapping_offset` does not, and delays that requirement to when the
+        // pointer is dereferenced
+        let lpf_ptr = lpf.as_mut_ptr().cast::<BD::Pixel>().wrapping_offset(lpf_off).cast();
         let bd = bd.into_c();
         let dst = FFISafe::new(&dst);
-        self.get()(dst_ptr, dst_stride, left, lpf, w, h, params, edges, bd, dst)
+        let lpf = FFISafe::new(lpf);
+        self.get()(dst_ptr, dst_stride, left, lpf_ptr, w, h, params, edges, bd, dst, lpf)
     }
 }
 
@@ -348,6 +358,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -756,6 +767,7 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -825,6 +837,7 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -889,6 +902,7 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -1055,6 +1069,7 @@ unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     wiener_filter_neon(
         p.cast(),
@@ -1532,6 +1547,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -1579,6 +1595,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
@@ -3393,6 +3410,7 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
     p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let p = *unsafe { FFISafe::get(p) };
