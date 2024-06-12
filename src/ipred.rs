@@ -1516,14 +1516,14 @@ mod neon {
     impl z1_upsample_edge::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
-            out: *mut BD::Pixel,
+            out: &mut [BD::Pixel],
             hsz: c_int,
-            in_0: *const BD::Pixel,
+            in_0: &[BD::Pixel],
             end: c_int,
             bd: BD,
         ) {
-            let out = out.cast();
-            let in_0 = in_0.cast();
+            let out = out.as_mut_ptr().cast();
+            let in_0 = in_0.as_ptr().cast();
             let bd = bd.into_c();
             self.get()(out, hsz, in_0, end, bd)
         }
@@ -1657,9 +1657,9 @@ mod neon {
         };
         if upsample_above {
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
-                top_out.as_mut_ptr(),
+                &mut top_out,
                 width + height,
-                topleft_in.as_ptr(),
+                topleft_in,
                 width + cmp::min(width, height),
                 bd,
             );
@@ -1916,9 +1916,9 @@ mod neon {
                 height + cmp::max(width, height),
             );
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
-                left_out.as_mut_ptr(),
+                &mut left_out,
                 width + height,
-                flipped.as_mut_ptr(),
+                &flipped,
                 height + cmp::min(width, height),
                 bd,
             );
