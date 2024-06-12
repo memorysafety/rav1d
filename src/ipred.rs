@@ -1463,14 +1463,14 @@ mod neon {
             &self,
             dst: *mut BD::Pixel,
             stride: ptrdiff_t,
-            topleft: *const BD::Pixel,
+            topleft: &[BD::Pixel],
             width: c_int,
             height: c_int,
             dxy: c_int,
             max_base_xy: c_int,
         ) {
             let dst = dst.cast();
-            let topleft = topleft.cast();
+            let topleft = topleft.as_ptr().cast();
             self.get()(dst, stride, topleft, width, height, dxy, max_base_xy)
         }
     }
@@ -1695,25 +1695,11 @@ mod neon {
             pad_pixels * base_inc,
         );
         if upsample_above {
-            bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill2, neon).call::<BD>(
-                dst,
-                stride,
-                top_out.as_mut_ptr(),
-                width,
-                height,
-                dx,
-                max_base_x,
-            );
+            bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill2, neon)
+                .call::<BD>(dst, stride, &top_out, width, height, dx, max_base_x);
         } else {
-            bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill1, neon).call::<BD>(
-                dst,
-                stride,
-                top_out.as_mut_ptr(),
-                width,
-                height,
-                dx,
-                max_base_x,
-            );
+            bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill1, neon)
+                .call::<BD>(dst, stride, &top_out, width, height, dx, max_base_x);
         };
     }
 
@@ -1963,25 +1949,11 @@ mod neon {
             pad_pixels * base_inc,
         );
         if upsample_left {
-            bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill2, neon).call::<BD>(
-                dst,
-                stride,
-                left_out.as_mut_ptr(),
-                width,
-                height,
-                dy,
-                max_base_y,
-            );
+            bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill2, neon)
+                .call::<BD>(dst, stride, &left_out, width, height, dy, max_base_y);
         } else {
-            bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill1, neon).call::<BD>(
-                dst,
-                stride,
-                left_out.as_mut_ptr(),
-                width,
-                height,
-                dy,
-                max_base_y,
-            );
+            bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill1, neon)
+                .call::<BD>(dst, stride, &left_out, width, height, dy, max_base_y);
         };
     }
 
