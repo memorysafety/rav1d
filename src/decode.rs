@@ -1349,7 +1349,7 @@ fn decode_b(
                     *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
                 seg_pred = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.seg_pred.0[index as usize],
+                    &mut ts_c.cdf.mi.seg_pred.0[index as usize],
                 );
                 seg_pred
             } {
@@ -1411,7 +1411,7 @@ fn decode_b(
         let smctx = *f.a[t.a].skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
         b.skip_mode = rav1d_msac_decode_bool_adapt(
             &mut ts_c.msac,
-            &mut ts_c.cdf.m.skip_mode.0[smctx as usize],
+            &mut ts_c.cdf.mi.skip_mode.0[smctx as usize],
         ) as u8;
         if debug_block_info!(f, t.b) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts_c.msac.rng);
@@ -1441,7 +1441,7 @@ fn decode_b(
             let index = *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
-                &mut ts_c.cdf.m.seg_pred.0[index as usize],
+                &mut ts_c.cdf.mi.seg_pred.0[index as usize],
             );
             seg_pred
         } {
@@ -1629,7 +1629,7 @@ fn decode_b(
         } else {
             let ictx = get_intra_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
             let intra =
-                !rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.intra[ictx.into()]);
+                !rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.intra[ictx.into()]);
             if debug_block_info!(f, t.b) {
                 println!("Post-intra[{}]: r={}", intra, ts_c.msac.rng);
             }
@@ -1648,7 +1648,7 @@ fn decode_b(
     // intra/inter-specific stuff
     if intra {
         let ymode_cdf = if frame_hdr.frame_type.is_inter_or_switch() {
-            &mut ts_c.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
+            &mut ts_c.cdf.mi.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
         } else {
             &mut ts_c.cdf.kfym
                 [dav1d_intra_mode_context[*f.a[t.a].mode.index(bx4 as usize) as usize] as usize]
@@ -2218,7 +2218,7 @@ fn decode_b(
         {
             let ctx = get_comp_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
             let is_comp =
-                rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.comp[ctx as usize]);
+                rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.comp[ctx as usize]);
             if debug_block_info!(f, t.b) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts_c.msac.rng);
             }
@@ -2299,26 +2299,26 @@ fn decode_b(
             let dir_ctx = get_comp_dir_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
             let r#ref = if rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
-                &mut ts_c.cdf.m.comp_dir[dir_ctx as usize],
+                &mut ts_c.cdf.mi.comp_dir[dir_ctx as usize],
             ) {
                 // bidir - first reference (fw)
                 let ctx1 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                 let ref0 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.comp_fwd_ref[0][ctx1 as usize],
+                    &mut ts_c.cdf.mi.comp_fwd_ref[0][ctx1 as usize],
                 ) {
                     let ctx2 =
                         av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     2 + rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.comp_fwd_ref[2][ctx2 as usize],
+                        &mut ts_c.cdf.mi.comp_fwd_ref[2][ctx2 as usize],
                     ) as i8
                 } else {
                     let ctx2 =
                         av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.comp_fwd_ref[1][ctx2 as usize],
+                        &mut ts_c.cdf.mi.comp_fwd_ref[1][ctx2 as usize],
                     ) as i8
                 };
 
@@ -2326,7 +2326,7 @@ fn decode_b(
                 let ctx3 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                 let ref1 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.comp_bwd_ref[0][ctx3 as usize],
+                    &mut ts_c.cdf.mi.comp_bwd_ref[0][ctx3 as usize],
                 ) {
                     6
                 } else {
@@ -2334,7 +2334,7 @@ fn decode_b(
                         av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     4 + rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.comp_bwd_ref[1][ctx4 as usize],
+                        &mut ts_c.cdf.mi.comp_bwd_ref[1][ctx4 as usize],
                     ) as i8
                 };
 
@@ -2344,7 +2344,7 @@ fn decode_b(
                 let uctx_p = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                 if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.comp_uni_ref[0][uctx_p as usize],
+                    &mut ts_c.cdf.mi.comp_uni_ref[0][uctx_p as usize],
                 ) {
                     [4, 6]
                 } else {
@@ -2354,7 +2354,7 @@ fn decode_b(
                         0,
                         1 + rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.comp_uni_ref[1][uctx_p1 as usize],
+                            &mut ts_c.cdf.mi.comp_uni_ref[1][uctx_p1 as usize],
                         ) as i8,
                     ];
 
@@ -2363,7 +2363,7 @@ fn decode_b(
                             av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                         r#ref[1] += rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.comp_uni_ref[2][uctx_p2 as usize],
+                            &mut ts_c.cdf.mi.comp_uni_ref[2][uctx_p2 as usize],
                         ) as i8;
                     }
 
@@ -2393,7 +2393,7 @@ fn decode_b(
 
             let inter_mode = rav1d_msac_decode_symbol_adapt8(
                 &mut ts_c.msac,
-                &mut ts_c.cdf.m.comp_inter_mode[ctx as usize],
+                &mut ts_c.cdf.mi.comp_inter_mode[ctx as usize],
                 N_COMP_INTER_PRED_MODES as u8 - 1,
             );
             if debug_block_info!(f, t.b) {
@@ -2411,7 +2411,7 @@ fn decode_b(
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.drl_bit[drl_ctx_v1 as usize],
+                        &mut ts_c.cdf.mi.drl_bit[drl_ctx_v1 as usize],
                     ) {
                         drl_idx = DrlProximity::Nearer;
 
@@ -2419,7 +2419,7 @@ fn decode_b(
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts_c.msac,
-                                &mut ts_c.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                                &mut ts_c.cdf.mi.drl_bit[drl_ctx_v2 as usize],
                             ) {
                                 drl_idx = DrlProximity::Near;
                             }
@@ -2439,7 +2439,7 @@ fn decode_b(
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                        &mut ts_c.cdf.mi.drl_bit[drl_ctx_v2 as usize],
                     ) {
                         drl_idx = DrlProximity::Near;
 
@@ -2447,7 +2447,7 @@ fn decode_b(
                             let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts_c.msac,
-                                &mut ts_c.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                                &mut ts_c.cdf.mi.drl_bit[drl_ctx_v3 as usize],
                             ) {
                                 drl_idx = DrlProximity::Nearish;
                             }
@@ -2502,7 +2502,7 @@ fn decode_b(
                 let mask_ctx = get_mask_comp_ctx(&f.a[t.a], &t.l, by4, bx4);
                 is_segwedge = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.mask_comp[mask_ctx as usize],
+                    &mut ts_c.cdf.mi.mask_comp[mask_ctx as usize],
                 );
                 if debug_block_info!(f, t.b) {
                     println!(
@@ -2539,7 +2539,7 @@ fn decode_b(
                     );
                     comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.jnt_comp[jnt_ctx as usize],
+                        &mut ts_c.cdf.mi.jnt_comp[jnt_ctx as usize],
                     ) {
                         CompInterType::Avg
                     } else {
@@ -2568,7 +2568,7 @@ fn decode_b(
                     let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
                     let comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.wedge_comp[ctx],
+                        &mut ts_c.cdf.mi.wedge_comp[ctx],
                     ) {
                         CompInterType::Seg
                     } else {
@@ -2577,7 +2577,7 @@ fn decode_b(
                     if comp_type == CompInterType::Wedge {
                         wedge_idx = rav1d_msac_decode_symbol_adapt16(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.wedge_idx[ctx],
+                            &mut ts_c.cdf.mi.wedge_idx[ctx],
                             15,
                         ) as u8;
                     }
@@ -2624,12 +2624,12 @@ fn decode_b(
                 let ctx1 = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                 let ref0 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.r#ref[0][ctx1 as usize],
+                    &mut ts_c.cdf.mi.r#ref[0][ctx1 as usize],
                 ) {
                     let ctx2 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.r#ref[1][ctx2 as usize],
+                        &mut ts_c.cdf.mi.r#ref[1][ctx2 as usize],
                     ) {
                         6
                     } else {
@@ -2637,27 +2637,27 @@ fn decode_b(
                             av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                         4 + rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.r#ref[5][ctx3 as usize],
+                            &mut ts_c.cdf.mi.r#ref[5][ctx3 as usize],
                         ) as i8
                     }
                 } else {
                     let ctx2 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.r#ref[2][ctx2 as usize],
+                        &mut ts_c.cdf.mi.r#ref[2][ctx2 as usize],
                     ) {
                         let ctx3 =
                             av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                         2 + rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.r#ref[4][ctx3 as usize],
+                            &mut ts_c.cdf.mi.r#ref[4][ctx3 as usize],
                         ) as i8
                     } else {
                         let ctx3 =
                             av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                         rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
-                            &mut ts_c.cdf.m.r#ref[3][ctx3 as usize],
+                            &mut ts_c.cdf.mi.r#ref[3][ctx3 as usize],
                         ) as i8
                     }
                 };
@@ -2696,7 +2696,7 @@ fn decode_b(
                 .unwrap_or(false)
                 || rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.newmv_mode[(ctx & 7) as usize],
+                    &mut ts_c.cdf.mi.newmv_mode[(ctx & 7) as usize],
                 )
             {
                 if seg
@@ -2704,7 +2704,7 @@ fn decode_b(
                     .unwrap_or(false)
                     || !rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.globalmv_mode[(ctx >> 3 & 1) as usize],
+                        &mut ts_c.cdf.mi.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
                     inter_mode = GLOBALMV;
@@ -2725,7 +2725,7 @@ fn decode_b(
                     has_subpel_filter = true;
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
+                        &mut ts_c.cdf.mi.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
                         // `Nearer`, `Near` or `Nearish`
                         inter_mode = NEARMV;
@@ -2735,7 +2735,7 @@ fn decode_b(
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts_c.msac,
-                                &mut ts_c.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                                &mut ts_c.cdf.mi.drl_bit[drl_ctx_v2 as usize],
                             ) {
                                 drl_idx = DrlProximity::Near;
 
@@ -2744,7 +2744,7 @@ fn decode_b(
                                     let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                                     if rav1d_msac_decode_bool_adapt(
                                         &mut ts_c.msac,
-                                        &mut ts_c.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                                        &mut ts_c.cdf.mi.drl_bit[drl_ctx_v3 as usize],
                                     ) {
                                         drl_idx = DrlProximity::Nearish;
                                     }
@@ -2776,7 +2776,7 @@ fn decode_b(
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.drl_bit[drl_ctx_v1 as usize],
+                        &mut ts_c.cdf.mi.drl_bit[drl_ctx_v1 as usize],
                     ) {
                         drl_idx = DrlProximity::Nearer;
 
@@ -2785,7 +2785,7 @@ fn decode_b(
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts_c.msac,
-                                &mut ts_c.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                                &mut ts_c.cdf.mi.drl_bit[drl_ctx_v2 as usize],
                             ) {
                                 drl_idx = DrlProximity::Near;
                             }
@@ -2825,19 +2825,19 @@ fn decode_b(
                 && interintra_allowed_mask & (1 << bs as u8) != 0
                 && rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.interintra[ii_sz_grp as usize],
+                    &mut ts_c.cdf.mi.interintra[ii_sz_grp as usize],
                 )
             {
                 interintra_mode = InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.interintra_mode[ii_sz_grp as usize],
+                    &mut ts_c.cdf.mi.interintra_mode[ii_sz_grp as usize],
                     InterIntraPredMode::COUNT as u8 - 1,
                 ) as usize)
                 .expect("valid variant");
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
                 let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.interintra_wedge[wedge_ctx as usize],
+                    &mut ts_c.cdf.mi.interintra_wedge[wedge_ctx as usize],
                 ) {
                     InterIntraType::Wedge
                 } else {
@@ -2847,7 +2847,7 @@ fn decode_b(
                 if ii_type == InterIntraType::Wedge {
                     wedge_idx = rav1d_msac_decode_symbol_adapt16(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.wedge_idx[wedge_ctx as usize],
+                        &mut ts_c.cdf.mi.wedge_idx[wedge_ctx as usize],
                         15,
                     ) as u8;
                 }
@@ -2904,11 +2904,11 @@ fn decode_b(
                 motion_mode = MotionMode::from_repr(if allow_warp != 0 {
                     rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.motion_mode[bs as usize],
+                        &mut ts_c.cdf.mi.motion_mode[bs as usize],
                         2,
                     ) as usize
                 } else {
-                    rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.obmc[bs as usize])
+                    rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.obmc[bs as usize])
                         as usize
                 })
                 .expect("valid variant");
@@ -2996,7 +2996,7 @@ fn decode_b(
                 let ctx1 = get_filter_ctx(&f.a[t.a], &t.l, comp, false, r#ref[0], by4, bx4);
                 let filter0 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.filter.0[0][ctx1 as usize],
+                    &mut ts_c.cdf.mi.filter.0[0][ctx1 as usize],
                     Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
                 ) as usize)
                 .unwrap();
@@ -3010,7 +3010,7 @@ fn decode_b(
                     }
                     let filter1 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut ts_c.cdf.m.filter.0[1][ctx2 as usize],
+                        &mut ts_c.cdf.mi.filter.0[1][ctx2 as usize],
                         Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
                     ) as usize)
                     .unwrap();
