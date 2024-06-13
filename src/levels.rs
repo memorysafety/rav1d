@@ -2,6 +2,7 @@
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::enum_map::EnumKey;
+use bitflags::bitflags;
 use std::mem;
 use std::ops::Neg;
 use strum::EnumCount;
@@ -236,12 +237,13 @@ impl Filter2d {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
-pub enum MVJoint {
-    Zero = 0,
-    H = 1,
-    V = 2,
-    HV = 3,
+bitflags! {
+    #[repr(transparent)]
+    #[derive(Clone, Copy)]
+    pub struct MVJoint: u8 {
+        const H = 1 << 0;
+        const V = 1 << 1;
+    }
 }
 
 pub type InterPredMode = u8;
