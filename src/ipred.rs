@@ -227,33 +227,21 @@ unsafe fn splat_dc<BD: BitDepth>(
     let width = width as usize;
     assert!(dc <= bd.bitdepth_max().as_::<c_int>());
     let dc = dc.as_::<BD::Pixel>();
-    match BD::BPC {
-        BPC::BPC8 => {
-            if width > 4 {
-                for y in 0..height {
-                    let dst = dst.offset(y * stride);
-                    let dst = slice::from_raw_parts_mut(dst, width);
-                    let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
-                    dst.fill([dc; 8]);
-                }
-            } else {
-                for y in 0..height {
-                    let dst = dst.offset(y * stride);
-                    let dst = slice::from_raw_parts_mut(dst, width);
-                    let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
-                    dst.fill([dc; 4]);
-                }
-            };
+    if BD::BPC == BPC::BPC8 && width > 4 {
+        for y in 0..height {
+            let dst = dst.offset(y * stride);
+            let dst = slice::from_raw_parts_mut(dst, width);
+            let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
+            dst.fill([dc; 8]);
         }
-        BPC::BPC16 => {
-            for y in 0..height {
-                let dst = dst.offset(y as isize * stride);
-                let dst = slice::from_raw_parts_mut(dst, width);
-                let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
-                dst.fill([dc; 4]);
-            }
+    } else {
+        for y in 0..height {
+            let dst = dst.offset(y * stride);
+            let dst = slice::from_raw_parts_mut(dst, width);
+            let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
+            dst.fill([dc; 4]);
         }
-    }
+    };
 }
 
 #[inline(never)]
