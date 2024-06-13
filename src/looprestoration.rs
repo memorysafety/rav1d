@@ -2747,8 +2747,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     let mut sumsq5_rows = [ptr::null_mut(); 5];
     let mut sum5_rows = [ptr::null_mut(); 5];
     for i in 0..5 {
-        sumsq5_rows[i] = (sumsq5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        sum5_rows[i] = (sum5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sumsq5_rows[i] = sumsq5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        sum5_rows[i] = sum5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut sumsq3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
@@ -2757,8 +2757,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     let mut sumsq3_rows = [ptr::null_mut(); 3];
     let mut sum3_rows = [ptr::null_mut(); 3];
     for i in 0..3 {
-        sumsq3_rows[i] = (sumsq3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        sum3_rows[i] = (sum3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sumsq3_rows[i] = sumsq3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        sum3_rows[i] = sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut A5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
@@ -2767,8 +2767,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     let mut A5_ptrs = [ptr::null_mut(); 2];
     let mut B5_ptrs = [ptr::null_mut(); 2];
     for i in 0..2 {
-        A5_ptrs[i] = (A5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        B5_ptrs[i] = (B5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        A5_ptrs[i] = A5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        B5_ptrs[i] = B5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut A3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
@@ -2777,8 +2777,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     let mut A3_ptrs = [ptr::null_mut(); 4];
     let mut B3_ptrs = [ptr::null_mut(); 4];
     for i in 0..4 {
-        A3_ptrs[i] = (A3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        B3_ptrs[i] = (B3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        A3_ptrs[i] = A3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        B3_ptrs[i] = B3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut src = dst;
