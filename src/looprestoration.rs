@@ -2018,8 +2018,8 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
 ) {
     const FILTER_OUT_STRIDE: usize = 384;
 
-    let mut tmp5: Align16<[i16; 2 * FILTER_OUT_STRIDE]> = Align16([0; 2 * FILTER_OUT_STRIDE]);
-    let mut tmp3: Align16<[i16; 2 * FILTER_OUT_STRIDE]> = Align16([0; 2 * FILTER_OUT_STRIDE]);
+    let mut tmp5 = Align16([0; 2 * FILTER_OUT_STRIDE]);
+    let mut tmp3 = Align16([0; 2 * FILTER_OUT_STRIDE]);
 
     rav1d_sgr_finish_filter2_2rows_neon(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
     rav1d_sgr_finish_filter1_2rows_neon(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
