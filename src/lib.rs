@@ -150,7 +150,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_tc = if s.n_threads != 0 {
         s.n_threads as usize
     } else {
-        rav1d_num_logical_processors().clamp(1, 256)
+        rav1d_num_logical_processors().get().clamp(1, 256)
     };
     let n_fc = if s.max_frame_delay != 0 {
         cmp::min(s.max_frame_delay as usize, n_tc)
