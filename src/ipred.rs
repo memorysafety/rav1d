@@ -1786,11 +1786,11 @@ mod neon {
                 topleft_in,
                 height,
             );
-            let (front, back) = buf.split_at_mut(left_offset);
+            let (src, dst) = buf.split_at_mut(left_offset);
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
-                back,
+                dst,
                 height,
-                &front[flipped_offset..],
+                &src[flipped_offset..],
                 bd,
             );
             dy <<= 1;
@@ -1807,18 +1807,18 @@ mod neon {
                     topleft_in,
                     height,
                 );
-                let (front, back) = buf.split_at_mut(1 + left_offset);
+                let (src, dst) = buf.split_at_mut(1 + left_offset);
                 bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
-                    back,
+                    dst,
                     cmp::min(max_height, height),
-                    &front[flipped_offset..],
+                    &src[flipped_offset..],
                     height,
                     filter_strength,
                 );
                 if max_height < height {
                     let len = (height - max_height) as usize;
-                    let (front, back) = buf[1 + max_height as usize..].split_at_mut(left_offset);
-                    back[..len].copy_from_slice(&front[flipped_offset..][..len]);
+                    let (src, dst) = buf[1 + max_height as usize..].split_at_mut(left_offset);
+                    dst[..len].copy_from_slice(&src[flipped_offset..][..len]);
                 }
             } else {
                 bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
