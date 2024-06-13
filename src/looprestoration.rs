@@ -404,7 +404,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
 // (since first and last tops are always 0 for chroma)
 // FIXME Could implement a version that requires less temporary memory
 // (should be possible to implement with only 6 rows of temp storage)
-unsafe fn wiener_rust<BD: BitDepth>(
+fn wiener_rust<BD: BitDepth>(
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
@@ -813,7 +813,7 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     sgr_5x5_rust(p, left, lpf, lpf_off, w, h, params, edges, bd)
 }
 
-unsafe fn sgr_5x5_rust<BD: BitDepth>(
+fn sgr_5x5_rust<BD: BitDepth>(
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
@@ -887,7 +887,7 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     sgr_3x3_rust(p, left, lpf, lpf_off, w, h, params, edges, bd)
 }
 
-unsafe fn sgr_3x3_rust<BD: BitDepth>(
+fn sgr_3x3_rust<BD: BitDepth>(
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
@@ -956,7 +956,7 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     sgr_mix_rust(p, left, lpf, lpf_off, w, h, params, edges, bd)
 }
 
-unsafe fn sgr_mix_rust<BD: BitDepth>(
+fn sgr_mix_rust<BD: BitDepth>(
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
