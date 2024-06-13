@@ -204,7 +204,7 @@ const REST_UNIT_STRIDE: usize = 390;
 // TODO Reuse p when no padding is needed (add and remove lpf pixels in p)
 // TODO Chroma only requires 2 rows of padding.
 #[inline(never)]
-unsafe fn padding<BD: BitDepth>(
+fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
@@ -214,11 +214,6 @@ unsafe fn padding<BD: BitDepth>(
     stripe_h: usize,
     edges: LrEdgeFlags,
 ) {
-    let lpf = lpf
-        .as_mut_ptr()
-        .cast::<BD::Pixel>()
-        .wrapping_offset(lpf_off);
-
     let left = &left[..stripe_h];
     assert!(stripe_h > 0);
     let stride = p.pixel_stride::<BD>();
@@ -232,17 +227,21 @@ unsafe fn padding<BD: BitDepth>(
     let unit_w = unit_w + have_left_3 + have_right_3;
     let dst_l = &mut dst[3 - have_left_3..];
     let p = p - have_left_3;
-    let lpf = lpf.offset(-(have_left_3 as isize));
+    let lpf_off = lpf_off - (have_left_3 as isize);
     let abs_stride = stride.unsigned_abs();
 
     if have_top {
         // Copy previous loop filtered rows
+        let lpf_guard;
         let (above_1, above_2) = if stride < 0 {
-            let above_2 = std::slice::from_raw_parts(lpf.offset(stride), abs_stride + unit_w);
+            lpf_guard = lpf
+                .slice_as::<_, BD::Pixel>(((lpf_off + stride) as usize.., ..abs_stride + unit_w));
+            let above_2 = &*lpf_guard;
             let above_1 = &above_2[abs_stride..];
             (above_1, above_2)
         } else {
-            let above_1 = std::slice::from_raw_parts(lpf, abs_stride + unit_w);
+            lpf_guard = lpf.slice_as((lpf_off as usize.., ..abs_stride + unit_w));
+            let above_1 = &*lpf_guard;
             let above_2 = &above_1[abs_stride..];
             (above_1, above_2)
         };
@@ -266,10 +265,8 @@ unsafe fn padding<BD: BitDepth>(
     let dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if have_bottom {
         // Copy next loop filtered rows
-        let lpf = std::slice::from_raw_parts(
-            lpf.offset((6 + if stride < 0 { 1 } else { 0 }) * stride),
-            abs_stride + unit_w,
-        );
+        let offset = lpf_off + (6 + if stride < 0 { 1 } else { 0 }) * stride;
+        let lpf = &*lpf.slice_as((offset as usize.., ..abs_stride + unit_w));
         let (below_1, below_2) = if stride < 0 {
             (&lpf[abs_stride..], lpf)
         } else {
