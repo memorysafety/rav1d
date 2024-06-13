@@ -87,7 +87,7 @@ pub struct Rav1dLoopFilterDSPContext {
 }
 
 #[inline(never)]
-unsafe fn loop_filter<BD: BitDepth>(
+fn loop_filter<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     E: u8,
     I: u8,
