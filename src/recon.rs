@@ -1751,13 +1751,11 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         if t.frame_thread.pass & 1 == 0 {
             let dst = dst.unwrap();
             if eob >= 0 {
-                let mut cf_guard;
                 let cf = match cf {
                     CfSelect::Frame(offset) => {
                         let len =
                             cmp::min(t_dim.h as usize, 8) * 4 * cmp::min(t_dim.w as usize, 8) * 4;
-                        cf_guard = f.frame_thread.cf.mut_slice_as((offset.., ..len));
-                        &mut *cf_guard
+                        &mut *f.frame_thread.cf.mut_slice_as((offset.., ..len))
                     }
                     CfSelect::Task => t.cf.select_mut::<BD>(),
                 };
@@ -2489,27 +2487,22 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let dst_offset = dst.pixel_offset::<BD>().wrapping_add_signed(
                     4 * (t.b.y as isize * dst.pixel_stride::<BD>() + t.b.x as isize),
                 );
-                let pal_idx_guard;
                 let scratch = t.scratch.inter_intra_mut();
                 let pal_idx = if t.frame_thread.pass != 0 {
                     let p = (t.frame_thread.pass & 1) as usize;
                     let frame_thread = &ts.frame_thread[p];
                     let len = (bw4 * bh4 * 8) as usize;
-                    let pal_idx = frame_thread.pal_idx.get();
-                    pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx.., ..len));
-                    frame_thread.pal_idx.set(pal_idx + len);
-                    &*pal_idx_guard
+                    let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
+                    &*f.frame_thread.pal_idx.index((pal_idx.., ..len))
                 } else {
                     &scratch.pal_idx_y
                 };
-                let pal_guard;
                 let pal = if t.frame_thread.pass != 0 {
                     let x = t.b.x as usize;
                     let y = t.b.y as usize;
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-                    pal_guard = f.frame_thread.pal.index::<BD>(index);
-                    &*pal_guard
+                    &*f.frame_thread.pal.index::<BD>(index)
                 } else {
                     scratch.interintra_edge_pal.pal.buf::<BD>()
                 };
@@ -2667,10 +2660,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 * 4
                                 * cmp::min(t_dim.w as usize, 8)
                                 * 4;
-                            let cf_idx = ts.frame_thread[p].cf.get();
+                            let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                             cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                             cf = &mut *cf_guard;
-                            ts.frame_thread[p].cf.set(cf_idx + len);
                             let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
                             let cbi = f.frame_thread.cbi[cbi_idx].get();
                             eob = cbi.eob().into();
@@ -2881,20 +2873,18 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let uv_dstoff = 4
                     * ((t.b.x >> ss_hor) as isize
                         + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
-                let pal_idx_guard;
-                let pal_guard;
                 let (pal, pal_idx) = if t.frame_thread.pass != 0 {
                     let p = (t.frame_thread.pass & 1) as usize;
                     let x = t.b.x as usize;
                     let y = t.b.y as usize;
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-                    let pal_idx_offset = ts.frame_thread[p].pal_idx.get();
                     let len = (cbw4 * cbh4 * 8) as usize;
-                    pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx_offset.., ..len));
-                    ts.frame_thread[p].pal_idx.set(pal_idx_offset + len);
-                    pal_guard = f.frame_thread.pal.index::<BD>(index);
-                    (&*pal_guard, &*pal_idx_guard)
+                    let pal_idx_offset = ts.frame_thread[p].pal_idx.get_update(|i| i + len);
+                    (
+                        &*f.frame_thread.pal.index::<BD>(index),
+                        &*f.frame_thread.pal_idx.index((pal_idx_offset.., ..len)),
+                    )
                 } else {
                     let scratch = t.scratch.inter_intra_mut();
                     (
@@ -3091,10 +3081,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if t.frame_thread.pass != 0 {
                                 let p = (t.frame_thread.pass & 1) as usize;
                                 let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
-                                let cf_idx = ts.frame_thread[p].cf.get();
+                                let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                                 cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
-                                ts.frame_thread[p].cf.set(cf_idx + len);
                                 let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
                                 let cbi = f.frame_thread.cbi[cbi_idx].get();
                                 eob = cbi.eob().into();
@@ -4042,14 +4031,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             let eob;
                             let mut txtp;
                             if t.frame_thread.pass != 0 {
-                                let p = t.frame_thread.pass & 1;
+                                let p = t.frame_thread.pass as usize & 1;
                                 let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
-                                let cf_idx = ts.frame_thread[p as usize].cf.get();
+                                let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                                 cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
                                 cf = &mut *cf_guard;
-                                ts.frame_thread[p as usize].cf.set(cf_idx + len);
-                                let cbi_idx =
-                                    ts.frame_thread[p as usize].cbi_idx.get_update(|i| i + 1);
+                                let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
                                 let cbi = f.frame_thread.cbi[cbi_idx].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
@@ -4358,13 +4345,11 @@ pub(crate) fn rav1d_copy_pal_block_y<BD: BitDepth>(
     bw4: usize,
     bh4: usize,
 ) {
-    let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
         let x = t.b.x as usize;
         let y = t.b.y as usize;
         let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-        pal_guard = f.frame_thread.pal.index::<BD>(index);
-        &pal_guard[0]
+        &f.frame_thread.pal.index::<BD>(index)[0]
     } else {
         &t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()[0]
     };
@@ -4385,13 +4370,11 @@ pub(crate) fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     bw4: usize,
     bh4: usize,
 ) {
-    let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
         let x = t.b.x as usize;
         let y = t.b.y as usize;
         let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-        pal_guard = f.frame_thread.pal.index::<BD>(index);
-        &pal_guard
+        &*f.frame_thread.pal.index::<BD>(index)
     } else {
         t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()
     };
@@ -4514,12 +4497,10 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
     let used_cache = &used_cache[..i];
 
     // parse new entries
-    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
         let pal_start = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
             + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize;
-        pal_guard = f.frame_thread.pal.index_mut::<BD>(pal_start);
-        &mut pal_guard[pli]
+        &mut f.frame_thread.pal.index_mut::<BD>(pal_start)[pli]
     } else {
         &mut t
             .scratch
@@ -4613,13 +4594,11 @@ pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
     let pal_sz = rav1d_read_pal_plane::<BD>(t, f, ts_c, true, sz_ctx, bx4, by4);
 
     // V pal coding
-    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        pal_guard = f.frame_thread.pal.index_mut::<BD>(
+        &mut f.frame_thread.pal.index_mut::<BD>(
             (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize,
-        );
-        &mut pal_guard[2]
+        )[2]
     } else {
         &mut t
             .scratch

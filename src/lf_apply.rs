@@ -81,9 +81,8 @@ unsafe fn backup_lpf<BD: BitDepth>(
     if lr_backup != 0 && frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
-            let mut dst_guard = dst.mut_slice_as((dst_offset.., ..dst_w));
             dsp.mc.resize.call::<BD>(
-                dst_guard.as_mut_ptr(),
+                dst.mut_slice_as((dst_offset.., ..dst_w)).as_mut_ptr(),
                 dst_stride,
                 src,
                 dst_w,
@@ -597,10 +596,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let lflvl = &f.lf.mask[lflvl_offset..];
-    let level_ptr_guard =
-        f.lf.level
-            .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
-    let mut level_ptr = &*level_ptr_guard;
+    let mut level_ptr = &*f
+        .lf
+        .level
+        .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_y::<BD>(
@@ -619,10 +618,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let level_ptr_guard =
-        f.lf.level
-            .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
-    let mut level_ptr = &*level_ptr_guard;
+    let mut level_ptr = &*f
+        .lf
+        .level
+        .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_uv::<BD>(
@@ -661,10 +660,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let level_ptr_guard =
-        f.lf.level
-            .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
-    let mut level_ptr = &*level_ptr_guard;
+    let mut level_ptr = &*f
+        .lf
+        .level
+        .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     for x in 0..f.sb128w as usize {
         filter_plane_rows_y::<BD>(
             f,
@@ -685,10 +684,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let level_ptr_guard =
-        f.lf.level
-            .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
-    let mut level_ptr = &*level_ptr_guard;
+    let mut level_ptr = &*f
+        .lf
+        .level
+        .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     let [_, pu, pv] = p;
     for x in 0..f.sb128w as usize {
         filter_plane_rows_uv::<BD>(

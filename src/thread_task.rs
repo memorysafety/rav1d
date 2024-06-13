@@ -674,9 +674,8 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
             if ttd.cond_signaled.load(Ordering::SeqCst) != 0 {
                 ttd.cond.notify_one();
             }
-            let mut delayed_fg_guard = ttd.delayed_fg.try_write().unwrap();
             // re-borrow to allow independent field borrows
-            let delayed_fg = &mut *delayed_fg_guard;
+            let delayed_fg = &mut *ttd.delayed_fg.try_write().unwrap();
             let dsp = &Rav1dBitDepthDSPContext::get(delayed_fg.out.p.bpc)
                 .as_ref()
                 .unwrap()
