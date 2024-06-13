@@ -3419,12 +3419,12 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 ) {
     let w = w as c_int;
     let h = h as c_int;
-    let mut tmp1: Align16<[i16; 24576]> = Align16([0; 24576]);
-    let mut tmp2: Align16<[i16; 24576]> = Align16([0; 24576]);
+    let mut tmp1 = Align16([0; 64 * 384]);
+    let mut tmp2 = Align16([0; 64 * 384]);
     let sgr = params.sgr();
     rav1d_sgr_filter2_neon(&mut tmp1.0, dst, left, lpf, w, h, sgr.s0, edges, bd);
     rav1d_sgr_filter1_neon(&mut tmp2.0, dst, left, lpf, w, h, sgr.s1, edges, bd);
-    let wt: [i16; 2] = [sgr.w0, sgr.w1];
+    let wt = [sgr.w0, sgr.w1];
     rav1d_sgr_weighted2_neon(dst, dst, &mut tmp1.0, &mut tmp2.0, w, h, &wt, bd);
 }
 
