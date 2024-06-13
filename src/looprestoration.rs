@@ -2741,48 +2741,48 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 
     const BUF_STRIDE: usize = 384 + 16;
 
-    let mut sumsq5_buf: Align16<[i32; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
-    let mut sum5_buf: Align16<[i16; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
+    let mut sumsq5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
+    let mut sum5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
 
-    let mut sumsq5_rows: [*mut i32; 5] = [0 as *mut i32; 5];
-    let mut sum5_rows: [*mut i16; 5] = [0 as *mut i16; 5];
+    let mut sumsq5_rows = [0 as *mut i32; 5];
+    let mut sum5_rows = [0 as *mut i16; 5];
     for i in 0..5 {
         sumsq5_rows[i] = (sumsq5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         sum5_rows[i] = (sum5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
-    let mut sumsq3_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
-    let mut sum3_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sumsq3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sum3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-    let mut sumsq3_rows: [*mut i32; 3] = [0 as *mut i32; 3];
-    let mut sum3_rows: [*mut i16; 3] = [0 as *mut i16; 3];
+    let mut sumsq3_rows = [0 as *mut i32; 3];
+    let mut sum3_rows = [0 as *mut i16; 3];
     for i in 0..3 {
         sumsq3_rows[i] = (sumsq3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         sum3_rows[i] = (sum3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
-    let mut A5_buf: Align16<[i32; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
-    let mut B5_buf: Align16<[i16; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
+    let mut A5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+    let mut B5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-    let mut A5_ptrs: [*mut i32; 2] = [0 as *mut i32; 2];
-    let mut B5_ptrs: [*mut i16; 2] = [0 as *mut i16; 2];
+    let mut A5_ptrs = [0 as *mut i32; 2];
+    let mut B5_ptrs = [0 as *mut i16; 2];
     for i in 0..2 {
         A5_ptrs[i] = (A5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         B5_ptrs[i] = (B5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
-    let mut A3_buf: Align16<[i32; BUF_STRIDE * 4 + 16]> = Align16([0; BUF_STRIDE * 4 + 16]);
-    let mut B3_buf: Align16<[i16; BUF_STRIDE * 4 + 16]> = Align16([0; BUF_STRIDE * 4 + 16]);
+    let mut A3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
+    let mut B3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
 
-    let mut A3_ptrs: [*mut i32; 4] = [0 as *mut i32; 4];
-    let mut B3_ptrs: [*mut i16; 4] = [0 as *mut i16; 4];
+    let mut A3_ptrs = [0 as *mut i32; 4];
+    let mut B3_ptrs = [0 as *mut i16; 4];
     for i in 0..4 {
         A3_ptrs[i] = (A3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         B3_ptrs[i] = (B3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
     let mut src = dst;
-    let mut lpf_bottom: *const BD::Pixel = lpf.offset(6 * stride);
+    let mut lpf_bottom = lpf.offset(6 * stride);
 
     #[derive(PartialEq)]
     enum Track {
@@ -2795,15 +2795,15 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 
     let lr_have_top = (edges & LR_HAVE_TOP) != 0;
 
-    let mut sumsq3_ptrs: [*mut i32; 3] = [0 as *mut i32; 3];
-    let mut sum3_ptrs: [*mut i16; 3] = [0 as *mut i16; 3];
+    let mut sumsq3_ptrs = [0 as *mut i32; 3];
+    let mut sum3_ptrs = [0 as *mut i16; 3];
     for i in 0..3 {
         sumsq3_ptrs[i] = sumsq3_rows[if lr_have_top { i } else { 0 }];
         sum3_ptrs[i] = sum3_rows[if lr_have_top { i } else { 0 }];
     }
 
-    let mut sumsq5_ptrs: [*mut i32; 5] = [0 as *mut i32; 5];
-    let mut sum5_ptrs: [*mut i16; 5] = [0 as *mut i16; 5];
+    let mut sumsq5_ptrs = [0 as *mut i32; 5];
+    let mut sum5_ptrs = [0 as *mut i16; 5];
     for i in 0..5 {
         sumsq5_ptrs[i] = sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
         sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
