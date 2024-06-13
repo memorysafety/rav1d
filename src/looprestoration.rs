@@ -372,6 +372,7 @@ fn reconstruct_lpf_offset<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     _p_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
@@ -785,6 +786,7 @@ fn selfguided_filter<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     _p_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
@@ -859,6 +861,7 @@ fn sgr_5x5_rust<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     _p_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
@@ -928,6 +931,7 @@ fn sgr_3x3_rust<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`loop_restoration_filter::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     _p_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
