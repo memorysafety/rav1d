@@ -2080,30 +2080,30 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 
     const BUF_STRIDE: usize = 384 + 16;
 
-    let mut sumsq_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
-    let mut sum_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sumsq_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sum_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-    let mut sumsq_ptrs: [*mut i32; 3];
-    let mut sum_ptrs: [*mut i16; 3];
-    let mut sumsq_rows: [*mut i32; 3] = [0 as *mut i32; 3];
-    let mut sum_rows: [*mut i16; 3] = [0 as *mut i16; 3];
+    let mut sumsq_ptrs;
+    let mut sum_ptrs;
+    let mut sumsq_rows = [0 as *mut i32; 3];
+    let mut sum_rows = [0 as *mut i16; 3];
     for i in 0..3 {
         sumsq_rows[i] = (sumsq_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         sum_rows[i] = (sum_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
-    let mut A_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
-    let mut B_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut A_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut B_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-    let mut A_ptrs: [*mut i32; 3] = [0 as *mut i32; 3];
-    let mut B_ptrs: [*mut i16; 3] = [0 as *mut i16; 3];
+    let mut A_ptrs = [0 as *mut i32; 3];
+    let mut B_ptrs = [0 as *mut i16; 3];
     for i in 0..3 {
         A_ptrs[i] = (A_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
         B_ptrs[i] = (B_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
     }
 
     let mut src = dst;
-    let mut lpf_bottom: *const BD::Pixel = lpf.offset(6 * stride);
+    let mut lpf_bottom = lpf.offset(6 * stride);
 
     #[derive(PartialEq)]
     enum Track {
