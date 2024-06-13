@@ -2088,8 +2088,8 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     let mut sumsq_rows = [ptr::null_mut(); 3];
     let mut sum_rows = [ptr::null_mut(); 3];
     for i in 0..3 {
-        sumsq_rows[i] = (sumsq_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        sum_rows[i] = (sum_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sumsq_rows[i] = sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut A_buf = Align16([0; BUF_STRIDE * 3 + 16]);
@@ -2098,8 +2098,8 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     let mut A_ptrs = [ptr::null_mut(); 3];
     let mut B_ptrs = [ptr::null_mut(); 3];
     for i in 0..3 {
-        A_ptrs[i] = (A_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
-        B_ptrs[i] = (B_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        A_ptrs[i] = A_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+        B_ptrs[i] = B_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
     }
 
     let mut src = dst;
