@@ -1,8 +1,10 @@
 use crate::src::const_fn::const_for;
 use bitflags::bitflags;
 use std::ffi::c_uint;
+use std::num::NonZero;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
+use std::thread::available_parallelism;
 
 #[cfg(not(any(
     target_arch = "x86",
@@ -219,6 +221,6 @@ pub extern "C" fn dav1d_set_cpu_flags_mask(mask: c_uint) {
 }
 
 #[cold]
-pub(crate) fn rav1d_num_logical_processors() -> usize {
-    num_cpus::get()
+pub(crate) fn rav1d_num_logical_processors() -> NonZero<usize> {
+    available_parallelism().unwrap_or(NonZero::new(1).unwrap())
 }

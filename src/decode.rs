@@ -1195,14 +1195,12 @@ fn decode_b(
         }
     }
 
-    let mut b_guard;
     let mut b_mem = Av1Block::default();
     let b = if t.frame_thread.pass != 0 {
-        b_guard = f
+        &mut *f
             .frame_thread
             .b
-            .index_mut((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
-        &mut *b_guard
+            .index_mut((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize)
     } else {
         &mut b_mem
     };
@@ -1873,16 +1871,13 @@ fn decode_b(
         let y_angle = y_angle;
 
         if pal_sz[0] != 0 {
-            let mut pal_idx_guard;
             let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 8).unwrap();
-                let pal_idx = frame_thread.pal_idx.get();
-                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
-                frame_thread.pal_idx.set(pal_idx + len);
-                &mut *pal_idx_guard
+                let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
+                &mut *f.frame_thread.pal_idx.index_mut((pal_idx.., ..len))
             } else {
                 &mut scratch.pal_idx_y
             };
@@ -1905,19 +1900,17 @@ fn decode_b(
         }
 
         if has_chroma && pal_sz[1] != 0 {
-            let mut pal_idx_guard;
             let scratch = t.scratch.inter_intra_mut();
-            let pal_idx = if t.frame_thread.pass != 0 {
+            let mut pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
-                let pal_idx = frame_thread.pal_idx.get();
-                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
-                frame_thread.pal_idx.set(pal_idx + len);
-                Some(&mut *pal_idx_guard)
+                let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
+                Some(f.frame_thread.pal_idx.index_mut((pal_idx.., ..len)))
             } else {
                 None
             };
+            let pal_idx = pal_idx.as_deref_mut();
             read_pal_indices(
                 ts_c,
                 &c.dsp.pal,
@@ -1987,13 +1980,9 @@ fn decode_b(
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
-            let lflvlmem_guard;
             let lflvl = match ts.lflvl.get() {
                 TileStateRef::Frame => &f.lf.lvl,
-                TileStateRef::Local => {
-                    lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
-                    &*lflvlmem_guard
-                }
+                TileStateRef::Local => &*ts.lflvlmem.try_read().unwrap(),
             };
             let mut a_uv_guard;
             let mut l_uv_guard;
@@ -2011,15 +2000,13 @@ fn decode_b(
                 f.cur.p.layout,
                 &mut f.a[t.a]
                     .tx_lpf_y
-                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
-                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
+                    .index_mut((bx4 as usize.., ..bw4 as usize)),
+                &mut t.l.tx_lpf_y.index_mut((by4 as usize.., ..bh4 as usize)),
                 if has_chroma {
                     a_uv_guard = f.a[t.a]
                         .tx_lpf_uv
-                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
-                    l_uv_guard =
-                        t.l.tx_lpf_uv
-                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                        .index_mut((cbx4 as usize.., ..cbw4 as usize));
+                    l_uv_guard = t.l.tx_lpf_uv.index_mut((cby4 as usize.., ..cbh4 as usize));
                     Some((&mut a_uv_guard, &mut l_uv_guard))
                 } else {
                     None
@@ -3145,13 +3132,9 @@ fn decode_b(
                 ytx = TX_4X4;
                 uvtx = TX_4X4;
             }
-            let lflvlmem_guard;
             let lflvl = match ts.lflvl.get() {
                 TileStateRef::Frame => &f.lf.lvl,
-                TileStateRef::Local => {
-                    lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
-                    &*lflvlmem_guard
-                }
+                TileStateRef::Local => &*ts.lflvlmem.try_read().unwrap(),
             };
             let mut a_uv_guard;
             let mut l_uv_guard;
@@ -3178,15 +3161,13 @@ fn decode_b(
                 f.cur.p.layout,
                 &mut f.a[t.a]
                     .tx_lpf_y
-                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
-                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
+                    .index_mut((bx4 as usize.., ..bw4 as usize)),
+                &mut t.l.tx_lpf_y.index_mut((by4 as usize.., ..bh4 as usize)),
                 if has_chroma {
                     a_uv_guard = f.a[t.a]
                         .tx_lpf_uv
-                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
-                    l_uv_guard =
-                        t.l.tx_lpf_uv
-                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                        .index_mut((cbx4 as usize.., ..cbw4 as usize));
+                    l_uv_guard = t.l.tx_lpf_uv.index_mut((cby4 as usize.., ..cbh4 as usize));
                     Some((&mut *a_uv_guard, &mut *l_uv_guard))
                 } else {
                     None

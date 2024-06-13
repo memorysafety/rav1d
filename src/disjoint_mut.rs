@@ -671,10 +671,8 @@ impl<T> DisjointMutIndex<[T]> for usize {
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
-        // SAFETY: The safety precondition for this trait method requires that
-        // we can immutably dereference `slice`.
         let index = self;
-        let len = unsafe { (*slice).len() };
+        let len = slice.len();
         if index < len {
             // SAFETY: We have checked that `self` is less than the allocation
             // length therefore cannot overflow. `slice` is a valid pointer into
@@ -700,9 +698,7 @@ where
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
-        // SAFETY: The safety precondition for this trait method
-        // requires that we can immutably dereference `slice`.
-        let len = unsafe { (*slice).len() };
+        let len = slice.len();
         let Range { start, end } = self.to_range(len);
         if start <= end && end <= len {
             // SAFETY: We have checked that `start` is less than the

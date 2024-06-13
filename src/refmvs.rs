@@ -483,11 +483,9 @@ impl Rav1dRefmvsDSPContext {
         let bx4 = b4.x as usize;
 
         type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
-        const UNINIT_GUARD: MaybeUninit<Guard> = MaybeUninit::uninit();
-        const UNINIT_PTR: MaybeUninit<*mut refmvs_block> = MaybeUninit::uninit();
 
-        let mut r_guards = [UNINIT_GUARD; 37];
-        let mut r_ptrs = [UNINIT_PTR; 37];
+        let mut r_guards = [const { MaybeUninit::uninit() }; 37];
+        let mut r_ptrs = [MaybeUninit::uninit(); 37];
 
         let r_indices = &rt.r[offset..][..len];
         // SAFETY: `r_guards[i]` will be initialized if `r_ptrs[i]` is non-null.
