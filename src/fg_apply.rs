@@ -168,14 +168,12 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
 
     // extend padding pixels
     if out.p.w as usize & ss_x != 0 {
-        let luma = &in_data[0];
-        let mut offset = luma
-            .pixel_offset::<BD>()
-            .wrapping_add_signed((row * BLOCK_SIZE) as isize * luma.pixel_stride::<BD>());
-        for _ in 0..bh {
-            let padding = &mut *luma.slice_mut::<BD, _>((offset + out.p.w as usize - 1.., ..2));
+        let luma = in_data[0].with_offset::<BD>();
+        let luma = luma + (row * BLOCK_SIZE) as isize * luma.pixel_stride::<BD>();
+        for y in 0..bh {
+            let luma = luma + (y as isize * (luma.pixel_stride::<BD>() << ss_y));
+            let padding = &mut *(luma + (out.p.w as usize - 1)).slice_mut::<BD>(2);
             padding[1] = padding[0];
-            offset = offset.wrapping_add_signed(luma.pixel_stride::<BD>() << ss_y);
         }
     }
 
