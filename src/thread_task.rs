@@ -887,7 +887,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                                 break 'found (fc, t_idx, prev_t);
                             }
                         } else if t.recon_progress != 0 {
-                            let f = fc.data.try_read().unwrap();
+                            // We need to block here because we are seeing rare
+                            // contention.
+                            let f = fc.data.read();
                             let p = t.type_0 == TaskType::EntropyProgress;
                             let error = fc.task_thread.error.load(Ordering::SeqCst);
                             let done = fc.task_thread.done[p as usize].load(Ordering::SeqCst);
