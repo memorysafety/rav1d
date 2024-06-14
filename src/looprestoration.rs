@@ -176,9 +176,9 @@ impl loop_restoration_filter::Fn {
         let left = left[..h as usize].as_ptr().cast();
         // NOTE: The calculated pointer may point to before the beginning of
         // `lpf`, so we must use `.wrapping_offset` here. `.wrapping_offset` is
-        // needed since `.offset` requires the pointer is in bounds, which
+        // needed since `.offset` requires the pointer to be in bounds, which
         // `.wrapping_offset` does not, and delays that requirement to when the
-        // pointer is dereferenced
+        // pointer is dereferenced.
         let lpf_ptr = lpf
             .as_mut_ptr()
             .cast::<BD::Pixel>()
