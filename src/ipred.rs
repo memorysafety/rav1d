@@ -32,10 +32,7 @@ use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use libc::ptrdiff_t;
 use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
 use std::mem;
 use std::slice;
 use strum::FromRepr;
@@ -51,14 +48,14 @@ use crate::include::common::bitdepth::bpc_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    angle: i32,
+    max_width: i32,
+    max_height: i32,
+    bitdepth_max: i32,
     topleft_off: usize,
 ) -> ());
 
@@ -66,14 +63,14 @@ impl angular_ipred::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
-        width: c_int,
-        height: c_int,
-        angle: c_int,
-        max_width: c_int,
-        max_height: c_int,
+        width: i32,
+        height: i32,
+        angle: i32,
+        max_width: i32,
+        max_height: i32,
         bd: BD,
     ) {
         let dst = dst.cast();
@@ -97,11 +94,11 @@ impl angular_ipred::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y_ptr: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
+    stride: isize,
+    w_pad: i32,
+    h_pad: i32,
+    cw: i32,
+    ch: i32,
     _y: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
@@ -111,10 +108,10 @@ impl cfl_ac::Fn {
         ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
         y: &Rav1dPictureDataComponent,
         y_offset: usize,
-        w_pad: c_int,
-        h_pad: c_int,
-        cw: c_int,
-        ch: c_int,
+        w_pad: i32,
+        h_pad: i32,
+        cw: i32,
+        ch: i32,
     ) {
         let y_ptr = y.as_ptr_at::<BD>(y_offset).cast();
         let stride = y.stride();
@@ -126,13 +123,13 @@ impl cfl_ac::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     dst_ptr: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
-    alpha: c_int,
-    bitdepth_max: c_int,
+    alpha: i32,
+    bitdepth_max: i32,
     _topleft_off: usize,
     _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
@@ -144,10 +141,10 @@ impl cfl_pred::Fn {
         dst_offset: usize,
         topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
-        width: c_int,
-        height: c_int,
+        width: i32,
+        height: i32,
         ac: &[i16; SCRATCH_AC_TXTP_LEN],
-        alpha: c_int,
+        alpha: i32,
         bd: BD,
     ) {
         let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
@@ -175,11 +172,11 @@ impl cfl_pred::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     dst_ptr: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     pal: *const [DynPixel; 8],
     idx: *const u8,
-    w: c_int,
-    h: c_int,
+    w: i32,
+    h: i32,
     _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
@@ -190,8 +187,8 @@ impl pal_pred::Fn {
         dst_offset: usize,
         pal: &[BD::Pixel; 8],
         idx: &[u8],
-        w: c_int,
-        h: c_int,
+        w: i32,
+        h: i32,
     ) {
         // SAFETY: `DisjointMut` is unchecked for asm `fn`s,
         // but passed through as an extra arg for the fallback `fn`.
@@ -215,10 +212,10 @@ pub struct Rav1dIntraPredDSPContext {
 #[inline(never)]
 unsafe fn splat_dc<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
-    width: c_int,
-    height: c_int,
-    dc: c_int,
+    stride: isize,
+    width: i32,
+    height: i32,
+    dc: i32,
     bd: BD,
 ) {
     let stride = BD::pxstride(stride);
@@ -245,7 +242,7 @@ unsafe fn splat_dc<BD: BitDepth>(
             };
         }
         BPC::BPC16 => {
-            assert!(dc <= bd.bitdepth_max().as_::<c_int>());
+            assert!(dc <= bd.bitdepth_max().as_::<i32>());
             let dcN = dc as u64 * 0x1000100010001;
             for _ in 0..height {
                 let slice = slice::from_raw_parts_mut(
@@ -263,11 +260,11 @@ unsafe fn splat_dc<BD: BitDepth>(
 fn cfl_pred<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     mut dst_offset: usize,
-    width: c_int,
-    height: c_int,
-    dc: c_int,
+    width: i32,
+    height: i32,
+    dc: i32,
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
-    alpha: c_int,
+    alpha: i32,
     bd: BD,
 ) {
     let width = width as usize;
@@ -275,7 +272,7 @@ fn cfl_pred<BD: BitDepth>(
     for _ in 0..height {
         let slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..width));
         for (x, dst) in slice.iter_mut().enumerate() {
-            let diff = alpha * ac[x] as c_int;
+            let diff = alpha * ac[x] as i32;
             *dst = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
         }
         ac = &ac[width..];
@@ -286,11 +283,11 @@ fn cfl_pred<BD: BitDepth>(
 fn dc_gen_top<BD: BitDepth>(
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     offset: usize,
-    width: c_int,
-) -> c_uint {
+    width: i32,
+) -> u32 {
     let mut dc = width as u32 >> 1;
     for i in 0..width as usize {
-        dc += topleft[offset + 1 + i].as_::<c_uint>();
+        dc += topleft[offset + 1 + i].as_::<u32>();
     }
     return dc >> width.trailing_zeros();
 }
@@ -298,11 +295,11 @@ fn dc_gen_top<BD: BitDepth>(
 fn dc_gen_left<BD: BitDepth>(
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     offset: usize,
-    height: c_int,
-) -> c_uint {
+    height: i32,
+) -> u32 {
     let mut dc = height as u32 >> 1;
     for i in 0..height as usize {
-        dc += topleft[offset - (1 + i)].as_::<c_uint>();
+        dc += topleft[offset - (1 + i)].as_::<u32>();
     }
     return dc >> height.trailing_zeros();
 }
@@ -310,9 +307,9 @@ fn dc_gen_left<BD: BitDepth>(
 fn dc_gen<BD: BitDepth>(
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     offset: usize,
-    width: c_int,
-    height: c_int,
-) -> c_uint {
+    width: i32,
+    height: i32,
+) -> u32 {
     let (multiplier_1x2, multiplier_1x4, base_shift) = match BD::BPC {
         BPC::BPC8 => (0x5556, 0x3334, 16),
         BPC::BPC16 => (0xAAAB, 0x6667, 17),
@@ -320,10 +317,10 @@ fn dc_gen<BD: BitDepth>(
 
     let mut dc = (width + height >> 1) as u32;
     for i in 0..width as usize {
-        dc += topleft[offset + i + 1].as_::<c_uint>();
+        dc += topleft[offset + i + 1].as_::<u32>();
     }
     for i in 0..height as usize {
-        dc += topleft[offset - (i + 1)].as_::<c_uint>();
+        dc += topleft[offset - (i + 1)].as_::<u32>();
     }
     dc >>= (width + height).trailing_zeros();
 
@@ -351,9 +348,9 @@ impl DcGen {
         &self,
         topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
         offset: usize,
-        width: c_int,
-        height: c_int,
-    ) -> c_uint {
+        width: i32,
+        height: i32,
+    ) -> u32 {
         match self {
             Self::Top => dc_gen_top::<BD>(topleft, offset, width),
             Self::Left => dc_gen_left::<BD>(topleft, offset, height),
@@ -387,14 +384,14 @@ unsafe fn reconstruct_topleft<'a, BD: BitDepth>(
 
 unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
@@ -404,7 +401,7 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
         stride,
         width,
         height,
-        dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int,
+        dc_gen.call::<BD>(topleft, topleft_off, width, height) as i32,
         BD::from_c(bitdepth_max),
     );
 }
@@ -415,13 +412,13 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    _stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
-    alpha: c_int,
-    bitdepth_max: c_int,
+    alpha: i32,
+    bitdepth_max: i32,
     topleft_off: usize,
     dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
@@ -433,13 +430,13 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
     // SAFETY: `fn cfl_pred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    let dc: c_uint = dc_gen.call::<BD>(topleft, topleft_off, width, height);
+    let dc: u32 = dc_gen.call::<BD>(topleft, topleft_off, width, height);
     cfl_pred(
         dst,
         dst_offset,
         width,
         height,
-        dc as c_int,
+        dc as i32,
         ac,
         alpha,
         BD::from_c(bitdepth_max),
@@ -448,18 +445,18 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
 
 unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     _topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    bitdepth_max: i32,
     _topleft_off: usize,
 ) {
     let bd = BD::from_c(bitdepth_max);
-    let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
+    let dc = bd.bitdepth_max().as_::<i32>() + 1 >> 1;
     splat_dc(dst.cast(), stride, width, height, dc, bd);
 }
 
@@ -469,13 +466,13 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    _stride: isize,
     _topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
-    alpha: c_int,
-    bitdepth_max: c_int,
+    alpha: i32,
+    bitdepth_max: i32,
     _topleft_off: usize,
     dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
@@ -485,17 +482,17 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     let dst_offset =
         unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
     let bd = BD::from_c(bitdepth_max);
-    let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
+    let dc = bd.bitdepth_max().as_::<i32>() + 1 >> 1;
     cfl_pred(dst, dst_offset, width, height, dc, ac, alpha, bd);
 }
 
 unsafe fn ipred_v_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
     let width = width as usize;
 
@@ -511,14 +508,14 @@ unsafe fn ipred_v_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
@@ -527,11 +524,11 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
 
 unsafe fn ipred_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
     let width = width as usize;
 
@@ -547,14 +544,14 @@ unsafe fn ipred_h_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
@@ -563,18 +560,18 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
 
 unsafe fn ipred_paeth_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     tl: &[BD::Pixel; SCRATCH_EDGE_LEN],
     tl_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
-    let topleft = tl[tl_off].as_::<c_int>();
+    let topleft = tl[tl_off].as_::<i32>();
     for y in 0..height as usize {
-        let left = tl[tl_off - (y + 1)].as_::<c_int>();
+        let left = tl[tl_off - (y + 1)].as_::<i32>();
         let dst_slice = slice::from_raw_parts_mut(dst, width as usize);
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            let top = tl[tl_off + 1 + x].as_::<c_int>();
+            let top = tl[tl_off + 1 + x].as_::<i32>();
             let base = left + top - topleft;
             let ldiff = (left - base).abs();
             let tdiff = (top - base).abs();
@@ -595,14 +592,14 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     tl_ptr: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(tl_ptr, topleft_off);
@@ -611,26 +608,26 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
 
 unsafe fn ipred_smooth_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
     let weights_hor = &dav1d_sm_weights.0[width..][..width];
     let weights_ver = &dav1d_sm_weights.0[height..][..height];
-    let right = topleft[topleft_off + width].as_::<c_int>();
-    let bottom = topleft[topleft_off - height].as_::<c_int>();
+    let right = topleft[topleft_off + width].as_::<i32>();
+    let bottom = topleft[topleft_off - height].as_::<i32>();
 
     for y in 0..height {
         let dst_slice = slice::from_raw_parts_mut(dst, width);
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
-                + (256 - weights_ver[y] as c_int) * bottom
-                + weights_hor[x] as c_int * topleft[topleft_off - (1 + y)].as_::<c_int>()
-                + (256 - weights_hor[x] as c_int) * right;
+            let pred = weights_ver[y] as i32 * topleft[topleft_off + 1 + x].as_::<i32>()
+                + (256 - weights_ver[y] as i32) * bottom
+                + weights_hor[x] as i32 * topleft[topleft_off - (1 + y)].as_::<i32>()
+                + (256 - weights_hor[x] as i32) * right;
             *dst = (pred + 256 >> 9).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
@@ -639,14 +636,14 @@ unsafe fn ipred_smooth_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
@@ -655,22 +652,22 @@ unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
 
 unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
     let weights_ver = &dav1d_sm_weights.0[height..][..height];
-    let bottom = topleft[topleft_off - height].as_::<c_int>();
+    let bottom = topleft[topleft_off - height].as_::<i32>();
 
     for y in 0..height {
         let dst_slice = slice::from_raw_parts_mut(dst, width);
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
-                + (256 - weights_ver[y] as c_int) * bottom;
+            let pred = weights_ver[y] as i32 * topleft[topleft_off + 1 + x].as_::<i32>()
+                + (256 - weights_ver[y] as i32) * bottom;
             *dst = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
@@ -679,14 +676,14 @@ unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
@@ -695,22 +692,22 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
 
 unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
+    width: i32,
+    height: i32,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
     let weights_hor = &dav1d_sm_weights.0[width..][..width];
-    let right = topleft[topleft_off + width].as_::<c_int>();
+    let right = topleft[topleft_off + width].as_::<i32>();
 
     for y in 0..height {
         let dst_slice = slice::from_raw_parts_mut(dst, width);
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            let pred = weights_hor[x] as c_int * topleft[topleft_off - (y + 1)].as_::<c_int>()
-                + (256 - weights_hor[x] as c_int) * right;
+            let pred = weights_hor[x] as i32 * topleft[topleft_off - (y + 1)].as_::<i32>()
+                + (256 - weights_hor[x] as i32) * right;
             *dst = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
@@ -719,14 +716,14 @@ unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    _a: i32,
+    _max_width: i32,
+    _max_height: i32,
+    _bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
@@ -734,7 +731,7 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
 }
 
 #[inline(never)]
-fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
+fn get_filter_strength(wh: i32, angle: i32, is_sm: bool) -> i32 {
     if is_sm {
         match (wh, angle) {
             (..=8, 64..) => 2,
@@ -768,14 +765,14 @@ fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
 #[inline(never)]
 fn filter_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
-    sz: c_int,
-    lim_from: c_int,
-    lim_to: c_int,
+    sz: i32,
+    lim_from: i32,
+    lim_to: i32,
     r#in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     in_off: usize,
-    from: c_int,
-    to: c_int,
-    strength: c_int,
+    from: i32,
+    to: i32,
+    strength: i32,
 ) {
     static kernel: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
 
@@ -789,8 +786,8 @@ fn filter_edge<BD: BitDepth>(
         let mut s = 0;
         for j in 0..5 {
             s += r#in[in_off.wrapping_add_signed(iclip(i - 2 + j, from, to - 1) as isize)]
-                .as_::<c_int>()
-                * kernel[(strength - 1) as usize][j as usize] as c_int;
+                .as_::<i32>()
+                * kernel[(strength - 1) as usize][j as usize] as i32;
         }
         out[i as usize] = (s + 8 >> 4).as_::<BD::Pixel>();
         i += 1;
@@ -802,18 +799,18 @@ fn filter_edge<BD: BitDepth>(
 }
 
 #[inline]
-fn get_upsample(wh: c_int, angle: c_int, is_sm: bool) -> bool {
+fn get_upsample(wh: i32, angle: i32, is_sm: bool) -> bool {
     angle < 40 && wh <= (16 >> is_sm as u8)
 }
 
 #[inline(never)]
 fn upsample_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
-    hsz: c_int,
+    hsz: i32,
     r#in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     in_off: usize,
-    from: c_int,
-    to: c_int,
+    from: i32,
+    to: i32,
     bd: BD,
 ) {
     static kernel: [i8; 4] = [-1, 9, 9, -1];
@@ -822,11 +819,11 @@ fn upsample_edge<BD: BitDepth>(
         let mut s = 0;
         for j in 0..4 {
             s += r#in[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
-                .as_::<c_int>()
-                * kernel[j as usize] as c_int;
+                .as_::<i32>()
+                * kernel[j as usize] as i32;
         }
         out[(i * 2 + 1) as usize] =
-            iclip(s + 8 >> 4, 0, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
+            iclip(s + 8 >> 4, 0, bd.bitdepth_max().as_::<i32>()).as_::<BD::Pixel>();
     }
     let i = hsz - 1;
     out[(i * 2) as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
@@ -834,21 +831,21 @@ fn upsample_edge<BD: BitDepth>(
 
 unsafe fn ipred_z1_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
+    width: i32,
+    height: i32,
+    mut angle: i32,
+    _max_width: i32,
+    _max_height: i32,
     bd: BD,
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = (angle >> 10) != 0;
     angle &= 511;
     assert!(angle < 90);
-    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
+    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as i32;
     let mut top_out = [0.into(); 64 + 64];
     let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
@@ -906,8 +903,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         for (x, dst) in dst_slice.iter_mut().enumerate() {
             let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
-                let v =
-                    top[base].as_::<c_int>() * (64 - frac) + top[base + 1].as_::<c_int>() * frac;
+                let v = top[base].as_::<i32>() * (64 - frac) + top[base + 1].as_::<i32>() * frac;
                 *dst = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
                 BD::pixel_set(&mut dst_slice[x..], top[max_base_x], width - x);
@@ -919,22 +915,22 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
 
 unsafe fn ipred_z2_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
+    width: i32,
+    height: i32,
+    mut angle: i32,
+    max_width: i32,
+    max_height: i32,
     bd: BD,
 ) {
     let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511;
     assert!(angle > 90 && angle < 180);
-    let mut dy = dav1d_dr_intra_derivative[(angle - 90 >> 1) as usize] as c_int;
-    let mut dx = dav1d_dr_intra_derivative[(180 - angle >> 1) as usize] as c_int;
+    let mut dy = dav1d_dr_intra_derivative[(angle - 90 >> 1) as usize] as i32;
+    let mut dx = dav1d_dr_intra_derivative[(180 - angle >> 1) as usize] as i32;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 180 - angle, is_sm)
     } else {
@@ -1029,7 +1025,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     let base_inc_x = 1 + upsample_above as usize;
     let left = topleft - (1 + upsample_left as usize);
     for y in 0..height {
-        let xpos = (1 + (upsample_above as c_int) << 6) - (dx * (y + 1));
+        let xpos = (1 + (upsample_above as i32) << 6) - (dx * (y + 1));
         let base_x = xpos >> 6;
         let frac_x = xpos & 0x3e;
 
@@ -1038,17 +1034,17 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             width as usize,
         );
         for (x, dst) in dst_slice.iter_mut().enumerate() {
-            let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1) as c_int);
-            let base_x = base_x + (base_inc_x * x) as c_int;
+            let ypos = (y << 6 + upsample_left as i32) - (dy * (x + 1) as i32);
+            let base_x = base_x + (base_inc_x * x) as i32;
             let v = if base_x >= 0 {
-                edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
-                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x
+                edge[topleft + base_x as usize].as_::<i32>() * (64 - frac_x)
+                    + edge[topleft + base_x as usize + 1].as_::<i32>() * frac_x
             } else {
                 let base_y = ypos >> 6;
-                assert!(base_y >= -(1 + upsample_left as c_int));
+                assert!(base_y >= -(1 + upsample_left as i32));
                 let frac_y = ypos & 0x3e;
-                edge[left.wrapping_add_signed(-base_y as isize)].as_::<c_int>() * (64 - frac_y)
-                    + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<c_int>() * frac_y
+                edge[left.wrapping_add_signed(-base_y as isize)].as_::<i32>() * (64 - frac_y)
+                    + edge[left.wrapping_add_signed(-(base_y + 1) as isize)].as_::<i32>() * frac_y
             };
             *dst = (v + 32 >> 6).as_::<BD::Pixel>();
         }
@@ -1057,14 +1053,14 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
 
 unsafe fn ipred_z3_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
+    width: i32,
+    height: i32,
+    mut angle: i32,
+    _max_width: i32,
+    _max_height: i32,
     bd: BD,
 ) {
     let stride = BD::pxstride(stride);
@@ -1072,7 +1068,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511;
     assert!(angle > 180);
-    let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
+    let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as i32;
     let mut left_out = [0.into(); 64 + 64];
     let left;
     let left_off;
@@ -1124,7 +1120,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             max_base_y = height + cmp::min(width, height) - 1;
         }
     }
-    let base_inc = 1 + upsample_left as c_int;
+    let base_inc = 1 + upsample_left as i32;
     for x in 0..width {
         let ypos = dy * (x + 1);
         let frac = ypos & 0x3e;
@@ -1132,10 +1128,9 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         for y in 0..height {
             let base = (ypos >> 6) + base_inc * y;
             if base < max_base_y {
-                let v = left[left_off.wrapping_add_signed(-base as isize)].as_::<c_int>()
+                let v = left[left_off.wrapping_add_signed(-base as isize)].as_::<i32>()
                     * (64 - frac)
-                    + left[left_off.wrapping_add_signed(-(base + 1) as isize)].as_::<c_int>()
-                        * frac;
+                    + left[left_off.wrapping_add_signed(-(base + 1) as isize)].as_::<i32>() * frac;
                 *dst.offset(y as isize * stride + x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
             } else {
                 for y in y..height {
@@ -1150,14 +1145,14 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    angle: i32,
+    max_width: i32,
+    max_height: i32,
+    bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft_in = reconstruct_topleft::<BD>(topleft_in, topleft_off);
@@ -1175,33 +1170,24 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     )
 }
 
-fn filter_fn(
-    flt_ptr: &[i8],
-    p0: c_int,
-    p1: c_int,
-    p2: c_int,
-    p3: c_int,
-    p4: c_int,
-    p5: c_int,
-    p6: c_int,
-) -> c_int {
+fn filter_fn(flt_ptr: &[i8], p0: i32, p1: i32, p2: i32, p3: i32, p4: i32, p5: i32, p6: i32) -> i32 {
     let flt_ptr = &flt_ptr[..48 + 1];
     if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-        flt_ptr[0] as c_int * p0
-            + flt_ptr[1] as c_int * p1
-            + flt_ptr[16] as c_int * p2
-            + flt_ptr[17] as c_int * p3
-            + flt_ptr[32] as c_int * p4
-            + flt_ptr[33] as c_int * p5
-            + flt_ptr[48] as c_int * p6
+        flt_ptr[0] as i32 * p0
+            + flt_ptr[1] as i32 * p1
+            + flt_ptr[16] as i32 * p2
+            + flt_ptr[17] as i32 * p3
+            + flt_ptr[32] as i32 * p4
+            + flt_ptr[33] as i32 * p5
+            + flt_ptr[48] as i32 * p6
     } else {
-        flt_ptr[0] as c_int * p0
-            + flt_ptr[8] as c_int * p1
-            + flt_ptr[16] as c_int * p2
-            + flt_ptr[24] as c_int * p3
-            + flt_ptr[32] as c_int * p4
-            + flt_ptr[40] as c_int * p5
-            + flt_ptr[48] as c_int * p6
+        flt_ptr[0] as i32 * p0
+            + flt_ptr[8] as i32 * p1
+            + flt_ptr[16] as i32 * p2
+            + flt_ptr[24] as i32 * p3
+            + flt_ptr[32] as i32 * p4
+            + flt_ptr[40] as i32 * p5
+            + flt_ptr[48] as i32 * p6
     }
 }
 
@@ -1213,14 +1199,14 @@ const FLT_INCR: usize = if cfg!(any(target_arch = "x86", target_arch = "x86_64")
 
 unsafe fn ipred_filter_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
-    width: c_int,
-    height: c_int,
-    filt_idx: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
+    width: i32,
+    height: i32,
+    filt_idx: i32,
+    _max_width: i32,
+    _max_height: i32,
     bd: BD,
 ) {
     let width = width as usize;
@@ -1237,13 +1223,13 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
         let mut left_stride = -1;
         for x in (0..width).step_by(4) {
             let top_slice = slice::from_raw_parts(top, 4);
-            let p0 = (*topleft).as_::<c_int>();
-            let p1 = top_slice[0].as_::<c_int>();
-            let p2 = top_slice[1].as_::<c_int>();
-            let p3 = top_slice[2].as_::<c_int>();
-            let p4 = top_slice[3].as_::<c_int>();
-            let p5 = (*left.offset(0 * left_stride)).as_::<c_int>();
-            let p6 = (*left.offset(1 * left_stride)).as_::<c_int>();
+            let p0 = (*topleft).as_::<i32>();
+            let p1 = top_slice[0].as_::<i32>();
+            let p2 = top_slice[1].as_::<i32>();
+            let p3 = top_slice[2].as_::<i32>();
+            let p4 = top_slice[3].as_::<i32>();
+            let p5 = (*left.offset(0 * left_stride)).as_::<i32>();
+            let p6 = (*left.offset(1 * left_stride)).as_::<i32>();
             let mut ptr = dst.add(x);
             let mut flt_ptr = filter.as_slice();
 
@@ -1268,14 +1254,14 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
 
 unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    stride: isize,
     topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    filt_idx: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
+    width: i32,
+    height: i32,
+    filt_idx: i32,
+    max_width: i32,
+    max_height: i32,
+    bitdepth_max: i32,
     topleft_off: usize,
 ) {
     let topleft = reconstruct_topleft::<BD>(topleft_in, topleft_off);
@@ -1298,8 +1284,8 @@ fn cfl_ac_rust<BD: BitDepth>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y_src: &Rav1dPictureDataComponent,
     mut y_src_offset: usize,
-    w_pad: c_int,
-    h_pad: c_int,
+    w_pad: i32,
+    h_pad: i32,
     width: usize,
     height: usize,
     is_ss_hor: bool,
@@ -1366,11 +1352,11 @@ fn cfl_ac_rust<BD: BitDepth>(
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y_ptr: *const DynPixel,
-    _stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
+    _stride: isize,
+    w_pad: i32,
+    h_pad: i32,
+    cw: i32,
+    ch: i32,
     y: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_ac::Fn::call`.
@@ -1387,8 +1373,8 @@ fn pal_pred_rust<BD: BitDepth>(
     mut dst_offset: usize,
     pal: &[BD::Pixel; 8],
     idx: &[u8],
-    w: c_int,
-    h: c_int,
+    w: i32,
+    h: i32,
 ) {
     let w = w as usize;
     let h = h as usize;
@@ -1414,11 +1400,11 @@ fn pal_pred_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    _stride: isize,
     pal: *const [DynPixel; 8],
     idx: *const u8,
-    w: c_int,
-    h: c_int,
+    w: i32,
+    h: i32,
     dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
     let dst_ptr = dst_ptr.cast::<BD::Pixel>();
@@ -1447,24 +1433,24 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn z13_fill(
         dst: *mut DynPixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dxy: c_int,
-        max_base_xy: c_int,
+        width: i32,
+        height: i32,
+        dxy: i32,
+        max_base_xy: i32,
     ) -> ());
 
     impl z13_fill::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
             dst: *mut BD::Pixel,
-            stride: ptrdiff_t,
+            stride: isize,
             topleft: &[BD::Pixel],
-            width: c_int,
-            height: c_int,
-            dxy: c_int,
-            max_base_xy: c_int,
+            width: i32,
+            height: i32,
+            dxy: i32,
+            max_base_xy: i32,
         ) {
             let dst = dst.cast();
             let topleft = topleft.as_ptr().cast();
@@ -1474,26 +1460,26 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn z2_fill(
         dst: *mut DynPixel,
-        stride: ptrdiff_t,
+        stride: isize,
         top: *const DynPixel,
         left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
+        width: i32,
+        height: i32,
+        dx: i32,
+        dy: i32,
     ) -> ());
 
     impl z2_fill::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
             dst: *mut BD::Pixel,
-            stride: ptrdiff_t,
+            stride: isize,
             top: &[BD::Pixel],
             left: &[BD::Pixel],
-            width: c_int,
-            height: c_int,
-            dx: c_int,
-            dy: c_int,
+            width: i32,
+            height: i32,
+            dx: i32,
+            dy: i32,
         ) {
             let dst = dst.cast();
             let top = top.as_ptr().cast();
@@ -1504,19 +1490,19 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn z1_upsample_edge(
         out: *mut DynPixel,
-        hsz: c_int,
+        hsz: i32,
         in_0: *const DynPixel,
-        end: c_int,
-        _bitdepth_max: c_int,
+        end: i32,
+        _bitdepth_max: i32,
     ) -> ());
 
     impl z1_upsample_edge::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
-            hsz: c_int,
+            hsz: i32,
             in_0: &[BD::Pixel],
-            end: c_int,
+            end: i32,
             bd: BD,
         ) {
             let out = out.as_mut_ptr().cast();
@@ -1528,20 +1514,20 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn z1_filter_edge(
         out: *mut DynPixel,
-        sz: c_int,
+        sz: i32,
         in_0: *const DynPixel,
-        end: c_int,
-        strength: c_int,
+        end: i32,
+        strength: i32,
     ) -> ());
 
     impl z1_filter_edge::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
-            sz: c_int,
+            sz: i32,
             in_0: &[BD::Pixel],
-            end: c_int,
-            strength: c_int,
+            end: i32,
+            strength: i32,
         ) {
             let out = out.as_mut_ptr().cast();
             let in_0 = in_0.as_ptr().cast();
@@ -1551,16 +1537,16 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn z2_upsample_edge(
         out: *mut DynPixel,
-        hsz: c_int,
+        hsz: i32,
         in_0: *const DynPixel,
-        _bitdepth_max: c_int,
+        _bitdepth_max: i32,
     ) -> ());
 
     impl z2_upsample_edge::Fn {
         pub unsafe fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
-            hsz: c_int,
+            hsz: i32,
             in_0: &[BD::Pixel],
             bd: BD,
         ) {
@@ -1574,16 +1560,11 @@ mod neon {
     wrap_fn_ptr!(unsafe extern "C" fn reverse(
         dst: *mut DynPixel,
         src: *const DynPixel,
-        n: c_int,
+        n: i32,
     ) -> ());
 
     impl reverse::Fn {
-        pub unsafe fn call<BD: BitDepth>(
-            &self,
-            dst: &mut [BD::Pixel],
-            src: &[BD::Pixel],
-            n: c_int,
-        ) {
+        pub unsafe fn call<BD: BitDepth>(&self, dst: &mut [BD::Pixel], src: &[BD::Pixel], n: i32) {
             let dst = dst.as_mut_ptr().cast();
             let src = src.as_ptr().cast();
             self.get()(dst, src, n)
@@ -1593,7 +1574,7 @@ mod neon {
     unsafe fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(
         out: &mut [BD::Pixel],
         px: BD::Pixel,
-        n: c_int,
+        n: i32,
     ) {
         // `pixel_set` takes a `px: BD::Pixel`.
         // Since it's not behind a ptr, we can't make it a `DynPixel`
@@ -1604,14 +1585,14 @@ mod neon {
             fn dav1d_ipred_pixel_set_8bpc_neon(
                 out: *mut DynPixel,
                 px: <BitDepth8 as BitDepth>::Pixel,
-                n: c_int,
+                n: i32,
             );
 
             #[cfg(feature = "bitdepth_16")]
             fn dav1d_ipred_pixel_set_16bpc_neon(
                 out: *mut DynPixel,
                 px: <BitDepth16 as BitDepth>::Pixel,
-                n: c_int,
+                n: i32,
             );
         }
 
@@ -1629,21 +1610,21 @@ mod neon {
 
     unsafe fn ipred_z1_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
-        width: c_int,
-        height: c_int,
-        mut angle: c_int,
-        _max_width: c_int,
-        _max_height: c_int,
+        width: i32,
+        height: i32,
+        mut angle: i32,
+        _max_width: i32,
+        _max_height: i32,
         bd: BD,
     ) {
         let topleft_in = &topleft_in[topleft_off..];
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
-        let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
+        let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as i32;
         const TOP_OUT_SIZE: usize = 64 + 64 * (64 + 15) * 2 + 16;
         let mut top_out = [0.into(); TOP_OUT_SIZE];
         let max_base_x;
@@ -1683,7 +1664,7 @@ mod neon {
                 top_out[..len].copy_from_slice(&topleft_in[1..][..len]);
             }
         }
-        let base_inc = 1 + upsample_above as c_int;
+        let base_inc = 1 + upsample_above as i32;
         let pad_pixels = width + 15;
         let px = top_out[max_base_x as usize];
         rav1d_ipred_pixel_set_neon::<BD>(
@@ -1702,14 +1683,14 @@ mod neon {
 
     unsafe fn ipred_z2_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
-        width: c_int,
-        height: c_int,
-        mut angle: c_int,
-        max_width: c_int,
-        max_height: c_int,
+        width: i32,
+        height: i32,
+        mut angle: i32,
+        max_width: i32,
+        max_height: i32,
         bd: BD,
     ) {
         let topleft_in = &topleft_in[topleft_off..];
@@ -1717,8 +1698,8 @@ mod neon {
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
         assert!(angle > 90 && angle < 180);
-        let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as c_int;
-        let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as c_int;
+        let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as i32;
+        let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as i32;
         let mut buf = [0.to::<BD::Pixel>(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
 
         // The asm can underread below the start of top[] and left[]; to avoid
@@ -1868,14 +1849,14 @@ mod neon {
 
     unsafe fn ipred_z3_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
         topleft_off: usize,
-        width: c_int,
-        height: c_int,
-        mut angle: c_int,
-        _max_width: c_int,
-        _max_height: c_int,
+        width: i32,
+        height: i32,
+        mut angle: i32,
+        _max_width: i32,
+        _max_height: i32,
         bd: BD,
     ) {
         let topleft_in = &topleft_in[topleft_off..];
@@ -1883,7 +1864,7 @@ mod neon {
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
         assert!(angle > 180);
-        let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
+        let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as i32;
         let mut flipped = [0.into(); 64 + 64 + 16];
         let mut left_out = [0.into(); 64 + 64 + (64 + 15) * 2];
         let max_base_y;
@@ -1938,7 +1919,7 @@ mod neon {
                 max_base_y = height + cmp::min(width, height) - 1;
             }
         }
-        let base_inc = 1 + upsample_left as c_int;
+        let base_inc = 1 + upsample_left as i32;
         let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
         let px = left_out[max_base_y as usize];
         rav1d_ipred_pixel_set_neon::<BD>(
@@ -1960,14 +1941,14 @@ mod neon {
     /// Must be called from [`angular_ipred::Fn::call`].
     pub unsafe extern "C" fn ipred_z_neon_erased<BD: BitDepth, const Z: usize>(
         dst: *mut DynPixel,
-        stride: ptrdiff_t,
+        stride: isize,
         topleft_in: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        angle: c_int,
-        max_width: c_int,
-        max_height: c_int,
-        bitdepth_max: c_int,
+        width: i32,
+        height: i32,
+        angle: i32,
+        max_width: i32,
+        max_height: i32,
+        bitdepth_max: i32,
         topleft_off: usize,
     ) {
         // SAFETY: Reconstructed from args passed by `angular_ipred::Fn::call`.
