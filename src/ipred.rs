@@ -1213,8 +1213,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
                 p5 = left[1];
                 p6 = left[0];
             } else {
-                let x = x - 4;
-                let left = dst.add(x + 4 - 1);
+                let left = dst.add(x - 1);
                 p5 = *left;
                 p6 = *left.offset(stride);
             }
