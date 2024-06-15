@@ -1203,7 +1203,6 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     let filt_idx = filt_idx as usize;
     let stride = BD::pxstride(stride);
     let filt_idx = filt_idx & 511;
-    assert!(filt_idx < 5);
 
     let filter = &dav1d_filter_intra_taps[filt_idx];
     let mut top = topleft_in[topleft_off + 1..].as_ptr();
