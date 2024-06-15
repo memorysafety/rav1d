@@ -1207,11 +1207,12 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     let filter = &dav1d_filter_intra_taps[filt_idx];
     let mut top = &topleft_in[topleft_off + 1..][..width];
     for y in (0..height).step_by(2) {
-        let mut topleft = topleft_in.as_ptr().add(topleft_off - y);
-        let mut left = topleft.sub(1);
+        let topleft_off = topleft_off - y;
+        let mut topleft = topleft_in[topleft_off];
+        let mut left = topleft_in.as_ptr().add(topleft_off - 1);
         let mut left_stride = -1;
         for x in (0..width).step_by(4) {
-            let p0 = (*topleft).as_::<c_int>();
+            let p0 = topleft.as_::<c_int>();
             let p1 = top[0].as_::<c_int>();
             let p2 = top[1].as_::<c_int>();
             let p3 = top[2].as_::<c_int>();
@@ -1232,7 +1233,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             }
             left = dst.add(x + 4 - 1);
             left_stride = stride;
-            topleft = top[4 - 1..].as_ptr();
+            topleft = top[4 - 1];
             top = &top[4..];
         }
         dst = dst.offset(stride);
