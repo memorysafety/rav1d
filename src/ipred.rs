@@ -1150,33 +1150,24 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     )
 }
 
-fn filter_fn(
-    flt_ptr: &[i8],
-    p0: c_int,
-    p1: c_int,
-    p2: c_int,
-    p3: c_int,
-    p4: c_int,
-    p5: c_int,
-    p6: c_int,
-) -> c_int {
+fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> c_int {
     let flt_ptr = &flt_ptr[..48 + 1];
     if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-        flt_ptr[0] as c_int * p0
-            + flt_ptr[1] as c_int * p1
-            + flt_ptr[16] as c_int * p2
-            + flt_ptr[17] as c_int * p3
-            + flt_ptr[32] as c_int * p4
-            + flt_ptr[33] as c_int * p5
-            + flt_ptr[48] as c_int * p6
+        flt_ptr[0] as c_int * p[0]
+            + flt_ptr[1] as c_int * p[1]
+            + flt_ptr[16] as c_int * p[2]
+            + flt_ptr[17] as c_int * p[3]
+            + flt_ptr[32] as c_int * p[4]
+            + flt_ptr[33] as c_int * p[5]
+            + flt_ptr[48] as c_int * p[6]
     } else {
-        flt_ptr[0] as c_int * p0
-            + flt_ptr[8] as c_int * p1
-            + flt_ptr[16] as c_int * p2
-            + flt_ptr[24] as c_int * p3
-            + flt_ptr[32] as c_int * p4
-            + flt_ptr[40] as c_int * p5
-            + flt_ptr[48] as c_int * p6
+        flt_ptr[0] as c_int * p[0]
+            + flt_ptr[8] as c_int * p[1]
+            + flt_ptr[16] as c_int * p[2]
+            + flt_ptr[24] as c_int * p[3]
+            + flt_ptr[32] as c_int * p[4]
+            + flt_ptr[40] as c_int * p[5]
+            + flt_ptr[48] as c_int * p[6]
     }
 }
 
@@ -1212,20 +1203,21 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
         let mut left = topleft_in.as_ptr().add(topleft_off - 1);
         let mut left_stride = -1;
         for x in (0..width).step_by(4) {
-            let p0 = topleft.as_::<c_int>();
-            let p1 = top[0].as_::<c_int>();
-            let p2 = top[1].as_::<c_int>();
-            let p3 = top[2].as_::<c_int>();
-            let p4 = top[3].as_::<c_int>();
-            let p5 = (*left.offset(0 * left_stride)).as_::<c_int>();
-            let p6 = (*left.offset(1 * left_stride)).as_::<c_int>();
+            let p0 = topleft;
+            let p1 = top[0];
+            let p2 = top[1];
+            let p3 = top[2];
+            let p4 = top[3];
+            let p5 = *left.offset(0 * left_stride);
+            let p6 = *left.offset(1 * left_stride);
+            let p = [p0, p1, p2, p3, p4, p5, p6].map(|p| p.as_::<i32>());
             let mut ptr = dst.add(x);
             let mut flt_ptr = filter.as_slice();
 
             for _yy in 0..2 {
                 let ptr_slice = slice::from_raw_parts_mut(ptr, 4);
                 for xx in ptr_slice {
-                    let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
+                    let acc = filter_fn(flt_ptr, p);
                     *xx = bd.iclip_pixel(acc + 8 >> 4);
                     flt_ptr = &flt_ptr[FLT_INCR..];
                 }
