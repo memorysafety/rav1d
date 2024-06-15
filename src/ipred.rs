@@ -1205,18 +1205,17 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     let filt_idx = filt_idx & 511;
 
     let filter = &dav1d_filter_intra_taps[filt_idx];
-    let mut top = topleft_in[topleft_off + 1..].as_ptr();
+    let mut top = &topleft_in[topleft_off + 1..][..width];
     for y in (0..height).step_by(2) {
         let mut topleft = topleft_in.as_ptr().add(topleft_off - y);
         let mut left = topleft.sub(1);
         let mut left_stride = -1;
         for x in (0..width).step_by(4) {
-            let top_slice = slice::from_raw_parts(top, 4);
             let p0 = (*topleft).as_::<c_int>();
-            let p1 = top_slice[0].as_::<c_int>();
-            let p2 = top_slice[1].as_::<c_int>();
-            let p3 = top_slice[2].as_::<c_int>();
-            let p4 = top_slice[3].as_::<c_int>();
+            let p1 = top[0].as_::<c_int>();
+            let p2 = top[1].as_::<c_int>();
+            let p3 = top[2].as_::<c_int>();
+            let p4 = top[3].as_::<c_int>();
             let p5 = (*left.offset(0 * left_stride)).as_::<c_int>();
             let p6 = (*left.offset(1 * left_stride)).as_::<c_int>();
             let mut ptr = dst.add(x);
@@ -1233,11 +1232,12 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
             }
             left = dst.add(x + 4 - 1);
             left_stride = stride;
-            top = top.offset(4);
-            topleft = top.sub(1);
+            topleft = top[4 - 1..].as_ptr();
+            top = &top[4..];
         }
-        top = dst.offset(stride);
-        dst = dst.offset(stride * 2);
+        dst = dst.offset(stride);
+        top = slice::from_raw_parts(dst, width);
+        dst = dst.offset(stride);
     }
 }
 
