@@ -11,7 +11,7 @@ pub unsafe fn hex_fdump<BD: BitDepth>(
     w: usize,
     h: usize,
     what: &str,
-) {
+) -> io::Result<()> {
     let len = if h == 0 {
         0
     } else {
@@ -19,13 +19,14 @@ pub unsafe fn hex_fdump<BD: BitDepth>(
     };
     let buf = std::slice::from_raw_parts(buf, len);
 
-    write!(out, "{}", what).unwrap();
+    write!(out, "{}", what)?;
     for buf in buf.chunks(BD::pxstride(stride)) {
         for &x in &buf[..w] {
-            write!(out, " {}", BD::display(x)).unwrap();
+            write!(out, " {}", BD::display(x))?;
         }
-        writeln!(out).unwrap();
+        writeln!(out)?;
     }
+    Ok(())
 }
 
 #[inline]
@@ -36,7 +37,7 @@ pub unsafe fn hex_dump<BD: BitDepth>(
     h: usize,
     what: &str,
 ) {
-    hex_fdump::<BD>(&mut stdout(), buf, stride, w, h, what);
+    hex_fdump::<BD>(&mut stdout(), buf, stride, w, h, what).unwrap();
 }
 
 #[inline]
