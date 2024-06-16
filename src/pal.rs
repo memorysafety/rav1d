@@ -60,24 +60,22 @@ unsafe fn pal_idx_finish_rust(
     let dst_w = w / 2;
     let dst_bw = bw / 2;
 
-    let mut dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
-    let mut src = slice::from_raw_parts(src, bw * bh);
+    let dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
+    let src = slice::from_raw_parts(src, bw * bh);
 
     for y in 0..h {
+        let src = &src[y * bw..];
+        let dst = &mut dst[y * dst_bw..];
         for x in 0..dst_w {
             dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
         }
         if dst_w < dst_bw {
             dst[dst_w..dst_bw].fill(0x11 * src[w]);
         }
-        src = &src[bw..];
-        if y < h - 1 {
-            dst = &mut dst[dst_bw..];
-        }
     }
 
     if h < bh {
-        let (last_row, dst) = dst.split_at_mut(dst_bw);
+        let (last_row, dst) = dst[(h - 1) * dst_bw..].split_at_mut(dst_bw);
 
         for row in dst.chunks_exact_mut(dst_bw) {
             row.copy_from_slice(last_row);
