@@ -175,6 +175,20 @@ impl Rav1dPictureDataComponentInner {
         assert!(len % RAV1D_PICTURE_MULTIPLE == 0);
         Self { ptr, len, stride }
     }
+
+    /// # Safety
+    ///
+    /// As opposed to [`Self::new`], this is safe because `buf` is a `&mut` and thus unique,
+    /// so it is sound to further subdivide it into disjoint `&mut`s.
+    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+        let buf = AsBytes::as_bytes_mut(buf);
+        let ptr = NonNull::new(buf.as_mut_ptr()).unwrap();
+        assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
+        let len = buf.len();
+        assert!(len % RAV1D_PICTURE_MULTIPLE == 0);
+        let stride = (stride * mem::size_of::<BD::Pixel>()) as isize;
+        Self { ptr, len, stride }
+    }
 }
 
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
@@ -207,6 +221,12 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
 pub struct Rav1dPictureDataComponent(DisjointMut<Rav1dPictureDataComponentInner>);
 
 impl Rav1dPictureDataComponent {
+    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+        Self(DisjointMut::new(
+            Rav1dPictureDataComponentInner::wrap_buf::<BD>(buf, stride),
+        ))
+    }
+
     /// Length in number of [`u8`] bytes.
     fn len(&self) -> usize {
         self.0.len()
