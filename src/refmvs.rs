@@ -9,6 +9,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::disjoint_mut::DisjointMutGuard;
+use crate::src::disjoint_mut::DisjointMutSlice;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -1504,6 +1505,10 @@ fn load_tmvs_rust(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`save_tmvs::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn save_tmvs_c(
     _rp: *mut refmvs_temporal_block,
     stride: isize,
@@ -1517,14 +1522,30 @@ unsafe extern "C" fn save_tmvs_c(
     ri: &[usize; 31],
     rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
 ) {
-    let r = FFISafe::get(r);
-    let rp = FFISafe::get(rp);
-    let rp = &*rp.inner;
-
     let stride = stride as usize;
     let [col_end8, row_end8, col_start8, row_start8] =
         [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
+    // SAFETY: Was passed as `FFISafe::new(_)` in `save_tmvs::Fn::call`.
+    let r = unsafe { FFISafe::get(r) };
+    // SAFETY: Was passed as `FFISafe::new(_)` in `save_tmvs::Fn::call`.
+    let rp = unsafe { FFISafe::get(rp) };
+    let rp = &*rp.inner;
+    save_tmvs_rust(
+        stride, ref_sign, col_end8, row_end8, col_start8, row_start8, r, ri, rp,
+    )
+}
 
+fn save_tmvs_rust(
+    stride: usize,
+    ref_sign: &[u8; 7],
+    col_end8: usize,
+    row_end8: usize,
+    col_start8: usize,
+    row_start8: usize,
+    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    ri: &[usize; 31],
+    rp: &DisjointMutSlice<refmvs_temporal_block>,
+) {
     for y in row_start8..row_end8 {
         let b = ri[(y & 15) * 2];
         let mut x = col_start8;
