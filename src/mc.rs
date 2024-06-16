@@ -1104,8 +1104,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc(
 impl mc::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: Rav1dPictureDataComponentOffset,
         src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
@@ -1113,11 +1112,12 @@ impl mc::Fn {
         my: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, src_ptr, src_stride, w, h, mx, my, bd)
+        self.get()(dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, bd)
     }
 }
 
@@ -1138,8 +1138,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
 impl mc_scaled::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: Rav1dPictureDataComponentOffset,
         src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
@@ -1149,12 +1148,13 @@ impl mc_scaled::Fn {
         dy: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
         self.get()(
-            dst, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
+            dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
         )
     }
 }
@@ -1173,8 +1173,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8(
 impl warp8x8::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: Rav1dPictureDataComponentOffset,
         src: *const BD::Pixel,
         src_stride: isize,
         abcd: &[i16; 4],
@@ -1182,10 +1181,11 @@ impl warp8x8::Fn {
         my: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let src = src.cast();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, src, src_stride, abcd, mx, my, bd)
+        self.get()(dst_ptr, dst_stride, src, src_stride, abcd, mx, my, bd)
     }
 }
 
