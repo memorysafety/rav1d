@@ -13,12 +13,13 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
 ) -> ());
 
 impl pal_idx_finish::Fn {
-    /// If `dst` is [`None`], `src` is used as `dst`.
-    /// This is why `src` must be `&mut`, too.
+    /// If `dst` is [`None`], `tmp` is used as `dst`.
+    /// This is why `tmp` must be `&mut`, too.
+    /// `tmp` is always used as `src`.
     pub unsafe fn call(
         &self,
         dst: Option<&mut [u8]>,
-        src: &mut [u8],
+        tmp: &mut [u8],
         bw: usize,
         bh: usize,
         w: usize,
@@ -28,8 +29,8 @@ impl pal_idx_finish::Fn {
         // This is safe because they are raw ptrs for now,
         // and in the fallback `fn pal_idx_finish_rust`, this is checked for
         // before creating `&mut`s from them.
-        let dst = dst.unwrap_or(src).as_mut_ptr();
-        let src = src.as_ptr();
+        let dst = dst.unwrap_or(tmp).as_mut_ptr();
+        let src = tmp.as_ptr();
         let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as c_int);
         self.get()(dst, src, bw, bh, w, h)
     }
