@@ -25,6 +25,8 @@ impl pal_idx_finish::Fn {
         w: usize,
         h: usize,
     ) {
+        let dst = dst.map(|dst| &mut dst[..(bw / 2) * bh]);
+        let tmp = &mut tmp[..bw * bh];
         // SAFETY: Note that `dst` and `src` may be the same.
         // This is safe because they are raw ptrs for now,
         // and in the fallback `fn pal_idx_finish_rust`, this is checked for
@@ -45,6 +47,10 @@ enum PalIdx<'a> {
     Tmp(&'a mut [u8]),
 }
 
+/// # Safety
+///
+/// Must be called by [`pal_idx_finish::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn pal_idx_finish_c(
     dst: *mut u8,
     src: *const u8,
@@ -60,14 +66,15 @@ unsafe extern "C" fn pal_idx_finish_c(
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
     assert!(h >= 4 && h <= bh && (h & 3) == 0);
 
-    let dst_bw = bw / 2;
-
     let idx = if src == dst {
-        let tmp = slice::from_raw_parts_mut(dst, bw * bh);
+        // SAFETY: `src` length sliced in `pal_idx_finish::Fn::call` and `src == dst`.
+        let tmp = unsafe { slice::from_raw_parts_mut(dst, bw * bh) };
         PalIdx::Tmp(tmp)
     } else {
-        let dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
-        let src = slice::from_raw_parts(src, bw * bh);
+        // SAFETY: `src` length sliced in `pal_idx_finish::Fn::call`.
+        let src = unsafe { slice::from_raw_parts(src, bw * bh) };
+        // SAFETY: `dst` length sliced in `pal_idx_finish::Fn::call`.
+        let dst = unsafe { slice::from_raw_parts_mut(dst, (bw / 2) * bh) };
         PalIdx::Idx { dst, src }
     };
 
