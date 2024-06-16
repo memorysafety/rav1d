@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::src::cpu::CpuFlags;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::ffi::c_int;
@@ -16,7 +18,7 @@ impl pal_idx_finish::Fn {
     /// If `dst` is [`None`], `tmp` is used as `dst`.
     /// This is why `tmp` must be `&mut`, too.
     /// `tmp` is always used as `src`.
-    pub unsafe fn call(
+    pub fn call(
         &self,
         dst: Option<&mut [u8]>,
         tmp: &mut [u8],
@@ -34,7 +36,8 @@ impl pal_idx_finish::Fn {
         let dst = dst.unwrap_or(tmp).as_mut_ptr();
         let src = tmp.as_ptr();
         let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as c_int);
-        self.get()(dst, src, bw, bh, w, h)
+        // SAFETY: Fallback `fn pal_idx_finish_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst, src, bw, bh, w, h) }
     }
 }
 
