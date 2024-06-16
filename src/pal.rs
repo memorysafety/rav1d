@@ -31,8 +31,7 @@ pub struct Rav1dPalDSPContext {
     pub pal_idx_finish: pal_idx_finish::Fn,
 }
 
-// fill invisible edges and pack to 4-bit (2 pixels per byte)
-unsafe extern "C" fn pal_idx_finish_rust(
+unsafe extern "C" fn pal_idx_finish_c(
     dst: *mut u8,
     src: *const u8,
     bw: c_int,
@@ -41,7 +40,18 @@ unsafe extern "C" fn pal_idx_finish_rust(
     h: c_int,
 ) {
     let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as usize);
+    pal_idx_finish_rust(dst, src, bw, bh, w, h)
+}
 
+/// Fill invisible edges and pack to 4-bit (2 pixels per byte).
+unsafe fn pal_idx_finish_rust(
+    dst: *mut u8,
+    src: *const u8,
+    bw: usize,
+    bh: usize,
+    w: usize,
+    h: usize,
+) {
     assert!(bw >= 4 && bw <= 64 && bw.is_power_of_two());
     assert!(bh >= 4 && bh <= 64 && bh.is_power_of_two());
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
@@ -78,7 +88,7 @@ unsafe extern "C" fn pal_idx_finish_rust(
 impl Rav1dPalDSPContext {
     pub const fn default() -> Self {
         Self {
-            pal_idx_finish: pal_idx_finish::Fn::new(pal_idx_finish_rust),
+            pal_idx_finish: pal_idx_finish::Fn::new(pal_idx_finish_c),
         }
     }
 
