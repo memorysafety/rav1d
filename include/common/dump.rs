@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use std::fmt::Display;
