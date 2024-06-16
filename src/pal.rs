@@ -48,6 +48,12 @@ unsafe extern "C" fn pal_idx_finish_c(
     h: c_int,
 ) {
     let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as usize);
+
+    assert!(bw >= 4 && bw <= 64 && bw.is_power_of_two());
+    assert!(bh >= 4 && bh <= 64 && bh.is_power_of_two());
+    assert!(w >= 4 && w <= bw && (w & 3) == 0);
+    assert!(h >= 4 && h <= bh && (h & 3) == 0);
+
     pal_idx_finish_rust(dst, src, bw, bh, w, h)
 }
 
@@ -60,11 +66,6 @@ unsafe fn pal_idx_finish_rust(
     w: usize,
     h: usize,
 ) {
-    assert!(bw >= 4 && bw <= 64 && bw.is_power_of_two());
-    assert!(bh >= 4 && bh <= 64 && bh.is_power_of_two());
-    assert!(w >= 4 && w <= bw && (w & 3) == 0);
-    assert!(h >= 4 && h <= bh && (h & 3) == 0);
-
     let dst_w = w / 2;
     let dst_bw = bw / 2;
 
