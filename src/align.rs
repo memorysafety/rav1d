@@ -6,6 +6,7 @@
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
 
+use crate::src::disjoint_mut::AsMutPtr;
 use std::marker::PhantomData;
 use std::mem;
 use std::mem::MaybeUninit;
@@ -14,8 +15,6 @@ use std::ops::DerefMut;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice;
-
-use crate::src::disjoint_mut::AsMutPtr;
 
 /// [`Default`] isn't `impl`emented for all arrays `[T; N]`
 /// because they were implemented before `const` generics

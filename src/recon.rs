@@ -12,6 +12,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
@@ -2599,8 +2600,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             bd,
                         );
                         f.dsp.ipred.intra_pred[m as usize].call(
-                            dst,
-                            f.cur.stride[0],
+                            y_dst,
                             edge_array,
                             edge_offset,
                             t_dim.w as c_int * 4,
@@ -2998,8 +2998,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                             angle |= intra_edge_filter_flag;
                             f.dsp.ipred.intra_pred[m as usize].call(
-                                dst,
-                                stride,
+                                uv_dst,
                                 edge_array,
                                 edge_offset,
                                 uv_t_dim.w as c_int * 4,
@@ -3516,8 +3515,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
             f.dsp.ipred.intra_pred[m as usize].call(
-                tmp.as_mut_ptr(),
-                4 * bw4 as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
+                Rav1dPictureDataComponentOffset {
+                    data: &Rav1dPictureDataComponent::wrap_buf::<BD>(tmp, 4 * bw4 as usize),
+                    offset: 0,
+                },
                 tl_edge_array,
                 tl_edge_offset,
                 bw4 * 4,
@@ -3810,8 +3811,13 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                         let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
                         f.dsp.ipred.intra_pred[m as usize].call(
-                            tmp.as_mut_ptr(),
-                            cbw4 as isize * 4 * ::core::mem::size_of::<BD::Pixel>() as isize,
+                            Rav1dPictureDataComponentOffset {
+                                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(
+                                    tmp,
+                                    4 * cbw4 as usize,
+                                ),
+                                offset: 0,
+                            },
                             tl_edge_array,
                             tl_edge_offset,
                             cbw4 * 4,
