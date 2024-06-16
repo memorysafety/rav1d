@@ -1189,7 +1189,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
     _max_height: c_int,
     bd: BD,
 ) {
-    let width = width as usize;
+    let width = width as usize / 4 * 4; // To elide bounds checks.
     let height = height as usize;
     let filt_idx = filt_idx as usize;
     let stride = BD::pxstride(stride);
