@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
@@ -39,7 +41,8 @@ impl Rav1dData {
     ) -> Rav1dResult<Self> {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };
-        let data = CBox::from_c(data, free);
+        // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
+        let data = unsafe { CBox::from_c(data, free) };
         let data = CArc::wrap(data)?;
         Ok(data.into())
     }
@@ -55,7 +58,8 @@ impl Rav1dData {
     ) -> Rav1dResult {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };
-        let user_data = CBox::from_c(user_data, free);
+        // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
+        let user_data = unsafe { CBox::from_c(user_data, free) };
         let user_data = CArc::wrap(user_data)?;
         self.m.user_data = Some(user_data);
         Ok(())
