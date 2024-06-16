@@ -913,7 +913,7 @@ fn splat_oneref_mv(
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     });
 
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -934,7 +934,7 @@ fn splat_intrabc_mv(
         bs,
         mf: 0,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -959,7 +959,7 @@ fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -979,7 +979,7 @@ fn splat_intraref(
         bs,
         mf: 0,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(

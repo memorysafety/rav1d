@@ -19,6 +19,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
 use crate::src::tables::dav1d_block_dimensions;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::marker::PhantomData;
 use std::mem;
@@ -28,13 +29,6 @@ use zerocopy::FromZeroes;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_splat_mv_sse2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const Align16<refmvs_block>,
-        bx4: i32,
-        bw4: i32,
-        bh4: i32,
-    );
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
         stride: isize,
@@ -66,20 +60,6 @@ extern "C" {
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {
-    fn dav1d_splat_mv_avx512icl(
-        rr: *mut *mut refmvs_block,
-        rmv: *const Align16<refmvs_block>,
-        bx4: i32,
-        bw4: i32,
-        bh4: i32,
-    );
-    fn dav1d_splat_mv_avx2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const Align16<refmvs_block>,
-        bx4: i32,
-        bw4: i32,
-        bh4: i32,
-    );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
         stride: isize,
@@ -105,17 +85,6 @@ extern "C" {
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
         _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-extern "C" {
-    fn dav1d_splat_mv_neon(
-        rr: *mut *mut refmvs_block,
-        rmv: *const Align16<refmvs_block>,
-        bx4: i32,
-        bw4: i32,
-        bh4: i32,
     );
 }
 
@@ -301,18 +270,95 @@ extern "C" {
     );
 }
 
-pub type splat_mv_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn splat_mv(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
-) -> ();
+) -> ());
+
+impl splat_mv::Fn {
+    pub fn call(
+        &self,
+        rf: &RefMvsFrame,
+        rt: &refmvs_tile,
+        rmv: &Align16<refmvs_block>,
+        b4: Bxy,
+        bw4: usize,
+        bh4: usize,
+    ) {
+        let offset = (b4.y as usize & 31) + 5;
+        let len = bh4;
+        let bx4 = b4.x as usize;
+
+        type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
+
+        let mut r_guards = [const { MaybeUninit::uninit() }; 37];
+        let mut r_ptrs = [MaybeUninit::uninit(); 37];
+
+        let r_indices = &rt.r[offset..][..len];
+        // SAFETY: `r_guards[i]` will be initialized if `r_ptrs[i]` is non-null.
+        let r_guards = &mut r_guards[offset..][..len];
+        // SAFETY: This `r_ptrs` slice will be fully initialized.
+        let r_ptrs = &mut r_ptrs[offset..][..len];
+
+        for i in 0..len {
+            let ri = r_indices[i];
+            if ri < rf.r.len() - R_PAD {
+                // This is the range that will actually be accessed,
+                // but `splat_mv` expects a pointer offset `bx4` backwards.
+                let guard = rf.r.index_mut((ri + bx4.., ..bw4));
+                r_guards[i].write(guard);
+                // SAFETY: We just initialized it directly above.
+                let guard = unsafe { r_guards[i].assume_init_mut() };
+                // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
+                let ptr = unsafe { guard.as_mut_ptr().offset(-(bx4 as isize)) };
+                r_ptrs[i].write(ptr);
+            } else {
+                r_ptrs[i].write(ptr::null_mut());
+            }
+        }
+
+        /// # Safety
+        ///
+        /// `slice` must be initialized.
+        // TODO use `MaybeUninit::slice_assume_init_mut` once `#![feature(maybe_uninit_slice)]` is stabilized.
+        unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T] {
+            // SAFETY: `slice` is already initialized and `MaybeUninit` is `#[repr(transparent)]`.
+            unsafe { &mut *(ptr::from_mut(slice) as *mut [T]) }
+        }
+
+        // SAFETY: The `r_ptrs` slice is fully initialized by the above loop.
+        let r_ptrs = unsafe { slice_assume_init_mut(r_ptrs) };
+
+        let rr = r_ptrs.as_mut_ptr();
+        let bx4 = b4.x as _;
+        let bw4 = bw4 as _;
+        let bh4 = bh4 as _;
+
+        // SAFETY: Unsafe asm call. `rr` is `bh4` elements long,
+        // and each ptr in `rr` points to at least `bx4 + bw4` elements,
+        // which is what will be accessed in `splat_mv`.
+        unsafe { self.get()(rr, rmv, bx4, bw4, bh4) };
+
+        if mem::needs_drop::<Guard>() {
+            for i in 0..len {
+                let ptr = r_ptrs[i];
+                if ptr.is_null() {
+                    continue;
+                }
+                // SAFETY: `r_guards[i]` is initialized iff `r_ptrs[i]` is non-null.
+                unsafe { r_guards[i].assume_init_drop() };
+            }
+        }
+    }
+}
 
 pub struct Rav1dRefmvsDSPContext {
     load_tmvs: load_tmvs_fn,
     save_tmvs: save_tmvs_fn,
-    splat_mv: splat_mv_fn,
+    pub splat_mv: splat_mv::Fn,
 }
 
 impl Rav1dRefmvsDSPContext {
@@ -466,81 +512,6 @@ impl Rav1dRefmvsDSPContext {
                 ri,
                 FFISafe::new(rp),
             );
-        }
-    }
-
-    pub fn splat_mv(
-        &self,
-        rf: &RefMvsFrame,
-        rt: &refmvs_tile,
-        rmv: &Align16<refmvs_block>,
-        b4: Bxy,
-        bw4: usize,
-        bh4: usize,
-    ) {
-        let offset = (b4.y as usize & 31) + 5;
-        let len = bh4;
-        let bx4 = b4.x as usize;
-
-        type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
-
-        let mut r_guards = [const { MaybeUninit::uninit() }; 37];
-        let mut r_ptrs = [MaybeUninit::uninit(); 37];
-
-        let r_indices = &rt.r[offset..][..len];
-        // SAFETY: `r_guards[i]` will be initialized if `r_ptrs[i]` is non-null.
-        let r_guards = &mut r_guards[offset..][..len];
-        // SAFETY: This `r_ptrs` slice will be fully initialized.
-        let r_ptrs = &mut r_ptrs[offset..][..len];
-
-        for i in 0..len {
-            let ri = r_indices[i];
-            if ri < rf.r.len() - R_PAD {
-                // This is the range that will actually be accessed,
-                // but `splat_mv` expects a pointer offset `bx4` backwards.
-                let guard = rf.r.index_mut((ri + bx4.., ..bw4));
-                r_guards[i].write(guard);
-                // SAFETY: We just initialized it directly above.
-                let guard = unsafe { r_guards[i].assume_init_mut() };
-                // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
-                let ptr = unsafe { guard.as_mut_ptr().offset(-(bx4 as isize)) };
-                r_ptrs[i].write(ptr);
-            } else {
-                r_ptrs[i].write(ptr::null_mut());
-            }
-        }
-
-        /// # Safety
-        ///
-        /// `slice` must be initialized.
-        // TODO use `MaybeUninit::slice_assume_init_mut` once `#![feature(maybe_uninit_slice)]` is stabilized.
-        unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T] {
-            // SAFETY: `slice` is already initialized and `MaybeUninit` is `#[repr(transparent)]`.
-            unsafe { &mut *(ptr::from_mut(slice) as *mut [T]) }
-        }
-
-        // SAFETY: The `r_ptrs` slice is fully initialized by the above loop.
-        let r_ptrs = unsafe { slice_assume_init_mut(r_ptrs) };
-
-        let rr = r_ptrs.as_mut_ptr();
-        let bx4 = b4.x as _;
-        let bw4 = bw4 as _;
-        let bh4 = bh4 as _;
-
-        // SAFETY: Unsafe asm call. `rr` is `bh4` elements long,
-        // and each ptr in `rr` points to at least `bx4 + bw4` elements,
-        // which is what will be accessed in `splat_mv`.
-        unsafe { (self.splat_mv)(rr, rmv, bx4, bw4, bh4) };
-
-        if mem::needs_drop::<Guard>() {
-            for i in 0..len {
-                let ptr = r_ptrs[i];
-                if ptr.is_null() {
-                    continue;
-                }
-                // SAFETY: `r_guards[i]` is initialized iff `r_ptrs[i]` is non-null.
-                unsafe { r_guards[i].assume_init_drop() };
-            }
         }
     }
 }
@@ -1779,7 +1750,7 @@ impl Rav1dRefmvsDSPContext {
         Self {
             load_tmvs: load_tmvs_c,
             save_tmvs: save_tmvs_c,
-            splat_mv: splat_mv_rust,
+            splat_mv: splat_mv::Fn::new(splat_mv_rust),
         }
     }
 
@@ -1790,7 +1761,7 @@ impl Rav1dRefmvsDSPContext {
             return self;
         }
 
-        self.splat_mv = dav1d_splat_mv_sse2;
+        self.splat_mv = splat_mv::decl_fn!(fn dav1d_splat_mv_sse2);
 
         if !flags.contains(CpuFlags::SSSE3) {
             return self;
@@ -1811,14 +1782,14 @@ impl Rav1dRefmvsDSPContext {
             }
 
             self.save_tmvs = dav1d_save_tmvs_avx2;
-            self.splat_mv = dav1d_splat_mv_avx2;
+            self.splat_mv = splat_mv::decl_fn!(fn dav1d_splat_mv_avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
             }
 
             self.save_tmvs = dav1d_save_tmvs_avx512icl;
-            self.splat_mv = dav1d_splat_mv_avx512icl;
+            self.splat_mv = splat_mv::decl_fn!(fn dav1d_splat_mv_avx512icl);
         }
 
         self
@@ -1832,7 +1803,7 @@ impl Rav1dRefmvsDSPContext {
         }
 
         self.save_tmvs = dav1d_save_tmvs_neon;
-        self.splat_mv = dav1d_splat_mv_neon;
+        self.splat_mv = splat_mv::decl_fn!(fn dav1d_splat_mv_neon);
 
         self
     }
