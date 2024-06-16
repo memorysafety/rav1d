@@ -247,26 +247,29 @@ impl load_tmvs::Fn {
             n_frame_threads: n_frame_threads as _,
         };
 
+        let rp_proj = FFISafe::new(&rf.rp_proj);
+        let rp_ref = FFISafe::new(rp_ref);
+        let rf = &rf_dav1d;
         // SAFETY: Assembly call. Arguments are safe Rust references converted to
         // pointers for use in assembly. For the Rust fallback function the extra args
-        // `rf.rp_proj` and `rp_ref` are passed to allow for disjointedness checking.
+        // `rp_proj` and `rp_ref` are passed to allow for disjointedness checking.
         unsafe {
             self.get()(
-                &rf_dav1d,
+                rf,
                 tile_row_idx,
                 col_start8,
                 col_end8,
                 row_start8,
                 row_end8,
-                FFISafe::new(&rf.rp_proj),
-                FFISafe::new(rp_ref),
-            );
-        }
+                rp_proj,
+                rp_ref,
+            )
+        };
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn save_tmvs(
-    rp: *mut refmvs_temporal_block,
+    rp_ptr: *mut refmvs_temporal_block,
     stride: isize,
     rr: *const [*const refmvs_block; 31],
     ref_sign: *const [u8; 7],
