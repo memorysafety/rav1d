@@ -1129,115 +1129,101 @@ pub static dav1d_dr_intra_derivative: [u16; 44] = [
     0, 57, 51, 0, 45, 0, 40, 35, 0, 31, 27, 0, 23, 19, 0, 15, 0, 11, 0, 7, 3,
 ];
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-macro_rules! f {
-    (
-        $arr:ident,
-        $idx:literal,
-        $f0:literal,
-        $f1:literal,
-        $f2:literal,
-        $f3:literal,
-        $f4:literal,
-        $f5:literal,
-        $f6:literal
-    ) => {
-        $arr[2 * $idx + 0] = $f0;
-        $arr[2 * $idx + 1] = $f1;
-        $arr[2 * $idx + 16] = $f2;
-        $arr[2 * $idx + 17] = $f3;
-        $arr[2 * $idx + 32] = $f4;
-        $arr[2 * $idx + 33] = $f5;
-        $arr[2 * $idx + 48] = $f6;
-    };
+pub const FLT_INCR: usize = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+    2
+} else {
+    1
+};
+
+const FILTER_INDICES: [usize; 7] = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+    [0, 1, 16, 17, 32, 33, 48]
+} else {
+    [0, 8, 16, 24, 32, 40, 48]
+};
+
+pub fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> i32 {
+    let flt_ptr = &flt_ptr[..48 + 1];
+    let mut sum = 0;
+    for i in 0..7 {
+        sum += flt_ptr[FILTER_INDICES[i]] as i32 * p[i] as i32;
+    }
+    sum
 }
 
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-macro_rules! f {
-    (
-        $arr:ident,
-        $idx:literal,
-        $f0:literal,
-        $f1:literal,
-        $f2:literal,
-        $f3:literal,
-        $f4:literal,
-        $f5:literal,
-        $f6:literal
-    ) => {
-        $arr[1 * $idx + 0] = $f0;
-        $arr[1 * $idx + 8] = $f1;
-        $arr[1 * $idx + 16] = $f2;
-        $arr[1 * $idx + 24] = $f3;
-        $arr[1 * $idx + 32] = $f4;
-        $arr[1 * $idx + 40] = $f5;
-        $arr[1 * $idx + 48] = $f6;
-    };
+const fn gen_filter(mut a: [i8; 64], idx: usize, f: [i8; 7]) -> [i8; 64] {
+    let mut i = 0;
+    while i < 7 {
+        a[FLT_INCR * idx + FILTER_INDICES[i]] = f[i];
+        i += 1;
+    }
+    a
+}
+
+const fn gen_filters(f: [[i8; 7]; 8]) -> Align64<[i8; 64]> {
+    let mut a = [0; 64];
+
+    let mut i = 0;
+    while i < 8 {
+        a = gen_filter(a, i, f[i]);
+        i += 1;
+    }
+
+    Align64(a)
 }
 
 #[no_mangle]
-pub static dav1d_filter_intra_taps: Align64<[[i8; 64]; 5]> = Align64([
-    {
-        let mut array = [0; 64];
-        f!(array, 0, -6, 10, 0, 0, 0, 12, 0);
-        f!(array, 1, -5, 2, 10, 0, 0, 9, 0);
-        f!(array, 2, -3, 1, 1, 10, 0, 7, 0);
-        f!(array, 3, -3, 1, 1, 2, 10, 5, 0);
-        f!(array, 4, -4, 6, 0, 0, 0, 2, 12);
-        f!(array, 5, -3, 2, 6, 0, 0, 2, 9);
-        f!(array, 6, -3, 2, 2, 6, 0, 2, 7);
-        f!(array, 7, -3, 1, 2, 2, 6, 3, 5);
-        array
-    },
-    {
-        let mut array = [0; 64];
-        f!(array, 0, -10, 16, 0, 0, 0, 10, 0);
-        f!(array, 1, -6, 0, 16, 0, 0, 6, 0);
-        f!(array, 2, -4, 0, 0, 16, 0, 4, 0);
-        f!(array, 3, -2, 0, 0, 0, 16, 2, 0);
-        f!(array, 4, -10, 16, 0, 0, 0, 0, 10);
-        f!(array, 5, -6, 0, 16, 0, 0, 0, 6);
-        f!(array, 6, -4, 0, 0, 16, 0, 0, 4);
-        f!(array, 7, -2, 0, 0, 0, 16, 0, 2);
-        array
-    },
-    {
-        let mut array = [0; 64];
-        f!(array, 0, -8, 8, 0, 0, 0, 16, 0);
-        f!(array, 1, -8, 0, 8, 0, 0, 16, 0);
-        f!(array, 2, -8, 0, 0, 8, 0, 16, 0);
-        f!(array, 3, -8, 0, 0, 0, 8, 16, 0);
-        f!(array, 4, -4, 4, 0, 0, 0, 0, 16);
-        f!(array, 5, -4, 0, 4, 0, 0, 0, 16);
-        f!(array, 6, -4, 0, 0, 4, 0, 0, 16);
-        f!(array, 7, -4, 0, 0, 0, 4, 0, 16);
-        array
-    },
-    {
-        let mut array = [0; 64];
-        f!(array, 0, -2, 8, 0, 0, 0, 10, 0);
-        f!(array, 1, -1, 3, 8, 0, 0, 6, 0);
-        f!(array, 2, -1, 2, 3, 8, 0, 4, 0);
-        f!(array, 3, 0, 1, 2, 3, 8, 2, 0);
-        f!(array, 4, -1, 4, 0, 0, 0, 3, 10);
-        f!(array, 5, -1, 3, 4, 0, 0, 4, 6);
-        f!(array, 6, -1, 2, 3, 4, 0, 4, 4);
-        f!(array, 7, -1, 2, 2, 3, 4, 3, 3);
-        array
-    },
-    {
-        let mut array = [0; 64];
-        f!(array, 0, -12, 14, 0, 0, 0, 14, 0);
-        f!(array, 1, -10, 0, 14, 0, 0, 12, 0);
-        f!(array, 2, -9, 0, 0, 14, 0, 11, 0);
-        f!(array, 3, -8, 0, 0, 0, 14, 10, 0);
-        f!(array, 4, -10, 12, 0, 0, 0, 0, 14);
-        f!(array, 5, -9, 1, 12, 0, 0, 0, 12);
-        f!(array, 6, -8, 0, 0, 12, 0, 1, 11);
-        f!(array, 7, -7, 0, 0, 1, 12, 1, 9);
-        array
-    },
-]);
+pub static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5] = [
+    gen_filters([
+        [-6, 10, 0, 0, 0, 12, 0],
+        [-5, 2, 10, 0, 0, 9, 0],
+        [-3, 1, 1, 10, 0, 7, 0],
+        [-3, 1, 1, 2, 10, 5, 0],
+        [-4, 6, 0, 0, 0, 2, 12],
+        [-3, 2, 6, 0, 0, 2, 9],
+        [-3, 2, 2, 6, 0, 2, 7],
+        [-3, 1, 2, 2, 6, 3, 5],
+    ]),
+    gen_filters([
+        [-10, 16, 0, 0, 0, 10, 0],
+        [-6, 0, 16, 0, 0, 6, 0],
+        [-4, 0, 0, 16, 0, 4, 0],
+        [-2, 0, 0, 0, 16, 2, 0],
+        [-10, 16, 0, 0, 0, 0, 10],
+        [-6, 0, 16, 0, 0, 0, 6],
+        [-4, 0, 0, 16, 0, 0, 4],
+        [-2, 0, 0, 0, 16, 0, 2],
+    ]),
+    gen_filters([
+        [-8, 8, 0, 0, 0, 16, 0],
+        [-8, 0, 8, 0, 0, 16, 0],
+        [-8, 0, 0, 8, 0, 16, 0],
+        [-8, 0, 0, 0, 8, 16, 0],
+        [-4, 4, 0, 0, 0, 0, 16],
+        [-4, 0, 4, 0, 0, 0, 16],
+        [-4, 0, 0, 4, 0, 0, 16],
+        [-4, 0, 0, 0, 4, 0, 16],
+    ]),
+    gen_filters([
+        [-2, 8, 0, 0, 0, 10, 0],
+        [-1, 3, 8, 0, 0, 6, 0],
+        [-1, 2, 3, 8, 0, 4, 0],
+        [0, 1, 2, 3, 8, 2, 0],
+        [-1, 4, 0, 0, 0, 3, 10],
+        [-1, 3, 4, 0, 0, 4, 6],
+        [-1, 2, 3, 4, 0, 4, 4],
+        [-1, 2, 2, 3, 4, 3, 3],
+    ]),
+    gen_filters([
+        [-12, 14, 0, 0, 0, 14, 0],
+        [-10, 0, 14, 0, 0, 12, 0],
+        [-9, 0, 0, 14, 0, 11, 0],
+        [-8, 0, 0, 0, 14, 10, 0],
+        [-10, 12, 0, 0, 0, 0, 14],
+        [-9, 1, 12, 0, 0, 0, 12],
+        [-8, 0, 0, 12, 0, 1, 11],
+        [-7, 0, 0, 1, 12, 1, 9],
+    ]),
+];
 
 #[no_mangle]
 pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([

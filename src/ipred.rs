@@ -33,6 +33,8 @@ use crate::src::levels::Z3_PRED;
 use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
+use crate::src::tables::filter_fn;
+use crate::src::tables::FLT_INCR;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -1223,33 +1225,6 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     )
 }
 
-fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> c_int {
-    let flt_ptr = &flt_ptr[..48 + 1];
-    if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-        flt_ptr[0] as c_int * p[0]
-            + flt_ptr[1] as c_int * p[1]
-            + flt_ptr[16] as c_int * p[2]
-            + flt_ptr[17] as c_int * p[3]
-            + flt_ptr[32] as c_int * p[4]
-            + flt_ptr[33] as c_int * p[5]
-            + flt_ptr[48] as c_int * p[6]
-    } else {
-        flt_ptr[0] as c_int * p[0]
-            + flt_ptr[8] as c_int * p[1]
-            + flt_ptr[16] as c_int * p[2]
-            + flt_ptr[24] as c_int * p[3]
-            + flt_ptr[32] as c_int * p[4]
-            + flt_ptr[40] as c_int * p[5]
-            + flt_ptr[48] as c_int * p[6]
-    }
-}
-
-const FLT_INCR: usize = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-    2
-} else {
-    1
-};
-
 fn ipred_filter_rust<BD: BitDepth>(
     mut dst: Rav1dPictureDataComponentOffset,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
@@ -1289,7 +1264,7 @@ fn ipred_filter_rust<BD: BitDepth>(
             }
             let p = [p0, p1, p2, p3, p4, p5, p6].map(|p| p.as_::<i32>());
             let mut ptr = dst + x;
-            let mut flt_ptr = filter.as_slice();
+            let mut flt_ptr = filter.0.as_slice();
 
             for _yy in 0..2 {
                 let ptr_slice = &mut *ptr.slice_mut::<BD>(4);
