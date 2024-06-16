@@ -168,7 +168,7 @@ pub struct refmvs_candidate {
 }
 
 wrap_fn_ptr!(pub(crate) unsafe extern "C" fn load_tmvs(
-    rf: *const refmvs_frame,
+    rf: &refmvs_frame,
     tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
@@ -1376,7 +1376,7 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
 /// Must be called by [`load_tmvs::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn load_tmvs_c(
-    rf: *const refmvs_frame,
+    rf: &refmvs_frame,
     tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
@@ -1385,8 +1385,6 @@ unsafe extern "C" fn load_tmvs_c(
     rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
     rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
 ) {
-    // SAFETY: Was passed as a `&` in `load_tmvs::Fn::call`.
-    let rf = unsafe { &*rf };
     // SAFETY: Was passed as `FFISafe::new(_)` in `load_tmvs::Fn::call`.
     let rp_proj = unsafe { FFISafe::get(rp_proj) };
     // SAFETY: Was passed as `FFISafe::new(_)` in `load_tmvs::Fn::call`.
