@@ -3935,7 +3935,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 y += ytx.h as c_int;
                 y_off += 1;
             }
-            y_dst += y_dst.pixel_stride::<BD>() * 4 * y as isize;
+            y_dst -= y_dst.pixel_stride::<BD>() * 4 * y as isize;
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
             t.b.y -= y;
 
