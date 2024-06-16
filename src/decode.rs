@@ -4247,7 +4247,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         && c.tc.len() > 1
         && f.frame_hdr().frame_type.is_inter_or_switch()
     {
-        c.dsp.refmvs.save_tmvs(
+        c.dsp.refmvs.save_tmvs.call(
             &t.rt,
             &f.rf,
             &f.mvs,
@@ -4762,7 +4762,8 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.dsp
                     .refmvs
-                    .save_tmvs(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
+                    .save_tmvs
+                    .call(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration
