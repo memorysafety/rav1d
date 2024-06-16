@@ -779,7 +779,7 @@ fn read_pal_indices(
     // * (bh4 * 4)` elements long, which is how many elements `pal_idx_finish`
     // will read/write.
     unsafe {
-        (pal_dsp.pal_idx_finish)(
+        pal_dsp.pal_idx_finish.call(
             pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
             pal_tmp.as_ptr(),
             bw4 as c_int * 4,

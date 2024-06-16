@@ -1,18 +1,33 @@
 use crate::src::cpu::CpuFlags;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::ffi::c_int;
 use std::slice;
 
-pub type pal_idx_finish_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
     dst: *mut u8,
     src: *const u8,
     bw: c_int,
     bh: c_int,
     w: c_int,
     h: c_int,
-) -> ();
+) -> ());
+
+impl pal_idx_finish::Fn {
+    pub unsafe fn call(
+        &self,
+        dst: *mut u8,
+        src: *const u8,
+        bw: c_int,
+        bh: c_int,
+        w: c_int,
+        h: c_int,
+    ) {
+        self.get()(dst, src, bw, bh, w, h)
+    }
+}
 
 pub struct Rav1dPalDSPContext {
-    pub pal_idx_finish: pal_idx_finish_fn,
+    pub pal_idx_finish: pal_idx_finish::Fn,
 }
 
 // fill invisible edges and pack to 4-bit (2 pixels per byte)
@@ -61,43 +76,10 @@ unsafe extern "C" fn pal_idx_finish_rust(
     }
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-extern "C" {
-    fn dav1d_pal_idx_finish_ssse3(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "x86_64"),))]
-extern "C" {
-    fn dav1d_pal_idx_finish_avx2(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-
-    fn dav1d_pal_idx_finish_avx512icl(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-}
-
 impl Rav1dPalDSPContext {
     pub const fn default() -> Self {
         Self {
-            pal_idx_finish: pal_idx_finish_rust,
+            pal_idx_finish: pal_idx_finish::Fn::new(pal_idx_finish_rust),
         }
     }
 
@@ -108,7 +90,7 @@ impl Rav1dPalDSPContext {
             return self;
         }
 
-        self.pal_idx_finish = dav1d_pal_idx_finish_ssse3;
+        self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_ssse3);
 
         #[cfg(target_arch = "x86_64")]
         {
@@ -116,13 +98,13 @@ impl Rav1dPalDSPContext {
                 return self;
             }
 
-            self.pal_idx_finish = dav1d_pal_idx_finish_avx2;
+            self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
             }
 
-            self.pal_idx_finish = dav1d_pal_idx_finish_avx512icl;
+            self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_avx512icl);
         }
 
         self
