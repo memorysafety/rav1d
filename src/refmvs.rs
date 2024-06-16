@@ -353,7 +353,7 @@ impl save_tmvs::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn splat_mv(
     rr: *mut *mut refmvs_block,
-    rmv: *const Align16<refmvs_block>,
+    rmv: &Align16<refmvs_block>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
@@ -1703,7 +1703,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn splat_mv_c(
     rr: *mut *mut refmvs_block,
-    rmv: *const Align16<refmvs_block>,
+    rmv: &Align16<refmvs_block>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
@@ -1711,8 +1711,6 @@ unsafe extern "C" fn splat_mv_c(
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
     // SAFETY: Length sliced in `splat_mv::Fn::call`.
     let rr = unsafe { slice::from_raw_parts_mut(rr, bh4) };
-    // SAFETY: Was passed in as a ref.
-    let rmv = unsafe { &*rmv };
     splat_mv_rust(rr, rmv, bx4, bw4, bh4)
 }
 
