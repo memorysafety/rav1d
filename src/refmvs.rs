@@ -1371,20 +1371,48 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`load_tmvs::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn load_tmvs_c(
     rf: *const refmvs_frame,
+    tile_row_idx: i32,
+    col_start8: i32,
+    col_end8: i32,
+    row_start8: i32,
+    row_end8: i32,
+    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
+    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
+) {
+    // SAFETY: Was passed as a `&` in `load_tmvs::Fn::call`.
+    let rf = unsafe { &*rf };
+    // SAFETY: Was passed as `FFISafe::new(_)` in `load_tmvs::Fn::call`.
+    let rp_proj = unsafe { FFISafe::get(rp_proj) };
+    // SAFETY: Was passed as `FFISafe::new(_)` in `load_tmvs::Fn::call`.
+    let rp_ref = unsafe { FFISafe::get(rp_ref) };
+    load_tmvs_rust(
+        rf,
+        tile_row_idx,
+        col_start8,
+        col_end8,
+        row_start8,
+        row_end8,
+        rp_proj,
+        rp_ref,
+    )
+}
+
+fn load_tmvs_rust(
+    rf: &refmvs_frame,
     mut tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
     row_start8: i32,
     mut row_end8: i32,
-    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
-    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
+    rp_proj: &DisjointMut<AlignedVec64<refmvs_temporal_block>>,
+    rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
 ) {
-    let rp_proj = FFISafe::get(rp_proj);
-    let rp_ref = FFISafe::get(rp_ref);
-    let rf = &*rf;
-
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0;
     }
