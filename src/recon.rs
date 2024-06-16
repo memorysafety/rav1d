@@ -2753,8 +2753,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let uv_off = 4
                     * ((t.b.x >> ss_hor) as isize
                         + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
-                let u_dst = cur_data[1].with_offset::<BD>() + uv_off;
-                let v_dst = cur_data[2].with_offset::<BD>() + uv_off;
 
                 let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
                 let furthest_b = (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
@@ -2822,20 +2820,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 }
                 if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
                     ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
-                    hex_dump::<BD>(
-                        u_dst.as_ptr::<BD>(),
-                        u_dst.stride() as usize,
-                        cbw4 as usize * 4,
-                        cbh4 as usize * 4,
-                        "u-cfl-pred",
-                    );
-                    hex_dump::<BD>(
-                        v_dst.as_ptr::<BD>(),
-                        v_dst.stride() as usize,
-                        cbw4 as usize * 4,
-                        cbh4 as usize * 4,
-                        "v-cfl-pred",
-                    );
+                    for pl in 1..3 {
+                        let uv_dst = cur_data[pl].with_offset::<BD>() + uv_off;
+                        hex_dump::<BD>(
+                            uv_dst.as_ptr::<BD>(),
+                            uv_dst.stride() as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            ["", "u-cfl-pred", "v-cfl-pred"][pl],
+                        );
+                    }
                 }
             } else if intra.pal_sz[1] != 0 {
                 let uv_dstoff = 4
@@ -2861,31 +2855,21 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     )
                 };
 
-                let u = cur_data[1].with_offset::<BD>() + uv_dstoff;
-                let v = cur_data[2].with_offset::<BD>() + uv_dstoff;
-                f.dsp
-                    .ipred
-                    .pal_pred
-                    .call::<BD>(u, &pal[1], pal_idx, cbw4 * 4, cbh4 * 4);
-                f.dsp
-                    .ipred
-                    .pal_pred
-                    .call::<BD>(v, &pal[2], pal_idx, cbw4 * 4, cbh4 * 4);
-                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                    hex_dump::<BD>(
-                        u.as_ptr::<BD>(),
-                        u.stride() as usize,
-                        cbw4 as usize * 4,
-                        cbh4 as usize * 4,
-                        "u-pal-pred",
-                    );
-                    hex_dump::<BD>(
-                        v.as_ptr::<BD>(),
-                        v.stride() as usize,
-                        cbw4 as usize * 4,
-                        cbh4 as usize * 4,
-                        "v-pal-pred",
-                    );
+                for pl in 1..3 {
+                    let uv = cur_data[pl].with_offset::<BD>() + uv_dstoff;
+                    f.dsp
+                        .ipred
+                        .pal_pred
+                        .call::<BD>(uv, &pal[pl], pal_idx, cbw4 * 4, cbh4 * 4);
+                    if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                        hex_dump::<BD>(
+                            uv.as_ptr::<BD>(),
+                            uv.stride() as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            ["", "u-pal-pred", "v-pal-pred"][pl],
+                        );
+                    }
                 }
             }
 
@@ -3837,22 +3821,16 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             "y-pred",
         );
         if has_chroma {
-            let u_dst = cur_data[1].with_offset::<BD>() + uvdstoff;
-            let v_dst = cur_data[2].with_offset::<BD>() + uvdstoff;
-            hex_dump::<BD>(
-                u_dst.as_ptr::<BD>(),
-                u_dst.stride() as usize,
-                cbw4 as usize * 4,
-                cbh4 as usize * 4,
-                "u-pred",
-            );
-            hex_dump::<BD>(
-                v_dst.as_ptr::<BD>(),
-                v_dst.stride() as usize,
-                cbw4 as usize * 4,
-                cbh4 as usize * 4,
-                "v-pred",
-            );
+            for pl in 1..3 {
+                let uv_dst = cur_data[pl].with_offset::<BD>() + uvdstoff;
+                hex_dump::<BD>(
+                    uv_dst.as_ptr::<BD>(),
+                    uv_dst.stride() as usize,
+                    cbw4 as usize * 4,
+                    cbh4 as usize * 4,
+                    ["", "u-pred", "v-pred"][pl],
+                );
+            }
         }
     }
 
