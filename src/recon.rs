@@ -2620,8 +2620,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 "t",
                             );
                             hex_dump::<BD>(
-                                dst,
-                                f.cur.stride[0] as usize,
+                                y_dst.as_ptr::<BD>(),
+                                y_dst.stride() as usize,
                                 t_dim.w as usize * 4,
                                 t_dim.h as usize * 4,
                                 "y-intra-pred",
@@ -2706,8 +2706,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 .call::<BD>(y_dst, cf, eob, bd);
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
-                                    dst,
-                                    f.cur.stride[0] as usize,
+                                    y_dst.as_ptr::<BD>(),
+                                    y_dst.stride() as usize,
                                     t_dim.w as usize * 4,
                                     t_dim.h as usize * 4,
                                     "recon",
@@ -2753,10 +2753,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let uv_off = 4
                     * ((t.b.x >> ss_hor) as isize
                         + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
-                let uv_dst = [
-                    cur_data[1].as_strided_mut_ptr::<BD>().offset(uv_off),
-                    cur_data[2].as_strided_mut_ptr::<BD>().offset(uv_off),
-                ];
+                let u_dst = cur_data[1].with_offset::<BD>() + uv_off;
+                let v_dst = cur_data[2].with_offset::<BD>() + uv_off;
 
                 let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
                 let furthest_b = (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
@@ -2825,15 +2823,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
                     ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                     hex_dump::<BD>(
-                        uv_dst[0],
-                        stride as usize,
+                        u_dst.as_ptr::<BD>(),
+                        u_dst.stride() as usize,
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
                         "u-cfl-pred",
                     );
                     hex_dump::<BD>(
-                        uv_dst[1],
-                        stride as usize,
+                        v_dst.as_ptr::<BD>(),
+                        v_dst.stride() as usize,
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
                         "v-cfl-pred",
@@ -3017,8 +3015,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     "t",
                                 );
                                 hex_dump::<BD>(
-                                    dst,
-                                    stride as usize,
+                                    uv_dst.as_ptr::<BD>(),
+                                    uv_dst.stride() as usize,
                                     uv_t_dim.w as usize * 4,
                                     uv_t_dim.h as usize * 4,
                                     if pl != 0 {
@@ -3109,8 +3107,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     .call::<BD>(uv_dst, cf, eob, bd);
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
-                                        dst,
-                                        stride as usize,
+                                        uv_dst.as_ptr::<BD>(),
+                                        uv_dst.stride() as usize,
                                         uv_t_dim.w as usize * 4,
                                         uv_t_dim.h as usize * 4,
                                         "recon",
@@ -3832,23 +3830,25 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
     if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
         hex_dump::<BD>(
-            dst,
-            f.cur.stride[0] as usize,
+            y_dst.as_ptr::<BD>(),
+            y_dst.stride() as usize,
             b_dim[0] as usize * 4,
             b_dim[1] as usize * 4,
             "y-pred",
         );
         if has_chroma {
+            let u_dst = cur_data[1].with_offset::<BD>() + uvdstoff;
+            let v_dst = cur_data[2].with_offset::<BD>() + uvdstoff;
             hex_dump::<BD>(
-                cur_data[1].as_strided_ptr::<BD>().offset(uvdstoff),
-                f.cur.stride[1] as usize,
+                u_dst.as_ptr::<BD>(),
+                u_dst.stride() as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
                 "u-pred",
             );
             hex_dump::<BD>(
-                cur_data[2].as_strided_ptr::<BD>().offset(uvdstoff),
-                f.cur.stride[1] as usize,
+                v_dst.as_ptr::<BD>(),
+                v_dst.stride() as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
                 "v-pred",
@@ -4029,9 +4029,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     bd,
                                 );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                                    let uv_dst = uv_dst + (4 * x as usize);
                                     hex_dump::<BD>(
-                                        uvdst.add(4 * x as usize),
-                                        f.cur.stride[1] as usize,
+                                        uv_dst.as_ptr::<BD>(),
+                                        uv_dst.stride() as usize,
                                         uvtx.w as usize * 4,
                                         uvtx.h as usize * 4,
                                         "recon",
