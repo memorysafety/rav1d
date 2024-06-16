@@ -104,7 +104,9 @@ macro_rules! def_align {
             type Target = V;
 
             unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
-                (*ptr).0.as_mut_ptr()
+                // SAFETY: `$name` (`Align*`) is a `#[repr(C)]` aligned wrapper around `[V; N]`,
+                // so a `*mut Self` is the same as a `*mut V` to the first `V`.
+                ptr.cast()
             }
 
             fn len(&self) -> usize {
@@ -163,15 +165,15 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
 
     /// Extracts a slice containing the entire vector.
     pub fn as_slice(&self) -> &[T] {
-        // Safety: The first `len` elements have been initialized to `T`s in
-        // `Self::resize_with`.
+        // Safety: The first `len` elements have been
+        // initialized to `T`s in `Self::resize_with`.
         unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
     }
 
     /// Extracts a mutable slice of the entire vector.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        // Safety: The first `len` elements have been initialized to `T`s in
-        // `Self::resize_with`.
+        // Safety: The first `len` elements have been
+        // initialized to `T`s in `Self::resize_with`.
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
     }
 
@@ -192,11 +194,9 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
 
         // If we grew the vector, initialize the new elements past `len`.
         for offset in old_len..new_len {
-            // SAFETY: We've allocated enough space to write up to `new_len` elements into
-            // the buffer.
-            unsafe {
-                self.as_mut_ptr().add(offset).write(value);
-            }
+            // SAFETY: We've allocated enough space to write
+            // up to `new_len` elements into the buffer.
+            unsafe { self.as_mut_ptr().add(offset).write(value) };
         }
 
         self.len = new_len;
@@ -243,10 +243,9 @@ unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
     type Target = T;
 
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
-        // SAFETY: .as_mut_ptr() does not materialize a mutable reference to the
-        // underlying slice so we can still allow immutable references into this
-        // slice.
-        unsafe { (*ptr).as_mut_ptr() }
+        // SAFETY: `.as_mut_ptr()` does not materialize a `&mut` to
+        // the underlying slice, so we can still allow `&`s into this slice.
+        unsafe { &mut *ptr }.as_mut_ptr()
     }
 
     fn len(&self) -> usize {
