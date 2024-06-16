@@ -39,6 +39,11 @@ pub struct Rav1dPalDSPContext {
     pub pal_idx_finish: pal_idx_finish::Fn,
 }
 
+enum PalIdx<'a> {
+    Idx { dst: &'a mut [u8], src: &'a [u8] },
+    Tmp(&'a mut [u8]),
+}
+
 unsafe extern "C" fn pal_idx_finish_c(
     dst: *mut u8,
     src: *const u8,
@@ -54,53 +59,56 @@ unsafe extern "C" fn pal_idx_finish_c(
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
     assert!(h >= 4 && h <= bh && (h & 3) == 0);
 
-    pal_idx_finish_rust(dst, src, bw, bh, w, h)
-}
-
-/// Fill invisible edges and pack to 4-bit (2 pixels per byte).
-unsafe fn pal_idx_finish_rust(
-    dst: *mut u8,
-    src: *const u8,
-    bw: usize,
-    bh: usize,
-    w: usize,
-    h: usize,
-) {
-    let dst_w = w / 2;
     let dst_bw = bw / 2;
 
-    let dst = if src == dst {
+    let idx = if src == dst {
         let tmp = slice::from_raw_parts_mut(dst, bw * bh);
-        for y in 0..h {
-            let src = y * bw;
-            let dst = y * dst_bw;
-            for x in 0..dst_w {
-                let src = &tmp[src + 2 * x..][..2];
-                tmp[dst + x] = src[0] | (src[1] << 4)
-            }
-            if dst_w < dst_bw {
-                let src = tmp[src + w];
-                tmp[dst..][dst_w..dst_bw].fill(0x11 * src);
-            }
-        }
-
-        &mut tmp[..dst_bw * bh]
+        PalIdx::Tmp(tmp)
     } else {
         let dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
         let src = slice::from_raw_parts(src, bw * bh);
+        PalIdx::Idx { dst, src }
+    };
 
-        for y in 0..h {
-            let src = &src[y * bw..];
-            let dst = &mut dst[y * dst_bw..];
-            for x in 0..dst_w {
-                dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+    pal_idx_finish_rust(idx, bw, bh, w, h)
+}
+
+/// Fill invisible edges and pack to 4-bit (2 pixels per byte).
+fn pal_idx_finish_rust(idx: PalIdx, bw: usize, bh: usize, w: usize, h: usize) {
+    let dst_w = w / 2;
+    let dst_bw = bw / 2;
+
+    let dst = match idx {
+        PalIdx::Tmp(tmp) => {
+            for y in 0..h {
+                let src = y * bw;
+                let dst = y * dst_bw;
+                for x in 0..dst_w {
+                    let src = &tmp[src + 2 * x..][..2];
+                    tmp[dst + x] = src[0] | (src[1] << 4)
+                }
+                if dst_w < dst_bw {
+                    let src = tmp[src + w];
+                    tmp[dst..][dst_w..dst_bw].fill(0x11 * src);
+                }
             }
-            if dst_w < dst_bw {
-                dst[dst_w..dst_bw].fill(0x11 * src[w]);
-            }
+
+            &mut tmp[..dst_bw * bh]
         }
+        PalIdx::Idx { dst, src } => {
+            for y in 0..h {
+                let src = &src[y * bw..];
+                let dst = &mut dst[y * dst_bw..];
+                for x in 0..dst_w {
+                    dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+                }
+                if dst_w < dst_bw {
+                    dst[dst_w..dst_bw].fill(0x11 * src[w]);
+                }
+            }
 
-        dst
+            dst
+        }
     };
 
     if h < bh {
