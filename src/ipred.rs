@@ -1201,6 +1201,7 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
         let topleft_off = topleft_off - y;
         let mut topleft = topleft_in[topleft_off];
         for x in (0..width).step_by(4) {
+            let top = &top[x..][..4];
             let p0 = topleft;
             let p1 = top[0];
             let p2 = top[1];
@@ -1231,7 +1232,6 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
                 ptr = ptr.offset(stride);
             }
             topleft = top[4 - 1];
-            top = &top[4..];
         }
         dst = dst.offset(stride);
         top = slice::from_raw_parts(dst, width);
