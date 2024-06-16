@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -372,10 +374,13 @@ unsafe fn reconstruct_topleft<'a, BD: BitDepth>(
     topleft_ptr: *const DynPixel,
     topleft_off: usize,
 ) -> &'a [BD::Pixel; SCRATCH_EDGE_LEN] {
-    &*topleft_ptr
-        .cast::<BD::Pixel>()
-        .sub(topleft_off)
-        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>()
+    // SAFETY: Same as `# Safety` preconditions.
+    unsafe {
+        &*topleft_ptr
+            .cast::<BD::Pixel>()
+            .sub(topleft_off)
+            .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>()
+    }
 }
 
 /// # Safety
@@ -1468,6 +1473,7 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     pal_pred_rust::<BD>(dst, pal, idx, w, h)
 }
 
+#[allow(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
     use super::*;
