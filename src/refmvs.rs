@@ -271,7 +271,7 @@ impl load_tmvs::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn save_tmvs(
     rp_ptr: *mut refmvs_temporal_block,
     stride: isize,
-    rr: *const [*const refmvs_block; 31],
+    rr: &[*const refmvs_block; 31],
     ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
@@ -1507,7 +1507,7 @@ fn load_tmvs_rust(
 unsafe extern "C" fn save_tmvs_c(
     _rp: *mut refmvs_temporal_block,
     stride: isize,
-    _rr: *const [*const refmvs_block; 31],
+    _rr: &[*const refmvs_block; 31],
     ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
