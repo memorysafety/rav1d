@@ -1267,8 +1267,7 @@ fn decode_b(
                     }
                 }
 
-                // SAFETY: Function call with all safe args, will be marked safe.
-                unsafe { (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)? };
+                (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)?;
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
@@ -2174,8 +2173,7 @@ fn decode_b(
         if t.frame_thread.pass == 1 {
             (bd_fn.read_coef_blocks)(f, t, ts_c, bs, b);
         } else {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)? };
+            (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)?;
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -3067,8 +3065,7 @@ fn decode_b(
         if t.frame_thread.pass == 1 {
             (bd_fn.read_coef_blocks)(f, t, ts_c, bs, b);
         } else {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)? };
+            (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)?;
         }
 
         let frame_hdr = f.frame_hdr();
