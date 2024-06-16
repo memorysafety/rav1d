@@ -4138,7 +4138,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
-        c.dsp.refmvs.load_tmvs(
+        c.dsp.refmvs.load_tmvs.call(
             &f.rf,
             &f.mvs,
             &f.ref_mvs,
@@ -4744,7 +4744,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                c.dsp.refmvs.load_tmvs(
+                c.dsp.refmvs.load_tmvs.call(
                     &f.rf,
                     &f.mvs,
                     &f.ref_mvs,

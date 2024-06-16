@@ -27,20 +27,6 @@ use std::mem::MaybeUninit;
 use std::ptr;
 use zerocopy::FromZeroes;
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-extern "C" {
-    fn dav1d_load_tmvs_sse4(
-        rf: *const refmvs_frame,
-        tile_row_idx: i32,
-        col_start8: i32,
-        col_end8: i32,
-        row_start8: i32,
-        row_end8: i32,
-        _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
-        _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
-    );
-}
-
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
@@ -181,16 +167,103 @@ pub struct refmvs_candidate {
     pub weight: i32,
 }
 
-pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub(crate) unsafe extern "C" fn load_tmvs(
     rf: *const refmvs_frame,
     tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
     row_start8: i32,
     row_end8: i32,
-    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
-    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
-) -> ();
+    _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
+    _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
+) -> ());
+
+impl load_tmvs::Fn {
+    pub fn call(
+        &self,
+        rf: &RefMvsFrame,
+        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+        rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
+        tile_row_idx: i32,
+        col_start8: i32,
+        col_end8: i32,
+        row_start8: i32,
+        row_end8: i32,
+    ) {
+        let RefMvsFrame {
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            ref rp_proj,
+            rp_stride,
+            ref r,
+            r_stride,
+            n_tile_rows,
+            n_tile_threads,
+            n_frame_threads,
+        } = *rf;
+        fn mvs_to_dav1d(
+            mvs: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+        ) -> *mut refmvs_temporal_block {
+            mvs.as_ref()
+                .map(|rp| rp.inner.as_mut_ptr())
+                .unwrap_or_else(ptr::null_mut)
+        }
+        let rp_ref_dav1d = rp_ref.each_ref().map(mvs_to_dav1d);
+        let rf_dav1d = refmvs_frame {
+            _lifetime: PhantomData,
+            _frm_hdr: ptr::null(), // never used
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp: mvs_to_dav1d(rp),
+            rp_ref: rp_ref_dav1d.as_ptr(),
+            rp_proj: rp_proj.as_mut_ptr(),
+            rp_stride: rp_stride as _,
+            r: r.as_mut_ptr(),
+            r_stride: r_stride as _,
+            n_tile_rows: n_tile_rows as _,
+            n_tile_threads: n_tile_threads as _,
+            n_frame_threads: n_frame_threads as _,
+        };
+
+        // SAFETY: Assembly call. Arguments are safe Rust references converted to
+        // pointers for use in assembly. For the Rust fallback function the extra args
+        // `rf.rp_proj` and `rp_ref` are passed to allow for disjointedness checking.
+        unsafe {
+            self.get()(
+                &rf_dav1d,
+                tile_row_idx,
+                col_start8,
+                col_end8,
+                row_start8,
+                row_end8,
+                FFISafe::new(&rf.rp_proj),
+                FFISafe::new(rp_ref),
+            );
+        }
+    }
+}
 
 wrap_fn_ptr!(pub unsafe extern "C" fn save_tmvs(
     rp: *mut refmvs_temporal_block,
@@ -362,96 +435,9 @@ impl splat_mv::Fn {
 }
 
 pub struct Rav1dRefmvsDSPContext {
-    load_tmvs: load_tmvs_fn,
+    pub load_tmvs: load_tmvs::Fn,
     pub save_tmvs: save_tmvs::Fn,
     pub splat_mv: splat_mv::Fn,
-}
-
-impl Rav1dRefmvsDSPContext {
-    pub fn load_tmvs(
-        &self,
-        rf: &RefMvsFrame,
-        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
-        rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
-        tile_row_idx: i32,
-        col_start8: i32,
-        col_end8: i32,
-        row_start8: i32,
-        row_end8: i32,
-    ) {
-        let RefMvsFrame {
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            ref rp_proj,
-            rp_stride,
-            ref r,
-            r_stride,
-            n_tile_rows,
-            n_tile_threads,
-            n_frame_threads,
-        } = *rf;
-        fn mvs_to_dav1d(
-            mvs: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
-        ) -> *mut refmvs_temporal_block {
-            mvs.as_ref()
-                .map(|rp| rp.inner.as_mut_ptr())
-                .unwrap_or_else(ptr::null_mut)
-        }
-        let rp_ref_dav1d = rp_ref.each_ref().map(mvs_to_dav1d);
-        let rf_dav1d = refmvs_frame {
-            _lifetime: PhantomData,
-            _frm_hdr: ptr::null(), // never used
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            rp: mvs_to_dav1d(rp),
-            rp_ref: rp_ref_dav1d.as_ptr(),
-            rp_proj: rp_proj.as_mut_ptr(),
-            rp_stride: rp_stride as _,
-            r: r.as_mut_ptr(),
-            r_stride: r_stride as _,
-            n_tile_rows: n_tile_rows as _,
-            n_tile_threads: n_tile_threads as _,
-            n_frame_threads: n_frame_threads as _,
-        };
-
-        // SAFETY: Assembly call. Arguments are safe Rust references converted to
-        // pointers for use in assembly. For the Rust fallback function the extra args
-        // `rf.rp_proj` and `rp_ref` are passed to allow for disjointedness checking.
-        unsafe {
-            (self.load_tmvs)(
-                &rf_dav1d,
-                tile_row_idx,
-                col_start8,
-                col_end8,
-                row_start8,
-                row_end8,
-                FFISafe::new(&rf.rp_proj),
-                FFISafe::new(rp_ref),
-            );
-        }
-    }
 }
 
 fn add_spatial_candidate(
@@ -1686,7 +1672,7 @@ unsafe extern "C" fn splat_mv_rust(
 impl Rav1dRefmvsDSPContext {
     pub const fn default() -> Self {
         Self {
-            load_tmvs: load_tmvs_c,
+            load_tmvs: load_tmvs::Fn::new(load_tmvs_c),
             save_tmvs: save_tmvs::Fn::new(save_tmvs_c),
             splat_mv: splat_mv::Fn::new(splat_mv_rust),
         }
@@ -1713,7 +1699,7 @@ impl Rav1dRefmvsDSPContext {
 
         #[cfg(target_arch = "x86_64")]
         {
-            self.load_tmvs = dav1d_load_tmvs_sse4;
+            self.load_tmvs = load_tmvs::decl_fn!(fn dav1d_load_tmvs_sse4);
 
             if !flags.contains(CpuFlags::AVX2) {
                 return self;
