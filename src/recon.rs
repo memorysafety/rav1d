@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
+use crate::include::common::dump::hex_dump_pic;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::clip;
 use crate::include::common::intops::ulog2;
@@ -1771,13 +1772,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
                 f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(y_dst, cf, eob, bd);
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                    hex_dump::<BD>(
-                        y_dst.as_ptr::<BD>(),
-                        y_dst.stride() as usize,
-                        t_dim.w as usize * 4,
-                        t_dim.h as usize * 4,
-                        "recon",
-                    );
+                    hex_dump_pic::<BD>(y_dst, t_dim.w as usize * 4, t_dim.h as usize * 4, "recon");
                 }
             }
         }
@@ -2498,13 +2493,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     .pal_pred
                     .call::<BD>(y_dst, &pal[0], pal_idx, bw4 * 4, bh4 * 4);
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                    hex_dump::<BD>(
-                        y_dst.as_ptr::<BD>(),
-                        y_dst.stride() as usize,
-                        bw4 as usize * 4,
-                        bh4 as usize * 4,
-                        "y-pal-pred",
-                    );
+                    hex_dump_pic::<BD>(y_dst, bw4 as usize * 4, bh4 as usize * 4, "y-pal-pred");
                 }
             }
 
@@ -2605,23 +2594,22 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 
                         if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                             hex_dump::<BD>(
-                                edge_array[edge_offset - t_dim.h as usize * 4..].as_ptr(),
+                                &edge_array[edge_offset - t_dim.h as usize * 4..],
                                 t_dim.h as usize * 4,
                                 t_dim.h as usize * 4,
                                 2,
                                 "l",
                             );
-                            hex_dump::<BD>(edge_array[edge_offset..].as_ptr(), 0, 1, 1, "tl");
+                            hex_dump::<BD>(&edge_array[edge_offset..], 0, 1, 1, "tl");
                             hex_dump::<BD>(
-                                edge_array[edge_offset + 1..].as_ptr(),
+                                &edge_array[edge_offset + 1..],
                                 t_dim.w as usize * 4,
                                 t_dim.w as usize * 4,
                                 2,
                                 "t",
                             );
-                            hex_dump::<BD>(
-                                y_dst.as_ptr::<BD>(),
-                                y_dst.stride() as usize,
+                            hex_dump_pic::<BD>(
+                                y_dst,
                                 t_dim.w as usize * 4,
                                 t_dim.h as usize * 4,
                                 "y-intra-pred",
@@ -2705,9 +2693,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize]
                                 .call::<BD>(y_dst, cf, eob, bd);
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                                hex_dump::<BD>(
-                                    y_dst.as_ptr::<BD>(),
-                                    y_dst.stride() as usize,
+                                hex_dump_pic::<BD>(
+                                    y_dst,
                                     t_dim.w as usize * 4,
                                     t_dim.h as usize * 4,
                                     "recon",
@@ -2822,9 +2809,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                     for pl in 1..3 {
                         let uv_dst = cur_data[pl].with_offset::<BD>() + uv_off;
-                        hex_dump::<BD>(
-                            uv_dst.as_ptr::<BD>(),
-                            uv_dst.stride() as usize,
+                        hex_dump_pic::<BD>(
+                            uv_dst,
                             cbw4 as usize * 4,
                             cbh4 as usize * 4,
                             ["", "u-cfl-pred", "v-cfl-pred"][pl],
@@ -2862,9 +2848,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         .pal_pred
                         .call::<BD>(uv, &pal[pl], pal_idx, cbw4 * 4, cbh4 * 4);
                     if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                        hex_dump::<BD>(
-                            uv.as_ptr::<BD>(),
-                            uv.stride() as usize,
+                        hex_dump_pic::<BD>(
+                            uv,
                             cbw4 as usize * 4,
                             cbh4 as usize * 4,
                             ["", "u-pal-pred", "v-pal-pred"][pl],
@@ -2984,30 +2969,25 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
-                                    edge_array[edge_offset - uv_t_dim.h as usize * 4..].as_ptr(),
+                                    &edge_array[edge_offset - uv_t_dim.h as usize * 4..],
                                     uv_t_dim.h as usize * 4,
                                     uv_t_dim.h as usize * 4,
                                     2,
                                     "l",
                                 );
-                                hex_dump::<BD>(edge_array[edge_offset..].as_ptr(), 0, 1, 1, "tl");
+                                hex_dump::<BD>(&edge_array[edge_offset..], 0, 1, 1, "tl");
                                 hex_dump::<BD>(
-                                    edge_array[edge_offset + 1..].as_ptr(),
+                                    &edge_array[edge_offset + 1..],
                                     uv_t_dim.w as usize * 4,
                                     uv_t_dim.w as usize * 4,
                                     2,
                                     "t",
                                 );
-                                hex_dump::<BD>(
-                                    uv_dst.as_ptr::<BD>(),
-                                    uv_dst.stride() as usize,
+                                hex_dump_pic::<BD>(
+                                    uv_dst,
                                     uv_t_dim.w as usize * 4,
                                     uv_t_dim.h as usize * 4,
-                                    if pl != 0 {
-                                        "v-intra-pred"
-                                    } else {
-                                        "u-intra-pred"
-                                    },
+                                    ["u-intra-pred", "v-intra-pred"][pl],
                                 );
                             }
                         }
@@ -3090,9 +3070,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
                                     .call::<BD>(uv_dst, cf, eob, bd);
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                                    hex_dump::<BD>(
-                                        uv_dst.as_ptr::<BD>(),
-                                        uv_dst.stride() as usize,
+                                    hex_dump_pic::<BD>(
+                                        uv_dst,
                                         uv_t_dim.w as usize * 4,
                                         uv_t_dim.h as usize * 4,
                                         "recon",
@@ -3813,9 +3792,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     }
 
     if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-        hex_dump::<BD>(
-            y_dst.as_ptr::<BD>(),
-            y_dst.stride() as usize,
+        hex_dump_pic::<BD>(
+            y_dst,
             b_dim[0] as usize * 4,
             b_dim[1] as usize * 4,
             "y-pred",
@@ -3823,9 +3801,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         if has_chroma {
             for pl in 1..3 {
                 let uv_dst = cur_data[pl].with_offset::<BD>() + uvdstoff;
-                hex_dump::<BD>(
-                    uv_dst.as_ptr::<BD>(),
-                    uv_dst.stride() as usize,
+                hex_dump_pic::<BD>(
+                    uv_dst,
                     cbw4 as usize * 4,
                     cbh4 as usize * 4,
                     ["", "u-pred", "v-pred"][pl],
@@ -4008,9 +3985,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     let uv_dst = uv_dst + (4 * x as usize);
-                                    hex_dump::<BD>(
-                                        uv_dst.as_ptr::<BD>(),
-                                        uv_dst.stride() as usize,
+                                    hex_dump_pic::<BD>(
+                                        uv_dst,
                                         uvtx.w as usize * 4,
                                         uvtx.h as usize * 4,
                                         "recon",

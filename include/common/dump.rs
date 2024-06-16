@@ -1,27 +1,22 @@
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use std::fmt::Display;
 use std::io;
 use std::io::stdout;
 
 #[inline]
-pub unsafe fn hex_fdump<BD: BitDepth>(
+pub fn hex_fdump<BD: BitDepth>(
     out: &mut impl io::Write,
-    buf: *const BD::Pixel,
+    buf: &[BD::Pixel],
     stride: usize,
     w: usize,
     h: usize,
     what: &str,
 ) -> io::Result<()> {
-    let len = if h == 0 {
-        0
-    } else {
-        (h - 1) * BD::pxstride(stride) + w
-    };
-    let buf = std::slice::from_raw_parts(buf, len);
-
     write!(out, "{}", what)?;
-    for buf in buf.chunks(BD::pxstride(stride)) {
-        for &x in &buf[..w] {
+    for y in 0..h {
+        let buf = &buf[y * stride..][..w];
+        for &x in buf {
             write!(out, " {}", BD::display(x))?;
         }
         writeln!(out)?;
@@ -30,14 +25,38 @@ pub unsafe fn hex_fdump<BD: BitDepth>(
 }
 
 #[inline]
-pub unsafe fn hex_dump<BD: BitDepth>(
-    buf: *const BD::Pixel,
-    stride: usize,
+pub fn hex_dump<BD: BitDepth>(buf: &[BD::Pixel], stride: usize, w: usize, h: usize, what: &str) {
+    hex_fdump::<BD>(&mut stdout(), buf, stride, w, h, what).unwrap();
+}
+
+#[inline]
+pub fn hex_fdump_pic<BD: BitDepth>(
+    out: &mut impl io::Write,
+    buf: Rav1dPictureDataComponentOffset,
+    w: usize,
+    h: usize,
+    what: &str,
+) -> io::Result<()> {
+    write!(out, "{}", what)?;
+    for y in 0..h {
+        let buf = buf + (y as isize * buf.pixel_stride::<BD>());
+        let buf = &*buf.slice::<BD>(w);
+        for &x in buf {
+            write!(out, " {}", BD::display(x))?;
+        }
+        writeln!(out)?;
+    }
+    Ok(())
+}
+
+#[inline]
+pub fn hex_dump_pic<BD: BitDepth>(
+    buf: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     what: &str,
 ) {
-    hex_fdump::<BD>(&mut stdout(), buf, stride, w, h, what).unwrap();
+    hex_fdump_pic::<BD>(&mut stdout(), buf, w, h, what).unwrap();
 }
 
 #[inline]
