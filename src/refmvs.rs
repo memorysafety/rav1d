@@ -272,7 +272,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn save_tmvs(
     rp_ptr: *mut refmvs_temporal_block,
     stride: isize,
     rr: *const [*const refmvs_block; 31],
-    ref_sign: *const [u8; 7],
+    ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
     col_start8: i32,
@@ -1508,7 +1508,7 @@ unsafe extern "C" fn save_tmvs_c(
     _rp: *mut refmvs_temporal_block,
     stride: isize,
     _rr: *const [*const refmvs_block; 31],
-    ref_sign: *const [u8; 7],
+    ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
     col_start8: i32,
@@ -1520,7 +1520,6 @@ unsafe extern "C" fn save_tmvs_c(
     let r = FFISafe::get(r);
     let rp = FFISafe::get(rp);
     let rp = &*rp.inner;
-    let ref_sign = &*ref_sign;
 
     let stride = stride as usize;
     let [col_end8, row_end8, col_start8, row_start8] =
