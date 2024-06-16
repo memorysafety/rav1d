@@ -782,10 +782,10 @@ fn read_pal_indices(
         pal_dsp.pal_idx_finish.call(
             pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
             pal_tmp.as_ptr(),
-            bw4 as c_int * 4,
-            bh4 as c_int * 4,
-            w4 as c_int * 4,
-            h4 as c_int * 4,
+            bw4 * 4,
+            bh4 * 4,
+            w4 * 4,
+            h4 * 4,
         );
     }
 }

@@ -17,11 +17,12 @@ impl pal_idx_finish::Fn {
         &self,
         dst: *mut u8,
         src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
+        bw: usize,
+        bh: usize,
+        w: usize,
+        h: usize,
     ) {
+        let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as c_int);
         self.get()(dst, src, bw, bh, w, h)
     }
 }
@@ -39,15 +40,13 @@ unsafe extern "C" fn pal_idx_finish_rust(
     w: c_int,
     h: c_int,
 ) {
-    assert!(bw >= 4 && bw <= 64 && (bw as u32).is_power_of_two());
-    assert!(bh >= 4 && bh <= 64 && (bh as u32).is_power_of_two());
+    let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as usize);
+
+    assert!(bw >= 4 && bw <= 64 && bw.is_power_of_two());
+    assert!(bh >= 4 && bh <= 64 && bh.is_power_of_two());
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
     assert!(h >= 4 && h <= bh && (h & 3) == 0);
 
-    let w = w as usize;
-    let h = h as usize;
-    let bw = bw as usize;
-    let bh = bh as usize;
     let dst_w = w / 2;
     let dst_bw = bw / 2;
 
