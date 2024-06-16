@@ -2500,7 +2500,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         y_dst.as_ptr::<BD>(),
-                        y_dst.pixel_stride::<BD>() as usize,
+                        y_dst.stride() as usize,
                         bw4 as usize * 4,
                         bh4 as usize * 4,
                         "y-pal-pred",
@@ -2874,14 +2874,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         u.as_ptr::<BD>(),
-                        u.pixel_stride::<BD>() as usize,
+                        u.stride() as usize,
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
                         "u-pal-pred",
                     );
                     hex_dump::<BD>(
                         v.as_ptr::<BD>(),
-                        v.pixel_stride::<BD>() as usize,
+                        v.stride() as usize,
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
                         "v-pal-pred",
