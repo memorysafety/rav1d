@@ -13,15 +13,23 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
 ) -> ());
 
 impl pal_idx_finish::Fn {
+    /// If `dst` is [`None`], `src` is used as `dst`.
+    /// This is why `src` must be `&mut`, too.
     pub unsafe fn call(
         &self,
-        dst: *mut u8,
-        src: *const u8,
+        dst: Option<&mut [u8]>,
+        src: &mut [u8],
         bw: usize,
         bh: usize,
         w: usize,
         h: usize,
     ) {
+        // SAFETY: Note that `dst` and `src` may be the same.
+        // This is safe because they are raw ptrs for now,
+        // and in the fallback `fn pal_idx_finish_rust`, this is checked for
+        // before creating `&mut`s from them.
+        let dst = dst.unwrap_or(src).as_mut_ptr();
+        let src = src.as_ptr();
         let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as c_int);
         self.get()(dst, src, bw, bh, w, h)
     }
@@ -60,19 +68,39 @@ unsafe fn pal_idx_finish_rust(
     let dst_w = w / 2;
     let dst_bw = bw / 2;
 
-    let dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
-    let src = slice::from_raw_parts(src, bw * bh);
+    let dst = if src == dst {
+        let tmp = slice::from_raw_parts_mut(dst, bw * bh);
+        for y in 0..h {
+            let src = y * bw;
+            let dst = y * dst_bw;
+            for x in 0..dst_w {
+                let src = &tmp[src + 2 * x..][..2];
+                tmp[dst + x] = src[0] | (src[1] << 4)
+            }
+            if dst_w < dst_bw {
+                let src = tmp[src + w];
+                tmp[dst..][dst_w..dst_bw].fill(0x11 * src);
+            }
+        }
 
-    for y in 0..h {
-        let src = &src[y * bw..];
-        let dst = &mut dst[y * dst_bw..];
-        for x in 0..dst_w {
-            dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+        &mut tmp[..dst_bw * bh]
+    } else {
+        let dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
+        let src = slice::from_raw_parts(src, bw * bh);
+
+        for y in 0..h {
+            let src = &src[y * bw..];
+            let dst = &mut dst[y * dst_bw..];
+            for x in 0..dst_w {
+                dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+            }
+            if dst_w < dst_bw {
+                dst[dst_w..dst_bw].fill(0x11 * src[w]);
+            }
         }
-        if dst_w < dst_bw {
-            dst[dst_w..dst_bw].fill(0x11 * src[w]);
-        }
-    }
+
+        dst
+    };
 
     if h < bh {
         let (last_row, dst) = dst[(h - 1) * dst_bw..].split_at_mut(dst_bw);
