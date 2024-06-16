@@ -2378,13 +2378,14 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .offset(BD::pxstride(ref_stride) * dy as isize)
                     .offset(dx as isize);
             }
+            let x = x as usize;
             match dst {
                 MaybeTempPixels::Temp {
                     ref mut tmp,
                     tmp_stride,
                 } => {
                     f.dsp.mc.warp8x8t.call(
-                        &mut tmp[x as usize..],
+                        &mut tmp[x..],
                         tmp_stride,
                         ref_ptr,
                         ref_stride,
@@ -2398,7 +2399,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     f.dsp
                         .mc
                         .warp8x8
-                        .call(dst + x as usize, ref_ptr, ref_stride, abcd, mx, my, bd);
+                        .call(dst + x, ref_ptr, ref_stride, abcd, mx, my, bd);
                 }
             }
         }
