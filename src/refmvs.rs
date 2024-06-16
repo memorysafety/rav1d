@@ -327,28 +327,25 @@ impl save_tmvs::Fn {
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 
+        // SAFETY: Note that for asm calls, disjointedness is unchecked here,
+        // even with `#[cfg(debug_assertions)]`. This is because the disjointedness
+        // is more fine-grained than the pointers passed to asm.
+        // For the Rust fallback fn, the extra arg `rp`
+        // is passed to allow for disjointedness checking.
+        let rp_offset = row_start8 as usize * stride;
+        assert!(rp_offset <= rp.inner.len());
+        // SAFETY: `rp_offset` was just bounds checked.
+        let rp_ptr = unsafe { rp.inner.as_mut_ptr().add(rp_offset) };
+        let stride = stride as isize;
+        let r = FFISafe::new(&rf.r);
+        let rp = FFISafe::new(rp);
         // SAFETY: Assembly call. Arguments are safe Rust references converted to
         // pointers for use in assembly.
         unsafe {
             self.get()(
-                // SAFETY: Note that for asm calls, disjointedness is unchecked here,
-                // even with `#[cfg(debug_assertions)]`. This is because the disjointedness
-                // is more fine-grained than the pointers passed to asm.
-                // For the Rust fallback fn, the extra arg `rp`
-                // is passed to allow for disjointedness checking.
-                rp.inner.as_mut_ptr().add(row_start8 as usize * stride),
-                stride as isize,
-                rr,
-                ref_sign,
-                col_end8,
-                row_end8,
-                col_start8,
-                row_start8,
-                FFISafe::new(&rf.r),
-                ri,
-                FFISafe::new(rp),
-            );
-        }
+                rp_ptr, stride, rr, ref_sign, col_end8, row_end8, col_start8, row_start8, r, ri, rp,
+            )
+        };
     }
 }
 
