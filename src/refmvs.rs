@@ -26,6 +26,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::mem::MaybeUninit;
 use std::ptr;
+use std::slice;
 use zerocopy::FromZeroes;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -393,7 +394,7 @@ impl splat_mv::Fn {
                 // SAFETY: We just initialized it directly above.
                 let guard = unsafe { r_guards[i].assume_init_mut() };
                 // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
-                let ptr = unsafe { guard.as_mut_ptr().offset(-(bx4 as isize)) };
+                let ptr = unsafe { guard.as_mut_ptr().sub(bx4) };
                 r_ptrs[i].write(ptr);
             } else {
                 r_ptrs[i].write(ptr::null_mut());
@@ -1696,22 +1697,38 @@ pub(crate) fn rav1d_refmvs_init_frame(
     Ok(())
 }
 
-unsafe extern "C" fn splat_mv_rust(
+/// # Safety
+///
+/// Must be called by [`splat_mv::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
+unsafe extern "C" fn splat_mv_c(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
 ) {
-    let rmv = &*rmv;
-    let rmv = rmv.0;
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
+    // SAFETY: Length sliced in `splat_mv::Fn::call`.
+    let rr = unsafe { slice::from_raw_parts_mut(rr, bh4) };
+    // SAFETY: Was passed in as a ref.
+    let rmv = unsafe { &*rmv };
+    splat_mv_rust(rr, rmv, bx4, bw4, bh4)
+}
 
-    // SAFETY `rr` is sliced to `[..bh4]` in `Rav1dRefmvsDSPContext::splat_mv`.
-    let rr = unsafe { std::slice::from_raw_parts_mut(rr, bh4) };
+fn splat_mv_rust(
+    rr: &mut [*mut refmvs_block],
+    rmv: &Align16<refmvs_block>,
+    bx4: usize,
+    bw4: usize,
+    bh4: usize,
+) {
+    let rmv = rmv.0;
 
-    for r in &mut rr[..bh4] {
-        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv)
+    for &mut r in &mut rr[..bh4] {
+        // SAFETY: `r` is from `rf.r.index_mut((ri + bx4.., ..bw4)).as_mut_ptr().sub(bx4)` in `splat_mv::Fn::call`.
+        let r = unsafe { slice::from_raw_parts_mut(r.add(bx4), bw4) };
+        r.fill_with(|| rmv)
     }
 }
 
@@ -1720,7 +1737,7 @@ impl Rav1dRefmvsDSPContext {
         Self {
             load_tmvs: load_tmvs::Fn::new(load_tmvs_c),
             save_tmvs: save_tmvs::Fn::new(save_tmvs_c),
-            splat_mv: splat_mv::Fn::new(splat_mv_rust),
+            splat_mv: splat_mv::Fn::new(splat_mv_c),
         }
     }
 
