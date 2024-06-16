@@ -1652,9 +1652,10 @@ pub(crate) fn rav1d_refmvs_init_frame(
         1
     };
     let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
+    // `mem::size_of::<refmvs_block>() == 12`,
+    // but it's accessed using 16-byte loads in asm,
+    // so add `R_PAD` elements to avoid buffer overreads.
     // TODO fallible allocation
-    // mem::size_of::<refmvs_block>() == 12 but it's accessed using 16-byte loads in asm,
-    // so add R_PAD elements to avoid buffer overreads.
     rf.r.resize(
         35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass) + R_PAD,
         FromZeroes::new_zeroed(),
