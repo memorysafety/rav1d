@@ -1713,21 +1713,19 @@ unsafe extern "C" fn splat_mv_c(
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
     // SAFETY: Length sliced in `splat_mv::Fn::call`.
     let rr = unsafe { slice::from_raw_parts_mut(rr, bh4) };
-    splat_mv_rust(rr, rmv, bx4, bw4, bh4)
+    let rr = rr.into_iter().map(|&mut r| {
+        // SAFETY: `r` is from `rf.r.index_mut((ri + bx4.., ..bw4)).as_mut_ptr().sub(bx4)` in `splat_mv::Fn::call`.
+        unsafe { slice::from_raw_parts_mut(r.add(bx4), bw4) }
+    });
+    splat_mv_rust(rr, rmv)
 }
 
-fn splat_mv_rust(
-    rr: &mut [*mut refmvs_block],
+fn splat_mv_rust<'a>(
+    rr: impl Iterator<Item = &'a mut [refmvs_block]>,
     rmv: &Align16<refmvs_block>,
-    bx4: usize,
-    bw4: usize,
-    bh4: usize,
 ) {
     let rmv = rmv.0;
-
-    for &mut r in &mut rr[..bh4] {
-        // SAFETY: `r` is from `rf.r.index_mut((ri + bx4.., ..bw4)).as_mut_ptr().sub(bx4)` in `splat_mv::Fn::call`.
-        let r = unsafe { slice::from_raw_parts_mut(r.add(bx4), bw4) };
+    for r in rr {
         r.fill_with(|| rmv)
     }
 }
