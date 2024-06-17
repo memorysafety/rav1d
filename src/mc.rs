@@ -74,7 +74,7 @@ unsafe fn prep_rust<BD: BitDepth>(
     for tmp in tmp.chunks_exact_mut(w).take(h) {
         let src = slice::from_raw_parts(src_ptr, w);
         for x in 0..w {
-            tmp[x] = ((src[x].as_::<i32>() << intermediate_bits) - (BD::PREP_BIAS as i32)) as i16
+            tmp[x] = BD::sub_prep_bias(src[x].as_::<i32>() << intermediate_bits)
         }
         src_ptr = src_ptr.offset(src_stride);
     }
@@ -105,7 +105,7 @@ impl FilterResult {
     }
 
     pub fn sub_prep_bias<BD: BitDepth>(&self) -> i16 {
-        (self.pixel - i32::from(BD::PREP_BIAS)) as i16
+        BD::sub_prep_bias(self.pixel)
     }
 }
 
@@ -952,12 +952,13 @@ fn warp_affine_8x8t_rust<BD: BitDepth>(
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
             let n = filter.len();
             let mid = &mid[y..][..n];
-            tmp[x] = (((0..n)
-                .map(|i| filter[i] as i32 * mid[i][x] as i32)
-                .sum::<i32>()
-                + (1 << 7 >> 1)
-                >> 7)
-                - i32::from(BD::PREP_BIAS)) as i16;
+            tmp[x] = BD::sub_prep_bias(
+                (0..n)
+                    .map(|i| filter[i] as i32 * mid[i][x] as i32)
+                    .sum::<i32>()
+                    + (1 << 7 >> 1)
+                    >> 7,
+            );
         }
     }
 }
