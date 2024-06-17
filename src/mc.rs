@@ -891,14 +891,9 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
             let src = slice::from_raw_parts(src.offset(x as isize - 3), 8);
-            mid[y][x] = (filter[0] as i32 * src[0].as_::<i32>()
-                + filter[1] as i32 * src[1].as_::<i32>()
-                + filter[2] as i32 * src[2].as_::<i32>()
-                + filter[3] as i32 * src[3].as_::<i32>()
-                + filter[4] as i32 * src[4].as_::<i32>()
-                + filter[5] as i32 * src[5].as_::<i32>()
-                + filter[6] as i32 * src[6].as_::<i32>()
-                + filter[7] as i32 * src[7].as_::<i32>()
+            mid[y][x] = ((0..8)
+                .map(|i| filter[i] as i32 * src[i].as_::<i32>())
+                .sum::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
@@ -913,14 +908,9 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
             let mid = &mid[y..][..8];
             dst[x] = bd.iclip_pixel(
-                filter[0] as i32 * mid[0][x] as i32
-                    + filter[1] as i32 * mid[1][x] as i32
-                    + filter[2] as i32 * mid[2][x] as i32
-                    + filter[3] as i32 * mid[3][x] as i32
-                    + filter[4] as i32 * mid[4][x] as i32
-                    + filter[5] as i32 * mid[5][x] as i32
-                    + filter[6] as i32 * mid[6][x] as i32
-                    + filter[7] as i32 * mid[7][x] as i32
+                (0..8)
+                    .map(|i| filter[i] as i32 * mid[i][x] as i32)
+                    .sum::<i32>()
                     + (1 << 7 + intermediate_bits >> 1)
                     >> 7 + intermediate_bits,
             );
@@ -951,14 +941,9 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
             let src = slice::from_raw_parts(src.offset(x as isize - 3), 8);
-            mid[y][x] = (filter[0] as i32 * src[0].as_::<i32>()
-                + filter[1] as i32 * src[1].as_::<i32>()
-                + filter[2] as i32 * src[2].as_::<i32>()
-                + filter[3] as i32 * src[3].as_::<i32>()
-                + filter[4] as i32 * src[4].as_::<i32>()
-                + filter[5] as i32 * src[5].as_::<i32>()
-                + filter[6] as i32 * src[6].as_::<i32>()
-                + filter[7] as i32 * src[7].as_::<i32>()
+            mid[y][x] = ((0..8)
+                .map(|i| filter[i] as i32 * src[i].as_::<i32>())
+                .sum::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
@@ -971,14 +956,9 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
             let mid = &mid[y..][..8];
-            tmp[x] = ((filter[0] as i32 * mid[0][x] as i32
-                + filter[1] as i32 * mid[1][x] as i32
-                + filter[2] as i32 * mid[2][x] as i32
-                + filter[3] as i32 * mid[3][x] as i32
-                + filter[4] as i32 * mid[4][x] as i32
-                + filter[5] as i32 * mid[5][x] as i32
-                + filter[6] as i32 * mid[6][x] as i32
-                + filter[7] as i32 * mid[7][x] as i32
+            tmp[x] = (((0..8)
+                .map(|i| filter[i] as i32 * mid[i][x] as i32)
+                .sum::<i32>()
                 + (1 << 7 >> 1)
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
