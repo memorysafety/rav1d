@@ -457,7 +457,10 @@ macro_rules! bd_fn {
 ///
 /// Similar to [`bd_fn!`] except that it selects which [`BitDepth`] `fn`
 /// based on `$bpc:literal bpc` instead of `$BD:ty`.
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
 macro_rules! bpc_fn {
     ($bpc:literal bpc, $name:ident, $asm:ident) => {{
         use $crate::include::common::bitdepth::fn_identity;
@@ -487,7 +490,10 @@ macro_rules! fn_identity {
 ))]
 pub(crate) use bd_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
 pub(crate) use bpc_fn;
 
 #[allow(unused)]

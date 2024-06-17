@@ -103,6 +103,13 @@ mod asm {
         if let Arch::Arm(arch) = arch {
             define(Define::bool("ARCH_ARM", arch == ArchArm::Arm32));
             define(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
+
+            if arch == ArchArm::Arm64 {
+                define(Define::bool("HAVE_DOTPROD", features.contains("dotprod")));
+            }
+            if arch == ArchArm::Arm64 {
+                define(Define::bool("HAVE_I8MM", features.contains("i8mm")));
+            }
         }
 
         if let Arch::X86(arch) = arch {
@@ -199,6 +206,7 @@ mod asm {
         ][..];
 
         let arm_generic = &["itx", "msac", "refmvs", "looprestoration_common"][..];
+        let arm_dotprod = &["mc_dotprod"][..];
         let arm_bpc8 = &[
             "cdef",
             "filmgrain",
@@ -243,11 +251,20 @@ mod asm {
             #[cfg(feature = "bitdepth_16")]
             arm_bpc16,
         ][..];
+        let arm64_all = &[
+            arm_generic,
+            arm_dotprod,
+            #[cfg(feature = "bitdepth_8")]
+            arm_bpc8,
+            #[cfg(feature = "bitdepth_16")]
+            arm_bpc16,
+        ][..];
 
         let asm_file_names = match arch {
             Arch::X86(ArchX86::X86_32) => x86_all,
             Arch::X86(ArchX86::X86_64) => x86_64_all,
-            Arch::Arm(..) => arm_all,
+            Arch::Arm(ArchArm::Arm32) => arm_all,
+            Arch::Arm(ArchArm::Arm64) => arm64_all,
         };
 
         let asm_file_dir = match arch {

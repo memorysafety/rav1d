@@ -46,6 +46,9 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::{bpc_fn, BPC};
 
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use crate::include::common::bitdepth::bpc_fn;
+
 #[inline(never)]
 fn put_rust<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
@@ -2299,6 +2302,70 @@ impl Rav1dMCDSPContext {
         self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, neon);
         self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, neon);
         self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, neon);
+
+        #[cfg(target_feature = "dotprod")]
+        if BD::BITDEPTH == 8 {
+            if !flags.contains(CpuFlags::DOTPROD) {
+                return self;
+            }
+
+            self.mc = enum_map!(Filter2d => mc::Fn; match key {
+                Regular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular, neon_dotprod),
+                RegularSmooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular_smooth, neon_dotprod),
+                RegularSharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular_sharp, neon_dotprod),
+                SmoothRegular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth_regular, neon_dotprod),
+                Smooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth, neon_dotprod),
+                SmoothSharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth_sharp, neon_dotprod),
+                SharpRegular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp_regular, neon_dotprod),
+                SharpSmooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp_smooth, neon_dotprod),
+                Sharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp, neon_dotprod),
+                Bilinear => bpc_fn!(mc::decl_fn, 8 bpc, put_bilin, neon),
+            });
+            self.mct = enum_map!(Filter2d => mct::Fn; match key {
+                Regular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular, neon_dotprod),
+                RegularSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_smooth, neon_dotprod),
+                RegularSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_sharp, neon_dotprod),
+                SmoothRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_regular, neon_dotprod),
+                Smooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth, neon_dotprod),
+                SmoothSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_sharp, neon_dotprod),
+                SharpRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_regular, neon_dotprod),
+                SharpSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_smooth, neon_dotprod),
+                Sharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp, neon_dotprod),
+                Bilinear => bpc_fn!(mct::decl_fn, 8 bpc, prep_bilin, neon),
+            });
+        }
+
+        #[cfg(target_feature = "i8mm")]
+        if BD::BITDEPTH == 8 {
+            if !flags.contains(CpuFlags::I8MM) {
+                return self;
+            }
+
+            self.mc = enum_map!(Filter2d => mc::Fn; match key {
+                Regular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular, neon_i8mm),
+                RegularSmooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular_smooth, neon_i8mm),
+                RegularSharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_regular_sharp, neon_i8mm),
+                SmoothRegular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth_regular, neon_i8mm),
+                Smooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth, neon_i8mm),
+                SmoothSharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_smooth_sharp, neon_i8mm),
+                SharpRegular8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp_regular, neon_i8mm),
+                SharpSmooth8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp_smooth, neon_i8mm),
+                Sharp8Tap => bpc_fn!(mc::decl_fn, 8 bpc, put_8tap_sharp, neon_i8mm),
+                Bilinear => bpc_fn!(mc::decl_fn, 8 bpc, put_bilin, neon),
+            });
+            self.mct = enum_map!(Filter2d => mct::Fn; match key {
+                Regular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular, neon_i8mm),
+                RegularSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_smooth, neon_i8mm),
+                RegularSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_sharp, neon_i8mm),
+                SmoothRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_regular, neon_i8mm),
+                Smooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth, neon_i8mm),
+                SmoothSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_sharp, neon_i8mm),
+                SharpRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_regular, neon_i8mm),
+                SharpSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_smooth, neon_i8mm),
+                Sharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp, neon_i8mm),
+                Bilinear => bpc_fn!(mct::decl_fn, 8 bpc, prep_bilin, neon),
+            });
+        }
 
         self
     }
