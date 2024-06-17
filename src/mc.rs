@@ -869,9 +869,9 @@ fn w_mask_rust<BD: BitDepth>(
 }
 
 unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
-    mut dst_ptr: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     dst_stride: isize,
-    mut src: *const BD::Pixel,
+    src: *const BD::Pixel,
     src_stride: isize,
     abcd: &[i16; 4],
     mx: i32,
@@ -884,8 +884,8 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let mut mid = [[0; W]; H];
 
-    src = src.offset(-3 * BD::pxstride(src_stride));
     for y in 0..H {
+        let src = src.offset((y as isize - 3) * BD::pxstride(src_stride));
         let mx = mx + y as i32 * abcd[1] as i32;
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
@@ -901,12 +901,12 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
-        src = src.offset(BD::pxstride(src_stride));
     }
 
     for y in 0..H - 7 {
         let my = my + y as i32 * abcd[3] as i32;
-        let dst = slice::from_raw_parts_mut(dst_ptr, W);
+        let dst = dst.offset(y as isize * BD::pxstride(dst_stride));
+        let dst = slice::from_raw_parts_mut(dst, W);
         for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
@@ -923,14 +923,13 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                     >> 7 + intermediate_bits,
             );
         }
-        dst_ptr = dst_ptr.offset(BD::pxstride(dst_stride));
     }
 }
 
 unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     tmp: &mut [i16],
     tmp_stride: usize,
-    mut src: *const BD::Pixel,
+    src: *const BD::Pixel,
     src_stride: isize,
     abcd: &[i16; 4],
     mx: i32,
@@ -943,8 +942,8 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let mut mid = [[0; W]; H];
 
-    src = src.offset(-3 * BD::pxstride(src_stride));
     for y in 0..H {
+        let src = src.offset((y as isize - 3) * BD::pxstride(src_stride));
         let mx = mx + y as i32 * abcd[1] as i32;
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
@@ -960,7 +959,6 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
-        src = src.offset(BD::pxstride(src_stride));
     }
 
     for y in 0..H - 7 {
