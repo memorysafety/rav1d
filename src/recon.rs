@@ -572,7 +572,7 @@ fn decode_coefs<BD: BitDepth>(
             };
             let idx;
             let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TX_16X16 {
-                idx = rav1d_msac_decode_symbol_adapt4(
+                idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
                     4,
@@ -640,7 +640,7 @@ fn decode_coefs<BD: BitDepth>(
     let eob_bin = match tx2dszctx {
         0 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma][is_1d];
-            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
+            rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
         }
         1 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma][is_1d];

@@ -1829,7 +1829,7 @@ fn decode_b(
             );
             if is_filter {
                 y_mode = FILTER_PRED as u8;
-                y_angle = rav1d_msac_decode_symbol_adapt4(
+                y_angle = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.filter_intra.0,
                     4,
