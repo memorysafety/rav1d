@@ -112,6 +112,8 @@ impl FilterResult {
     }
 }
 
+const MID_STRIDE: usize = 128;
+
 unsafe fn filter_8tap<T: Into<i32>>(
     src: *const T,
     x: usize,
@@ -164,7 +166,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
-            let mut mid = [0i16; 128 * 135]; // Default::default()
+            let mut mid = [0i16; MID_STRIDE * 135]; // Default::default()
             let mut mid_ptr = &mut mid[..];
 
             src = src.offset(-3 * src_stride);
@@ -173,20 +175,20 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
                     mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 src = src.offset(src_stride);
             }
 
-            mid_ptr = &mut mid[128 * 3..];
+            mid_ptr = &mut mid[MID_STRIDE * 3..];
             for _ in 0..h {
                 let dst = slice::from_raw_parts_mut(dst_ptr, w);
                 for (x, dst) in dst.iter_mut().enumerate() {
-                    *dst = filter_8tap(mid_ptr.as_ptr(), x, fv, 128)
+                    *dst = filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
                         .rnd(6 + intermediate_bits)
                         .clip(bd);
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 dst_ptr = dst_ptr.offset(dst_stride);
             }
         } else {
@@ -235,7 +237,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
-    let mut mid = [0i16; 128 * (256 + 7)]; // Default::default()
+    let mut mid = [0i16; MID_STRIDE * (256 + 7)]; // Default::default()
     let mut mid_ptr = &mut mid[..];
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
@@ -257,17 +259,17 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
             imx &= 0x3ff;
         }
 
-        mid_ptr = &mut mid_ptr[128..];
+        mid_ptr = &mut mid_ptr[MID_STRIDE..];
         src = src.offset(src_stride);
     }
-    mid_ptr = &mut mid[128 * 3..];
+    mid_ptr = &mut mid[MID_STRIDE * 3..];
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
 
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
             *dst = match fv {
-                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, 128)
+                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
                     .rnd(6 + intermediate_bits)
                     .clip(bd),
                 None => {
@@ -277,7 +279,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         }
 
         my += dy;
-        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        mid_ptr = &mut mid_ptr[(my >> 10) * MID_STRIDE..];
         my &= 0x3ff;
         dst_ptr = dst_ptr.offset(dst_stride);
     }
@@ -303,7 +305,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
-            let mut mid = [0i16; 128 * 135]; // Default::default()
+            let mut mid = [0i16; MID_STRIDE * 135]; // Default::default()
             let mut mid_ptr = &mut mid[..];
 
             src = src.offset(-src_stride * 3);
@@ -312,19 +314,19 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
                     mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 src = src.offset(src_stride);
             }
 
-            mid_ptr = &mut mid[128 * 3..];
+            mid_ptr = &mut mid[MID_STRIDE * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = filter_8tap(mid_ptr.as_ptr(), x, fv, 128)
+                    tmp[x] = filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
                         .rnd(6)
                         .sub_prep_bias::<BD>();
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 tmp = &mut tmp[w..]
             }
         } else {
@@ -371,7 +373,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
-    let mut mid = [0i16; 128 * (256 + 7)]; // Default::default()
+    let mut mid = [0i16; MID_STRIDE * (256 + 7)]; // Default::default()
     let mut mid_ptr = &mut mid[..];
     let src_stride = BD::pxstride(src_stride);
 
@@ -392,16 +394,16 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
             imx &= 0x3ff;
         }
 
-        mid_ptr = &mut mid_ptr[128..];
+        mid_ptr = &mut mid_ptr[MID_STRIDE..];
         src = src.offset(src_stride);
     }
 
-    mid_ptr = &mut mid[128 * 3..];
+    mid_ptr = &mut mid[MID_STRIDE * 3..];
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
         for x in 0..w {
             tmp[x] = match fv {
-                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, 128).rnd(6),
+                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize).rnd(6),
                 None => FilterResult {
                     pixel: mid_ptr[x].into(),
                 },
@@ -409,15 +411,15 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
             .sub_prep_bias::<BD>()
         }
         my += dy;
-        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        mid_ptr = &mut mid_ptr[(my >> 10) * MID_STRIDE..];
         my &= 0x3ff;
         tmp = &mut tmp[w..];
     }
 }
 
-fn filter_bilin_mid(mid: &[i16], x: usize, mxy: usize, stride: usize) -> FilterResult {
+fn filter_bilin_mid(mid: &[i16], x: usize, mxy: usize) -> FilterResult {
     let mid = |i| mid[i] as i32;
-    let pixel = 16 * mid(x) + mxy as i32 * (mid(x + stride) - mid(x));
+    let pixel = 16 * mid(x) + mxy as i32 * (mid(x + MID_STRIDE) - mid(x));
     FilterResult { pixel }
 }
 
@@ -450,7 +452,7 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
 
     if mx != 0 {
         if my != 0 {
-            let mut mid = [0i16; 128 * 129]; // Default::default()
+            let mut mid = [0i16; MID_STRIDE * 129]; // Default::default()
             let mut mid_ptr = &mut mid[..];
             let tmp_h = h + 1;
 
@@ -461,19 +463,19 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
                         .get();
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 src = src.offset(src_stride);
             }
             mid_ptr = &mut mid[..];
             for _ in 0..h {
                 let dst = slice::from_raw_parts_mut(dst_ptr, w);
                 for (x, dst) in dst.iter_mut().enumerate() {
-                    *dst = filter_bilin_mid(mid_ptr, x, my, 128)
+                    *dst = filter_bilin_mid(mid_ptr, x, my)
                         .rnd(4 + intermediate_bits)
                         .clip(bd)
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 dst_ptr = dst_ptr.offset(dst_stride);
             }
         } else {
@@ -521,7 +523,7 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
-    let mut mid = [0i16; 128 * (256 + 1)];
+    let mut mid = [0i16; MID_STRIDE * (256 + 1)];
     let mut mid_ptr = &mut mid[..];
 
     for _ in 0..tmp_h {
@@ -537,20 +539,20 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
             imx &= 0x3ff;
         }
 
-        mid_ptr = &mut mid_ptr[128..];
+        mid_ptr = &mut mid_ptr[MID_STRIDE..];
         src = src.offset(src_stride);
     }
     mid_ptr = &mut mid[..];
     for _ in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = filter_bilin_mid(mid_ptr, x, my >> 6, 128)
+            *dst = filter_bilin_mid(mid_ptr, x, my >> 6)
                 .rnd(4 + intermediate_bits)
                 .clip(bd)
         }
 
         my += dy;
-        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        mid_ptr = &mut mid_ptr[(my >> 10) * MID_STRIDE..];
         my &= 0x3ff;
         dst_ptr = dst_ptr.offset(dst_stride);
     }
@@ -570,7 +572,7 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     let src_stride = BD::pxstride(src_stride);
     if mx != 0 {
         if my != 0 {
-            let mut mid = [0i16; 128 * 129];
+            let mut mid = [0i16; MID_STRIDE * 129];
             let mut mid_ptr = &mut mid[..];
             let tmp_h = h + 1;
 
@@ -581,18 +583,18 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
                         .get();
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 src = src.offset(src_stride);
             }
             mid_ptr = &mut mid[..];
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = filter_bilin_mid(mid_ptr, x, my, 128)
+                    tmp[x] = filter_bilin_mid(mid_ptr, x, my)
                         .rnd(4)
                         .sub_prep_bias::<BD>()
                 }
 
-                mid_ptr = &mut mid_ptr[128..];
+                mid_ptr = &mut mid_ptr[MID_STRIDE..];
                 tmp = &mut tmp[w..];
             }
         } else {
@@ -638,7 +640,7 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let src_stride = BD::pxstride(src_stride);
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
-    let mut mid = [0i16; 128 * (256 + 1)];
+    let mut mid = [0i16; MID_STRIDE * (256 + 1)];
     let mut mid_ptr = &mut mid[..];
 
     for _ in 0..tmp_h {
@@ -654,19 +656,19 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
             imx &= 0x3ff;
         }
 
-        mid_ptr = &mut mid_ptr[128..];
+        mid_ptr = &mut mid_ptr[MID_STRIDE..];
         src = src.offset(src_stride);
     }
     mid_ptr = &mut mid[..];
     for _ in 0..h {
         for x in 0..w {
-            tmp[x] = filter_bilin_mid(mid_ptr, x, my >> 6, 128)
+            tmp[x] = filter_bilin_mid(mid_ptr, x, my >> 6)
                 .rnd(4)
                 .sub_prep_bias::<BD>()
         }
 
         my += dy;
-        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        mid_ptr = &mut mid_ptr[(my >> 10) * MID_STRIDE..];
         my &= 0x3ff;
         tmp = &mut tmp[w..];
     }
