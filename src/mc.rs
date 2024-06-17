@@ -86,8 +86,8 @@ struct FilterResult {
 }
 
 impl FilterResult {
-    pub fn get(&self) -> i32 {
-        self.pixel
+    pub fn get(&self) -> i16 {
+        self.pixel as i16
     }
 
     pub fn apply(&self, f: impl Fn(i32) -> i32) -> Self {
@@ -170,7 +170,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             src = src.offset(-3 * src_stride);
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get() as i16;
+                    mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -249,7 +249,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
             mid_ptr[x] = match fh {
                 Some(fh) => filter_8tap(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
-                    .get() as i16,
+                    .get(),
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
             };
             imx += dx;
@@ -309,7 +309,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             src = src.offset(-src_stride * 3);
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get() as i16;
+                    mid_ptr[x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -384,7 +384,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
             mid_ptr[x] = match fh {
                 Some(fh) => filter_8tap(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
-                    .get() as i16,
+                    .get(),
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
             };
             imx += dx;
@@ -450,8 +450,7 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
 
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] =
-                        filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get() as i16;
+                    mid_ptr[x] = filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -524,7 +523,7 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             mid_ptr[x] = filter_bilin(src, ioff, imx >> 6, 1)
                 .rnd(4 - intermediate_bits)
-                .get() as i16;
+                .get();
             imx += dx;
             ioff += imx >> 10;
             imx &= 0x3ff;
@@ -569,8 +568,7 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
 
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] =
-                        filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get() as i16;
+                    mid_ptr[x] = filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -640,7 +638,7 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             mid_ptr[x] = filter_bilin(src, ioff, imx >> 6, 1)
                 .rnd(4 - intermediate_bits)
-                .get() as i16;
+                .get();
             imx += dx;
             ioff += imx >> 10;
             imx &= 0x3ff;
