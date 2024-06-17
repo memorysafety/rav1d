@@ -911,15 +911,16 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
+            let mid = &mid[y..][..8];
             dst[x] = bd.iclip_pixel(
-                filter[0] as i32 * mid[y + 0][x] as i32
-                    + filter[1] as i32 * mid[y + 1][x] as i32
-                    + filter[2] as i32 * mid[y + 2][x] as i32
-                    + filter[3] as i32 * mid[y + 3][x] as i32
-                    + filter[4] as i32 * mid[y + 4][x] as i32
-                    + filter[5] as i32 * mid[y + 5][x] as i32
-                    + filter[6] as i32 * mid[y + 6][x] as i32
-                    + filter[7] as i32 * mid[y + 7][x] as i32
+                filter[0] as i32 * mid[0][x] as i32
+                    + filter[1] as i32 * mid[1][x] as i32
+                    + filter[2] as i32 * mid[2][x] as i32
+                    + filter[3] as i32 * mid[3][x] as i32
+                    + filter[4] as i32 * mid[4][x] as i32
+                    + filter[5] as i32 * mid[5][x] as i32
+                    + filter[6] as i32 * mid[6][x] as i32
+                    + filter[7] as i32 * mid[7][x] as i32
                     + (1 << 7 + intermediate_bits >> 1)
                     >> 7 + intermediate_bits,
             );
@@ -969,14 +970,15 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            tmp[x] = ((filter[0] as i32 * mid[y + 0][x] as i32
-                + filter[1] as i32 * mid[y + 1][x] as i32
-                + filter[2] as i32 * mid[y + 2][x] as i32
-                + filter[3] as i32 * mid[y + 3][x] as i32
-                + filter[4] as i32 * mid[y + 4][x] as i32
-                + filter[5] as i32 * mid[y + 5][x] as i32
-                + filter[6] as i32 * mid[y + 6][x] as i32
-                + filter[7] as i32 * mid[y + 7][x] as i32
+            let mid = &mid[y..][..8];
+            tmp[x] = ((filter[0] as i32 * mid[0][x] as i32
+                + filter[1] as i32 * mid[1][x] as i32
+                + filter[2] as i32 * mid[2][x] as i32
+                + filter[3] as i32 * mid[3][x] as i32
+                + filter[4] as i32 * mid[4][x] as i32
+                + filter[5] as i32 * mid[5][x] as i32
+                + filter[6] as i32 * mid[6][x] as i32
+                + filter[7] as i32 * mid[7][x] as i32
                 + (1 << 7 >> 1)
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
