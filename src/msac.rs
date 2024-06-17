@@ -233,10 +233,18 @@ fn ctx_refill(s: &mut MsacContext) {
     let mut c = (EC_WIN_SIZE as c_int) - 24 - s.cnt;
     let mut dif = s.dif;
     s.with_buf(|mut buf| {
-        while c >= 0 && !buf.is_empty() {
-            dif ^= (buf[0] as ec_win) << c;
+        loop {
+            if buf.is_empty() {
+                // set remaining bits to 1;
+                dif |= !(!(0xff as ec_win) << c);
+                break;
+            }
+            dif |= ((buf[0] ^ 0xff) as ec_win) << c;
             buf = &buf[1..];
             c -= 8;
+            if c < 0 {
+                break;
+            }
         }
         buf
     });
@@ -247,11 +255,13 @@ fn ctx_refill(s: &mut MsacContext) {
 #[inline]
 fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: c_uint) {
     let d = 15 ^ (31 ^ clz(rng));
+    let cnt = s.cnt;
     assert!(rng <= 65535);
-    s.cnt -= d;
-    s.dif = ((dif + 1) << d) - 1;
+    s.dif = dif << d;
     s.rng = rng << d;
-    if s.cnt < 0 {
+    s.cnt = cnt - d;
+    // unsigned compare avoids redundant refills at eob
+    if (cnt as u32) < (d as u32) {
         ctx_refill(s);
     }
 }
@@ -428,7 +438,7 @@ impl MsacContext {
         let mut s = Self {
             buf_pos,
             buf_end,
-            dif: (1 << (EC_WIN_SIZE - 1)) - 1,
+            dif: 0,
             rng: 0x8000,
             cnt: -15,
             allow_update_cdf: (!disable_cdf_update_flag).into(),
