@@ -890,14 +890,14 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
-                + filter[1] as i32 * (*src.offset(x as isize - 2 * 1)).as_::<i32>()
-                + filter[2] as i32 * (*src.offset(x as isize - 1 * 1)).as_::<i32>()
-                + filter[3] as i32 * (*src.offset(x as isize + 0 * 1)).as_::<i32>()
-                + filter[4] as i32 * (*src.offset(x as isize + 1 * 1)).as_::<i32>()
-                + filter[5] as i32 * (*src.offset(x as isize + 2 * 1)).as_::<i32>()
-                + filter[6] as i32 * (*src.offset(x as isize + 3 * 1)).as_::<i32>()
-                + filter[7] as i32 * (*src.offset(x as isize + 4 * 1)).as_::<i32>()
+            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3)).as_::<i32>()
+                + filter[1] as i32 * (*src.offset(x as isize - 2)).as_::<i32>()
+                + filter[2] as i32 * (*src.offset(x as isize - 1)).as_::<i32>()
+                + filter[3] as i32 * (*src.offset(x as isize + 0)).as_::<i32>()
+                + filter[4] as i32 * (*src.offset(x as isize + 1)).as_::<i32>()
+                + filter[5] as i32 * (*src.offset(x as isize + 2)).as_::<i32>()
+                + filter[6] as i32 * (*src.offset(x as isize + 3)).as_::<i32>()
+                + filter[7] as i32 * (*src.offset(x as isize + 4)).as_::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
@@ -948,14 +948,14 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
-                + filter[1] as i32 * (*src.offset(x as isize - 2 * 1)).as_::<i32>()
-                + filter[2] as i32 * (*src.offset(x as isize - 1 * 1)).as_::<i32>()
-                + filter[3] as i32 * (*src.offset(x as isize + 0 * 1)).as_::<i32>()
-                + filter[4] as i32 * (*src.offset(x as isize + 1 * 1)).as_::<i32>()
-                + filter[5] as i32 * (*src.offset(x as isize + 2 * 1)).as_::<i32>()
-                + filter[6] as i32 * (*src.offset(x as isize + 3 * 1)).as_::<i32>()
-                + filter[7] as i32 * (*src.offset(x as isize + 4 * 1)).as_::<i32>()
+            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3)).as_::<i32>()
+                + filter[1] as i32 * (*src.offset(x as isize - 2)).as_::<i32>()
+                + filter[2] as i32 * (*src.offset(x as isize - 1)).as_::<i32>()
+                + filter[3] as i32 * (*src.offset(x as isize + 0)).as_::<i32>()
+                + filter[4] as i32 * (*src.offset(x as isize + 1)).as_::<i32>()
+                + filter[5] as i32 * (*src.offset(x as isize + 2)).as_::<i32>()
+                + filter[6] as i32 * (*src.offset(x as isize + 3)).as_::<i32>()
+                + filter[7] as i32 * (*src.offset(x as isize + 4)).as_::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
