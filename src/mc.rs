@@ -114,6 +114,13 @@ impl FilterResult {
 
 const MID_STRIDE: usize = 128;
 
+fn filter_8tap_mid(mid: &[i16], x: usize, f: &[i8; 8]) -> FilterResult {
+    let pixel = (0..f.len())
+        .map(|i| f[i] as i32 * mid[x + i * MID_STRIDE] as i32)
+        .sum();
+    FilterResult { pixel }
+}
+
 unsafe fn filter_8tap<T: Into<i32>>(
     src: *const T,
     x: usize,
@@ -179,11 +186,11 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
                 src = src.offset(src_stride);
             }
 
-            mid_ptr = &mut mid[MID_STRIDE * 3..];
+            let mut mid_ptr = &mut mid[..];
             for _ in 0..h {
                 let dst = slice::from_raw_parts_mut(dst_ptr, w);
                 for (x, dst) in dst.iter_mut().enumerate() {
-                    *dst = filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
+                    *dst = filter_8tap_mid(mid_ptr, x, fv)
                         .rnd(6 + intermediate_bits)
                         .clip(bd);
                 }
@@ -262,19 +269,20 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         mid_ptr = &mut mid_ptr[MID_STRIDE..];
         src = src.offset(src_stride);
     }
-    mid_ptr = &mut mid[MID_STRIDE * 3..];
+    let mut mid_ptr = &mut mid[..];
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
 
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
             *dst = match fv {
-                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
+                Some(fv) => filter_8tap_mid(mid_ptr, x, fv)
                     .rnd(6 + intermediate_bits)
                     .clip(bd),
-                None => {
-                    bd.iclip_pixel((i32::from(mid_ptr[x]) + intermediate_rnd) >> intermediate_bits)
-                }
+                None => bd.iclip_pixel(
+                    (i32::from(mid_ptr[x + 3 * MID_STRIDE]) + intermediate_rnd)
+                        >> intermediate_bits,
+                ),
             };
         }
 
@@ -318,12 +326,10 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
                 src = src.offset(src_stride);
             }
 
-            mid_ptr = &mut mid[MID_STRIDE * 3..];
+            let mut mid_ptr = &mut mid[..];
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize)
-                        .rnd(6)
-                        .sub_prep_bias::<BD>();
+                    tmp[x] = filter_8tap_mid(mid_ptr, x, fv).rnd(6).sub_prep_bias::<BD>();
                 }
 
                 mid_ptr = &mut mid_ptr[MID_STRIDE..];
@@ -398,14 +404,14 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         src = src.offset(src_stride);
     }
 
-    mid_ptr = &mut mid[MID_STRIDE * 3..];
+    let mut mid_ptr = &mut mid[..];
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
         for x in 0..w {
             tmp[x] = match fv {
-                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, MID_STRIDE as isize).rnd(6),
+                Some(fv) => filter_8tap_mid(mid_ptr, x, fv).rnd(6),
                 None => FilterResult {
-                    pixel: mid_ptr[x].into(),
+                    pixel: mid_ptr[x + 3 * MID_STRIDE].into(),
                 },
             }
             .sub_prep_bias::<BD>()
