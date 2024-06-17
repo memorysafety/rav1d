@@ -90,14 +90,17 @@ impl FilterResult {
         self.pixel
     }
 
-    pub fn rnd(&self, sh: u8) -> Self {
-        let pixel = (self.pixel + ((1 << sh) >> 1)) >> sh;
+    pub fn apply(&self, f: impl Fn(i32) -> i32) -> Self {
+        let pixel = f(self.pixel);
         Self { pixel }
     }
 
+    pub fn rnd(&self, sh: u8) -> Self {
+        self.apply(|px| (px + ((1 << sh) >> 1)) >> sh)
+    }
+
     pub fn rnd2(&self, sh: u8, rnd: u8) -> Self {
-        let pixel = (self.pixel + (rnd as i32)) >> sh;
-        Self { pixel }
+        self.apply(|px| (px + (rnd as i32)) >> sh)
     }
 
     pub fn clip<BD: BitDepth>(&self, bd: BD) -> BD::Pixel {
@@ -470,8 +473,10 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
             for _ in 0..h {
                 let dst = slice::from_raw_parts_mut(dst_ptr, w);
                 for (x, dst) in dst.iter_mut().enumerate() {
-                    let px = filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get();
-                    *dst = bd.iclip_pixel((px + intermediate_rnd) >> intermediate_bits);
+                    *dst = filter_bilin(src, x, mx, 1)
+                        .rnd(4 - intermediate_bits)
+                        .apply(|px| (px + intermediate_rnd) >> intermediate_bits)
+                        .clip(bd);
                 }
 
                 dst_ptr = dst_ptr.offset(dst_stride);
