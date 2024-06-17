@@ -890,8 +890,9 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            let src = slice::from_raw_parts(src.offset(x as isize - 3), 8);
-            mid[y][x] = ((0..8)
+            let n = filter.len();
+            let src = slice::from_raw_parts(src.offset(x as isize - 3), n);
+            mid[y][x] = ((0..n)
                 .map(|i| filter[i] as i32 * src[i].as_::<i32>())
                 .sum::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
@@ -906,9 +907,10 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            let mid = &mid[y..][..8];
+            let n = filter.len();
+            let mid = &mid[y..][..n];
             dst[x] = bd.iclip_pixel(
-                (0..8)
+                (0..n)
                     .map(|i| filter[i] as i32 * mid[i][x] as i32)
                     .sum::<i32>()
                     + (1 << 7 + intermediate_bits >> 1)
@@ -940,8 +942,9 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            let src = slice::from_raw_parts(src.offset(x as isize - 3), 8);
-            mid[y][x] = ((0..8)
+            let n = filter.len();
+            let src = slice::from_raw_parts(src.offset(x as isize - 3), n);
+            mid[y][x] = ((0..n)
                 .map(|i| filter[i] as i32 * src[i].as_::<i32>())
                 .sum::<i32>()
                 + (1 << 7 - intermediate_bits >> 1)
@@ -955,8 +958,9 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            let mid = &mid[y..][..8];
-            tmp[x] = (((0..8)
+            let n = filter.len();
+            let mid = &mid[y..][..n];
+            tmp[x] = (((0..n)
                 .map(|i| filter[i] as i32 * mid[i][x] as i32)
                 .sum::<i32>()
                 + (1 << 7 >> 1)
