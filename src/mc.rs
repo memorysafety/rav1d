@@ -103,6 +103,10 @@ impl FilterResult {
     pub fn clip<BD: BitDepth>(&self, bd: BD) -> BD::Pixel {
         bd.iclip_pixel(self.pixel)
     }
+
+    pub fn sub_prep_bias<BD: BitDepth>(&self) -> i16 {
+        (self.pixel - i32::from(BD::PREP_BIAS)) as i16
+    }
 }
 
 unsafe fn filter_8tap<T: Into<i32>>(
@@ -312,10 +316,9 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             mid_ptr = &mut mid[128 * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = (filter_8tap(mid_ptr.as_ptr(), x, fv, 128).rnd(6).get()
-                        - i32::from(BD::PREP_BIAS))
-                    .try_into()
-                    .unwrap();
+                    tmp[x] = filter_8tap(mid_ptr.as_ptr(), x, fv, 128)
+                        .rnd(6)
+                        .sub_prep_bias::<BD>();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -324,8 +327,9 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = (filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get()
-                        - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = filter_8tap(src, x, fh, 1)
+                        .rnd(6 - intermediate_bits)
+                        .sub_prep_bias::<BD>();
                 }
 
                 tmp = &mut tmp[w..];
@@ -335,10 +339,9 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     } else if let Some(fv) = fv {
         for _ in 0..h {
             for x in 0..w {
-                tmp[x] = (filter_8tap(src, x, fv, src_stride)
+                tmp[x] = filter_8tap(src, x, fv, src_stride)
                     .rnd(6 - intermediate_bits)
-                    .get()
-                    - i32::from(BD::PREP_BIAS)) as i16;
+                    .sub_prep_bias::<BD>()
             }
 
             tmp = &mut tmp[w..];
@@ -394,10 +397,13 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
         for x in 0..w {
-            tmp[x] = ((match fv {
-                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, 128).rnd(6).get(),
-                None => i32::from(mid_ptr[x]),
-            }) - i32::from(BD::PREP_BIAS)) as i16;
+            tmp[x] = match fv {
+                Some(fv) => filter_8tap(mid_ptr.as_ptr(), x, fv, 128).rnd(6),
+                None => FilterResult {
+                    pixel: mid_ptr[x].into(),
+                },
+            }
+            .sub_prep_bias::<BD>()
         }
         my += dy;
         mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
@@ -568,8 +574,9 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
             mid_ptr = &mut mid[..];
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = (filter_bilin(mid_ptr.as_ptr(), x, my, 128).rnd(4).get()
-                        - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = filter_bilin(mid_ptr.as_ptr(), x, my, 128)
+                        .rnd(4)
+                        .sub_prep_bias::<BD>()
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -578,8 +585,9 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    tmp[x] = (filter_bilin(src, x, mx, 1).rnd(4 - intermediate_bits).get()
-                        - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = filter_bilin(src, x, mx, 1)
+                        .rnd(4 - intermediate_bits)
+                        .sub_prep_bias::<BD>()
                 }
 
                 tmp = &mut tmp[w..];
@@ -589,10 +597,9 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     } else if my != 0 {
         for _ in 0..h {
             for x in 0..w {
-                tmp[x] = (filter_bilin(src, x, my, src_stride)
+                tmp[x] = filter_bilin(src, x, my, src_stride)
                     .rnd(4 - intermediate_bits)
-                    .get()
-                    - i32::from(BD::PREP_BIAS)) as i16;
+                    .sub_prep_bias::<BD>()
             }
 
             tmp = &mut tmp[w..];
@@ -640,8 +647,9 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     mid_ptr = &mut mid[..];
     for _ in 0..h {
         for x in 0..w {
-            tmp[x] = (filter_bilin(mid_ptr.as_ptr(), x, my >> 6, 128).rnd(4).get()
-                - i32::from(BD::PREP_BIAS)) as i16;
+            tmp[x] = filter_bilin(mid_ptr.as_ptr(), x, my >> 6, 128)
+                .rnd(4)
+                .sub_prep_bias::<BD>()
         }
 
         my += dy;
