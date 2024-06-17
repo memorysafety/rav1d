@@ -878,16 +878,19 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     my: i32,
     bd: BD,
 ) {
+    const W: usize = 8;
+    const H: usize = 15;
+
     let intermediate_bits = bd.get_intermediate_bits();
-    let mut mid = [[0; 8]; 15];
+    let mut mid = [[0; W]; H];
 
     src = src.offset(-3 * BD::pxstride(src_stride));
-    for (y, mid) in mid.iter_mut().enumerate() {
+    for y in 0..H {
         let mx = mx + y as i32 * abcd[1] as i32;
-        for (x, mid) in mid.iter_mut().enumerate() {
+        for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            *mid = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
+            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
                 + filter[1] as i32 * (*src.offset(x as isize - 2 * 1)).as_::<i32>()
                 + filter[2] as i32 * (*src.offset(x as isize - 1 * 1)).as_::<i32>()
                 + filter[3] as i32 * (*src.offset(x as isize + 0 * 1)).as_::<i32>()
@@ -901,13 +904,13 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         src = src.offset(BD::pxstride(src_stride));
     }
 
-    for y in 0..8 {
+    for y in 0..H - 7 {
         let my = my + y as i32 * abcd[3] as i32;
-        let dst = slice::from_raw_parts_mut(dst_ptr, 8);
-        for (x, dst) in dst.iter_mut().enumerate() {
+        let dst = slice::from_raw_parts_mut(dst_ptr, W);
+        for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            *dst = bd.iclip_pixel(
+            dst[x] = bd.iclip_pixel(
                 filter[0] as i32 * mid[y + 0][x] as i32
                     + filter[1] as i32 * mid[y + 1][x] as i32
                     + filter[2] as i32 * mid[y + 2][x] as i32
@@ -934,16 +937,19 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     my: i32,
     bd: BD,
 ) {
+    const W: usize = 8;
+    const H: usize = 15;
+
     let intermediate_bits = bd.get_intermediate_bits();
-    let mut mid = [[0; 8]; 15];
+    let mut mid = [[0; W]; H];
 
     src = src.offset(-3 * BD::pxstride(src_stride));
-    for (y, mid) in mid.iter_mut().enumerate() {
+    for y in 0..H {
         let mx = mx + y as i32 * abcd[1] as i32;
-        for (x, mid) in mid.iter_mut().enumerate() {
+        for x in 0..W {
             let tmx = mx + x as i32 * abcd[0] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
-            *mid = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
+            mid[y][x] = (filter[0] as i32 * (*src.offset(x as isize - 3 * 1)).as_::<i32>()
                 + filter[1] as i32 * (*src.offset(x as isize - 2 * 1)).as_::<i32>()
                 + filter[2] as i32 * (*src.offset(x as isize - 1 * 1)).as_::<i32>()
                 + filter[3] as i32 * (*src.offset(x as isize + 0 * 1)).as_::<i32>()
@@ -957,10 +963,10 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         src = src.offset(BD::pxstride(src_stride));
     }
 
-    for y in 0..8 {
+    for y in 0..H - 7 {
         let tmp = &mut tmp[y * tmp_stride..];
         let my = my + y as i32 * abcd[3] as i32;
-        for x in 0..8 {
+        for x in 0..W {
             let tmy = my + x as i32 * abcd[2] as i32;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
             tmp[x] = ((filter[0] as i32 * mid[y + 0][x] as i32
