@@ -1025,11 +1025,11 @@ unsafe fn resize_rust<BD: BitDepth>(
         let src = &*src.slice::<BD>(src_w);
         let dst = slice::from_raw_parts_mut(dst, dst_w);
         for dst_x in 0..dst_w {
-            let F = &dav1d_resize_filter[(mx >> 8) as usize];
+            let f = &dav1d_resize_filter[(mx >> 8) as usize];
             dst[dst_x] = bd.iclip_pixel(
-                -(0..F.len())
+                -(0..f.len())
                     .map(|i| {
-                        F[i] as i32 * src[iclip(src_x - 3 + i as i32, 0, max) as usize].to::<i32>()
+                        f[i] as i32 * src[iclip(src_x - 3 + i as i32, 0, max) as usize].to::<i32>()
                     })
                     .sum::<i32>()
                     + 64
