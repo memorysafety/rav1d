@@ -515,9 +515,9 @@ impl SegmentId {
         }
     }
 
-    pub const fn get(&self) -> u8 {
+    pub const fn get(&self) -> usize {
         // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
-        self.id % RAV1D_MAX_SEGMENTS
+        (self.id % RAV1D_MAX_SEGMENTS) as usize
     }
 
     pub fn min() -> Self {
