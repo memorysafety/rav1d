@@ -117,8 +117,8 @@ fn filter_8tap_mid(mid: &[[i16; MID_STRIDE]], x: usize, f: &[i8; 8]) -> FilterRe
     FilterResult { pixel }
 }
 
-unsafe fn filter_8tap<T: Into<i32>>(
-    src: *const T,
+unsafe fn filter_8tap<BD: BitDepth>(
+    src: *const BD::Pixel,
     x: usize,
     f: &[i8; 8],
     stride: isize,
@@ -126,7 +126,7 @@ unsafe fn filter_8tap<T: Into<i32>>(
     let pixel = (0..f.len())
         .map(|i| {
             let j = x as isize + (i as isize - 3) * stride;
-            f[i] as i32 * src.offset(j).read().into()
+            f[i] as i32 * src.offset(j).read().to::<i32>()
         })
         .sum();
     FilterResult { pixel }
@@ -171,7 +171,9 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             for y in 0..tmp_h {
                 let src = src.offset((y as isize - 3) * src_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
+                    mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
+                        .rnd(6 - intermediate_bits)
+                        .get();
                 }
             }
 
@@ -190,7 +192,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
                 let dst = dst.offset(y as isize * dst_stride);
                 let dst = slice::from_raw_parts_mut(dst, w);
                 for x in 0..w {
-                    dst[x] = filter_8tap(src, x, fh, 1)
+                    dst[x] = filter_8tap::<BD>(src, x, fh, 1)
                         .rnd2(6, intermediate_rnd)
                         .clip(bd);
                 }
@@ -202,7 +204,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             let dst = dst.offset(y as isize * dst_stride);
             let dst = slice::from_raw_parts_mut(dst, w);
             for x in 0..w {
-                dst[x] = filter_8tap(src, x, fv, src_stride).rnd(6).clip(bd);
+                dst[x] = filter_8tap::<BD>(src, x, fv, src_stride).rnd(6).clip(bd);
             }
         }
     } else {
@@ -239,7 +241,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             let fh = get_filter(imx >> 6, w, h_filter_type);
             mid[y][x] = match fh {
-                Some(fh) => filter_8tap(src, ioff, fh, 1)
+                Some(fh) => filter_8tap::<BD>(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
                     .get(),
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
@@ -297,7 +299,9 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             for y in 0..tmp_h {
                 let src = src.offset((y as isize - 3) * src_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_8tap(src, x, fh, 1).rnd(6 - intermediate_bits).get();
+                    mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
+                        .rnd(6 - intermediate_bits)
+                        .get();
                 }
             }
 
@@ -314,7 +318,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
                 let src = src.offset(y as isize * src_stride);
                 let tmp = &mut tmp[y * w..][..w];
                 for x in 0..w {
-                    tmp[x] = filter_8tap(src, x, fh, 1)
+                    tmp[x] = filter_8tap::<BD>(src, x, fh, 1)
                         .rnd(6 - intermediate_bits)
                         .sub_prep_bias::<BD>();
                 }
@@ -325,7 +329,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             let src = src.offset(y as isize * src_stride);
             let tmp = &mut tmp[y * w..][..w];
             for x in 0..w {
-                tmp[x] = filter_8tap(src, x, fv, src_stride)
+                tmp[x] = filter_8tap::<BD>(src, x, fv, src_stride)
                     .rnd(6 - intermediate_bits)
                     .sub_prep_bias::<BD>()
             }
@@ -361,7 +365,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             let fh = get_filter(imx >> 6, w, h_filter_type);
             mid[y][x] = match fh {
-                Some(fh) => filter_8tap(src, ioff, fh, 1)
+                Some(fh) => filter_8tap::<BD>(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
                     .get(),
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
