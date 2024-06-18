@@ -41,36 +41,33 @@ use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::{bpc_fn, BPC};
 
 #[inline(never)]
-unsafe fn put_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
-    src: *const BD::Pixel,
-    src_stride: isize,
+fn put_rust<BD: BitDepth>(
+    dst: Rav1dPictureDataComponentOffset,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
 ) {
     for y in 0..h {
-        let src = src.offset(y as isize * src_stride);
-        let dst = dst.offset(y as isize * dst_stride);
-        let src = slice::from_raw_parts(src, w);
-        let dst = slice::from_raw_parts_mut(dst, w);
+        let src = src + y as isize * src.pixel_stride::<BD>();
+        let dst = dst + y as isize * dst.pixel_stride::<BD>();
+        let src = &*src.slice::<BD>(w);
+        let dst = &mut *dst.slice_mut::<BD>(w);
         BD::pixel_copy(dst, src, w);
     }
 }
 
 #[inline(never)]
-unsafe fn prep_rust<BD: BitDepth>(
+fn prep_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    src: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     for y in 0..h {
-        let src = src.offset(y as isize * src_stride);
-        let src = slice::from_raw_parts(src, w);
+        let src = src + y as isize * src.pixel_stride::<BD>();
+        let src = &*src.slice::<BD>(w);
         let tmp = &mut tmp[y * w..][..w];
         for x in 0..w {
             tmp[x] = BD::sub_prep_bias(src[x].as_::<i32>() << intermediate_bits)
@@ -117,16 +114,16 @@ fn filter_8tap_mid(mid: &[[i16; MID_STRIDE]], x: usize, f: &[i8; 8]) -> FilterRe
     FilterResult { pixel }
 }
 
-unsafe fn filter_8tap<BD: BitDepth>(
-    src: *const BD::Pixel,
+fn filter_8tap<BD: BitDepth>(
+    src: Rav1dPictureDataComponentOffset,
     x: usize,
     f: &[i8; 8],
     stride: isize,
 ) -> FilterResult {
     let pixel = (0..f.len())
-        .map(|i| {
-            let j = x as isize + (i as isize - 3) * stride;
-            f[i] as i32 * src.offset(j).read().to::<i32>()
+        .map(|y| {
+            let px = *(src + x + (y as isize - 3) * stride).index::<BD>();
+            f[y] as i32 * px.to::<i32>()
         })
         .sum();
     FilterResult { pixel }
@@ -143,11 +140,9 @@ fn get_filter(m: usize, d: usize, filter_type: Rav1dFilterMode) -> Option<&'stat
 }
 
 #[inline(never)]
-unsafe fn put_8tap_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
-    src: *const BD::Pixel,
-    src_stride: isize,
+fn put_8tap_rust<BD: BitDepth>(
+    dst: Rav1dPictureDataComponentOffset,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -161,15 +156,13 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
 
-    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
-
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
             let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
 
             for y in 0..tmp_h {
-                let src = src.offset((y as isize - 3) * src_stride);
+                let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
                 for x in 0..w {
                     mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
                         .rnd(6 - intermediate_bits)
@@ -178,8 +171,8 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             }
 
             for y in 0..h {
-                let dst = dst.offset(y as isize * dst_stride);
-                let dst = slice::from_raw_parts_mut(dst, w);
+                let dst = dst + y as isize * dst.pixel_stride::<BD>();
+                let dst = &mut *dst.slice_mut::<BD>(w);
                 for x in 0..w {
                     dst[x] = filter_8tap_mid(&mid[y..], x, fv)
                         .rnd(6 + intermediate_bits)
@@ -188,9 +181,9 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             }
         } else {
             for y in 0..h {
-                let src = src.offset(y as isize * src_stride);
-                let dst = dst.offset(y as isize * dst_stride);
-                let dst = slice::from_raw_parts_mut(dst, w);
+                let src = src + y as isize * src.pixel_stride::<BD>();
+                let dst = dst + y as isize * dst.pixel_stride::<BD>();
+                let dst = &mut *dst.slice_mut::<BD>(w);
                 for x in 0..w {
                     dst[x] = filter_8tap::<BD>(src, x, fh, 1)
                         .rnd2(6, intermediate_rnd)
@@ -200,24 +193,24 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
         }
     } else if let Some(fv) = fv {
         for y in 0..h {
-            let src = src.offset(y as isize * src_stride);
-            let dst = dst.offset(y as isize * dst_stride);
-            let dst = slice::from_raw_parts_mut(dst, w);
+            let src = src + y as isize * src.pixel_stride::<BD>();
+            let dst = dst + y as isize * dst.pixel_stride::<BD>();
+            let dst = &mut *dst.slice_mut::<BD>(w);
             for x in 0..w {
-                dst[x] = filter_8tap::<BD>(src, x, fv, src_stride).rnd(6).clip(bd);
+                dst[x] = filter_8tap::<BD>(src, x, fv, src.pixel_stride::<BD>())
+                    .rnd(6)
+                    .clip(bd);
             }
         }
     } else {
-        put_rust::<BD>(dst, dst_stride, src, src_stride, w, h);
+        put_rust::<BD>(dst, src, w, h);
     }
 }
 
 #[inline(never)]
-unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
-    src: *const BD::Pixel,
-    src_stride: isize,
+fn put_8tap_scaled_rust<BD: BitDepth>(
+    dst: Rav1dPictureDataComponentOffset,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -231,10 +224,9 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
     let mut mid = [[0i16; MID_STRIDE]; 256 + 7]; // Default::default()
-    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
     for y in 0..tmp_h {
-        let src = src.offset((y as isize - 3) * src_stride);
+        let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
         let mut imx = mx;
         let mut ioff = 0;
 
@@ -244,7 +236,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
                 Some(fh) => filter_8tap::<BD>(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
                     .get(),
-                None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
+                None => (*(src + ioff).index::<BD>()).as_::<i16>() << intermediate_bits,
             };
             imx += dx;
             ioff += imx >> 10;
@@ -255,8 +247,8 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     for y in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
 
-        let dst = dst.offset(y as isize * dst_stride);
-        let dst = slice::from_raw_parts_mut(dst, w);
+        let dst = dst + y as isize * dst.pixel_stride::<BD>();
+        let dst = &mut *dst.slice_mut::<BD>(w);
         for x in 0..w {
             dst[x] = match fv {
                 Some(fv) => filter_8tap_mid(mid, x, fv)
@@ -275,10 +267,9 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn prep_8tap_rust<BD: BitDepth>(
+fn prep_8tap_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    src: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -289,7 +280,6 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
-    let src_stride = BD::pxstride(src_stride);
 
     if let Some(fh) = fh {
         if let Some(fv) = fv {
@@ -297,7 +287,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
 
             for y in 0..tmp_h {
-                let src = src.offset((y as isize - 3) * src_stride);
+                let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
                 for x in 0..w {
                     mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
                         .rnd(6 - intermediate_bits)
@@ -315,7 +305,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             }
         } else {
             for y in 0..h {
-                let src = src.offset(y as isize * src_stride);
+                let src = src + y as isize * src.pixel_stride::<BD>();
                 let tmp = &mut tmp[y * w..][..w];
                 for x in 0..w {
                     tmp[x] = filter_8tap::<BD>(src, x, fh, 1)
@@ -326,24 +316,23 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
         }
     } else if let Some(fv) = fv {
         for y in 0..h {
-            let src = src.offset(y as isize * src_stride);
+            let src = src + y as isize * src.pixel_stride::<BD>();
             let tmp = &mut tmp[y * w..][..w];
             for x in 0..w {
-                tmp[x] = filter_8tap::<BD>(src, x, fv, src_stride)
+                tmp[x] = filter_8tap::<BD>(src, x, fv, src.pixel_stride::<BD>())
                     .rnd(6 - intermediate_bits)
                     .sub_prep_bias::<BD>()
             }
         }
     } else {
-        prep_rust(tmp, src, src_stride, w, h, bd);
+        prep_rust(tmp, src, w, h, bd);
     };
 }
 
 #[inline(never)]
-unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
+fn prep_8tap_scaled_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    src: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -356,10 +345,9 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
     let mut mid = [[0i16; MID_STRIDE]; 256 + 7]; // Default::default()
-    let src_stride = BD::pxstride(src_stride);
 
     for y in 0..tmp_h {
-        let src = src.offset((y as isize - 3) * src_stride);
+        let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
         let mut imx = mx;
         let mut ioff = 0;
         for x in 0..w {
@@ -368,7 +356,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
                 Some(fh) => filter_8tap::<BD>(src, ioff, fh, 1)
                     .rnd(6 - intermediate_bits)
                     .get(),
-                None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
+                None => (*(src + ioff).index::<BD>()).as_::<i16>() << intermediate_bits,
             };
             imx += dx;
             ioff += imx >> 10;
@@ -402,23 +390,22 @@ fn filter_bilin_mid(mid: &[[i16; MID_STRIDE]], x: usize, mxy: usize) -> FilterRe
     FilterResult { pixel }
 }
 
-unsafe fn filter_bilin<BD: BitDepth>(
-    src: *const BD::Pixel,
+fn filter_bilin<BD: BitDepth>(
+    src: Rav1dPictureDataComponentOffset,
     x: usize,
     mxy: usize,
     stride: isize,
 ) -> FilterResult {
-    let x = x as isize;
-    let src = |i| -> i32 { src.offset(i).read().into() };
-    let pixel = 16 * src(x) + ((mxy as i32) * (src(x + stride) - src(x)));
+    let src = |y: isize, x: usize| -> i32 { (*(src + x + y * stride).index::<BD>()).to::<i32>() };
+    let x0 = src(0, x);
+    let x1 = src(1, x);
+    let pixel = 16 * x0 + mxy as i32 * (x1 - x0);
     FilterResult { pixel }
 }
 
-unsafe fn put_bilin_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
-    src: *const BD::Pixel,
-    src_stride: isize,
+fn put_bilin_rust<BD: BitDepth>(
+    dst: Rav1dPictureDataComponentOffset,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -427,7 +414,6 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
-    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
     if mx != 0 {
         if my != 0 {
@@ -435,7 +421,7 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
             let tmp_h = h + 1;
 
             for y in 0..tmp_h {
-                let src = src.offset(y as isize * src_stride);
+                let src = src + y as isize * src.pixel_stride::<BD>();
                 for x in 0..w {
                     mid[y][x] = filter_bilin::<BD>(src, x, mx, 1)
                         .rnd(4 - intermediate_bits)
@@ -443,8 +429,8 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
                 }
             }
             for y in 0..h {
-                let dst = dst.offset(y as isize * dst_stride);
-                let dst = slice::from_raw_parts_mut(dst, w);
+                let dst = dst + y as isize * dst.pixel_stride::<BD>();
+                let dst = &mut *dst.slice_mut::<BD>(w);
                 for x in 0..w {
                     dst[x] = filter_bilin_mid(&mid[y..], x, my)
                         .rnd(4 + intermediate_bits)
@@ -453,9 +439,9 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
             }
         } else {
             for y in 0..h {
-                let src = src.offset(y as isize * src_stride);
-                let dst = dst.offset(y as isize * dst_stride);
-                let dst = slice::from_raw_parts_mut(dst, w);
+                let src = src + y as isize * src.pixel_stride::<BD>();
+                let dst = dst + y as isize * dst.pixel_stride::<BD>();
+                let dst = &mut *dst.slice_mut::<BD>(w);
                 for x in 0..w {
                     dst[x] = filter_bilin::<BD>(src, x, mx, 1)
                         .rnd(4 - intermediate_bits)
@@ -466,23 +452,23 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
         }
     } else if my != 0 {
         for y in 0..h {
-            let src = src.offset(y as isize * src_stride);
-            let dst = dst.offset(y as isize * dst_stride);
-            let dst = slice::from_raw_parts_mut(dst, w);
+            let src = src + y as isize * src.pixel_stride::<BD>();
+            let dst = dst + y as isize * dst.pixel_stride::<BD>();
+            let dst = &mut *dst.slice_mut::<BD>(w);
             for x in 0..w {
-                dst[x] = filter_bilin::<BD>(src, x, my, src_stride).rnd(4).clip(bd)
+                dst[x] = filter_bilin::<BD>(src, x, my, src.pixel_stride::<BD>())
+                    .rnd(4)
+                    .clip(bd)
             }
         }
     } else {
-        put_rust::<BD>(dst, dst_stride, src, src_stride, w, h);
+        put_rust::<BD>(dst, src, w, h);
     };
 }
 
-unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
-    src: *const BD::Pixel,
-    src_stride: isize,
+fn put_bilin_scaled_rust<BD: BitDepth>(
+    dst: Rav1dPictureDataComponentOffset,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -492,12 +478,11 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
     let mut mid = [[0i16; MID_STRIDE]; 256 + 1];
 
     for y in 0..tmp_h {
-        let src = src.offset(y as isize * src_stride);
+        let src = src + y as isize * src.pixel_stride::<BD>();
         let mut imx = mx;
         let mut ioff = 0;
 
@@ -512,8 +497,8 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     }
     let mut mid = &mut mid[..];
     for y in 0..h {
-        let dst = dst.offset(y as isize * dst_stride);
-        let dst = slice::from_raw_parts_mut(dst, w);
+        let dst = dst + y as isize * dst.pixel_stride::<BD>();
+        let dst = &mut *dst.slice_mut::<BD>(w);
         for x in 0..w {
             dst[x] = filter_bilin_mid(mid, x, my >> 6)
                 .rnd(4 + intermediate_bits)
@@ -526,10 +511,9 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn prep_bilin_rust<BD: BitDepth>(
+fn prep_bilin_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    src: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -537,14 +521,13 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let src_stride = BD::pxstride(src_stride);
     if mx != 0 {
         if my != 0 {
             let mut mid = [[0i16; MID_STRIDE]; 129];
             let tmp_h = h + 1;
 
             for y in 0..tmp_h {
-                let src = src.offset(y as isize * src_stride);
+                let src = src + y as isize * src.pixel_stride::<BD>();
                 for x in 0..w {
                     mid[y][x] = filter_bilin::<BD>(src, x, mx, 1)
                         .rnd(4 - intermediate_bits)
@@ -561,7 +544,7 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
             }
         } else {
             for y in 0..h {
-                let src = src.offset(y as isize * src_stride);
+                let src = src + y as isize * src.pixel_stride::<BD>();
                 let tmp = &mut tmp[y * w..][..w];
                 for x in 0..w {
                     tmp[x] = filter_bilin::<BD>(src, x, mx, 1)
@@ -572,23 +555,22 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
         }
     } else if my != 0 {
         for y in 0..h {
-            let src = src.offset(y as isize * src_stride);
+            let src = src + y as isize * src.pixel_stride::<BD>();
             let tmp = &mut tmp[y * w..][..w];
             for x in 0..w {
-                tmp[x] = filter_bilin::<BD>(src, x, my, src_stride)
+                tmp[x] = filter_bilin::<BD>(src, x, my, src.pixel_stride::<BD>())
                     .rnd(4 - intermediate_bits)
                     .sub_prep_bias::<BD>()
             }
         }
     } else {
-        prep_rust(tmp, src, src_stride, w, h, bd);
+        prep_rust(tmp, src, w, h, bd);
     };
 }
 
-unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
+fn prep_bilin_scaled_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    src: *const BD::Pixel,
-    src_stride: isize,
+    src: Rav1dPictureDataComponentOffset,
     w: usize,
     h: usize,
     mx: usize,
@@ -598,12 +580,11 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let src_stride = BD::pxstride(src_stride);
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
     let mut mid = [[0i16; MID_STRIDE]; 256 + 1];
 
     for y in 0..tmp_h {
-        let src = src.offset(y as isize * src_stride);
+        let src = src + y as isize * src.pixel_stride::<BD>();
         let mut imx = mx;
         let mut ioff = 0;
 
@@ -1044,15 +1025,17 @@ unsafe fn resize_rust<BD: BitDepth>(
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn mc(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl mc::Fn {
@@ -1071,15 +1054,21 @@ impl mc::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        // TODO Make fallbacks safe
-        unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, bd) }
+        let dst = FFISafe::new(&dst);
+        let src = FFISafe::new(&src);
+        // SAFETY: Fallbacks `fn put_{8tpap,bilin}_rust` are safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, bd, dst, src,
+            )
+        }
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     dst_stride: isize,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     w: i32,
     h: i32,
@@ -1088,6 +1077,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl mc_scaled::Fn {
@@ -1108,10 +1099,12 @@ impl mc_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        // TODO Make fallbacks safe
+        let dst = FFISafe::new(&dst);
+        let src = FFISafe::new(&src);
+        // SAFETY: Fallbacks `fn put_{8tpap,bilin}_scaled_rust` are safe; asm is supposed to do the same.
         unsafe {
             self.get()(
-                dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
+                dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd, dst, src,
             )
         }
     }
@@ -1147,7 +1140,7 @@ impl warp8x8::Fn {
         let bd = bd.into_c();
         let dst = FFISafe::new(&dst);
         let src = FFISafe::new(&src);
-        // SAFETY: Fallback `fn warp_affine_8x8_rust` is safe; asm is supposed to do the same.
+        // SAFETY: Fallback `fn prep_c_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
                 dst_ptr, dst_stride, src_ptr, src_stride, abcd, mx, my, bd, dst, src,
@@ -1158,13 +1151,14 @@ impl warp8x8::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn mct(
     tmp: *mut i16,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
+    _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl mct::Fn {
@@ -1182,14 +1176,15 @@ impl mct::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        // TODO Make fallbacks safe
-        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd) }
+        let src = FFISafe::new(&src);
+        // SAFETY: Fallbacks `fn prep_{8tpap,bilin}_rust` are safe; asm is supposed to do the same.
+        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd, src) }
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn mct_scaled(
     tmp: *mut i16,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     w: i32,
     h: i32,
@@ -1198,6 +1193,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct_scaled(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
+    _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl mct_scaled::Fn {
@@ -1217,15 +1213,16 @@ impl mct_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        // TODO Make fallbacks safe
-        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd) }
+        let src = FFISafe::new(&src);
+        // SAFETY: Fallbacks `fn prep_{8tpap,bilin}_scaled_rust` are safe; asm is supposed to do the same.
+        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd, src) }
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
     tmp: *mut i16,
     tmp_stride: usize,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
     abcd: &[i16; 4],
     mx: i32,
@@ -1545,19 +1542,27 @@ pub struct Rav1dMCDSPContext {
     pub resize: resize::Fn,
 }
 
+/// # Safety
+///
+/// Must be called by [`mc::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn put_c_erased<BD: BitDepth, const FILTER: usize>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    src: *const DynPixel,
-    src_stride: isize,
+    _dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
+    _src_ptr: *const DynPixel,
+    _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let dst = dst.cast();
-    let src = src.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mc::Fn::call`.
+    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mc::Fn::call`.
+    let src = *unsafe { FFISafe::get(src) };
     let w = w as usize;
     let h = h as usize;
     let mx = mx as usize;
@@ -1566,16 +1571,20 @@ unsafe extern "C" fn put_c_erased<BD: BitDepth, const FILTER: usize>(
     let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
     match filter {
-        Filter2d::Bilinear => put_bilin_rust(dst, dst_stride, src, src_stride, w, h, mx, my, bd),
-        _ => put_8tap_rust(dst, dst_stride, src, src_stride, w, h, mx, my, hv, bd),
+        Filter2d::Bilinear => put_bilin_rust(dst, src, w, h, mx, my, bd),
+        _ => put_8tap_rust(dst, src, w, h, mx, my, hv, bd),
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`mc_scaled::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
-    src: *const DynPixel,
-    src_stride: isize,
+    _dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
+    _src_ptr: *const DynPixel,
+    _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
@@ -1583,9 +1592,13 @@ unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
+    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let dst = dst.cast();
-    let src = src.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mc_scaled::Fn::call`.
+    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mc_scaled::Fn::call`.
+    let src = *unsafe { FFISafe::get(src) };
     let w = w as usize;
     let h = h as usize;
     let mx = mx as usize;
@@ -1596,29 +1609,28 @@ unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
     match filter {
-        Filter2d::Bilinear => {
-            put_bilin_scaled_rust(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bd)
-        }
-        _ => put_8tap_scaled_rust(
-            dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, hv, bd,
-        ),
+        Filter2d::Bilinear => put_bilin_scaled_rust(dst, src, w, h, mx, my, dx, dy, bd),
+        _ => put_8tap_scaled_rust(dst, src, w, h, mx, my, dx, dy, hv, bd),
     }
 }
 
 /// # Safety
 ///
 /// Must be called by [`mct::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn prep_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
-    src: *const DynPixel,
-    src_stride: isize,
+    _src_ptr: *const DynPixel,
+    _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
+    src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let src = src.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mct::Fn::call`.
+    let src = *unsafe { FFISafe::get(src) };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `mct::Fn::call`.
@@ -1629,18 +1641,19 @@ unsafe extern "C" fn prep_c_erased<BD: BitDepth, const FILTER: usize>(
     let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
     match filter {
-        Filter2d::Bilinear => prep_bilin_rust(tmp, src, src_stride, w, h, mx, my, bd),
-        _ => prep_8tap_rust(tmp, src, src_stride, w, h, mx, my, hv, bd),
+        Filter2d::Bilinear => prep_bilin_rust(tmp, src, w, h, mx, my, bd),
+        _ => prep_8tap_rust(tmp, src, w, h, mx, my, hv, bd),
     }
 }
 
 /// # Safety
 ///
 /// Must be called by [`mct_scaled::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
-    src: *const DynPixel,
-    src_stride: isize,
+    _src_ptr: *const DynPixel,
+    _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
@@ -1648,8 +1661,10 @@ unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
+    src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let src = src.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `mct_scaled::Fn::call`.
+    let src = *unsafe { FFISafe::get(src) };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `mct_scaled::Fn::call`.
@@ -1662,10 +1677,8 @@ unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     let hv = filter.hv();
     let bd = BD::from_c(bitdepth_max);
     match filter {
-        Filter2d::Bilinear => {
-            prep_bilin_scaled_rust(tmp, src, src_stride, w, h, mx, my, dx, dy, bd)
-        }
-        _ => prep_8tap_scaled_rust(tmp, src, src_stride, w, h, mx, my, dx, dy, hv, bd),
+        Filter2d::Bilinear => prep_bilin_scaled_rust(tmp, src, w, h, mx, my, dx, dy, bd),
+        _ => prep_8tap_scaled_rust(tmp, src, w, h, mx, my, dx, dy, hv, bd),
     }
 }
 
