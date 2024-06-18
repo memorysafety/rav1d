@@ -7,6 +7,7 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Lossless;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -1195,7 +1196,7 @@ fn parse_segmentation(
             quant.yac
         }
     });
-    let lossless = array::from_fn(|i| qidx[i] == 0 && delta_lossless);
+    let lossless = Lossless::from_array(array::from_fn(|i| qidx[i] == 0 && delta_lossless));
     Ok(Rav1dFrameHeader_segmentation {
         enabled,
         update_map,
@@ -2001,7 +2002,7 @@ fn parse_frame_hdr(
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
     let quant = parse_quant(seqhdr, &debug, gb);
     let segmentation = parse_segmentation(state, primary_ref_frame, &refidx, &quant, &debug, gb)?;
-    let all_lossless = segmentation.lossless.iter().all(|&it| it);
+    let all_lossless = segmentation.lossless.all();
     let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
     let loopfilter = parse_loopfilter(
         state,

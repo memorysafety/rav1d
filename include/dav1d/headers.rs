@@ -2103,6 +2103,48 @@ pub struct Dav1dFrameHeader_segmentation {
     pub qidx: [u8; DAV1D_MAX_SEGMENTS as usize],
 }
 
+/// Like a `[bool; RAV1D_MAX_SEGMENTS as usize]`,
+/// but the [`bool`]s are compressed into the bits of the [`u8`].
+#[derive(Clone, Copy, Default)]
+pub struct Lossless {
+    bits: u8,
+}
+
+impl Lossless {
+    pub const fn empty() -> Self {
+        Self { bits: 0 }
+    }
+
+    pub const fn get(&self, index: usize) -> bool {
+        const { assert!(u8::BITS >= SegmentId::COUNT as _) };
+        self.bits & (1 << index) != 0
+    }
+
+    pub const fn all(&self) -> bool {
+        self.bits == ((1u64 << SegmentId::COUNT) - 1) as u8
+    }
+
+    pub const fn to_array(&self) -> [bool; SegmentId::COUNT] {
+        let mut a = [false; SegmentId::COUNT];
+        let mut i = 0;
+        while i < SegmentId::COUNT {
+            a[i] = self.get(i);
+            i += 1;
+        }
+        a
+    }
+
+    pub fn from_array(a: [bool; SegmentId::COUNT]) -> Self {
+        let mut this = Self::empty();
+        let mut i = 0;
+        while i < SegmentId::COUNT {
+            this.bits |= (a[i] as u8) << i;
+            i += 1;
+        }
+        this
+    }
+}
+
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_segmentation {
@@ -2111,8 +2153,7 @@ pub struct Rav1dFrameHeader_segmentation {
     pub temporal: u8,
     pub update_data: u8,
     pub seg_data: Rav1dSegmentationDataSet,
-    /// TODO compress `[bool; 8]` into `u8`.
-    pub lossless: [bool; SegmentId::COUNT],
+    pub lossless: Lossless,
     pub qidx: [u8; SegmentId::COUNT],
 }
 
@@ -2133,7 +2174,7 @@ impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
             temporal,
             update_data,
             seg_data: seg_data.into(),
-            lossless: lossless.map(|e| e != 0),
+            lossless: Lossless::from_array(lossless.map(|e| e != 0)),
             qidx,
         }
     }
@@ -2156,7 +2197,7 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
             temporal,
             update_data,
             seg_data: seg_data.into(),
-            lossless: lossless.map(|e| e as u8),
+            lossless: lossless.to_array().map(|e| e as u8),
             qidx,
         }
     }

@@ -533,7 +533,7 @@ fn decode_coefs<BD: BitDepth>(
     let ts = &f.ts[ts];
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
+    let lossless = frame_hdr.segmentation.lossless.get(b.seg_id.get());
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
