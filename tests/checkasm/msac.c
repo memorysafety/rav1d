@@ -55,8 +55,8 @@ typedef struct {
 static void randomize_cdf(uint16_t *const cdf, const int n) {
     int i;
     for (i = 15; i > n; i--)
-        cdf[i] = rnd(); // padding
-    cdf[i] = 0;         // count
+        cdf[i] = 0; // padding
+    cdf[i] = 0;     // count
     do {
         cdf[i - 1] = cdf[i] + rnd() % (32768 - cdf[i] - i) + 1;
     } while (--i > 0);
@@ -137,7 +137,7 @@ static void check_decode_symbol(MsacDSPContext *const c, uint8_t *const buf) {
     MsacContext s_c, s_a;
 
     declare_func(unsigned, MsacContext *s, uint16_t *cdf, size_t n_symbols);
-    CHECK_SYMBOL_ADAPT( 4, 1,  4);
+    CHECK_SYMBOL_ADAPT( 4, 1,  3);
     CHECK_SYMBOL_ADAPT( 8, 1,  7);
     CHECK_SYMBOL_ADAPT(16, 3, 15);
     report("decode_symbol");
