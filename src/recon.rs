@@ -4072,7 +4072,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
