@@ -123,13 +123,10 @@ unsafe fn filter_8tap<T: Into<i32>>(
     f: &[i8; 8],
     stride: isize,
 ) -> FilterResult {
-    let pixel = f
-        .into_iter()
-        .enumerate()
-        .map(|(i, &f)| {
-            let [i, x] = [i, x].map(|it| it as isize);
-            let j = x + (i - 3) * stride;
-            i32::from(f) * src.offset(j).read().into()
+    let pixel = (0..f.len())
+        .map(|i| {
+            let j = x as isize + (i as isize - 3) * stride;
+            f[i] as i32 * src.offset(j).read().into()
         })
         .sum();
     FilterResult { pixel }
