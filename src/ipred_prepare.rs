@@ -1,6 +1,6 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::const_fn::const_for;
 use crate::src::disjoint_mut::DisjointMut;
@@ -168,8 +168,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     w: c_int,
     h: c_int,
     edge_flags: EdgeFlags,
-    dst: &Rav1dPictureDataComponent,
-    dst_offset: usize,
+    dst: Rav1dPictureDataComponentOffset,
     // Buffer and offset pair. `isize` value is the base offset that should be used
     // when indexing into the buffer.
     prefilter_toplevel_sb_edge: Option<(&DisjointMut<AlignedVec64<u8>>, isize)>,
@@ -231,8 +230,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let offset = ((x * 4) as usize - have_left as usize).wrapping_add_signed(base);
             &*edge_buf.slice_as((offset.., ..n))
         } else {
-            let offset = dst_offset.wrapping_add_signed(-stride) - have_left as usize;
-            &*dst.slice::<BD, _>((offset.., ..n))
+            &*(dst - stride - have_left as usize).slice::<BD>(n)
         }
     } else {
         &[]
@@ -247,8 +245,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
             for i in 0..px_have {
-                left[sz - 1 - i] =
-                    *dst.index::<BD>(dst_offset.wrapping_add_signed(i as isize * stride) - 1);
+                left[sz - 1 - i] = *(dst + (i as isize * stride - 1)).index::<BD>();
             }
             if px_have < sz {
                 BD::pixel_set(left, left[sz - px_have], sz - px_have);
@@ -277,9 +274,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             if have_bottomleft {
                 let px_have = cmp::min(sz, (h - y - th << 2) as usize);
                 for i in 0..px_have {
-                    bottom_left[sz - 1 - i] = *dst.index::<BD>(
-                        dst_offset.wrapping_add_signed((sz + i) as isize * stride) - 1,
-                    );
+                    bottom_left[sz - 1 - i] =
+                        *(dst + ((sz + i) as isize * stride - 1)).index::<BD>();
                 }
                 if px_have < sz {
                     BD::pixel_set(bottom_left, bottom_left[sz - px_have], sz - px_have);
@@ -306,7 +302,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             BD::pixel_set(
                 top,
                 if have_left {
-                    *dst.index::<BD>(dst_offset - 1)
+                    *(dst - 1usize).index::<BD>()
                 } else {
                     ((1 << bitdepth >> 1) - 1).as_::<BD::Pixel>()
                 },
@@ -346,7 +342,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         corner[1] = if have_top {
             dst_top[0]
         } else if have_left {
-            *dst.index::<BD>(dst_offset - 1)
+            *(dst - 1usize).index::<BD>()
         } else {
             (1 << bitdepth >> 1).as_::<BD::Pixel>()
         };

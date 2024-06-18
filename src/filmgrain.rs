@@ -11,6 +11,7 @@ use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::assume::assume;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
@@ -95,8 +96,8 @@ impl generate_grain_uv::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    dst_row_ptr: *mut DynPixel,
+    src_row_ptr: *const DynPixel,
     stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -105,8 +106,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponent>,
-    _src: *const FFISafe<Rav1dPictureDataComponent>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src_src: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl fgy_32x32xn::Fn {
@@ -123,14 +124,10 @@ impl fgy_32x32xn::Fn {
         bd: BD,
     ) {
         let row_strides = (row_num * BLOCK_SIZE) as isize;
-        let dst_row_offset = dst
-            .pixel_offset::<BD>()
-            .wrapping_add_signed(row_strides * dst.pixel_stride::<BD>());
-        let src_row_offset = src
-            .pixel_offset::<BD>()
-            .wrapping_add_signed(row_strides * src.pixel_stride::<BD>());
-        let dst_row = dst.as_mut_ptr_at::<BD>(dst_row_offset).cast();
-        let src_row = src.as_ptr_at::<BD>(src_row_offset).cast();
+        let dst_row = dst.with_offset::<BD>() + row_strides * dst.pixel_stride::<BD>();
+        let src_row = src.with_offset::<BD>() + row_strides * src.pixel_stride::<BD>();
+        let dst_row_ptr = dst_row.as_mut_ptr::<BD>().cast();
+        let src_row_ptr = src_row.as_ptr::<BD>().cast();
         let stride = dst.stride();
         let data = &data.clone().into();
         let scaling = ptr::from_ref(scaling).cast();
@@ -138,20 +135,31 @@ impl fgy_32x32xn::Fn {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let bd = bd.into_c();
-        let dst = FFISafe::new(dst);
-        let src = FFISafe::new(src);
+        let dst_row = FFISafe::new(&dst_row);
+        let src_row = FFISafe::new(&src_row);
         // SAFETY: Fallback `fn fgy_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
-                dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd, dst, src,
+                dst_row_ptr,
+                src_row_ptr,
+                stride,
+                data,
+                pw,
+                scaling,
+                grain_lut,
+                bh,
+                row_num,
+                bd,
+                dst_row,
+                src_row,
             )
         }
     }
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    dst_row_ptr: *mut DynPixel,
+    src_row_ptr: *const DynPixel,
     stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -159,14 +167,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
     grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
-    luma_row: *const DynPixel,
+    luma_row_ptr: *const DynPixel,
     luma_stride: ptrdiff_t,
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponent>,
-    _src: *const FFISafe<Rav1dPictureDataComponent>,
-    _luma: *const FFISafe<Rav1dPictureDataComponent>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl fguv_32x32xn::Fn {
@@ -188,36 +196,30 @@ impl fguv_32x32xn::Fn {
     ) {
         let ss_y = (layout == Rav1dPixelLayoutSubSampled::I420) as usize;
         let row_strides = (row_num * BLOCK_SIZE) as isize;
-        let dst_row_offset = dst
-            .pixel_offset::<BD>()
-            .wrapping_add_signed(row_strides * dst.pixel_stride::<BD>() >> ss_y);
-        let src_row_offset = src
-            .pixel_offset::<BD>()
-            .wrapping_add_signed(row_strides * src.pixel_stride::<BD>() >> ss_y);
-        let dst_row = dst.as_mut_ptr_at::<BD>(dst_row_offset).cast();
-        let src_row = src.as_ptr_at::<BD>(src_row_offset).cast();
+        let dst_row = dst.with_offset::<BD>() + (row_strides * dst.pixel_stride::<BD>() >> ss_y);
+        let src_row = src.with_offset::<BD>() + (row_strides * src.pixel_stride::<BD>() >> ss_y);
+        let dst_row_ptr = dst_row.as_mut_ptr::<BD>().cast();
+        let src_row_ptr = src_row.as_ptr::<BD>().cast();
         let stride = dst.stride();
         let data = &data.clone().into();
         let scaling = (scaling as *const BD::Scaling).cast();
         let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
         let bh = bh as c_int;
         let row_num = row_num as c_int;
-        let luma_row_offset = luma
-            .pixel_offset::<BD>()
-            .wrapping_add_signed(row_strides * luma.pixel_stride::<BD>());
-        let luma_row = luma.as_ptr_at::<BD>(luma_row_offset).cast();
+        let luma_row = luma.with_offset::<BD>() + (row_strides * luma.pixel_stride::<BD>());
+        let luma_row_ptr = luma_row.as_ptr::<BD>().cast();
         let luma_stride = luma.stride();
         let uv_pl = is_uv as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
-        let dst = FFISafe::new(dst);
-        let src = FFISafe::new(src);
-        let luma = FFISafe::new(luma);
+        let dst_row = FFISafe::new(&dst_row);
+        let src_row = FFISafe::new(&src_row);
+        let luma_row = FFISafe::new(&luma_row);
         // SAFETY: Fallback `fn fguv_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
-                dst_row,
-                src_row,
+                dst_row_ptr,
+                src_row_ptr,
                 stride,
                 data,
                 pw,
@@ -225,14 +227,14 @@ impl fguv_32x32xn::Fn {
                 grain_lut,
                 bh,
                 row_num,
-                luma_row,
+                luma_row_ptr,
                 luma_stride,
                 uv_pl,
                 is_id,
                 bd,
-                dst,
-                src,
-                luma,
+                dst_row,
+                src_row,
+                luma_row,
             )
         }
     }
@@ -579,8 +581,8 @@ fn sample_lut<BD: BitDepth>(
 /// Must be called by [`fgy_32x32xn::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    _dst_row_ptr: *mut DynPixel,
+    _src_row_ptr: *const DynPixel,
     _stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -589,17 +591,11 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    dst: *const FFISafe<Rav1dPictureDataComponent>,
-    src: *const FFISafe<Rav1dPictureDataComponent>,
+    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `fgy_32x32xn::Fn::call`.
-    let [dst, src] = [dst, src].map(|it| unsafe { FFISafe::get(it) });
-    let dst_row = dst_row.cast::<BD::Pixel>();
-    let src_row = src_row.cast::<BD::Pixel>();
-    // SAFETY: Reverse of what was done in `fgy_32x32xn::Fn::call`.
-    let dst_row_offset = unsafe { dst_row.offset_from(dst.as_ptr::<BD>()) } as usize;
-    // SAFETY: Reverse of what was done in `fgy_32x32xn::Fn::call`.
-    let src_row_offset = unsafe { src_row.offset_from(src.as_ptr::<BD>()) } as usize;
+    let [dst_row, src_row] = [dst_row, src_row].map(|it| *unsafe { FFISafe::get(it) });
     let data = &data.clone().into();
     // Safety: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
@@ -609,25 +605,13 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     let row_num = row_num as usize;
     let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_rust(
-        dst,
-        dst_row_offset,
-        src,
-        src_row_offset,
-        data,
-        pw,
-        scaling,
-        grain_lut,
-        bh,
-        row_num,
-        bd,
+        dst_row, src_row, data, pw, scaling, grain_lut, bh, row_num, bd,
     )
 }
 
 fn fgy_32x32xn_rust<BD: BitDepth>(
-    dst: &Rav1dPictureDataComponent,
-    dst_row_offset: usize,
-    src: &Rav1dPictureDataComponent,
-    src_row_offset: usize,
+    dst_row: Rav1dPictureDataComponentOffset,
+    src_row: Rav1dPictureDataComponentOffset,
     data: &Rav1dFilmGrainData,
     pw: usize,
     scaling: &BD::Scaling,
@@ -654,7 +638,7 @@ fn fgy_32x32xn_rust<BD: BitDepth>(
 
     let mut seed = row_seed(rows, row_num, data);
 
-    assert!(dst.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
+    assert!(dst_row.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
@@ -689,12 +673,12 @@ fn fgy_32x32xn_rust<BD: BitDepth>(
         static W: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
         let src_row_y = |y| {
-            let row = src_row_offset.wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
-            src.slice::<BD, _>((row + bx.., ..bw))
+            let row = src_row + y as isize * src_row.pixel_stride::<BD>();
+            (row + bx).slice::<BD>(bw)
         };
         let dst_row_y = |y| {
-            let row = dst_row_offset.wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
-            dst.slice_mut::<BD, _>((row + bx.., ..bw))
+            let row = dst_row + y as isize * dst_row.pixel_stride::<BD>();
+            (row + bx).slice_mut::<BD>(bw)
         };
 
         let noise_y = |src: BD::Pixel, grain| {
@@ -761,18 +745,15 @@ fn fgy_32x32xn_rust<BD: BitDepth>(
 }
 
 fn fguv_32x32xn_rust<BD: BitDepth>(
-    dst: &Rav1dPictureDataComponent,
-    dst_row_offset: usize,
-    src: &Rav1dPictureDataComponent,
-    src_row_offset: usize,
+    dst_row: Rav1dPictureDataComponentOffset,
+    src_row: Rav1dPictureDataComponentOffset,
     data: &Rav1dFilmGrainData,
     pw: usize,
     scaling: &BD::Scaling,
     grain_lut: &GrainLut<BD::Entry>,
     bh: usize,
     row_num: usize,
-    luma: &Rav1dPictureDataComponent,
-    luma_row_offset: usize,
+    luma_row: Rav1dPictureDataComponentOffset,
     is_uv: bool,
     is_id: bool,
     is_sx: bool,
@@ -799,7 +780,7 @@ fn fguv_32x32xn_rust<BD: BitDepth>(
 
     let mut seed = row_seed(rows, row_num, data);
 
-    assert!(dst.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
+    assert!(dst_row.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
@@ -833,17 +814,16 @@ fn fguv_32x32xn_rust<BD: BitDepth>(
         static W: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
         let luma_row_uv = |y| {
-            let row =
-                luma_row_offset.wrapping_add_signed((y << sy) as isize * luma.pixel_stride::<BD>());
-            luma.slice::<BD, _>((row + (bx << sx).., ..bw << sx))
+            let row = luma_row + (y << sy) as isize * luma_row.pixel_stride::<BD>();
+            (row + (bx << sx)).slice::<BD>(bw << sx)
         };
         let src_row_uv = |y| {
-            let row = src_row_offset.wrapping_add_signed(y as isize * src.pixel_stride::<BD>());
-            src.slice::<BD, _>((row + bx.., ..bw))
+            let row = src_row + y as isize * src_row.pixel_stride::<BD>();
+            (row + bx).slice::<BD>(bw)
         };
         let dst_row_uv = |y| {
-            let row = dst_row_offset.wrapping_add_signed(y as isize * dst.pixel_stride::<BD>());
-            dst.slice_mut::<BD, _>((row + bx.., ..bw))
+            let row = dst_row + y as isize * dst_row.pixel_stride::<BD>();
+            (row + bx).slice_mut::<BD>(bw)
         };
 
         let noise_uv = |src: BD::Pixel, grain, luma: &[BD::Pixel]| {
@@ -936,8 +916,8 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     const IS_SX: bool,
     const IS_SY: bool,
 >(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    _dst_row_ptr: *mut DynPixel,
+    _src_row_ptr: *const DynPixel,
     _stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -945,26 +925,18 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
-    luma_row: *const DynPixel,
+    _luma_row_ptr: *const DynPixel,
     _luma_stride: ptrdiff_t,
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    dst: *const FFISafe<Rav1dPictureDataComponent>,
-    src: *const FFISafe<Rav1dPictureDataComponent>,
-    luma: *const FFISafe<Rav1dPictureDataComponent>,
+    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
-    let [dst, src, luma] = [dst, src, luma].map(|base| unsafe { FFISafe::get(base) });
-    let dst_row = dst_row.cast::<BD::Pixel>();
-    let src_row = src_row.cast::<BD::Pixel>();
-    let luma_row = luma_row.cast::<BD::Pixel>();
-    // SAFETY: Reverse of what was done in `fguv_32x32xn::Fn::call`.
-    let dst_row_offset = unsafe { dst_row.offset_from(dst.as_ptr::<BD>()) } as usize;
-    // SAFETY: Reverse of what was done in `fguv_32x32xn::Fn::call`.
-    let src_row_offset = unsafe { src_row.offset_from(src.as_ptr::<BD>()) } as usize;
-    // SAFETY: Reverse of what was done in `fguv_32x32xn::Fn::call`.
-    let luma_row_offset = unsafe { luma_row.offset_from(luma.as_ptr::<BD>()) } as usize;
+    let [dst_row, src_row, luma_row] =
+        [dst_row, src_row, luma_row].map(|row| *unsafe { FFISafe::get(row) });
     let data = &data.clone().into();
     // Safety: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
@@ -976,18 +948,15 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     let is_id = is_id != 0;
     let bd = BD::from_c(bitdepth_max);
     fguv_32x32xn_rust(
-        dst,
-        dst_row_offset,
-        src,
-        src_row_offset,
+        dst_row,
+        src_row,
         data,
         pw,
         scaling,
         grain_lut,
         bh,
         row_num,
-        luma,
-        luma_row_offset,
+        luma_row,
         uv_pl != 0,
         is_id,
         IS_SX,
@@ -998,8 +967,8 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    dst_row_ptr: *mut DynPixel,
+    src_row_ptr: *const DynPixel,
     stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -1008,11 +977,11 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponent>,
-    _src: *const FFISafe<Rav1dPictureDataComponent>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let dst_row = dst_row.cast();
-    let src_row = src_row.cast();
+    let dst_row = dst_row_ptr.cast();
+    let src_row = src_row_ptr.cast();
     let data = &data.clone().into();
     let scaling = scaling.cast();
     let grain_lut = grain_lut.cast();
@@ -1087,8 +1056,8 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     const IS_SX: bool,
     const IS_SY: bool,
 >(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
+    dst_row_ptr: *mut DynPixel,
+    src_row_ptr: *const DynPixel,
     stride: ptrdiff_t,
     data: &Dav1dFilmGrainData,
     pw: usize,
@@ -1096,23 +1065,23 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
-    luma_row: *const DynPixel,
+    luma_row_ptr: *const DynPixel,
     luma_stride: ptrdiff_t,
     uv: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponent>,
-    _src: *const FFISafe<Rav1dPictureDataComponent>,
-    _luma: *const FFISafe<Rav1dPictureDataComponent>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    let dst_row = dst_row.cast();
-    let src_row = src_row.cast();
+    let dst_row = dst_row_ptr.cast();
+    let src_row = src_row_ptr.cast();
     let data_c = data;
     let data = &data.clone().into();
     let scaling = scaling.cast();
     let grain_lut = grain_lut.cast();
     let row_num = row_num as usize;
-    let luma_row = luma_row.cast();
+    let luma_row = luma_row_ptr.cast();
     let bd = BD::from_c(bitdepth_max);
     fguv_32x32xn_neon::<_, NM, IS_SX, IS_SY>(
         dst_row,

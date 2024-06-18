@@ -236,6 +236,13 @@ impl Rav1dPictureDataComponent {
         BD::pxstride(self.len() - (-stride) as usize)
     }
 
+    pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset {
+        Rav1dPictureDataComponentOffset {
+            data: self,
+            offset: self.pixel_offset::<BD>(),
+        }
+    }
+
     /// Strided ptr to [`u8`] bytes.
     fn as_strided_byte_mut_ptr(&self) -> *mut u8 {
         let ptr = self.0.as_mut_ptr();
@@ -636,10 +643,7 @@ impl Rav1dPicture {
         array::from_fn(|i| {
             let data = &data[has_chroma as usize * i];
             let ss_ver = layout == Rav1dPixelLayout::I420 && i != 0;
-            let offset = data
-                .pixel_offset::<BD>()
-                .wrapping_add_signed(y as isize * data.pixel_stride::<BD>() >> ss_ver as u8);
-            Rav1dPictureDataComponentOffset { data, offset }
+            data.with_offset::<BD>() + (y as isize * data.pixel_stride::<BD>() >> ss_ver as u8)
         })
     }
 }

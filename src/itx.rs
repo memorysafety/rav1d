@@ -3,7 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::DefaultValue;
 use crate::src::ffi_safe::FFISafe;
@@ -81,8 +81,7 @@ pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32)
 
 #[inline(never)]
 fn inv_txfm_add<BD: BitDepth>(
-    dst: &Rav1dPictureDataComponent,
-    mut dst_offset: usize,
+    dst: Rav1dPictureDataComponentOffset,
     coeff: &mut [BD::Coef],
     eob: i32,
     w: usize,
@@ -111,12 +110,12 @@ fn inv_txfm_add<BD: BitDepth>(
         dc = dc * 181 + 128 >> 8;
         dc = dc + rnd >> shift;
         dc = dc * 181 + 128 + 2048 >> 12;
-        for _ in 0..h {
-            let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
-            for dst in dst_slice {
-                *dst = bd.iclip_pixel((*dst).as_::<i32>() + dc);
+        for y in 0..h {
+            let dst = dst + (y as isize * dst.pixel_stride::<BD>());
+            let dst = &mut *dst.slice_mut::<BD>(w);
+            for x in 0..w {
+                dst[x] = bd.iclip_pixel(dst[x].as_::<i32>() + dc);
             }
-            dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
         }
         return;
     }
@@ -169,17 +168,16 @@ fn inv_txfm_add<BD: BitDepth>(
     }
 
     for y in 0..h {
-        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..w));
-        for (x, dst) in dst_slice.iter_mut().enumerate() {
-            *dst = bd.iclip_pixel((*dst).as_::<i32>() + (tmp[y * w + x] + 8 >> 4));
+        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
+        let dst = &mut *dst.slice_mut::<BD>(w);
+        for x in 0..w {
+            dst[x] = bd.iclip_pixel(dst[x].as_::<i32>() + (tmp[y * w + x] + 8 >> 4));
         }
-        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
 fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: BitDepth>(
-    dst: &Rav1dPictureDataComponent,
-    dst_offset: usize,
+    dst: Rav1dPictureDataComponentOffset,
     coeff: &mut [BD::Coef],
     eob: i32,
     bd: BD,
@@ -233,9 +231,7 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
         H_FLIPADST => (Identity, FlipAdst),
         V_ADST => (Adst, Identity),
         V_FLIPADST => (FlipAdst, Identity),
-        WHT_WHT if (W, H) == (4, 4) => {
-            return inv_txfm_add_wht_wht_4x4_rust(dst, dst_offset, coeff, bd)
-        }
+        WHT_WHT if (W, H) == (4, 4) => return inv_txfm_add_wht_wht_4x4_rust(dst, coeff, bd),
         _ => unreachable!(),
     };
 
@@ -265,7 +261,6 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
 
     inv_txfm_add(
         dst,
-        dst_offset,
         coeff,
         eob,
         W,
@@ -288,23 +283,20 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
     const TYPE: TxfmType,
     BD: BitDepth,
 >(
-    dst_ptr: *mut DynPixel,
+    _dst_ptr: *mut DynPixel,
     _stride: isize,
     coeff: *mut DynCoef,
     eob: i32,
     bitdepth_max: i32,
     coeff_len: u16,
-    dst: *const FFISafe<Rav1dPictureDataComponent>,
+    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `itxfm::Fn::call`.
-    let dst = unsafe { FFISafe::get(dst) };
-    // SAFETY: Reverse of what was done in `itxfm::Fn::call`.
-    let dst_offset =
-        unsafe { dst_ptr.cast::<BD::Pixel>().offset_from(dst.as_ptr::<BD>()) } as usize;
+    let dst = *unsafe { FFISafe::get(dst) };
     // SAFETY: `fn itxfm::Fn::call` passes `coeff.len()` as `coeff_len`.
     let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len.into()) };
     let bd = BD::from_c(bitdepth_max);
-    inv_txfm_add_rust::<W, H, TYPE, BD>(dst, dst_offset, coeff, eob, bd)
+    inv_txfm_add_rust::<W, H, TYPE, BD>(dst, coeff, eob, bd)
 }
 
 wrap_fn_ptr!(unsafe extern "C" fn itxfm(
@@ -314,24 +306,23 @@ wrap_fn_ptr!(unsafe extern "C" fn itxfm(
     eob: i32,
     bitdepth_max: i32,
     _coeff_len: u16,
-    _dst: *const FFISafe<Rav1dPictureDataComponent>,
+    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
 impl itxfm::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        dst: &Rav1dPictureDataComponent,
-        dst_offset: usize,
+        dst: Rav1dPictureDataComponentOffset,
         coeff: &mut [BD::Coef],
         eob: i32,
         bd: BD,
     ) {
-        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let coeff_len = coeff.len() as u16;
         let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
-        let dst = FFISafe::new(dst);
+        let dst = FFISafe::new(&dst);
         // SAFETY: Fallback `fn inv_txfm_add_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, coeff, eob, bd, coeff_len, dst) }
     }
@@ -342,8 +333,7 @@ pub struct Rav1dInvTxfmDSPContext {
 }
 
 fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
-    dst: &Rav1dPictureDataComponent,
-    mut dst_offset: usize,
+    dst: Rav1dPictureDataComponentOffset,
     coeff: &mut [BD::Coef],
     bd: BD,
 ) {
@@ -368,11 +358,11 @@ fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     }
 
     for y in 0..H {
-        let dst_slice = &mut *dst.slice_mut::<BD, _>((dst_offset.., ..W));
-        for (x, dst) in dst_slice.iter_mut().enumerate() {
-            *dst = bd.iclip_pixel((*dst).as_::<i32>() + tmp[y * W + x]);
+        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
+        let dst = &mut *dst.slice_mut::<BD>(W);
+        for x in 0..W {
+            dst[x] = bd.iclip_pixel(dst[x].as_::<i32>() + tmp[y * W + x]);
         }
-        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
