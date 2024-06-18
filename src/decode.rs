@@ -98,6 +98,7 @@ use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
+use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DC_PRED;
@@ -798,7 +799,9 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id as usize] || max_ytx == TX_4X4) {
+    if b.skip == 0
+        && (frame_hdr.segmentation.lossless[b.seg_id.get() as usize] || max_ytx == TX_4X4)
+    {
         uvtx = TX_4X4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -1333,14 +1336,11 @@ fn decode_b(
             if let Some(prev_segmap) = f.prev_segmap.as_ref() {
                 let seg_id =
                     get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return Err(());
-                }
-                b.seg_id = seg_id;
+                b.seg_id = SegmentId::new(seg_id).ok_or(())?;
             } else {
-                b.seg_id = 0;
+                b.seg_id = Default::default();
             }
-            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get() as usize]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
                 let index =
@@ -1361,12 +1361,9 @@ fn decode_b(
                         &prev_segmap.inner,
                         f.b4_stride,
                     );
-                    if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                        return Err(());
-                    }
-                    b.seg_id = seg_id;
+                    b.seg_id = SegmentId::new(seg_id).ok_or(())?;
                 } else {
-                    b.seg_id = 0;
+                    b.seg_id = Default::default();
                 }
             } else {
                 let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
@@ -1383,23 +1380,22 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
-                    b.seg_id = 0; // error?
+                let mut seg_id =
+                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if seg_id >= last_active_seg_id_plus1 {
+                    seg_id = 0; // error?
                 }
-                if b.seg_id >= RAV1D_MAX_SEGMENTS {
-                    b.seg_id = 0; // error?
-                }
+                b.seg_id = SegmentId::new(seg_id).unwrap_or_default(); // error?
             }
 
             if debug_block_info!(f, t.b) {
                 println!("Post-segid[preskip;{}]: r={}", b.seg_id, ts_c.msac.rng);
             }
 
-            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get() as usize]);
         }
     } else {
-        b.seg_id = 0;
+        b.seg_id = Default::default();
     }
 
     // skip_mode
@@ -1450,12 +1446,9 @@ fn decode_b(
             if let Some(prev_segmap) = f.prev_segmap.as_ref() {
                 let seg_id =
                     get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return Err(());
-                }
-                b.seg_id = seg_id;
+                b.seg_id = SegmentId::new(seg_id).ok_or(())?;
             } else {
-                b.seg_id = 0;
+                b.seg_id = Default::default();
             }
         } else {
             let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
@@ -1465,8 +1458,9 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
+            let mut seg_id;
             if b.skip != 0 {
-                b.seg_id = pred_seg_id;
+                seg_id = pred_seg_id;
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
@@ -1475,17 +1469,15 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
-                    b.seg_id = 0; // error?
+                seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if seg_id >= last_active_seg_id_plus1 {
+                    seg_id = 0; // error?
                 }
             }
-            if b.seg_id >= RAV1D_MAX_SEGMENTS {
-                b.seg_id = 0; // error?
-            }
+            b.seg_id = SegmentId::new(seg_id).unwrap_or_default(); // error?
         }
 
-        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get() as usize]);
 
         if debug_block_info!(f, t.b) {
             println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts_c.msac.rng);
@@ -1683,7 +1675,7 @@ fn decode_b(
         let uv_angle;
         let cfl_alpha;
         if has_chroma {
-            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id.get() as usize] {
                 cbw4 == 1 && cbh4 == 1
             } else {
                 (cfl_allowed_mask & (1 << bs as u8)) != 0
@@ -1882,7 +1874,7 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
 
-        let tx = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+        let tx = if frame_hdr.segmentation.lossless[b.seg_id.get() as usize] {
             b.uvtx = TX_4X4;
             b.uvtx
         } else {
@@ -1939,7 +1931,7 @@ fn decode_b(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
-                &lflvl[b.seg_id as usize],
+                &lflvl[b.seg_id.get() as usize],
                 t.b,
                 f.w4,
                 f.h4,
@@ -3075,7 +3067,7 @@ fn decode_b(
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
-            if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+            if frame_hdr.segmentation.lossless[b.seg_id.get() as usize] {
                 ytx = TX_4X4;
                 uvtx = TX_4X4;
             }
@@ -3094,7 +3086,7 @@ fn decode_b(
                 // even though the whole array is not passed.
                 // Dereferencing this in Rust is UB, so instead
                 // we pass the indices as args, which are then applied at the use sites.
-                &lflvl[b.seg_id as usize],
+                &lflvl[b.seg_id.get() as usize],
                 (r#ref[0] + 1) as usize,
                 is_globalmv == 0,
                 t.b,
@@ -3174,7 +3166,7 @@ fn decode_b(
         CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
             for i in 0..bh4 {
                 let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut(i..i + bw4), b.seg_id);
+                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id.get());
             }
         });
     }

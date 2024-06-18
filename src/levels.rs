@@ -1,8 +1,12 @@
 #![deny(unsafe_code)]
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::src::enum_map::EnumKey;
 use bitflags::bitflags;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::mem;
 use std::ops::Neg;
 use strum::EnumCount;
@@ -496,13 +500,40 @@ impl Default for Av1BlockIntraInter {
     }
 }
 
+/// Within range `0..`[`RAV1D_MAX_SEGMENTS`].
+#[derive(Clone, Copy, Default)]
+pub struct SegmentId {
+    id: u8,
+}
+
+impl SegmentId {
+    pub const fn new(id: u8) -> Option<Self> {
+        if id < RAV1D_MAX_SEGMENTS {
+            Some(Self { id })
+        } else {
+            None
+        }
+    }
+
+    pub const fn get(&self) -> u8 {
+        // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
+        self.id % RAV1D_MAX_SEGMENTS
+    }
+}
+
+impl Display for SegmentId {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
     pub bp: BlockPartition,
-    pub seg_id: u8,
+    pub seg_id: SegmentId,
     pub skip_mode: u8,
     pub skip: u8,
     pub uvtx: RectTxfmSize,

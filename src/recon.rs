@@ -524,7 +524,7 @@ fn decode_coefs<BD: BitDepth>(
     let ts = &f.ts[ts];
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
+    let lossless = frame_hdr.segmentation.lossless[b.seg_id.get() as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
@@ -565,7 +565,7 @@ fn decode_coefs<BD: BitDepth>(
         // In libaom, lossless is checked by a literal qidx == 0, but not all
         // such blocks are actually lossless. The remainder gets an implicit
         // transform type (for luma)
-        _ if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 => DCT_DCT,
+        _ if frame_hdr.segmentation.qidx[b.seg_id.get() as usize] == 0 => DCT_DCT,
         Intra(intra) => {
             let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
                 dav1d_filter_mode_to_y_mode[intra.y_angle as usize]
@@ -1335,7 +1335,7 @@ fn decode_coefs<BD: BitDepth>(
         TileStateRef::Frame => &f.dq,
         TileStateRef::Local => &ts.dqmem,
     };
-    let dq_tbl = &dq[b.seg_id as usize][plane];
+    let dq_tbl = &dq[b.seg_id.get() as usize][plane];
     let qm_tbl = if *txtp < IDTX {
         f.qm[tx as usize][plane]
     } else {
