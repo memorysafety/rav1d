@@ -36,9 +36,10 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::mem;
 use std::slice;
 use strum::FromRepr;
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
 
 #[cfg(all(
     feature = "asm",
@@ -214,7 +215,7 @@ pub struct Rav1dIntraPredDSPContext {
 
 #[inline(never)]
 unsafe fn splat_dc<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     width: c_int,
     height: c_int,
@@ -222,41 +223,25 @@ unsafe fn splat_dc<BD: BitDepth>(
     bd: BD,
 ) {
     let stride = BD::pxstride(stride);
+    let height = height as isize;
     let width = width as usize;
-    match BD::BPC {
-        BPC::BPC8 => {
-            assert!(dc <= 0xff);
-            if width > 4 {
-                let dcN = dc as u64 * 0x101010101010101;
-                for _ in 0..height {
-                    let slice =
-                        slice::from_raw_parts_mut(dst.cast::<u64>(), width / mem::size_of::<u64>());
-                    slice.fill(dcN);
-                    dst = dst.offset(stride);
-                }
-            } else {
-                let dcN = dc as u32 * 0x1010101;
-                for _ in 0..height {
-                    let slice =
-                        slice::from_raw_parts_mut(dst.cast::<u32>(), width / mem::size_of::<u32>());
-                    slice.fill(dcN);
-                    dst = dst.offset(stride);
-                }
-            };
+    assert!(dc <= bd.bitdepth_max().as_::<c_int>());
+    let dc = dc.as_::<BD::Pixel>();
+    if BD::BPC == BPC::BPC8 && width > 4 {
+        for y in 0..height {
+            let dst = dst.offset(y * stride);
+            let dst = slice::from_raw_parts_mut(dst, width);
+            let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
+            dst.fill([dc; 8]);
         }
-        BPC::BPC16 => {
-            assert!(dc <= bd.bitdepth_max().as_::<c_int>());
-            let dcN = dc as u64 * 0x1000100010001;
-            for _ in 0..height {
-                let slice = slice::from_raw_parts_mut(
-                    dst.cast::<u64>(),
-                    width / (mem::size_of::<u64>() >> 1),
-                );
-                slice.fill(dcN);
-                dst = dst.offset(stride);
-            }
+    } else {
+        for y in 0..height {
+            let dst = dst.offset(y * stride);
+            let dst = slice::from_raw_parts_mut(dst, width);
+            let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
+            dst.fill([dc; 4]);
         }
-    }
+    };
 }
 
 #[inline(never)]

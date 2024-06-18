@@ -360,7 +360,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         if !have_left && x == 0 {
             continue;
         }
-        let mask = &mask[x];
+        let mask = &mask[x % mask.len()]; // To elide the bounds check.;
         let hmask = if starty4 == 0 {
             if endy4 > 16 {
                 mask.each_ref()
@@ -435,7 +435,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         if !have_left && x == 0 {
             continue;
         }
-        let mask = &mask[x];
+        let mask = &mask[x % mask.len()]; // To elide the bounds check.;
         let hmask = if starty4 == 0 {
             if endy4 > 16 >> ss_ver {
                 mask.each_ref()

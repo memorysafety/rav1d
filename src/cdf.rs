@@ -5097,10 +5097,11 @@ pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
 pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
     match src {
         CdfThreadContext::Cdf(src) => src.cdf.try_read().unwrap().clone(),
-        CdfThreadContext::QCat(i) => CdfContext {
+        &CdfThreadContext::QCat(i) => CdfContext {
             m: Default::default(),
             kfym: default_kf_y_mode_cdf,
-            coef: av1_default_coef_cdf[*i as usize].clone(),
+            // `i` is the sum of 3 `bool`s
+            coef: av1_default_coef_cdf[i as usize & 3].clone(),
             mv: Default::default(),
         },
     }
