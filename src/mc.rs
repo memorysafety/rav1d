@@ -1016,10 +1016,10 @@ unsafe fn resize_rust<BD: BitDepth>(
     mx0: i32,
     bd: BD,
 ) {
-    let max = src_w as c_int - 1;
+    let max = src_w as i32 - 1;
     for y in 0..h {
         let mut mx = mx0;
-        let mut src_x = -1;
+        let mut src_x = -1 - 3;
         let dst = dst.offset(y as isize * BD::pxstride(dst_stride));
         let src = src + (y as isize * src.pixel_stride::<BD>());
         let src = &*src.slice::<BD>(src_w);
@@ -1029,7 +1029,7 @@ unsafe fn resize_rust<BD: BitDepth>(
             dst[dst_x] = bd.iclip_pixel(
                 -(0..f.len())
                     .map(|i| {
-                        f[i] as i32 * src[iclip(src_x - 3 + i as i32, 0, max) as usize].to::<i32>()
+                        f[i] as i32 * src[iclip(src_x + i as i32, 0, max) as usize].to::<i32>()
                     })
                     .sum::<i32>()
                     + 64
