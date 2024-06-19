@@ -11,6 +11,7 @@ use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::CompInterType;
+use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::DCT_DCT;
@@ -618,9 +619,9 @@ pub fn get_cur_frame_segid(
     b: Bxy,
     have_top: bool,
     have_left: bool,
-    cur_seg_map: &DisjointMutSlice<u8>,
+    cur_seg_map: &DisjointMutSlice<SegmentId>,
     stride: usize,
-) -> (u8, u8) {
+) -> (SegmentId, u8) {
     let negative_adjustment = have_left as usize + have_top as usize * stride;
     let offset = b.x as usize + b.y as usize * stride - negative_adjustment;
     match (have_left, have_top) {
@@ -639,7 +640,7 @@ pub fn get_cur_frame_segid(
             (seg_id, seg_ctx)
         }
         (true, false) | (false, true) => (*cur_seg_map.index(offset), 0),
-        (false, false) => (0, 0),
+        (false, false) => (Default::default(), 0),
     }
 }
 

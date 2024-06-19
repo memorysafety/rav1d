@@ -869,24 +869,23 @@ fn get_prev_frame_segid(
     b: Bxy,
     w4: c_int,
     h4: c_int,
-    ref_seg_map: &DisjointMutSlice<u8>,
+    ref_seg_map: &DisjointMutSlice<SegmentId>,
     stride: ptrdiff_t,
-) -> u8 {
+) -> SegmentId {
     assert!(frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
 
-    let mut prev_seg_id = 8;
+    let mut prev_seg_id = SegmentId::max();
     for y in 0..h4 as usize {
         let offset = (b.y as usize + y) * stride as usize + b.x as usize;
         prev_seg_id = ref_seg_map
-            .index(offset..offset + w4 as usize)
+            .index((offset.., ..w4 as usize))
             .iter()
             .copied()
             .fold(prev_seg_id, cmp::min);
-        if prev_seg_id == 0 {
+        if prev_seg_id == SegmentId::min() {
             break;
         }
     }
-    assert!(prev_seg_id < 8);
 
     prev_seg_id
 }
@@ -1333,13 +1332,13 @@ fn decode_b(
     let frame_hdr: &Rav1dFrameHeader = &f.frame_hdr.as_ref().unwrap();
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
-            if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                let seg_id =
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                b.seg_id = SegmentId::new(seg_id).ok_or(())?;
-            } else {
-                b.seg_id = Default::default();
-            }
+            b.seg_id = f
+                .prev_segmap
+                .as_ref()
+                .map(|prev_segmap| {
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride)
+                })
+                .unwrap_or_default();
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get() as usize]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
@@ -1352,19 +1351,20 @@ fn decode_b(
                 seg_pred
             } {
                 // temporal predicted seg_id
-                if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                    let seg_id = get_prev_frame_segid(
-                        frame_hdr,
-                        t.b,
-                        w4,
-                        h4,
-                        &prev_segmap.inner,
-                        f.b4_stride,
-                    );
-                    b.seg_id = SegmentId::new(seg_id).ok_or(())?;
-                } else {
-                    b.seg_id = Default::default();
-                }
+                b.seg_id = f
+                    .prev_segmap
+                    .as_ref()
+                    .map(|prev_segmap| {
+                        get_prev_frame_segid(
+                            frame_hdr,
+                            t.b,
+                            w4,
+                            h4,
+                            &prev_segmap.inner,
+                            f.b4_stride,
+                        )
+                    })
+                    .unwrap_or_default();
             } else {
                 let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
                     t.b,
@@ -1381,7 +1381,7 @@ fn decode_b(
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
                 let mut seg_id =
-                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                    neg_deinterleave(diff as u8, pred_seg_id.get(), last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
@@ -1443,13 +1443,13 @@ fn decode_b(
             seg_pred
         } {
             // temporal predicted seg_id
-            if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                let seg_id =
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                b.seg_id = SegmentId::new(seg_id).ok_or(())?;
-            } else {
-                b.seg_id = Default::default();
-            }
+            b.seg_id = f
+                .prev_segmap
+                .as_ref()
+                .map(|prev_segmap| {
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride)
+                })
+                .unwrap_or_default();
         } else {
             let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
                 t.b,
@@ -1458,9 +1458,8 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            let mut seg_id;
-            if b.skip != 0 {
-                seg_id = pred_seg_id;
+            b.seg_id = if b.skip != 0 {
+                pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
@@ -1469,12 +1468,13 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                let mut seg_id =
+                    neg_deinterleave(diff as u8, pred_seg_id.get(), last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
-            }
-            b.seg_id = SegmentId::new(seg_id).unwrap_or_default(); // error?
+                SegmentId::new(seg_id).unwrap_or_default() // error?
+            };
         }
 
         seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get() as usize]);
@@ -3166,7 +3166,7 @@ fn decode_b(
         CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
             for i in 0..bh4 {
                 let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id.get());
+                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id);
             }
         });
     }
@@ -5230,7 +5230,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     // Allocate one here and zero it out.
                     let segmap_size = f.b4_stride as usize * 32 * f.sb128h as usize;
                     // TODO fallible allocation
-                    (0..segmap_size).map(|_| 0).collect()
+                    (0..segmap_size).map(|_| Default::default()).collect()
                 }
                 (_, Some(prev_segmap)) => {
                     // We're not updating an existing map,

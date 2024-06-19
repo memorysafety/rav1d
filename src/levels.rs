@@ -501,7 +501,7 @@ impl Default for Av1BlockIntraInter {
 }
 
 /// Within range `0..`[`RAV1D_MAX_SEGMENTS`].
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SegmentId {
     id: u8,
 }
@@ -518,6 +518,14 @@ impl SegmentId {
     pub const fn get(&self) -> u8 {
         // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
         self.id % RAV1D_MAX_SEGMENTS
+    }
+
+    pub fn min() -> Self {
+        Self::new(0).unwrap()
+    }
+
+    pub fn max() -> Self {
+        Self::new(RAV1D_MAX_SEGMENTS - 1).unwrap()
     }
 }
 

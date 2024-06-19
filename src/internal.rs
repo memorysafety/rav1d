@@ -40,6 +40,7 @@ use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Filter2d;
+use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmType;
 use crate::src::levels::WHT_WHT;
 use crate::src::lf_mask::Av1Filter;
@@ -330,7 +331,7 @@ pub(crate) struct TaskThreadData {
 #[repr(C)]
 pub(crate) struct Rav1dContext_refs {
     pub p: Rav1dThreadPicture,
-    pub segmap: Option<DisjointMutArcSlice<u8>>,
+    pub segmap: Option<DisjointMutArcSlice<SegmentId>>,
     pub refmvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>,
     pub refpoc: [c_uint; 7],
 }
@@ -792,8 +793,8 @@ pub(crate) struct Rav1dFrameData {
     pub sr_cur: Rav1dThreadPicture,
     pub mvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>, // Previously pooled.
     pub ref_mvs: [Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
-    pub cur_segmap: Option<DisjointMutArcSlice<u8>>, // Previously pooled.
-    pub prev_segmap: Option<DisjointMutArcSlice<u8>>,
+    pub cur_segmap: Option<DisjointMutArcSlice<SegmentId>>, // Previously pooled.
+    pub prev_segmap: Option<DisjointMutArcSlice<SegmentId>>,
     pub refpoc: [c_uint; 7],
     pub refrefpoc: [[c_uint; 7]; 7],
     pub gmv_warp_allowed: [u8; 7],
