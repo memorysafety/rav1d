@@ -63,7 +63,7 @@ pub mod src {
     mod iter;
     mod itx;
     mod itx_1d;
-    mod levels;
+    pub(crate) mod levels;
     mod lf_apply;
     mod lf_mask;
     pub mod lib;

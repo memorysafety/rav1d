@@ -1,7 +1,6 @@
 #![deny(unsafe_code)]
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::src::enum_map::EnumKey;
 use bitflags::bitflags;
 use std::fmt;
@@ -500,15 +499,17 @@ impl Default for Av1BlockIntraInter {
     }
 }
 
-/// Within range `0..`[`RAV1D_MAX_SEGMENTS`].
+/// Within range `0..`[`SegmentId::COUNT`].
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SegmentId {
     id: u8,
 }
 
 impl SegmentId {
+    pub const COUNT: usize = 8;
+
     pub const fn new(id: u8) -> Option<Self> {
-        if id < RAV1D_MAX_SEGMENTS {
+        if id < Self::COUNT as _ {
             Some(Self { id })
         } else {
             None
@@ -517,7 +518,7 @@ impl SegmentId {
 
     pub const fn get(&self) -> usize {
         // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
-        (self.id % RAV1D_MAX_SEGMENTS) as usize
+        self.id as usize % Self::COUNT
     }
 
     pub fn min() -> Self {
@@ -525,7 +526,7 @@ impl SegmentId {
     }
 
     pub fn max() -> Self {
-        Self::new(RAV1D_MAX_SEGMENTS - 1).unwrap()
+        Self::new(Self::COUNT as u8 - 1).unwrap()
     }
 }
 

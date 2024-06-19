@@ -16,7 +16,6 @@ use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::headers::SgrIdx;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
@@ -187,13 +186,13 @@ fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &[[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
+    dq: &[[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT],
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     let len = if segmentation_is_enabled {
-        RAV1D_MAX_SEGMENTS as usize
+        SegmentId::COUNT
     } else {
         1
     };
@@ -1375,7 +1374,7 @@ fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    RAV1D_MAX_SEGMENTS as usize - 1,
+                    SegmentId::COUNT - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
@@ -1463,7 +1462,7 @@ fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    RAV1D_MAX_SEGMENTS as usize - 1,
+                    SegmentId::COUNT - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;

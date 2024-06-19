@@ -16,7 +16,6 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
@@ -827,9 +826,9 @@ pub(crate) struct Rav1dFrameData {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub qm: [[Option<&'static [u8]>; 3]; 19],                            /* [3 plane][19] */
-    pub a: Vec<BlockContext>,                                            /* len = w*tile_rows */
+    pub dq: [[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT], /* [SegmentId::COUNT][3 plane][2 dc/ac] */
+    pub qm: [[Option<&'static [u8]>; 3]; 19],                 /* [3 plane][19] */
+    pub a: Vec<BlockContext>,                                 /* len = w*tile_rows */
     pub rf: RefMvsFrame,
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
@@ -898,7 +897,7 @@ pub struct Rav1dTileState {
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: usize,
 
-    pub dqmem: [[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dqmem: [[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT], /* [SegmentId::COUNT][3 plane][2 dc/ac] */
     pub dq: RelaxedAtomic<TileStateRef>,
     pub last_qidx: RelaxedAtomic<u8>,
     pub last_delta_lf: RelaxedAtomic<[i8; 4]>,

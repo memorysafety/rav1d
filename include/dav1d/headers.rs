@@ -1,4 +1,5 @@
 use crate::src::enum_map::EnumKey;
+use crate::src::levels::SegmentId;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use parking_lot::Mutex;
 use std::ffi::c_int;
@@ -61,7 +62,7 @@ pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
 pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
 pub const DAV1D_MAX_TILE_COLS: usize = 64;
 pub const DAV1D_MAX_TILE_ROWS: usize = 64;
-pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+pub const DAV1D_MAX_SEGMENTS: u8 = SegmentId::COUNT as _;
 pub const DAV1D_NUM_REF_FRAMES: usize = 8;
 pub const DAV1D_PRIMARY_REF_NONE: u8 = 7;
 pub const DAV1D_REFS_PER_FRAME: usize = 7;
@@ -71,7 +72,6 @@ pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
 pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
 pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
 pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
-pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: u8 = DAV1D_PRIMARY_REF_NONE;
 pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
@@ -1508,7 +1508,7 @@ pub struct Dav1dSegmentationDataSet {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dSegmentationDataSet {
-    pub d: [Rav1dSegmentationData; RAV1D_MAX_SEGMENTS as usize],
+    pub d: [Rav1dSegmentationData; SegmentId::COUNT],
     pub preskip: u8,
     pub last_active_segid: i8,
 }
@@ -2105,8 +2105,8 @@ pub struct Rav1dFrameHeader_segmentation {
     pub update_data: u8,
     pub seg_data: Rav1dSegmentationDataSet,
     /// TODO compress `[bool; 8]` into `u8`.
-    pub lossless: [bool; RAV1D_MAX_SEGMENTS as usize],
-    pub qidx: [u8; RAV1D_MAX_SEGMENTS as usize],
+    pub lossless: [bool; SegmentId::COUNT],
+    pub qidx: [u8; SegmentId::COUNT],
 }
 
 impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
