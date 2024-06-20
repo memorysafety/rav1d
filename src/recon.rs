@@ -1595,7 +1595,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     tx_split: [u16; 2],
     x_off: c_int,
     y_off: c_int,
-    mut dst: Option<*mut BD::Pixel>,
+    mut y_dst: Option<Rav1dPictureDataComponentOffset>,
 ) {
     let bd = BD::from_c(f.bitdepth_max);
 
@@ -1624,7 +1624,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             tx_split,
             x_off * 2 + 0,
             y_off * 2 + 0,
-            dst,
+            y_dst,
         );
         t.b.x += txsw as c_int;
         if txw >= txh && t.b.x < f.bw {
@@ -1639,13 +1639,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 tx_split,
                 x_off * 2 + 1,
                 y_off * 2 + 0,
-                dst.map(|dst| dst.add(4 * txsw as usize)),
+                y_dst.map(|dst| dst + (4 * txsw as usize)),
             );
         }
         t.b.x -= txsw as c_int;
         t.b.y += txsh as c_int;
         if txh >= txw && t.b.y < f.bh {
-            dst = dst.map(|dst| dst.offset(4 * txsh as isize * BD::pxstride(f.cur.stride[0])));
+            y_dst = y_dst.map(|dst| dst + (4 * txsh as isize * dst.pixel_stride::<BD>()));
             read_coef_tree::<BD>(
                 f,
                 t,
@@ -1657,7 +1657,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 tx_split,
                 x_off * 2 + 0,
                 y_off * 2 + 1,
-                dst,
+                y_dst,
             );
             t.b.x += txsw as c_int;
             if txw >= txh && t.b.x < f.bw {
@@ -1672,7 +1672,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     tx_split,
                     x_off * 2 + 1,
                     y_off * 2 + 1,
-                    dst.map(|dst| dst.add(4 * txsw as usize)),
+                    y_dst.map(|dst| dst + (4 * txsw as usize)),
                 );
             }
             t.b.x -= txsw as c_int;
@@ -1750,7 +1750,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             txtp = cbi.txtp();
         }
         if t.frame_thread.pass & 1 == 0 {
-            let dst = dst.unwrap();
+            let y_dst = y_dst.unwrap();
             if eob >= 0 {
                 let cf = match cf {
                     CfSelect::Frame(offset) => {
@@ -1769,19 +1769,11 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         "dq",
                     );
                 }
-                // Unsafely recompute from `dst` because `fn read_coef_tree` is recursive and used elsewhere.
-                // Once I make `fn read_coef_tree`, this will be removed.
-                let y_dst = &f.cur.data.as_ref().unwrap().data[0];
-                let y_dst_offset = dst.offset_from(y_dst.as_ptr::<BD>()) as usize;
-                let y_dst = Rav1dPictureDataComponentOffset {
-                    data: y_dst,
-                    offset: y_dst_offset,
-                };
                 f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(y_dst, cf, eob, bd);
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
-                        dst,
-                        f.cur.stride[0] as usize,
+                        y_dst.as_ptr::<BD>(),
+                        y_dst.stride() as usize,
                         t_dim.w as usize * 4,
                         t_dim.h as usize * 4,
                         "recon",
@@ -3922,7 +3914,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         tx_split,
                         x_off,
                         y_off,
-                        Some(dst.add(x as usize * 4)),
+                        Some(y_dst + (x as usize * 4)),
                     );
                     t.b.x += ytx.w as c_int;
                     x += ytx.w as c_int;
@@ -3935,7 +3927,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 y += ytx.h as c_int;
                 y_off += 1;
             }
-            y_dst += y_dst.pixel_stride::<BD>() * 4 * y as isize;
+            y_dst -= y_dst.pixel_stride::<BD>() * 4 * y as isize;
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
             t.b.y -= y;
 
