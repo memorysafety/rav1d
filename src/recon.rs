@@ -292,7 +292,7 @@ fn get_skip_ctx(
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
             dir[..N] != [0x40; N]
         }
-        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, tx)| match tx as TxfmSize {
+        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, tx)| match (tx % 4) as TxfmSize {
             TX_4X4 => merge_ctx::<1>(dir),
             TX_8X8 => merge_ctx::<2>(dir),
             TX_16X16 => merge_ctx::<4>(dir),
