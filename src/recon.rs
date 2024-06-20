@@ -321,7 +321,8 @@ fn get_skip_ctx(
                             (if n == 16 {
                                 u128::read_ne(dir)
                             } else {
-                                unreachable!()
+                                debug_assert!(false);
+                                0
                             })
                             .merge()
                         })
