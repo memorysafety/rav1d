@@ -5,7 +5,10 @@ use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::src::align::Align64;
+use crate::src::align::AlignedVec;
 use crate::src::cpu::CpuFlags;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -62,7 +65,7 @@ impl cdef::Fn {
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
-        top: *const BD::Pixel,
+        (top, top_off): (&DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize),
         bottom: *const BD::Pixel,
         pri_strength: c_int,
         sec_strength: u8,
@@ -74,7 +77,7 @@ impl cdef::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let stride = dst.stride();
         let left = ptr::from_ref(left).cast();
-        let top = top.cast();
+        let top = (&*top.element_as(top_off) as *const BD::Pixel).cast();
         let bottom = bottom.cast();
         let sec_strength = sec_strength as c_int;
         let damping = damping as c_int;
