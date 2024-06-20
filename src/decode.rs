@@ -144,7 +144,6 @@ use crate::src::refmvs::RefMvsFrame;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_block_sizes;
 use crate::src::tables::dav1d_comp_inter_pred_modes;
 use crate::src::tables::dav1d_filter_2d;
@@ -437,7 +436,7 @@ fn find_matching_ref(
         && t.b.x + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
-    let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
+    let bs = |rp: refmvs_block| rp.bs.dimensions();
     let matches = |rp: refmvs_block| rp.r#ref.r#ref[0] == r#ref + 1 && rp.r#ref.r#ref[1] == -1;
 
     if have_top {
@@ -542,7 +541,7 @@ fn derive_warpmv(
         *r.index(t.rt.r[(offset as isize + i as isize) as usize] + j as usize)
     };
 
-    let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
+    let bs = |rp: refmvs_block| rp.bs.dimensions();
 
     let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: refmvs_block| {
         pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
@@ -790,7 +789,7 @@ fn read_vartx_tree(
     bx4: c_int,
     by4: c_int,
 ) -> VarTx {
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as usize;
     let bh4 = b_dim[1] as usize;
 
@@ -1096,7 +1095,7 @@ fn obmc_lowest_px(
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2] as c_int, 4) {
             let a_r = *r.index(ri[0] + t.b.x as usize + x as usize + 1);
-            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            let a_b_dim = a_r.bs.dimensions();
             if a_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = cmp::min(b_dim[1] as c_int, 16) >> 1;
                 mc_lowest_px(
@@ -1117,7 +1116,7 @@ fn obmc_lowest_px(
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
             let l_r = *r.index(ri[y as usize + 1 + 1] + t.b.x as usize - 1);
-            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            let l_b_dim = l_r.bs.dimensions();
             if l_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as c_int, 2, b_dim[1] as c_int);
                 mc_lowest_px(
@@ -1168,7 +1167,7 @@ fn decode_b(
 
     let ts = &f.ts[t.ts];
     let bd_fn = f.bd_fn();
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;

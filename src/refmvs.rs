@@ -21,7 +21,6 @@ use crate::src::internal::Bxy;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::marker::PhantomData;
@@ -541,7 +540,7 @@ fn scan_row(
 ) -> i32 {
     let mut cand_b = *r.index(b_offset);
     let first_cand_bs = cand_b.bs;
-    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let first_cand_b_dim = first_cand_bs.dimensions();
     let mut cand_bw4 = first_cand_b_dim[0] as i32;
     let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
 
@@ -588,7 +587,7 @@ fn scan_row(
             return 1;
         }
         cand_b = *r.index(b_offset + x as usize);
-        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
+        cand_bw4 = cand_b.bs.dimensions()[0] as i32;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
     }
@@ -611,7 +610,7 @@ fn scan_col(
 ) -> i32 {
     let mut cand_b = *r.index(b[0] + bx4 as usize);
     let first_cand_bs = cand_b.bs;
-    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let first_cand_b_dim = first_cand_bs.dimensions();
     let mut cand_bh4 = first_cand_b_dim[1] as i32;
     let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
 
@@ -658,7 +657,7 @@ fn scan_col(
             return 1;
         }
         cand_b = *r.index(b[y as usize] + bx4 as usize);
-        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
+        cand_bh4 = cand_b.bs.dimensions()[1] as i32;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
     }
@@ -887,7 +886,7 @@ pub(crate) fn rav1d_refmvs_find(
     bx4: i32,
     frame_hdr: &Rav1dFrameHeader,
 ) {
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as i32;
     let w4 = cmp::min(cmp::min(bw4, 16), rt.tile_col.end - bx4);
     let bh4 = b_dim[1] as i32;
@@ -1175,7 +1174,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
+                    x += cand_b.bs.dimensions()[0] as i32;
                 }
             }
 
@@ -1193,7 +1192,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
+                    y += cand_b.bs.dimensions()[1] as i32;
                 }
             }
 
@@ -1275,7 +1274,7 @@ pub(crate) fn rav1d_refmvs_find(
             while x < sz4 && *cnt < 2 {
                 let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                x += dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
+                x += cand_b.bs.dimensions()[0] as i32;
             }
         }
 
@@ -1285,7 +1284,7 @@ pub(crate) fn rav1d_refmvs_find(
             while y < sz4 && *cnt < 2 {
                 let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                y += dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
+                y += cand_b.bs.dimensions()[1] as i32;
             }
         }
     }
@@ -1554,7 +1553,7 @@ fn save_tmvs_rust(
         let mut x = col_start8;
         while x < col_end8 {
             let cand_b = *r.index(b + x * 2 + 1);
-            let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
+            let bw8 = cand_b.bs.dimensions()[0] + 1 >> 1;
             let block = |i: usize| {
                 let mv = cand_b.mv.mv[i];
                 let r#ref = cand_b.r#ref.r#ref[i];

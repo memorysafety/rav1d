@@ -160,7 +160,7 @@ pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLev
     ]
 };
 
-pub static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
+static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -184,6 +184,13 @@ pub static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
     [1, 2, 0, 1],
     [1, 1, 0, 0],
 ];
+
+impl BlockSize {
+    #[inline]
+    pub fn dimensions(self) -> &'static [u8; 4] {
+        &dav1d_block_dimensions[self as usize]
+    }
+}
 
 pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
     use TxfmSize::*;

@@ -13,7 +13,6 @@ use crate::src::levels::BlockSize;
 use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
 use parking_lot::RwLock;
@@ -406,7 +405,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = cmp::min(iw - bx, b_dim[0]);
     let bh4 = cmp::min(ih - by, b_dim[1]);
@@ -513,7 +512,7 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     let is_gmv = is_gmv as usize;
     let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = cmp::min(iw - bx, b_dim[0]);
     let bh4 = cmp::min(ih - by, b_dim[1]);

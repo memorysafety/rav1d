@@ -71,7 +71,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::scan::dav1d_scans;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
@@ -264,7 +263,7 @@ fn get_skip_ctx(
     chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> InRange<u8, 0, { 13 - 1 }> {
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
         let ss_hor = layout != Rav1dPixelLayout::I444;
@@ -1803,7 +1802,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let by4 = t.b.y as usize & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0];
     let bh4 = b_dim[1];
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2232,7 +2231,7 @@ fn obmc<BD: BitDepth>(
         while x < w4 && i < cmp::min(b_dim[2], 4) {
             // only odd blocks are considered for overlap handling, hence +1
             let a_r = *f.rf.r.index(r[0] + t.b.x as usize + x as usize + 1);
-            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            let a_b_dim = a_r.bs.dimensions();
             let step4 = clip(a_b_dim[0], 2, 16);
 
             if a_r.r#ref.r#ref[0] > 0 {
@@ -2280,7 +2279,7 @@ fn obmc<BD: BitDepth>(
         while y < h4 && i < cmp::min(b_dim[3], 4) {
             // only odd blocks are considered for overlap handling, hence +1
             let l_r = *f.rf.r.index(r[y as usize + 1 + 1] + t.b.x as usize - 1);
-            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            let l_b_dim = l_r.bs.dimensions();
             let step4 = clip(l_b_dim[1], 2, 16);
 
             if l_r.r#ref.r#ref[0] > 0 {
@@ -2435,7 +2434,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
@@ -3104,7 +3103,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
