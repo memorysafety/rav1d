@@ -46,7 +46,6 @@ use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
-use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
@@ -292,11 +291,12 @@ fn get_skip_ctx(
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
             dir[..N] != [0x40; N]
         }
-        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, tx)| match (tx % 4) as TxfmSize {
-            TX_4X4 => merge_ctx::<1>(dir),
-            TX_8X8 => merge_ctx::<2>(dir),
-            TX_16X16 => merge_ctx::<4>(dir),
-            TX_32X32 => merge_ctx::<8>(dir),
+
+        let [ca, cl] = [a, l].map(|dir| match dir.len() {
+            1 => merge_ctx::<1>(dir),
+            2 => merge_ctx::<2>(dir),
+            4 => merge_ctx::<4>(dir),
+            8 => merge_ctx::<8>(dir),
             _ => unreachable!(),
         });
         (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
