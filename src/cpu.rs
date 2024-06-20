@@ -43,6 +43,10 @@ bitflags! {
     #[derive(Clone, Copy)]
     pub struct CpuFlags: c_uint {
         const NEON = 1 << 0;
+        const DOTPROD = 1 << 1;
+        const I8MM = 1 << 2;
+        const SVE = 1 << 3;
+        const SVE2 = 1 << 4;
     }
 }
 
@@ -84,6 +88,14 @@ impl CpuFlags {
             CpuFlags::AVX512ICL,
             #[cfg(target_feature = "neon")]
             CpuFlags::NEON,
+            #[cfg(target_feature = "i8mm")]
+            CpuFlags::I8MM,
+            #[cfg(target_feature = "dotprod")]
+            CpuFlags::DOTPROD,
+            #[cfg(target_feature = "sve")]
+            CpuFlags::SVE,
+            #[cfg(target_feature = "sve2")]
+            CpuFlags::SVE2,
             #[cfg(target_feature = "v")]
             CpuFlags::V,
         ];
@@ -159,13 +171,35 @@ impl CpuFlags {
         }
 
         #[cfg(target_arch = "arm")]
-        if std::arch::is_arm_feature_detected!("neon") {
-            flags |= Self::NEON;
+        {
+            if std::arch::is_arm_feature_detected!("neon") {
+                flags |= Self::NEON;
+            }
+            if std::arch::is_arm_feature_detected!("dotprod") {
+                flags |= Self::DOTPROD;
+            }
+            if std::arch::is_arm_feature_detected!("i8mm") {
+                flags |= Self::I8MM;
+            }
         }
 
         #[cfg(target_arch = "aarch64")]
-        if std::arch::is_aarch64_feature_detected!("neon") {
-            flags |= Self::NEON;
+        {
+            if std::arch::is_aarch64_feature_detected!("neon") {
+                flags |= Self::NEON;
+            }
+            if std::arch::is_aarch64_feature_detected!("dotprod") {
+                flags |= Self::DOTPROD;
+            }
+            if std::arch::is_aarch64_feature_detected!("i8mm") {
+                flags |= Self::I8MM;
+            }
+            if std::arch::is_aarch64_feature_detected!("sve") {
+                flags |= Self::SVE;
+            }
+            if std::arch::is_aarch64_feature_detected!("sve2") {
+                flags |= Self::SVE2;
+            }
         }
 
         #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
