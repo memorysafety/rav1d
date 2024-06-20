@@ -262,20 +262,19 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut top = 0 as *const BD::Pixel;
                         let mut bot = 0 as *const BD::Pixel;
-                        let mut offset: ptrdiff_t;
                         let st_y: bool;
 
                         if !have_tt {
                             st_y = true;
                         } else if sbrow_start && by == by_start {
                             if resize {
-                                offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
+                                let offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
                                 top = &*f
                                     .lf
                                     .cdef_line_buf
                                     .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
                             } else {
-                                offset = (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
+                                let offset = (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
                                     + (bx * 4) as isize;
                                 top = &*f
                                     .lf
@@ -286,12 +285,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             bot = bottom.as_ptr::<BD>();
                             st_y = false;
                         } else if !sbrow_start && by + 2 >= by_end {
-                            offset = (sby * 4) as isize * y_stride + (bx * 4) as isize;
+                            let offset = (sby * 4) as isize * y_stride + (bx * 4) as isize;
                             top = &*f.lf.cdef_line_buf.element_as(
                                 (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
                             );
                             if resize {
-                                offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
+                                let offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
                                 // FIXME incorrect; should be kept as an offset for later slices.
                                 bot = &*f
                                     .lf
@@ -299,7 +298,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
                             } else {
                                 let line = sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                offset = line as isize * y_stride + (bx * 4) as isize;
+                                let offset = line as isize * y_stride + (bx * 4) as isize;
                                 // FIXME incorrect; should be kept as an offset for later slices.
                                 bot = &*f
                                     .lf
@@ -312,7 +311,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         }
 
                         if st_y {
-                            offset = have_tt as isize * (sby * 4) as isize * y_stride
+                            let offset = have_tt as isize * (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
                             top = &*f.lf.cdef_line_buf.element_as(
                                 (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
@@ -366,14 +365,14 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     st_uv = true;
                                 } else if sbrow_start && by == by_start {
                                     if resize {
-                                        offset = ((sby - 1) * 4) as isize * uv_stride
+                                        let offset = ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
                                         top = &*f.lf.cdef_line_buf.element_as(
                                             (f.lf.cdef_lpf_line[pl] as isize + offset) as usize,
                                         );
                                     } else {
                                         let line_0 = sby * ((4 as c_int) << sb128) - 4;
-                                        offset = line_0 as isize * uv_stride
+                                        let offset = line_0 as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
                                         top = &*f.lf.lr_line_buf.element_as(
                                             (f.lf.lr_lpf_line[pl] as isize + offset) as usize,
@@ -390,7 +389,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                             as usize,
                                     );
                                     if resize {
-                                        offset = (sby * 4 + 2) as isize * uv_stride
+                                        let offset = (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
                                         // FIXME incorrect; should be kept as an offset for later slices.
                                         bot = &*f.lf.cdef_line_buf.element_as(
@@ -399,7 +398,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     } else {
                                         let line =
                                             sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                        offset =
+                                        let offset =
                                             line as isize * uv_stride + (bx * 4 >> ss_hor) as isize;
                                         // FIXME incorrect; should be kept as an offset for later slices.
                                         bot = &*f.lf.lr_line_buf.element_as(
