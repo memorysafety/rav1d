@@ -304,20 +304,21 @@ fn get_skip_ctx(
         0
     } else {
         /// Read and xor all the bytes.
-        fn merge_ctx(dir: &[u8], tx: TxfmSize) -> u8 {
-            if tx == TX_4X4 {
+        fn merge_ctx(dir: &[u8]) -> u8 {
+            let n = dir.len();
+            if n == 1 {
                 u8::read_ne(dir)
             } else {
-                (if tx == TX_8X8 {
+                (if n == 2 {
                     u16::read_ne(dir)
                 } else {
-                    (if tx == TX_16X16 {
+                    (if n == 4 {
                         u32::read_ne(dir)
                     } else {
-                        (if tx == TX_32X32 {
+                        (if n == 8 {
                             u64::read_ne(dir)
                         } else {
-                            (if tx == TX_64X64 {
+                            (if n == 16 {
                                 u128::read_ne(dir)
                             } else {
                                 unreachable!()
@@ -331,8 +332,8 @@ fn get_skip_ctx(
                 .merge()
             }
         }
-        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)]
-            .map(|(dir, tx)| merge_ctx(dir, tx as TxfmSize))
+        let [la, ll] = [a, l]
+            .map(|dir| merge_ctx(dir))
             .map(|ldir| cmp::min(ldir & 0x3f, 4) as usize);
         dav1d_skip_ctx[la][ll]
     }
