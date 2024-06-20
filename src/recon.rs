@@ -333,10 +333,13 @@ fn get_skip_ctx(
                 .merge()
             }
         }
-        let [la, ll] = [a, l]
-            .map(|dir| merge_ctx(dir))
-            .map(|ldir| cmp::min(ldir & 0x3f, 4) as usize);
-        dav1d_skip_ctx[la][ll]
+
+        fn ldir(dir: &[u8]) -> usize {
+            let ldir = merge_ctx(dir);
+            cmp::min(ldir & 0x3f, 4) as usize
+        }
+
+        dav1d_skip_ctx[ldir(a)][ldir(l)]
     }
 }
 
