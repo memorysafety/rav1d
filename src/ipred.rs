@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -372,10 +374,13 @@ unsafe fn reconstruct_topleft<'a, BD: BitDepth>(
     topleft_ptr: *const DynPixel,
     topleft_off: usize,
 ) -> &'a [BD::Pixel; SCRATCH_EDGE_LEN] {
-    &*topleft_ptr
-        .cast::<BD::Pixel>()
-        .sub(topleft_off)
-        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>()
+    // SAFETY: Same as `# Safety` preconditions.
+    unsafe {
+        &*topleft_ptr
+            .cast::<BD::Pixel>()
+            .sub(topleft_off)
+            .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>()
+    }
 }
 
 /// # Safety
@@ -1491,7 +1496,7 @@ mod neon {
     ) -> ());
 
     impl z13_fill::Fn {
-        pub unsafe fn call<BD: BitDepth>(
+        pub fn call<BD: BitDepth>(
             &self,
             dst: *mut BD::Pixel,
             stride: ptrdiff_t,
@@ -1503,7 +1508,8 @@ mod neon {
         ) {
             let dst = dst.cast();
             let topleft = topleft.as_ptr().cast();
-            self.get()(dst, stride, topleft, width, height, dxy, max_base_xy)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(dst, stride, topleft, width, height, dxy, max_base_xy) }
         }
     }
 
@@ -1519,7 +1525,7 @@ mod neon {
     ) -> ());
 
     impl z2_fill::Fn {
-        pub unsafe fn call<BD: BitDepth>(
+        pub fn call<BD: BitDepth>(
             &self,
             dst: *mut BD::Pixel,
             stride: ptrdiff_t,
@@ -1533,7 +1539,8 @@ mod neon {
             let dst = dst.cast();
             let top = top.as_ptr().cast();
             let left = left.as_ptr().cast();
-            self.get()(dst, stride, top, left, width, height, dx, dy)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(dst, stride, top, left, width, height, dx, dy) }
         }
     }
 
@@ -1546,7 +1553,7 @@ mod neon {
     ) -> ());
 
     impl z1_upsample_edge::Fn {
-        pub unsafe fn call<BD: BitDepth>(
+        pub fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
             hsz: c_int,
@@ -1557,7 +1564,8 @@ mod neon {
             let out = out.as_mut_ptr().cast();
             let in_0 = in_0.as_ptr().cast();
             let bd = bd.into_c();
-            self.get()(out, hsz, in_0, end, bd)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(out, hsz, in_0, end, bd) }
         }
     }
 
@@ -1570,7 +1578,7 @@ mod neon {
     ) -> ());
 
     impl z1_filter_edge::Fn {
-        pub unsafe fn call<BD: BitDepth>(
+        pub fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
             sz: c_int,
@@ -1580,7 +1588,8 @@ mod neon {
         ) {
             let out = out.as_mut_ptr().cast();
             let in_0 = in_0.as_ptr().cast();
-            self.get()(out, sz, in_0, end, strength)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(out, sz, in_0, end, strength) }
         }
     }
 
@@ -1592,7 +1601,7 @@ mod neon {
     ) -> ());
 
     impl z2_upsample_edge::Fn {
-        pub unsafe fn call<BD: BitDepth>(
+        pub fn call<BD: BitDepth>(
             &self,
             out: &mut [BD::Pixel],
             hsz: c_int,
@@ -1602,7 +1611,8 @@ mod neon {
             let out = out.as_mut_ptr().cast();
             let in_0 = in_0.as_ptr().cast();
             let bd = bd.into_c();
-            self.get()(out, hsz, in_0, bd)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(out, hsz, in_0, bd) }
         }
     }
 
@@ -1613,23 +1623,15 @@ mod neon {
     ) -> ());
 
     impl reverse::Fn {
-        pub unsafe fn call<BD: BitDepth>(
-            &self,
-            dst: &mut [BD::Pixel],
-            src: &[BD::Pixel],
-            n: c_int,
-        ) {
+        pub fn call<BD: BitDepth>(&self, dst: &mut [BD::Pixel], src: &[BD::Pixel], n: c_int) {
             let dst = dst.as_mut_ptr().cast();
             let src = src.as_ptr().cast();
-            self.get()(dst, src, n)
+            // SAFETY: We're assuming the asm is actually correct and safe.
+            unsafe { self.get()(dst, src, n) }
         }
     }
 
-    unsafe fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(
-        out: &mut [BD::Pixel],
-        px: BD::Pixel,
-        n: c_int,
-    ) {
+    fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(out: &mut [BD::Pixel], px: BD::Pixel, n: c_int) {
         // `pixel_set` takes a `px: BD::Pixel`.
         // Since it's not behind a ptr, we can't make it a `DynPixel`
         // and call it uniformly with `bd_fn!`.
@@ -1652,17 +1654,21 @@ mod neon {
 
         let out = out.as_mut_ptr().cast();
         match BD::BPC {
-            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
-                out,
+            BPC::BPC8 => {
                 // Really a no-op cast, but it's difficult to do it properly with generics.
-                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
-                n,
-            ),
-            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
+                let px = px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel;
+                // SAFETY: We're assuming the asm is actually correct and safe.
+                unsafe { dav1d_ipred_pixel_set_8bpc_neon(out, px, n) }
+            }
+            BPC::BPC16 => {
+                let px = px.into();
+                // SAFETY: We're assuming the asm is actually correct and safe.
+                unsafe { dav1d_ipred_pixel_set_16bpc_neon(out, px, n) }
+            }
         }
     }
 
-    unsafe fn ipred_z1_neon<BD: BitDepth>(
+    fn ipred_z1_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
@@ -1735,7 +1741,7 @@ mod neon {
         };
     }
 
-    unsafe fn ipred_z2_neon<BD: BitDepth>(
+    fn ipred_z2_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
@@ -1901,7 +1907,7 @@ mod neon {
         };
     }
 
-    unsafe fn ipred_z3_neon<BD: BitDepth>(
+    fn ipred_z3_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
@@ -1993,6 +1999,7 @@ mod neon {
     /// # Safety
     ///
     /// Must be called from [`angular_ipred::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn ipred_z_neon_erased<BD: BitDepth, const Z: usize>(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
