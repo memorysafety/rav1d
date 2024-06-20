@@ -767,27 +767,9 @@ fn read_pal_indices(
         }
     }
 
-    if let Some(pal_idx) = &pal_idx {
-        let read_len = bw4 * 2 * bh4 * 4;
-        debug_assert!(pal_idx.len() >= read_len);
-    }
-    let read_len = bw4 * 4 * bh4 * 4;
-    debug_assert!(pal_tmp.len() >= read_len);
-
-    // SAFETY: Unsafe asm call. `pal_idx` is at least `(bw4 * 2) * (bh4 * 4)`
-    // elements long and `pal_tmp` is at least `(bw4 * 4)
-    // * (bh4 * 4)` elements long, which is how many elements `pal_idx_finish`
-    // will read/write.
-    unsafe {
-        (pal_dsp.pal_idx_finish)(
-            pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
-            pal_tmp.as_ptr(),
-            bw4 as c_int * 4,
-            bh4 as c_int * 4,
-            w4 as c_int * 4,
-            h4 as c_int * 4,
-        );
-    }
+    pal_dsp
+        .pal_idx_finish
+        .call(pal_idx, pal_tmp, bw4 * 4, bh4 * 4, w4 * 4, h4 * 4);
 }
 
 struct VarTx {

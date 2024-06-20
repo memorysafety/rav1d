@@ -1,22 +1,60 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::src::cpu::CpuFlags;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::ffi::c_int;
 use std::slice;
 
-pub type pal_idx_finish_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
     dst: *mut u8,
     src: *const u8,
     bw: c_int,
     bh: c_int,
     w: c_int,
     h: c_int,
-) -> ();
+) -> ());
 
-pub struct Rav1dPalDSPContext {
-    pub pal_idx_finish: pal_idx_finish_fn,
+impl pal_idx_finish::Fn {
+    /// If `dst` is [`None`], `tmp` is used as `dst`.
+    /// This is why `tmp` must be `&mut`, too.
+    /// `tmp` is always used as `src`.
+    pub fn call(
+        &self,
+        dst: Option<&mut [u8]>,
+        tmp: &mut [u8],
+        bw: usize,
+        bh: usize,
+        w: usize,
+        h: usize,
+    ) {
+        let dst = dst.map(|dst| &mut dst[..(bw / 2) * bh]);
+        let tmp = &mut tmp[..bw * bh];
+        // SAFETY: Note that `dst` and `src` may be the same.
+        // This is safe because they are raw ptrs for now,
+        // and in the fallback `fn pal_idx_finish_rust`, this is checked for
+        // before creating `&mut`s from them.
+        let dst = dst.unwrap_or(tmp).as_mut_ptr();
+        let src = tmp.as_ptr();
+        let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as c_int);
+        // SAFETY: Fallback `fn pal_idx_finish_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst, src, bw, bh, w, h) }
+    }
 }
 
-// fill invisible edges and pack to 4-bit (2 pixels per byte)
-unsafe extern "C" fn pal_idx_finish_rust(
+pub struct Rav1dPalDSPContext {
+    pub pal_idx_finish: pal_idx_finish::Fn,
+}
+
+enum PalIdx<'a> {
+    Idx { dst: &'a mut [u8], src: &'a [u8] },
+    Tmp(&'a mut [u8]),
+}
+
+/// # Safety
+///
+/// Must be called by [`pal_idx_finish::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
+unsafe extern "C" fn pal_idx_finish_c(
     dst: *mut u8,
     src: *const u8,
     bw: c_int,
@@ -24,36 +62,68 @@ unsafe extern "C" fn pal_idx_finish_rust(
     w: c_int,
     h: c_int,
 ) {
-    assert!(bw >= 4 && bw <= 64 && (bw as u32).is_power_of_two());
-    assert!(bh >= 4 && bh <= 64 && (bh as u32).is_power_of_two());
+    let [bw, bh, w, h] = [bw, bh, w, h].map(|it| it as usize);
+
+    assert!(bw >= 4 && bw <= 64 && bw.is_power_of_two());
+    assert!(bh >= 4 && bh <= 64 && bh.is_power_of_two());
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
     assert!(h >= 4 && h <= bh && (h & 3) == 0);
 
-    let w = w as usize;
-    let h = h as usize;
-    let bw = bw as usize;
-    let bh = bh as usize;
+    let idx = if src == dst {
+        // SAFETY: `src` length sliced in `pal_idx_finish::Fn::call` and `src == dst`.
+        let tmp = unsafe { slice::from_raw_parts_mut(dst, bw * bh) };
+        PalIdx::Tmp(tmp)
+    } else {
+        // SAFETY: `src` length sliced in `pal_idx_finish::Fn::call`.
+        let src = unsafe { slice::from_raw_parts(src, bw * bh) };
+        // SAFETY: `dst` length sliced in `pal_idx_finish::Fn::call`.
+        let dst = unsafe { slice::from_raw_parts_mut(dst, (bw / 2) * bh) };
+        PalIdx::Idx { dst, src }
+    };
+
+    pal_idx_finish_rust(idx, bw, bh, w, h)
+}
+
+/// Fill invisible edges and pack to 4-bit (2 pixels per byte).
+fn pal_idx_finish_rust(idx: PalIdx, bw: usize, bh: usize, w: usize, h: usize) {
     let dst_w = w / 2;
     let dst_bw = bw / 2;
 
-    let mut dst = slice::from_raw_parts_mut(dst, dst_bw * bh);
-    let mut src = slice::from_raw_parts(src, bw * bh);
+    let dst = match idx {
+        PalIdx::Tmp(tmp) => {
+            for y in 0..h {
+                let src = y * bw;
+                let dst = y * dst_bw;
+                for x in 0..dst_w {
+                    let src = &tmp[src + 2 * x..][..2];
+                    tmp[dst + x] = src[0] | (src[1] << 4)
+                }
+                if dst_w < dst_bw {
+                    let src = tmp[src + w];
+                    tmp[dst..][dst_w..dst_bw].fill(0x11 * src);
+                }
+            }
 
-    for y in 0..h {
-        for x in 0..dst_w {
-            dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+            &mut tmp[..dst_bw * bh]
         }
-        if dst_w < dst_bw {
-            dst[dst_w..dst_bw].fill(0x11 * src[w]);
+        PalIdx::Idx { dst, src } => {
+            for y in 0..h {
+                let src = &src[y * bw..];
+                let dst = &mut dst[y * dst_bw..];
+                for x in 0..dst_w {
+                    dst[x] = src[2 * x] | (src[2 * x + 1] << 4)
+                }
+                if dst_w < dst_bw {
+                    dst[dst_w..dst_bw].fill(0x11 * src[w]);
+                }
+            }
+
+            dst
         }
-        src = &src[bw..];
-        if y < h - 1 {
-            dst = &mut dst[dst_bw..];
-        }
-    }
+    };
 
     if h < bh {
-        let (last_row, dst) = dst.split_at_mut(dst_bw);
+        let (last_row, dst) = dst[(h - 1) * dst_bw..].split_at_mut(dst_bw);
 
         for row in dst.chunks_exact_mut(dst_bw) {
             row.copy_from_slice(last_row);
@@ -61,43 +131,10 @@ unsafe extern "C" fn pal_idx_finish_rust(
     }
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-extern "C" {
-    fn dav1d_pal_idx_finish_ssse3(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "x86_64"),))]
-extern "C" {
-    fn dav1d_pal_idx_finish_avx2(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-
-    fn dav1d_pal_idx_finish_avx512icl(
-        dst: *mut u8,
-        src: *const u8,
-        bw: c_int,
-        bh: c_int,
-        w: c_int,
-        h: c_int,
-    );
-}
-
 impl Rav1dPalDSPContext {
     pub const fn default() -> Self {
         Self {
-            pal_idx_finish: pal_idx_finish_rust,
+            pal_idx_finish: pal_idx_finish::Fn::new(pal_idx_finish_c),
         }
     }
 
@@ -108,7 +145,7 @@ impl Rav1dPalDSPContext {
             return self;
         }
 
-        self.pal_idx_finish = dav1d_pal_idx_finish_ssse3;
+        self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_ssse3);
 
         #[cfg(target_arch = "x86_64")]
         {
@@ -116,13 +153,13 @@ impl Rav1dPalDSPContext {
                 return self;
             }
 
-            self.pal_idx_finish = dav1d_pal_idx_finish_avx2;
+            self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
                 return self;
             }
 
-            self.pal_idx_finish = dav1d_pal_idx_finish_avx512icl;
+            self.pal_idx_finish = pal_idx_finish::decl_fn!(fn dav1d_pal_idx_finish_avx512icl);
         }
 
         self
