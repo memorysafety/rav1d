@@ -292,17 +292,21 @@ fn get_skip_ctx(
             dir[..N] != [0x40; N]
         }
 
-        let [ca, cl] = [a, l].map(|dir| match dir.len() {
-            1 => merge_ctx::<1>(dir),
-            2 => merge_ctx::<2>(dir),
-            4 => merge_ctx::<4>(dir),
-            8 => merge_ctx::<8>(dir),
-            _ => {
-                debug_assert!(false);
-                false
-            }
-        });
-        (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
+        fn cdir(dir: &[u8]) -> u8 {
+            let cdir = match dir.len() {
+                1 => merge_ctx::<1>(dir),
+                2 => merge_ctx::<2>(dir),
+                4 => merge_ctx::<4>(dir),
+                8 => merge_ctx::<8>(dir),
+                _ => {
+                    debug_assert!(false);
+                    false
+                }
+            };
+            cdir as u8
+        }
+
+        (7 + (not_one_blk as u8) * 3) + cdir(a) + cdir(l)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
