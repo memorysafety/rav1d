@@ -56,6 +56,7 @@ pub mod src {
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
     mod extensions;
+    mod in_range;
     pub(super) mod internal;
     mod intra_edge;
     mod ipred;

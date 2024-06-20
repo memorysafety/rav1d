@@ -18,6 +18,7 @@ use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
+use crate::src::in_range::InRange;
 use crate::src::internal::Bxy;
 use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
@@ -281,9 +282,9 @@ fn get_skip_ctx(
     l: &[u8],
     chroma: bool,
     layout: Rav1dPixelLayout,
-) -> u8 {
+) -> InRange<u8, 0, { 13 - 1 }> {
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    if chroma {
+    let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
         let ss_hor = layout != Rav1dPixelLayout::I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
@@ -347,7 +348,8 @@ fn get_skip_ctx(
         }
 
         dav1d_skip_ctx[ldir(a)][ldir(l)]
-    }
+    };
+    InRange::new(skip_ctx).unwrap()
 }
 
 // `tx: RectTxfmSize` arg is also `TxfmSize`.
@@ -545,10 +547,10 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
+    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout);
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
-        &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx as usize],
+        &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx.get() as usize],
     );
     if dbg {
         println!(
