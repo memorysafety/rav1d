@@ -36,13 +36,9 @@ use crate::src::error::Rav1dError;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_HEIGHT;
 use crate::src::filmgrain::GRAIN_WIDTH;
-use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
-use crate::src::levels::Av1BlockInter;
-use crate::src::levels::Av1BlockIntra;
-use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
 use crate::src::levels::TxfmType;
 use crate::src::levels::WHT_WHT;
@@ -550,42 +546,6 @@ impl Rav1dFrameContext_bd_fn {
             BPC::BPC8 => &BPC8,
             BPC::BPC16 => &BPC16,
         }
-    }
-
-    pub unsafe fn recon_b_intra(
-        &self,
-        f: &Rav1dFrameData,
-        context: &mut Rav1dTaskContext,
-        ts_c: Option<&mut Rav1dTileStateContext>,
-        block_size: BlockSize,
-        flags: EdgeFlags,
-        block: &Av1Block,
-        intra: &Av1BlockIntra,
-    ) {
-        (self.recon_b_intra)(f, context, ts_c, block_size, flags, block, intra);
-    }
-
-    pub unsafe fn recon_b_inter(
-        &self,
-        f: &Rav1dFrameData,
-        context: &mut Rav1dTaskContext,
-        ts_c: Option<&mut Rav1dTileStateContext>,
-        block_size: BlockSize,
-        block: &Av1Block,
-        inter: &Av1BlockInter,
-    ) -> Result<(), ()> {
-        (self.recon_b_inter)(f, context, ts_c, block_size, block, inter)
-    }
-
-    pub unsafe fn read_coef_blocks(
-        &self,
-        f: &Rav1dFrameData,
-        context: &mut Rav1dTaskContext,
-        ts_c: &mut Rav1dTileStateContext,
-        block_size: BlockSize,
-        block: &Av1Block,
-    ) {
-        (self.read_coef_blocks)(f, context, ts_c, block_size, block);
     }
 }
 

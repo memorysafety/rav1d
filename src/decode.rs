@@ -1205,10 +1205,7 @@ fn decode_b(
     if t.frame_thread.pass == 2 {
         match &b.ii {
             Av1BlockIntraInter::Intra(intra) => {
-                // SAFETY: Function call with all safe args, will be marked safe.
-                unsafe {
-                    bd_fn.recon_b_intra(f, t, None, bs, intra_edge_flags, b, intra);
-                }
+                (bd_fn.recon_b_intra)(f, t, None, bs, intra_edge_flags, b, intra);
 
                 let y_mode = intra.y_mode;
                 let y_mode_nofilt = if y_mode == FILTER_PRED {
@@ -1289,9 +1286,7 @@ fn decode_b(
                 }
 
                 // SAFETY: Function call with all safe args, will be marked safe.
-                unsafe {
-                    bd_fn.recon_b_inter(f, t, None, bs, b, inter)?;
-                }
+                unsafe { (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)? };
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
@@ -1947,11 +1942,9 @@ fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
+            (bd_fn.read_coef_blocks)(f, t, ts_c, bs, b);
         } else {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.recon_b_intra(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra) };
+            (bd_fn.recon_b_intra)(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra);
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
@@ -2197,11 +2190,10 @@ fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
+            (bd_fn.read_coef_blocks)(f, t, ts_c, bs, b);
         } else {
             // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
+            unsafe { (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -3091,11 +3083,10 @@ fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
+            (bd_fn.read_coef_blocks)(f, t, ts_c, bs, b);
         } else {
             // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
+            unsafe { (bd_fn.recon_b_inter)(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         let frame_hdr = f.frame_hdr();
