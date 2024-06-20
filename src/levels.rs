@@ -1,6 +1,8 @@
 #![deny(unsafe_code)]
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
+use crate::src::align::ArrayDefault;
+use crate::src::enum_map::DefaultValue;
 use crate::src::enum_map::EnumKey;
 use crate::src::in_range::InRange;
 use bitflags::bitflags;
@@ -24,13 +26,80 @@ pub enum ObuMetaType {
     Timecode = 5,
 }
 
-pub type TxfmSize = u8;
-pub const N_TX_SIZES: usize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumCount, FromRepr, Default, Debug)]
+pub enum TxfmSize {
+    // Square
+    #[default]
+    S4x4 = 0,
+    S8x8 = 1,
+    S16x16 = 2,
+    S32x32 = 3,
+    S64x64 = 4,
+
+    // Rectangular
+    R4x8 = 5,
+    R8x4 = 6,
+    R8x16 = 7,
+    R16x8 = 8,
+    R16x32 = 9,
+    R32x16 = 10,
+    R32x64 = 11,
+    R64x32 = 12,
+    R4x16 = 13,
+    R16x4 = 14,
+    R8x32 = 15,
+    R32x8 = 16,
+    R16x64 = 17,
+    R64x16 = 18,
+}
+
+impl TxfmSize {
+    pub const NUM_SQUARE: usize = Self::S64x64 as usize + 1;
+    pub const NUM_RECT: usize = Self::COUNT;
+}
+
+impl DefaultValue for TxfmSize {
+    const DEFAULT: Self = Self::S4x4;
+}
+
+impl ArrayDefault for TxfmSize {
+    fn default() -> Self {
+        Default::default()
+    }
+}
+
+impl TxfmSize {
+    pub const fn from_wh(w: usize, h: usize) -> Self {
+        use TxfmSize::*;
+        match (w, h) {
+            // square
+            (4, 4) => S4x4,
+            (8, 8) => S8x8,
+            (16, 16) => S16x16,
+            (32, 32) => S32x32,
+            (64, 64) => S64x64,
+            // rect
+            (4, 8) => R4x8,
+            (8, 4) => R8x4,
+            (8, 16) => R8x16,
+            (16, 8) => R16x8,
+            (16, 32) => R16x32,
+            (32, 16) => R32x16,
+            (32, 64) => R32x64,
+            (64, 32) => R64x32,
+            (4, 16) => R4x16,
+            (16, 4) => R16x4,
+            (8, 32) => R8x32,
+            (32, 8) => R32x8,
+            (16, 64) => R16x64,
+            (64, 16) => R64x16,
+            _ => {
+                debug_assert!(false);
+                DefaultValue::DEFAULT
+            }
+        }
+    }
+}
 
 #[repr(u8)]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumCount)]
@@ -54,23 +123,6 @@ impl BlockLevel {
         }
     }
 }
-
-pub type RectTxfmSize = u8;
-pub const N_RECT_TX_SIZES: usize = 19; // TODO(kkysen) symbolicate in Dav1dFrameContext::qm once deduplicated
-pub const RTX_64X16: RectTxfmSize = 18;
-pub const RTX_16X64: RectTxfmSize = 17;
-pub const RTX_32X8: RectTxfmSize = 16;
-pub const RTX_8X32: RectTxfmSize = 15;
-pub const RTX_16X4: RectTxfmSize = 14;
-pub const RTX_4X16: RectTxfmSize = 13;
-pub const RTX_64X32: RectTxfmSize = 12;
-pub const RTX_32X64: RectTxfmSize = 11;
-pub const RTX_32X16: RectTxfmSize = 10;
-pub const RTX_16X32: RectTxfmSize = 9;
-pub const RTX_16X8: RectTxfmSize = 8;
-pub const RTX_8X16: RectTxfmSize = 7;
-pub const RTX_8X4: RectTxfmSize = 6;
-pub const RTX_4X8: RectTxfmSize = 5;
 
 pub type TxfmType = u8;
 pub const N_TX_TYPES_PLUS_LL: usize = 17;
@@ -347,7 +399,7 @@ pub enum MotionMode {
 pub struct Av1BlockIntra {
     pub y_mode: u8,
     pub uv_mode: u8,
-    pub tx: u8,
+    pub tx: TxfmSize,
     pub pal_sz: [u8; 2],
     pub y_angle: i8,
     pub uv_angle: i8,
@@ -469,7 +521,7 @@ pub struct Av1BlockInter {
     pub motion_mode: MotionMode,
     pub drl_idx: DrlProximity,
     pub r#ref: [i8; 2],
-    pub max_ytx: RectTxfmSize,
+    pub max_ytx: TxfmSize,
     pub filter2d: Filter2d,
     pub interintra_type: Option<InterIntraType>,
     pub tx_split0: u8,
@@ -543,6 +595,6 @@ pub struct Av1Block {
     pub seg_id: SegmentId,
     pub skip_mode: u8,
     pub skip: u8,
-    pub uvtx: RectTxfmSize,
+    pub uvtx: TxfmSize,
     pub ii: Av1BlockIntraInter,
 }

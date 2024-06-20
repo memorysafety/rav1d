@@ -1,24 +1,7 @@
+use strum::EnumCount;
+
 use crate::src::const_fn::const_for;
-use crate::src::levels::N_RECT_TX_SIZES;
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_8X4;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
+use crate::src::levels::TxfmSize;
 
 static qm_tbl_32x16: [[[u8; 32 * 16]; 2]; 15] = [
     [
@@ -1769,36 +1752,38 @@ static qm_tbl_16x32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, qm_t
 static qm_tbl_32x8: [[[u8; 32 * 8]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x16, 16, 1, 2);
 static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
 
-pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
-    let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
+pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; TxfmSize::COUNT]; 2]; 16] = {
+    let mut table = [[[None; TxfmSize::COUNT]; 2]; 16];
     const_for!(i in 0..table.len() - 1 => {
         // last row is empty
         const_for!(j in 0..table[i].len() => {
-            let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
+            let mut row: [Option<&'static [u8]>; TxfmSize::COUNT] = [None; TxfmSize::COUNT];
+
+            use TxfmSize::*;
 
             // note that the w/h in the assignment is inverted, this is on purpose
             // because we store coefficients transposed
-            row[RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
-            row[RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
-            row[RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
-            row[RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
-            row[RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
-            row[RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
-            row[RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
-            row[RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
-            row[RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
-            row[RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
+            row[R4x8 as usize] = Some(&qm_tbl_8x4[i][j]);
+            row[R8x4 as usize] = Some(&qm_tbl_4x8[i][j]);
+            row[R4x16 as usize] = Some(&qm_tbl_16x4[i][j]);
+            row[R16x4 as usize] = Some(&qm_tbl_4x16[i][j]);
+            row[R8x16 as usize] = Some(&qm_tbl_16x8[i][j]);
+            row[R16x8 as usize] = Some(&qm_tbl_8x16[i][j]);
+            row[R8x32 as usize] = Some(&qm_tbl_32x8[i][j]);
+            row[R32x8 as usize] = Some(&qm_tbl_8x32[i][j]);
+            row[R16x32 as usize] = Some(&qm_tbl_32x16[i][j]);
+            row[R32x16 as usize] = Some(&qm_tbl_16x32[i][j]);
 
-            row[TX_4X4 as usize] = Some(&qm_tbl_4x4[i][j]);
-            row[TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
-            row[TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
-            row[TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
+            row[S4x4 as usize] = Some(&qm_tbl_4x4[i][j]);
+            row[S8x8 as usize] = Some(&qm_tbl_8x8[i][j]);
+            row[S16x16 as usize] = Some(&qm_tbl_16x16[i][j]);
+            row[S32x32 as usize] = Some(&qm_tbl_32x32[i][j]);
 
-            row[TX_64X64 as usize] = row[TX_32X32 as usize];
-            row[RTX_64X32 as usize] = row[TX_32X32 as usize];
-            row[RTX_64X16 as usize] = row[RTX_32X16 as usize];
-            row[RTX_32X64 as usize] = row[TX_32X32 as usize];
-            row[RTX_16X64 as usize] = row[RTX_16X32 as usize];
+            row[S64x64 as usize] = row[S32x32 as usize];
+            row[R64x32 as usize] = row[S32x32 as usize];
+            row[R64x16 as usize] = row[R32x16 as usize];
+            row[R32x64 as usize] = row[S32x32 as usize];
+            row[R16x64 as usize] = row[R16x32 as usize];
 
             table[i][j] = row;
         });

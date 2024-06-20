@@ -18,8 +18,6 @@ use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::refmvs::refmvs_candidate;
@@ -46,7 +44,7 @@ pub struct BlockContext {
     pub filter: [DisjointMut<Align8<[Rav1dFilterMode; 32]>>; 2],
 
     pub tx_intra: DisjointMut<Align8<[i8; 32]>>,
-    pub tx: DisjointMut<Align8<[u8; 32]>>,
+    pub tx: DisjointMut<Align8<[TxfmSize; 32]>>,
     pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
     pub partition: DisjointMut<Align8<[u8; 16]>>,
@@ -141,17 +139,18 @@ pub fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
 
 #[inline]
 pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
-    if (*uvt_dim).max as TxfmSize == TX_32X32 {
+    if uvt_dim.max == TxfmSize::S32x32 as _ {
         return if ytxtp == IDTX { IDTX } else { DCT_DCT };
     }
-    if (*uvt_dim).min as TxfmSize == TX_16X16
-        && ((1 << ytxtp) & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST)))
+    if uvt_dim.min == TxfmSize::S16x16 as _
+        && ((1 << ytxtp as u8)
+            & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST)))
             != 0
     {
         return DCT_DCT;
     }
 
-    return ytxtp;
+    ytxtp
 }
 
 #[inline]

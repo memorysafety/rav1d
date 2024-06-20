@@ -12,9 +12,9 @@ use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::MVJoint;
 use crate::src::levels::SegmentId;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::tables::dav1d_partition_type_count;
 use parking_lot::RwLock;
@@ -4999,7 +4999,7 @@ pub(crate) fn rav1d_cdf_thread_update(
         );
     }
     update_cdf_2d!(8, 6, m.angle_delta);
-    for k in 0..N_TX_SIZES - 1 {
+    for k in 0..TxfmSize::NUM_SQUARE - 1 {
         update_cdf_2d!(3, cmp::min(k + 1, 2), m.txsz[k]);
     }
     update_cdf_3d!(2, N_INTRA_PRED_MODES, 6, m.txtp_intra1);
@@ -5008,7 +5008,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     for k in 0..BlockLevel::COUNT {
         update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
     }
-    update_bit_2d!(N_TX_SIZES, 13, coef.skip);
+    update_bit_2d!(TxfmSize::NUM_SQUARE, 13, coef.skip);
     update_cdf_3d!(2, 2, 4, coef.eob_bin_16);
     update_cdf_3d!(2, 2, 5, coef.eob_bin_32);
     update_cdf_3d!(2, 2, 6, coef.eob_bin_64);
@@ -5016,9 +5016,9 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_3d!(2, 2, 8, coef.eob_bin_256);
     update_cdf_2d!(2, 9, coef.eob_bin_512);
     update_cdf_2d!(2, 10, coef.eob_bin_1024);
-    update_bit_3d!(N_TX_SIZES, 2, 11 /*22*/, coef.eob_hi_bit);
-    update_cdf_4d!(N_TX_SIZES, 2, 4, 2, coef.eob_base_tok);
-    update_cdf_4d!(N_TX_SIZES, 2, 41 /*42*/, 3, coef.base_tok);
+    update_bit_3d!(TxfmSize::NUM_SQUARE, 2, 11 /*22*/, coef.eob_hi_bit);
+    update_cdf_4d!(TxfmSize::NUM_SQUARE, 2, 4, 2, coef.eob_base_tok);
+    update_cdf_4d!(TxfmSize::NUM_SQUARE, 2, 41 /*42*/, 3, coef.base_tok);
     update_bit_2d!(2, 3, coef.dc_sign);
     update_cdf_4d!(4, 2, 21, 3, coef.br_tok);
     update_cdf_2d!(3, SegmentId::COUNT - 1, m.seg_id);

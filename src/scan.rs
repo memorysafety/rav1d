@@ -1,5 +1,7 @@
+use strum::EnumCount;
+
 use crate::src::align::Align32;
-use crate::src::levels::N_RECT_TX_SIZES;
+use crate::src::levels::TxfmSize;
 
 static scan_4x4: Align32<[u16; 16]> =
     Align32([0, 4, 1, 2, 5, 8, 12, 9, 6, 3, 7, 10, 13, 14, 11, 15]);
@@ -201,7 +203,7 @@ static scan_32x32: Align32<[u16; 1024]> = Align32([
     990, 1021, 1022, 991, 1023,
 ]);
 
-pub static dav1d_scans: [&'static [u16]; N_RECT_TX_SIZES] = [
+pub static dav1d_scans: [&'static [u16]; TxfmSize::COUNT] = [
     &scan_4x4.0,
     &scan_8x8.0,
     &scan_16x16.0,
