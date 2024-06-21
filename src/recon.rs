@@ -4044,7 +4044,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     tc: &mut Rav1dTaskContext,
