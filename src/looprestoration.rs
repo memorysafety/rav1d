@@ -159,7 +159,7 @@ impl loop_restoration_filter::Fn {
     /// aligned writes past the right edge of the buffer,
     /// aligned up to the minimum loop restoration unit size
     /// (which is 32 pixels for subsampled chroma and 64 pixels for luma).
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
@@ -187,9 +187,12 @@ impl loop_restoration_filter::Fn {
         let bd = bd.into_c();
         let dst = FFISafe::new(&dst);
         let lpf = FFISafe::new(lpf);
-        self.get()(
-            dst_ptr, dst_stride, left, lpf_ptr, w, h, params, edges, bd, dst, lpf,
-        )
+        // SAFETY: Fallbacks `fn wiener_rust`, `fn sgr_{3x3,5x5,mix}_rust` are safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_ptr, dst_stride, left, lpf_ptr, w, h, params, edges, bd, dst, lpf,
+            )
+        }
     }
 }
 

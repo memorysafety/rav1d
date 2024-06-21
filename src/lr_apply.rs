@@ -25,7 +25,7 @@ pub const LR_RESTORE_V: LrRestorePlanes = 4;
 pub const LR_RESTORE_U: LrRestorePlanes = 2;
 pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 
-unsafe fn lr_stripe<BD: BitDepth>(
+fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     mut p: Rav1dPictureDataComponentOffset,
@@ -135,7 +135,7 @@ fn backup4xU<BD: BitDepth>(
     }
 }
 
-unsafe fn lr_sbrow<BD: BitDepth>(
+fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     mut p: Rav1dPictureDataComponentOffset,
@@ -239,7 +239,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
+pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     dst: [Rav1dPictureDataComponentOffset; 3],
