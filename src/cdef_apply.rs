@@ -126,7 +126,7 @@ fn adjust_strength(strength: u8, var: c_uint) -> c_int {
     strength as c_int * (4 + i) + 8 >> 4
 }
 
-pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
+pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,

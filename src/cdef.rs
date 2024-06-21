@@ -69,7 +69,7 @@ impl cdef::Fn {
     /// then the pre-filter data is located in `dst`.
     /// However, the edge pixels above `dst` may be post-filter,
     /// so in order to get access to pre-filter top pixels, use `top`.
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
@@ -98,22 +98,25 @@ impl cdef::Fn {
         let damping = damping as c_int;
         let bd = bd.into_c();
         let dst = FFISafe::new(&dst);
-        self.get()(
-            dst_ptr,
-            stride,
-            left,
-            top_ptr,
-            bottom_ptr,
-            pri_strength,
-            sec_strength,
-            dir,
-            damping,
-            edges,
-            bd,
-            dst,
-            top,
-            bottom,
-        )
+        // SAFETY: Rust fallback is safe, asm is assumed to do the same.
+        unsafe {
+            self.get()(
+                dst_ptr,
+                stride,
+                left,
+                top_ptr,
+                bottom_ptr,
+                pri_strength,
+                sec_strength,
+                dir,
+                damping,
+                edges,
+                bd,
+                dst,
+                top,
+                bottom,
+            )
+        }
     }
 }
 
