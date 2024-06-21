@@ -381,6 +381,7 @@ fn cdef_filter_block_rust<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`cdef::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
     _dst_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
