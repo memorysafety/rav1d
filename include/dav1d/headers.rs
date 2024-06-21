@@ -2135,6 +2135,10 @@ impl Lossless {
     }
 
     pub fn from_array(a: [bool; SegmentId::COUNT]) -> Self {
+        // This could be further optimized quite a bit
+        // (https://stackoverflow.com/questions/8461126/how-to-create-a-byte-out-of-8-bool-values-and-vice-versa#answer-51750902),
+        // but since this is only called in `DRav1d` conversions and `mod obu`,
+        // neither of which are hot, the simpler, more readable code should suffice.
         let mut this = Self::empty();
         let mut i = 0;
         while i < SegmentId::COUNT {
