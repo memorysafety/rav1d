@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::ulog2;
