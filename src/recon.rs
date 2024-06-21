@@ -2354,10 +2354,7 @@ unsafe fn warp_affine<BD: BitDepth>(
             let my =
                 (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
 
-            let ref_ptr;
-            let mut ref_stride = refp.p.stride[(pl != 0) as usize];
-
-            if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
+            let r#ref = if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf = emu_edge.buf_mut::<BD>();
                 f.dsp.mc.emu_edge.call::<BD>(
                     15,
@@ -2370,35 +2367,28 @@ unsafe fn warp_affine<BD: BitDepth>(
                     32,
                     &ref_data[pl],
                 );
-                ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
-                ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
+                let stride = 32;
+                Rav1dPictureDataComponentOffset {
+                    data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                    offset: stride * 3 + 3,
+                }
             } else {
-                ref_ptr = ref_data[pl]
-                    .as_strided_ptr::<BD>()
-                    .offset(BD::pxstride(ref_stride) * dy as isize)
-                    .offset(dx as isize);
-            }
+                let r#ref = &ref_data[pl];
+                r#ref.with_offset::<BD>() + (dy as isize * r#ref.pixel_stride::<BD>()) + dx as usize
+            };
+            let x = x as usize;
             match dst {
                 MaybeTempPixels::Temp {
                     ref mut tmp,
                     tmp_stride,
                 } => {
-                    f.dsp.mc.warp8x8t.call(
-                        &mut tmp[x as usize..],
-                        tmp_stride,
-                        ref_ptr,
-                        ref_stride,
-                        abcd,
-                        mx,
-                        my,
-                        bd,
-                    );
-                }
-                MaybeTempPixels::NonTemp { dst } => {
                     f.dsp
                         .mc
-                        .warp8x8
-                        .call(dst + x as usize, ref_ptr, ref_stride, abcd, mx, my, bd);
+                        .warp8x8t
+                        .call(&mut tmp[x..], tmp_stride, r#ref, abcd, mx, my, bd);
+                }
+                MaybeTempPixels::NonTemp { dst } => {
+                    f.dsp.mc.warp8x8.call(dst + x, r#ref, abcd, mx, my, bd);
                 }
             }
         }

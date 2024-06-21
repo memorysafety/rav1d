@@ -1174,8 +1174,7 @@ impl warp8x8::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         abcd: &[i16; 4],
         mx: i32,
         my: i32,
@@ -1183,9 +1182,10 @@ impl warp8x8::Fn {
     ) {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst_ptr, dst_stride, src, src_stride, abcd, mx, my, bd)
+        self.get()(dst_ptr, dst_stride, src_ptr, src_stride, abcd, mx, my, bd)
     }
 }
 
@@ -1270,8 +1270,7 @@ impl warp8x8t::Fn {
         &self,
         tmp: &mut [i16],
         tmp_stride: usize,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         abcd: &[i16; 4],
         mx: i32,
         my: i32,
@@ -1279,9 +1278,12 @@ impl warp8x8t::Fn {
     ) {
         let tmp_len = tmp.len();
         let tmp = tmp.as_mut_ptr();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd, tmp_len)
+        self.get()(
+            tmp, tmp_stride, src_ptr, src_stride, abcd, mx, my, bd, tmp_len,
+        )
     }
 }
 
