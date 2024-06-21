@@ -2060,8 +2060,6 @@ unsafe fn mc<BD: BitDepth>(
     let mvy = mv.y as c_int;
     let mx = mvx & 15 >> (ss_hor == 0) as c_int;
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
-    let mut ref_stride = refp.p.stride[(pl != 0) as usize];
-    let r#ref;
 
     if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
@@ -2076,7 +2074,7 @@ unsafe fn mc<BD: BitDepth>(
             w = f.bw * 4 >> ss_hor;
             h = f.bh * 4 >> ss_ver;
         }
-        if dx < (mx != 0) as c_int * 3
+        let r#ref = if dx < (mx != 0) as c_int * 3
             || dy < (my != 0) as c_int * 3
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
@@ -2093,16 +2091,15 @@ unsafe fn mc<BD: BitDepth>(
                 192,
                 &ref_data[pl],
             );
-            r#ref = emu_edge_buf
-                .as_mut_ptr()
-                .add((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as usize);
-            ref_stride = 192 * ::core::mem::size_of::<BD::Pixel>() as isize;
+            let stride = 192;
+            Rav1dPictureDataComponentOffset {
+                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                offset: stride * (my != 0) as usize * 3 + (mx != 0) as usize * 3,
+            }
         } else {
-            r#ref = ref_data[pl]
-                .as_strided_mut_ptr::<BD>()
-                .offset(BD::pxstride(ref_stride) * dy as isize)
-                .add(dx as usize);
-        }
+            let r#ref = &ref_data[pl];
+            r#ref.with_offset::<BD>() + (dy as isize * r#ref.pixel_stride::<BD>()) + dx as usize
+        };
 
         let w = bw4 * h_mul;
         let h = bh4 * v_mul;
@@ -2110,11 +2107,10 @@ unsafe fn mc<BD: BitDepth>(
         let my = my << (ss_ver == 0) as u8;
         match dst {
             MaybeTempPixels::NonTemp { dst, dst_stride } => {
-                f.dsp.mc.mc[filter_2d]
-                    .call::<BD>(dst, dst_stride, r#ref, ref_stride, w, h, mx, my, bd);
+                f.dsp.mc.mc[filter_2d].call::<BD>(dst, dst_stride, r#ref, w, h, mx, my, bd);
             }
             MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
-                f.dsp.mc.mct[filter_2d].call::<BD>(tmp, r#ref, ref_stride, w, h, mx, my, bd);
+                f.dsp.mc.mct[filter_2d].call::<BD>(tmp, r#ref, w, h, mx, my, bd);
             }
         }
     } else {
@@ -2152,7 +2148,7 @@ unsafe fn mc<BD: BitDepth>(
 
         let w = refp.p.p.w + ss_hor >> ss_hor;
         let h = refp.p.p.h + ss_ver >> ss_ver;
-        if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
+        let r#ref = if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
             let emu_edge_buf = emu_edge.buf_mut::<BD>();
             f.dsp.mc.emu_edge.call::<BD>(
                 (right - left + 7) as intptr_t,
@@ -2165,17 +2161,18 @@ unsafe fn mc<BD: BitDepth>(
                 320,
                 &ref_data[pl],
             );
-            r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
-            ref_stride = 320 * ::core::mem::size_of::<BD::Pixel>() as isize;
             if debug_block_info!(f, b) {
                 println!("Emu");
             }
+            let stride = 320;
+            Rav1dPictureDataComponentOffset {
+                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                offset: stride * 3 + 3,
+            }
         } else {
-            r#ref = ref_data[pl]
-                .as_strided_mut_ptr::<BD>()
-                .offset(BD::pxstride(ref_stride) * top as isize)
-                .offset(left as isize);
-        }
+            let r#ref = &ref_data[pl];
+            r#ref.with_offset::<BD>() + (top as isize * r#ref.pixel_stride::<BD>()) + left as isize
+        };
 
         let w = bw4 * h_mul;
         let h = bh4 * v_mul;
@@ -2186,11 +2183,10 @@ unsafe fn mc<BD: BitDepth>(
         match dst {
             MaybeTempPixels::NonTemp { dst, dst_stride } => {
                 f.dsp.mc.mc_scaled[filter_2d]
-                    .call::<BD>(dst, dst_stride, r#ref, ref_stride, w, h, mx, my, dx, dy, bd);
+                    .call::<BD>(dst, dst_stride, r#ref, w, h, mx, my, dx, dy, bd);
             }
             MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
-                f.dsp.mc.mct_scaled[filter_2d]
-                    .call::<BD>(tmp, r#ref, ref_stride, w, h, mx, my, dx, dy, bd);
+                f.dsp.mc.mct_scaled[filter_2d].call::<BD>(tmp, r#ref, w, h, mx, my, dx, dy, bd);
             }
         }
     }

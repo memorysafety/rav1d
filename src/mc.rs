@@ -1106,8 +1106,7 @@ impl mc::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: isize,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
         mx: i32,
@@ -1115,9 +1114,10 @@ impl mc::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, src, src_stride, w, h, mx, my, bd)
+        self.get()(dst, dst_stride, src_ptr, src_stride, w, h, mx, my, bd)
     }
 }
 
@@ -1140,8 +1140,7 @@ impl mc_scaled::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: isize,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
         mx: i32,
@@ -1151,9 +1150,12 @@ impl mc_scaled::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bd)
+        self.get()(
+            dst, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
+        )
     }
 }
 
@@ -1202,8 +1204,7 @@ impl mct::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
         mx: i32,
@@ -1211,9 +1212,10 @@ impl mct::Fn {
         bd: BD,
     ) {
         let tmp = tmp[..(w * h) as usize].as_mut_ptr();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(tmp, src, src_stride, w, h, mx, my, bd)
+        self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd)
     }
 }
 
@@ -1234,8 +1236,7 @@ impl mct_scaled::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: Rav1dPictureDataComponentOffset,
         w: i32,
         h: i32,
         mx: i32,
@@ -1245,9 +1246,10 @@ impl mct_scaled::Fn {
         bd: BD,
     ) {
         let tmp = tmp[..(w * h) as usize].as_mut_ptr();
-        let src = src.cast();
+        let src_ptr = src.as_ptr::<BD>().cast();
+        let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(tmp, src, src_stride, w, h, mx, my, dx, dy, bd)
+        self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd)
     }
 }
 

@@ -120,6 +120,13 @@ pub struct AlignedPixelChunk([u8; RAV1D_PICTURE_ALIGNMENT]);
 const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 
+/// The guaranteed length multiple of [`Rav1dPictureDataComponentInner`]s.
+/// This is checked and [`assume`]d.
+const RAV1D_PICTURE_GUARANTEED_MULTIPLE: usize = 64;
+
+/// Actual [`Rav1dPictureData`]'s components should be multiples of this,
+/// as this is guaranteed by [`Rav1dPicAllocator::alloc_picture_callback`],
+/// though wrapped buffers may only be [`RAV1D_PICTURE_GUARANTEED_MULTIPLE`].
 const RAV1D_PICTURE_MULTIPLE: usize = 64 * 64;
 
 pub struct Rav1dPictureDataComponentInner {
@@ -131,7 +138,7 @@ pub struct Rav1dPictureDataComponentInner {
 
     /// The length of [`Self::ptr`] in [`u8`] bytes.
     ///
-    /// It is a multiple of [`RAV1D_PICTURE_MULTIPLE`].
+    /// It is a multiple of [`RAV1D_PICTURE_GUARANTEED_MULTIPLE`].
     len: usize,
 
     /// The stride of [`Self::ptr`] in [`u8`] bytes.
@@ -185,7 +192,7 @@ impl Rav1dPictureDataComponentInner {
         let ptr = NonNull::new(buf.as_mut_ptr()).unwrap();
         assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
         let len = buf.len();
-        assert!(len % RAV1D_PICTURE_MULTIPLE == 0);
+        assert!(len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0);
         let stride = (stride * mem::size_of::<BD::Pixel>()) as isize;
         Self { ptr, len, stride }
     }
@@ -213,7 +220,7 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
     #[inline] // Inline so callers can see the assume.
     fn len(&self) -> usize {
         // SAFETY: We already checked this in `Self::new`.
-        unsafe { assume(self.len % RAV1D_PICTURE_MULTIPLE == 0) };
+        unsafe { assume(self.len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0) };
         self.len
     }
 }
