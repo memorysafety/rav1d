@@ -56,6 +56,11 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) -> ());
 
+pub enum CdefBottom<'a> {
+    Pic(Rav1dPictureDataComponentOffset<'a>),
+    LineBuf((&'a DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize)),
+}
+
 impl cdef::Fn {
     /// CDEF operates entirely on pre-filter data.
     /// If bottom/right edges are present (according to `edges`),
@@ -67,7 +72,7 @@ impl cdef::Fn {
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
         (top, top_off): (&DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize),
-        bottom: *const BD::Pixel,
+        bottom: CdefBottom<'_>,
         pri_strength: c_int,
         sec_strength: u8,
         dir: c_int,
@@ -79,7 +84,12 @@ impl cdef::Fn {
         let stride = dst.stride();
         let left = ptr::from_ref(left).cast();
         let top = (&*top.element_as(top_off) as *const BD::Pixel).cast();
-        let bottom = bottom.cast();
+        let bottom = match bottom {
+            CdefBottom::Pic(bot) => bot.as_ptr::<BD>().cast(),
+            CdefBottom::LineBuf((bot, bot_off)) => {
+                (&*bot.element_as(bot_off) as *const BD::Pixel).cast()
+            }
+        };
         let sec_strength = sec_strength as c_int;
         let damping = damping as c_int;
         let bd = bd.into_c();
