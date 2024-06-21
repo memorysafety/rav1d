@@ -1102,7 +1102,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc(
 ) -> ());
 
 impl mc::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
         src: Rav1dPictureDataComponentOffset,
@@ -1117,7 +1117,8 @@ impl mc::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, bd)
+        // TODO Make fallbacks safe
+        unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, bd) }
     }
 }
 
@@ -1136,7 +1137,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
 ) -> ());
 
 impl mc_scaled::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
         src: Rav1dPictureDataComponentOffset,
@@ -1153,9 +1154,12 @@ impl mc_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(
-            dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
-        )
+        // TODO Make fallbacks safe
+        unsafe {
+            self.get()(
+                dst_ptr, dst_stride, src_ptr, src_stride, w, h, mx, my, dx, dy, bd,
+            )
+        }
     }
 }
 
@@ -1171,7 +1175,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8(
 ) -> ());
 
 impl warp8x8::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: Rav1dPictureDataComponentOffset,
         src: Rav1dPictureDataComponentOffset,
@@ -1185,7 +1189,8 @@ impl warp8x8::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(dst_ptr, dst_stride, src_ptr, src_stride, abcd, mx, my, bd)
+        // TODO Make fallbacks safe
+        unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, abcd, mx, my, bd) }
     }
 }
 
@@ -1201,7 +1206,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct(
 ) -> ());
 
 impl mct::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
         src: Rav1dPictureDataComponentOffset,
@@ -1215,7 +1220,8 @@ impl mct::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd)
+        // TODO Make fallbacks safe
+        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd) }
     }
 }
 
@@ -1233,7 +1239,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct_scaled(
 ) -> ());
 
 impl mct_scaled::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
         src: Rav1dPictureDataComponentOffset,
@@ -1249,7 +1255,8 @@ impl mct_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd)
+        // TODO Make fallbacks safe
+        unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd) }
     }
 }
 
@@ -1266,7 +1273,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
 ) -> ());
 
 impl warp8x8t::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
         tmp_stride: usize,
@@ -1281,9 +1288,12 @@ impl warp8x8t::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        self.get()(
-            tmp, tmp_stride, src_ptr, src_stride, abcd, mx, my, bd, tmp_len,
-        )
+        // TODO Make fallbacks safe
+        unsafe {
+            self.get()(
+                tmp, tmp_stride, src_ptr, src_stride, abcd, mx, my, bd, tmp_len,
+            )
+        }
     }
 }
 

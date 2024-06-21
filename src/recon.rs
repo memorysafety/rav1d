@@ -149,7 +149,7 @@ pub(crate) type recon_b_intra_fn = fn(
     &Av1BlockIntra,
 ) -> ();
 
-pub(crate) type recon_b_inter_fn = unsafe fn(
+pub(crate) type recon_b_inter_fn = fn(
     &Rav1dFrameData,
     &mut Rav1dTaskContext,
     Option<&mut Rav1dTileStateContext>,
@@ -2032,7 +2032,7 @@ enum MaybeTempPixels<'a, TmpStride> {
     },
 }
 
-unsafe fn mc<BD: BitDepth>(
+fn mc<BD: BitDepth>(
     f: &Rav1dFrameData,
     emu_edge: &mut ScratchEmuEdge,
     b: Bxy,
@@ -2192,7 +2192,7 @@ unsafe fn mc<BD: BitDepth>(
     Ok(())
 }
 
-unsafe fn obmc<BD: BitDepth>(
+fn obmc<BD: BitDepth>(
     f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     dst: Rav1dPictureDataComponentOffset,
@@ -2313,7 +2313,7 @@ unsafe fn obmc<BD: BitDepth>(
     Ok(())
 }
 
-unsafe fn warp_affine<BD: BitDepth>(
+fn warp_affine<BD: BitDepth>(
     f: &Rav1dFrameData,
     emu_edge: &mut ScratchEmuEdge,
     b: Bxy,
@@ -3075,7 +3075,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
+pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     mut ts_c: Option<&mut Rav1dTileStateContext>,
