@@ -913,7 +913,7 @@ fn splat_oneref_mv(
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     });
 
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -934,7 +934,7 @@ fn splat_intrabc_mv(
         bs,
         mf: 0,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -959,7 +959,7 @@ fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -979,7 +979,7 @@ fn splat_intraref(
         bs,
         mf: 0,
     });
-    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(
@@ -4138,7 +4138,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
-        c.dsp.refmvs.load_tmvs(
+        c.dsp.refmvs.load_tmvs.call(
             &f.rf,
             &f.mvs,
             &f.ref_mvs,
@@ -4247,7 +4247,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         && c.tc.len() > 1
         && f.frame_hdr().frame_type.is_inter_or_switch()
     {
-        c.dsp.refmvs.save_tmvs(
+        c.dsp.refmvs.save_tmvs.call(
             &t.rt,
             &f.rf,
             &f.mvs,
@@ -4744,7 +4744,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                c.dsp.refmvs.load_tmvs(
+                c.dsp.refmvs.load_tmvs.call(
                     &f.rf,
                     &f.mvs,
                     &f.ref_mvs,
@@ -4762,7 +4762,8 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.dsp
                     .refmvs
-                    .save_tmvs(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
+                    .save_tmvs
+                    .call(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration

@@ -150,7 +150,7 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
         }
     }
 
-    /// Returns the number of elements in the vector.
+    /// Return the number of elements in the vector.
     pub fn len(&self) -> usize {
         self.len
     }
@@ -163,14 +163,14 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
         self.inner.as_mut_ptr().cast()
     }
 
-    /// Extracts a slice containing the entire vector.
+    /// Extract a slice containing the entire vector.
     pub fn as_slice(&self) -> &[T] {
         // Safety: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
         unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
     }
 
-    /// Extracts a mutable slice of the entire vector.
+    /// Extract a mutable slice of the entire vector.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         // Safety: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
