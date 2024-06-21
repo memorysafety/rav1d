@@ -232,6 +232,10 @@ pub trait BitDepth: Clone + Copy {
     fn get_intermediate_bits(&self) -> u8;
 
     const PREP_BIAS: i16;
+
+    fn sub_prep_bias(pixel: i32) -> i16 {
+        (pixel - i32::from(Self::PREP_BIAS)) as i16
+    }
 }
 
 #[derive(Clone, Copy)]
