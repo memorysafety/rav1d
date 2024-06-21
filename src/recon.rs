@@ -82,6 +82,7 @@ use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
+use assert_matches::debug_assert_matches;
 use libc::intptr_t;
 use std::array;
 use std::cmp;
@@ -476,14 +477,16 @@ fn get_lo_ctx(
     let level = |y, x| levels[y * stride + x] as usize;
 
     let mut mag = level(0, 1) + level(1, 0);
-    let offset = match tx_class {
-        TxClass::TwoD => {
+    let offset = match ctx_offsets {
+        Some(ctx_offsets) => {
+            debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
             *hi_mag = mag as c_uint;
             mag += level(0, 2) + level(2, 0);
-            ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
+            ctx_offsets[cmp::min(y, 4)][cmp::min(x, 4)] as usize
         }
-        TxClass::H | TxClass::V => {
+        None => {
+            debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
             mag += level(0, 2);
             *hi_mag = mag as c_uint;
             mag += level(0, 3) + level(0, 4);
