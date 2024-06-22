@@ -472,8 +472,10 @@ fn get_lo_ctx(
     ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: usize,
     y: usize,
-    stride: usize,
+    stride: u8,
 ) -> usize {
+    let stride = stride as usize;
+    let levels = &levels[..2 * stride + 4 + 1];
     let level = |y, x| levels[y * stride + x] as usize;
 
     let mut mag = level(0, 1) + level(1, 0);
@@ -730,7 +732,7 @@ fn decode_coefs<BD: BitDepth>(
                         [nonsquare_tx.wrapping_add(tx as c_uint & nonsquare_tx) as usize],
                 );
                 scan = dav1d_scans[tx as usize];
-                let stride = 4 * sh as usize;
+                let stride = 4 * sh;
                 let shift: c_uint = if t_dim.lh < 4 {
                     t_dim.lh as c_uint + 2
                 } else {
@@ -740,7 +742,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sh as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sw as usize + 2) {
+                for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -796,7 +798,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     // ac
@@ -819,7 +821,7 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -907,9 +909,9 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
                     ctx = if mag > 12 {
@@ -938,7 +940,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sh as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sh as usize + 2) {
+                for i in 0..stride as usize * (4 * sh as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -993,7 +995,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1015,7 +1017,7 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -1100,9 +1102,9 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
                     ctx = if mag > 12 {
@@ -1131,7 +1133,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sw as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sw as usize + 2) {
+                for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -1186,7 +1188,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1208,7 +1210,7 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -1293,9 +1295,9 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
                     ctx = if mag > 12 {
