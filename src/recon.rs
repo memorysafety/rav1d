@@ -589,14 +589,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
                     4,
                 );
-                dav1d_tx_types_per_set[(idx + 0) as usize]
+                dav1d_tx_types_per_set[idx as usize + 0]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra1[t_dim.min as usize][y_mode_nofilt as usize],
                     6,
                 );
-                dav1d_tx_types_per_set[(idx + 5) as usize]
+                dav1d_tx_types_per_set[idx as usize + 5]
             };
             if dbg {
                 println!(
@@ -625,14 +625,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_inter2.0,
                     11,
                 );
-                dav1d_tx_types_per_set[(idx + 12) as usize]
+                dav1d_tx_types_per_set[idx as usize + 12]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter1[t_dim.min as usize],
                     15,
                 );
-                dav1d_tx_types_per_set[(idx + 24) as usize]
+                dav1d_tx_types_per_set[idx as usize + 24]
             };
             if dbg {
                 println!(
