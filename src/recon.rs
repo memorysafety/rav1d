@@ -477,23 +477,31 @@ fn get_lo_ctx(
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as u32;
 
-    let mut mag = level(0, 1) + level(1, 0);
-    let offset = match ctx_offsets {
+    // Note that the first `mag` initialization is moved inside the `match`
+    // so that the different bounds checks can be done inside the `match`,
+    // as putting them outside the `match` in an identical one trips up LLVM.
+    let mut mag;
+    let offset;
+    match ctx_offsets {
         Some(ctx_offsets) => {
+            level(2, 1); // Bounds check all at once.
+            mag = level(0, 1) + level(1, 0);
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
             *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
-            ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)]
+            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)];
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
+            level(1, 4); // Bounds check all at once.
+            mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
             *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
-            26 + if y > 1 { 10 } else { y as u8 * 5 }
+            offset = 26 + if y > 1 { 10 } else { y as u8 * 5 };
         }
-    };
+    }
     offset
         + if mag > 512 {
             4
