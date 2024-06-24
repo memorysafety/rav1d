@@ -90,6 +90,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitOr;
 use std::ptr;
+use to_method::To as _;
 
 impl Bxy {
     pub fn debug_block_info(&self) -> bool {
@@ -730,7 +731,7 @@ fn decode_coefs<BD: BitDepth>(
             + (eob > sw as c_int * sh as c_int * 2) as u8
             + (eob > sw as c_int * sh as c_int * 4) as u8;
         let eob_tok =
-            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2) as c_int;
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2);
         let mut tok = eob_tok + 1;
         let mut level_tok = tok * 0x41;
         let mut mag: c_uint = 0;
@@ -782,8 +783,7 @@ fn decode_coefs<BD: BitDepth>(
                     } else {
                         7
                     };
-                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
-                        as c_int;
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     level_tok = tok + (3 << 6);
                     if dbg {
                         println!(
@@ -798,7 +798,7 @@ fn decode_coefs<BD: BitDepth>(
                         );
                     }
                 }
-                cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
+                cf.set::<BD>(f, t_cf, rc as usize, (tok.to::<i16>() << 11).into());
                 levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
@@ -831,7 +831,7 @@ fn decode_coefs<BD: BitDepth>(
                         &mut ts_c.msac,
                         &mut lo_cdf[ctx as usize],
                         3,
-                    ) as c_int;
+                    );
                     if dbg {
                         println!(
                             "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -845,8 +845,7 @@ fn decode_coefs<BD: BitDepth>(
                         } else {
                             7
                         } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
-                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
-                            as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -864,15 +863,16 @@ fn decode_coefs<BD: BitDepth>(
                             f,
                             t_cf,
                             rc_i as usize,
-                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>(),
+                            (((tok as u32) << 11) | rc).as_::<BD::Coef>(),
                         );
                         rc = rc_i;
                     } else {
                         // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
+                        let mut tok = tok as u32;
                         tok *= 0x17ff41;
                         level[0] = tok as u8;
                         // `tok ? (tok << 11) | rc : 0`
-                        tok = ((tok as c_uint >> 9) & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
+                        tok = ((tok >> 9) & rc.wrapping_add(!0x7ff));
                         if tok != 0 {
                             rc = rc_i;
                         }
