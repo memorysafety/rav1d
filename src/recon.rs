@@ -470,12 +470,11 @@ fn get_lo_ctx(
     tx_class: TxClass,
     hi_mag: &mut c_uint,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
-    x: usize,
-    y: usize,
+    x: u32,
+    y: u32,
     stride: u8,
 ) -> usize {
     let stride = stride as usize;
-    let levels = &levels[..2 * stride + 4 + 1];
     let level = |y, x| levels[y * stride + x] as usize;
 
     let mut mag = level(0, 1) + level(1, 0);
@@ -485,14 +484,14 @@ fn get_lo_ctx(
             mag += level(1, 1);
             *hi_mag = mag as c_uint;
             mag += level(0, 2) + level(2, 0);
-            ctx_offsets[cmp::min(y, 4)][cmp::min(x, 4)] as usize
+            ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)] as usize
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
             mag += level(0, 2);
             *hi_mag = mag as c_uint;
             mag += level(0, 3) + level(0, 4);
-            26 + if y > 1 { 10 } else { y * 5 }
+            26 + if y > 1 { 10 } else { y as usize * 5 }
         }
     };
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
@@ -822,15 +821,8 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
+                        as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1018,15 +1010,8 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
+                        as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1211,15 +1196,8 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
+                        as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
