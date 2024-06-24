@@ -818,7 +818,9 @@ fn decode_coefs<BD: BitDepth>(
                             rc_i = (x as u16) << shift2 | y as u16;
                         }
                     }
-                    assert!(x < 32 && y < 32);
+                    debug_assert!(x < 32 && y < 32);
+                    x %= 32;
+                    y %= 32;
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
                     ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
