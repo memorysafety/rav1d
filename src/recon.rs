@@ -734,16 +734,28 @@ fn decode_coefs<BD: BitDepth>(
         let mut level_tok = tok * 0x41;
         let mut mag = 0;
 
-        let mut scan: &[u16] = &[];
-
         macro_rules! decode_coefs_class {
-            ($tx_class:expr, $lo_ctx_offsets:expr, $stride:expr, $shift:expr, $shift2:expr, $mask:expr) => {{
+            ($tx_class:expr, $stride:expr, $shift:expr, $shift2:expr, $mask:expr) => {{
                 let tx_class = const { $tx_class };
-                let lo_ctx_offsets: Option<&[[u8; 5]; 5]> = $lo_ctx_offsets;
                 let stride: u8 = $stride;
                 let shift: u8 = $shift;
                 let shift2: u8 = $shift2;
                 let mask: u8 = $mask;
+
+                let lo_ctx_offsets;
+                let scan;
+                match tx_class {
+                    TxClass::TwoD => {
+                        let is_rect = tx.is_rect() as usize;
+                        lo_ctx_offsets =
+                            Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
+                        scan = dav1d_scans[tx as usize];
+                    }
+                    TxClass::H | TxClass::V => {
+                        lo_ctx_offsets = None;
+                        scan = &[];
+                    }
+                }
 
                 let mut x;
                 let mut y;
@@ -918,9 +930,6 @@ fn decode_coefs<BD: BitDepth>(
 
         match tx_class {
             TxClass::TwoD => {
-                let is_rect = tx.is_rect() as usize;
-                let lo_ctx_offsets = Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
-                scan = dav1d_scans[tx as usize];
                 let stride = 4 * sh;
                 let shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
                 let shift2 = 0;
@@ -930,10 +939,9 @@ fn decode_coefs<BD: BitDepth>(
                 for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
-                decode_coefs_class!(TxClass::TwoD, lo_ctx_offsets, stride, shift, shift2, mask);
+                decode_coefs_class!(TxClass::TwoD, stride, shift, shift2, mask);
             }
             TxClass::H => {
-                let lo_ctx_offsets = None;
                 let stride = 16;
                 let shift = t_dim.lh + 2;
                 let shift2 = 0;
@@ -943,10 +951,9 @@ fn decode_coefs<BD: BitDepth>(
                 for i in 0..stride as usize * (4 * sh as usize + 2) {
                     levels[i] = 0;
                 }
-                decode_coefs_class!(TxClass::H, lo_ctx_offsets, stride, shift, shift2, mask);
+                decode_coefs_class!(TxClass::H, stride, shift, shift2, mask);
             }
             TxClass::V => {
-                let lo_ctx_offsets = None;
                 let stride = 16;
                 let shift = t_dim.lw + 2;
                 let shift2 = t_dim.lh + 2;
@@ -956,7 +963,7 @@ fn decode_coefs<BD: BitDepth>(
                 for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
-                decode_coefs_class!(TxClass::V, lo_ctx_offsets, stride, shift, shift2, mask);
+                decode_coefs_class!(TxClass::V, stride, shift, shift2, mask);
             }
         }
     } else {
