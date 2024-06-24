@@ -718,9 +718,9 @@ fn decode_coefs<BD: BitDepth>(
         let sh = cmp::min(t_dim.h, 8);
 
         // eob
-        let mut ctx: c_uint = 1
-            + (eob > sw as c_int * sh as c_int * 2) as c_uint
-            + (eob > sw as c_int * sh as c_int * 4) as c_uint;
+        let mut ctx = 1
+            + (eob > sw as c_int * sh as c_int * 2) as u8
+            + (eob > sw as c_int * sh as c_int * 4) as u8;
         let eob_tok =
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2) as c_int;
         let mut tok = eob_tok + 1;
@@ -826,8 +826,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
-                        as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -844,16 +843,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -893,7 +887,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -911,11 +905,7 @@ fn decode_coefs<BD: BitDepth>(
                             + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
@@ -1015,8 +1005,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
-                        as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1033,16 +1022,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -1079,7 +1063,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1097,11 +1081,7 @@ fn decode_coefs<BD: BitDepth>(
                             + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
@@ -1201,8 +1181,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     assert!(x < 32 && y < 32);
                     let level = &mut levels[x as usize * stride as usize + y as usize..];
-                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride)
-                        as c_uint;
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1219,16 +1198,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -1265,7 +1239,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1283,11 +1257,7 @@ fn decode_coefs<BD: BitDepth>(
                             + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
