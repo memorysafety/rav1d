@@ -473,7 +473,7 @@ fn get_lo_ctx(
     x: u32,
     y: u32,
     stride: u8,
-) -> usize {
+) -> u8 {
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as usize;
 
@@ -484,17 +484,22 @@ fn get_lo_ctx(
             mag += level(1, 1);
             *hi_mag = mag as c_uint;
             mag += level(0, 2) + level(2, 0);
-            ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)] as usize
+            ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)]
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
             mag += level(0, 2);
             *hi_mag = mag as c_uint;
             mag += level(0, 3) + level(0, 4);
-            26 + if y > 1 { 10 } else { y as usize * 5 }
+            26 + if y > 1 { 10 } else { y as u8 * 5 }
         }
     };
-    offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
+    offset
+        + if mag > 512 {
+            4
+        } else {
+            ((mag + 64) >> 7) as u8
+        }
 }
 
 fn decode_coefs<BD: BitDepth>(
