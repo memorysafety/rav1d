@@ -738,7 +738,7 @@ fn decode_coefs<BD: BitDepth>(
 
         macro_rules! decode_coefs_class {
             ($tx_class:expr, $lo_ctx_offsets:expr, $stride:expr, $shift:expr, $shift2:expr, $mask:expr) => {{
-                const TX_CLASS: TxClass = $tx_class;
+                let tx_class = const { $tx_class };
                 let lo_ctx_offsets: Option<&[[u8; 5]; 5]> = $lo_ctx_offsets;
                 let stride: u8 = $stride;
                 let shift: u8 = $shift;
@@ -747,7 +747,7 @@ fn decode_coefs<BD: BitDepth>(
 
                 let mut x;
                 let mut y;
-                match TX_CLASS {
+                match tx_class {
                     TxClass::TwoD => {
                         rc = scan[eob as usize];
                         x = (rc >> shift) as u8;
