@@ -918,10 +918,9 @@ fn decode_coefs<BD: BitDepth>(
 
         match tx_class {
             TxClass::TwoD => {
-                let nonsquare_tx: c_uint = (tx >= TxfmSize::R4x8) as c_uint;
+                let is_rect: c_uint = tx.is_rect() as c_uint;
                 let lo_ctx_offsets = Some(
-                    &dav1d_lo_ctx_offsets
-                        [nonsquare_tx.wrapping_add(tx as c_uint & nonsquare_tx) as usize],
+                    &dav1d_lo_ctx_offsets[is_rect.wrapping_add(tx as c_uint & is_rect) as usize],
                 );
                 scan = dav1d_scans[tx as usize];
                 let stride = 4 * sh;
