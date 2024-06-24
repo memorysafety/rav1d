@@ -798,8 +798,7 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok.to::<i16>() << 11).into());
                 levels[x as usize * stride as usize + y as usize] = level_tok as u8;
-                let mut i = eob - 1;
-                while i > 0 {
+                for i in (1..eob).rev() {
                     // ac
                     let rc_i;
                     match tx_class {
@@ -876,7 +875,6 @@ fn decode_coefs<BD: BitDepth>(
                         }
                         cf.set::<BD>(f, t_cf, rc_i as usize, tok.as_::<BD::Coef>());
                     }
-                    i -= 1;
                 }
                 // dc
                 ctx = if tx_class == TxClass::TwoD {
