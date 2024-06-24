@@ -470,8 +470,8 @@ fn get_lo_ctx(
     tx_class: TxClass,
     hi_mag: &mut u32,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
-    x: u32,
-    y: u32,
+    x: u8,
+    y: u8,
     stride: u8,
 ) -> u8 {
     let stride = stride as usize;
@@ -499,7 +499,7 @@ fn get_lo_ctx(
             mag += level(0, 2);
             *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
-            offset = 26 + if y > 1 { 10 } else { y as u8 * 5 };
+            offset = 26 + if y > 1 { 10 } else { y * 5 };
         }
     }
     offset
@@ -742,28 +742,28 @@ fn decode_coefs<BD: BitDepth>(
                 const TX_CLASS: TxClass = $tx_class;
                 let lo_ctx_offsets: Option<&[[u8; 5]; 5]> = $lo_ctx_offsets;
                 let stride: u8 = $stride;
-                let shift: u32 = $shift;
-                let shift2: u32 = $shift2;
-                let mask: u32 = $mask;
+                let shift: u8 = $shift;
+                let shift2: u8 = $shift2;
+                let mask: u8 = $mask;
 
-                let mut x: c_uint;
-                let mut y: c_uint;
+                let mut x;
+                let mut y;
                 match TX_CLASS {
                     TxClass::TwoD => {
-                        rc = scan[eob as usize] as c_uint;
-                        x = rc >> shift;
-                        y = rc & mask;
+                        rc = scan[eob as usize] as u32;
+                        x = (rc >> shift) as u8;
+                        y = rc as u8 & mask;
                     }
                     TxClass::H => {
                         // Transposing reduces the stride and padding requirements.
-                        x = eob as c_uint & mask;
-                        y = (eob >> shift) as c_uint;
-                        rc = eob as c_uint;
+                        x = eob as u8 & mask;
+                        y = (eob >> shift) as u8;
+                        rc = eob as u32;
                     }
                     TxClass::V => {
-                        x = eob as c_uint & mask;
-                        y = (eob >> shift) as c_uint;
-                        rc = x << shift2 | y;
+                        x = eob as u8 & mask;
+                        y = (eob >> shift) as u8;
+                        rc = (x as u32) << shift2 | y as u32;
                     }
                 }
                 if dbg {
@@ -803,22 +803,22 @@ fn decode_coefs<BD: BitDepth>(
                 let mut i = eob - 1;
                 while i > 0 {
                     // ac
-                    let rc_i: c_uint;
+                    let rc_i: u32;
                     match tx_class {
                         TxClass::TwoD => {
-                            rc_i = scan[i as usize] as c_uint;
-                            x = rc_i >> shift;
-                            y = rc_i & mask;
+                            rc_i = scan[i as usize] as u32;
+                            x = (rc_i >> shift) as u8;
+                            y = rc_i as u8 & mask;
                         }
                         TxClass::H => {
-                            x = i as c_uint & mask;
-                            y = (i >> shift) as c_uint;
-                            rc_i = i as c_uint;
+                            x = i as u8 & mask;
+                            y = (i >> shift) as u8;
+                            rc_i = i as u32;
                         }
                         TxClass::V => {
-                            x = i as c_uint & mask;
-                            y = (i >> shift) as c_uint;
-                            rc_i = x << shift2 | y;
+                            x = i as u8 & mask;
+                            y = (i >> shift) as u8;
+                            rc_i = (x as u32) << shift2 | y as u32;
                         }
                     }
                     assert!(x < 32 && y < 32);
@@ -840,7 +840,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as u8 {
                             14
                         } else {
                             7
@@ -927,13 +927,9 @@ fn decode_coefs<BD: BitDepth>(
                 );
                 scan = dav1d_scans[tx as usize];
                 let stride = 4 * sh;
-                let shift: c_uint = if t_dim.lh < 4 {
-                    t_dim.lh as c_uint + 2
-                } else {
-                    5
-                };
-                let shift2: c_uint = 0;
-                let mask: c_uint = 4 * sh as c_uint - 1;
+                let shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
+                let shift2 = 0;
+                let mask = 4 * sh - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
                 for i in 0..stride as usize * (4 * sw as usize + 2) {
@@ -944,9 +940,9 @@ fn decode_coefs<BD: BitDepth>(
             TxClass::H => {
                 let lo_ctx_offsets = None;
                 let stride = 16;
-                let shift: c_uint = t_dim.lh as c_uint + 2;
-                let shift2: c_uint = 0;
-                let mask: c_uint = 4 * sh as c_uint - 1;
+                let shift = t_dim.lh + 2;
+                let shift2 = 0;
+                let mask = 4 * sh - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
                 for i in 0..stride as usize * (4 * sh as usize + 2) {
@@ -957,9 +953,9 @@ fn decode_coefs<BD: BitDepth>(
             TxClass::V => {
                 let lo_ctx_offsets = None;
                 let stride = 16;
-                let shift: c_uint = t_dim.lw as c_uint + 2;
-                let shift2: c_uint = t_dim.lh as c_uint + 2;
-                let mask: c_uint = 4 * sw as c_uint - 1;
+                let shift = t_dim.lw + 2;
+                let shift2 = t_dim.lh + 2;
+                let mask = 4 * sw - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
                 for i in 0..stride as usize * (4 * sw as usize + 2) {
