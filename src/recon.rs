@@ -704,15 +704,14 @@ fn decode_coefs<BD: BitDepth>(
                 t_dim.ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
             );
         }
-        eob = ((eob_hi_bit | 2) << eob_bin - 2
-            | rav1d_msac_decode_bools(&mut ts_c.msac, eob_bin - 2)) as c_int;
+        eob = ((eob_hi_bit | 2) << (eob_bin - 2))
+            | rav1d_msac_decode_bools(&mut ts_c.msac, eob_bin - 2);
         if dbg {
             println!("Post-eob[{}]: r={}", eob, ts_c.msac.rng);
         }
     } else {
-        eob = eob_bin as c_int;
+        eob = eob_bin as u32;
     }
-    assert!(eob >= 0);
 
     // base tokens
     let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma];
@@ -727,9 +726,8 @@ fn decode_coefs<BD: BitDepth>(
         let sh = cmp::min(t_dim.h, 8);
 
         // eob
-        let mut ctx = 1
-            + (eob > sw as c_int * sh as c_int * 2) as u8
-            + (eob > sw as c_int * sh as c_int * 4) as u8;
+        let mut ctx =
+            1 + (eob > sw as u32 * sh as u32 * 2) as u8 + (eob > sw as u32 * sh as u32 * 4) as u8;
         let eob_tok =
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2);
         let mut tok = eob_tok + 1;
@@ -1205,7 +1203,7 @@ fn decode_coefs<BD: BitDepth>(
     // context
     *res_ctx = (cmp::min(cul_level, 63) | dc_sign_level) as u8;
 
-    eob
+    eob as i32
 }
 
 #[derive(Clone, Copy)]
