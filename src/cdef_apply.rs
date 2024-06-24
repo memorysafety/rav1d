@@ -278,7 +278,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 (
                                     &f.lf.lr_line_buf,
                                     f.lf.lr_lpf_line[0].wrapping_add_signed(
-                                        (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
+                                        (sby * (4 << sb128) - 4) as isize * y_stride
                                             + (bx * 4) as isize,
                                     ),
                                 )
@@ -300,7 +300,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     ),
                                 )
                             } else {
-                                let line = sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
+                                let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
                                 (
                                     &f.lf.lr_line_buf,
                                     f.lf.lr_lpf_line[0].wrapping_add_signed(
@@ -381,7 +381,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                             ),
                                         )
                                     } else {
-                                        let line = sby * ((4 as c_int) << sb128) - 4;
+                                        let line = sby * (4 << sb128) - 4;
                                         (
                                             &f.lf.lr_line_buf,
                                             f.lf.lr_lpf_line[pl].wrapping_add_signed(
@@ -409,8 +409,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                             ),
                                         )
                                     } else {
-                                        let line =
-                                            sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
+                                        let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
                                         (
                                             &f.lf.lr_line_buf,
                                             f.lf.lr_lpf_line[pl].wrapping_add_signed(
