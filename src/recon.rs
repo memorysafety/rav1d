@@ -732,7 +732,7 @@ fn decode_coefs<BD: BitDepth>(
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2);
         let mut tok = eob_tok + 1;
         let mut level_tok = tok * 0x41;
-        let mut mag: c_uint = 0;
+        let mut mag = 0;
 
         let mut scan: &[u16] = &[];
 
@@ -838,12 +838,12 @@ fn decode_coefs<BD: BitDepth>(
                         );
                     }
                     if tok == 3 {
-                        mag &= 63;
+                        let mag = mag as u8 & 63;
                         ctx = if y > (tx_class == TxClass::TwoD) as u8 {
                             14
                         } else {
                             7
-                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
+                        } + if mag > 12 { 6 } else { (mag + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                         if dbg {
                             println!(
@@ -899,8 +899,8 @@ fn decode_coefs<BD: BitDepth>(
                             + levels[1 * stride as usize + 0] as c_uint
                             + levels[1 * stride as usize + 1] as c_uint;
                     }
-                    mag &= 63;
-                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
+                    let mag = mag as u8 & 63;
+                    ctx = if mag > 12 { 6 } else { (mag + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
