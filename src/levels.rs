@@ -2,6 +2,7 @@
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::enum_map::EnumKey;
+use crate::src::in_range::InRange;
 use bitflags::bitflags;
 use std::fmt;
 use std::fmt::Display;
@@ -502,23 +503,20 @@ impl Default for Av1BlockIntraInter {
 /// Within range `0..`[`SegmentId::COUNT`].
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SegmentId {
-    id: u8,
+    id: InRange<u8, 0, { Self::COUNT as u128 - 1 }>,
 }
 
 impl SegmentId {
     pub const COUNT: usize = 8;
 
-    pub const fn new(id: u8) -> Option<Self> {
-        if id < Self::COUNT as _ {
-            Some(Self { id })
-        } else {
-            None
-        }
+    pub fn new(id: u8) -> Option<Self> {
+        Some(Self {
+            id: InRange::new(id)?,
+        })
     }
 
-    pub const fn get(&self) -> usize {
-        // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
-        self.id as usize % Self::COUNT
+    pub fn get(&self) -> usize {
+        self.id.get() as usize
     }
 
     pub fn min() -> Self {
