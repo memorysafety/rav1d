@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
@@ -58,8 +59,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
 
 #[derive(Clone, Copy)]
 pub enum CdefBottom<'a> {
-    Pic(Rav1dPictureDataComponentOffset<'a>),
-    LineBuf((&'a DisjointMut<AlignedVec64<u8>>, usize)),
+    Pic(&'a Rav1dPictureDataComponent),
+    LineBuf(&'a DisjointMut<AlignedVec64<u8>>),
 }
 
 impl cdef::Fn {
@@ -72,8 +73,10 @@ impl cdef::Fn {
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
-        (top, top_off): (&DisjointMut<AlignedVec64<u8>>, usize),
+        top: &DisjointMut<AlignedVec64<u8>>,
+        top_off: usize,
         bottom: CdefBottom<'_>,
+        bottom_off: usize,
         pri_strength: c_int,
         sec_strength: u8,
         dir: c_int,
@@ -86,10 +89,8 @@ impl cdef::Fn {
         let left = ptr::from_ref(left).cast();
         let top_ptr = (&*top.element_as(top_off) as *const BD::Pixel).cast();
         let bottom_ptr = match bottom {
-            CdefBottom::Pic(bot) => bot.as_ptr::<BD>().cast(),
-            CdefBottom::LineBuf((bot, bot_off)) => {
-                (&*bot.element_as(bot_off) as *const BD::Pixel).cast()
-            }
+            CdefBottom::Pic(pic) => pic.as_ptr_at::<BD>(bottom_off).cast(),
+            CdefBottom::LineBuf(buf) => (&*buf.element_as(bottom_off) as *const BD::Pixel).cast(),
         };
         let top = FFISafe::new(top);
         let bottom = FFISafe::new(&bottom);
@@ -174,17 +175,16 @@ fn padding<BD: BitDepth>(
     tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
     src: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    (top, top_off): (&DisjointMut<AlignedVec64<u8>>, usize),
-    mut bottom: CdefBottom<'_>,
+    top: &DisjointMut<AlignedVec64<u8>>,
+    top_off: usize,
+    bottom: CdefBottom<'_>,
+    bottom_off: usize,
     w: usize,
     h: usize,
     edges: CdefEdgeFlags,
 ) {
     let top_off = top_off - 2;
-    match &mut bottom {
-        CdefBottom::Pic(pic) => *pic -= 2usize,
-        CdefBottom::LineBuf((_, offset)) => *offset -= 2,
-    }
+    let bottom_off = bottom_off - 2;
     let stride = src.pixel_stride::<BD>();
 
     // Fill extended input buffer.
@@ -231,13 +231,10 @@ fn padding<BD: BitDepth>(
     }
     for (i, y) in (h + 2..y_end).enumerate() {
         let tmp = &mut tmp[y * TMP_STRIDE..];
-        let offset = i as isize * stride;
+        let bottom_off = bottom_off.wrapping_add_signed(i as isize * stride);
         let bottom = match bottom {
-            CdefBottom::Pic(pic) => &*(pic + offset).slice::<BD>(x_end),
-            CdefBottom::LineBuf((buf, off)) => {
-                let offset = off.wrapping_add_signed(offset);
-                &*buf.slice_as((offset.., ..x_end))
-            }
+            CdefBottom::Pic(pic) => &*pic.slice::<BD, _>((bottom_off.., ..x_end)),
+            CdefBottom::LineBuf(buf) => &*buf.slice_as((bottom_off.., ..x_end)),
         };
         for x in x_start..x_end {
             tmp[x] = bottom[x].as_::<i16>();
@@ -249,8 +246,10 @@ fn padding<BD: BitDepth>(
 fn cdef_filter_block_rust<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: (&DisjointMut<AlignedVec64<u8>>, usize),
+    top: &DisjointMut<AlignedVec64<u8>>,
+    top_off: usize,
     bottom: CdefBottom<'_>,
+    bottom_off: usize,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
@@ -265,7 +264,9 @@ fn cdef_filter_block_rust<BD: BitDepth>(
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
     let mut tmp = [0; TMP_STRIDE * TMP_STRIDE]; // `12 * 12` is the maximum value of `TMP_STRIDE * (h + 4)`.
 
-    padding::<BD>(&mut tmp, dst, left, top, bottom, w, h, edges);
+    padding::<BD>(
+        &mut tmp, dst, left, top, top_off, bottom, bottom_off, w, h, edges,
+    );
 
     let tmp = tmp;
     let tmp_offset = 2 * TMP_STRIDE + 2;
@@ -386,7 +387,7 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     _stride: ptrdiff_t,
     left: *const [LeftPixelRow2px<DynPixel>; 8],
     top_ptr: *const DynPixel,
-    _bottom_ptr: *const DynPixel,
+    bottom_ptr: *const DynPixel,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
@@ -404,17 +405,26 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
     let top = unsafe { FFISafe::get(top) };
     let top_base = top.as_mut_ptr().cast::<BD::Pixel>().cast_const();
-    // SAFETY: Reverse of what was done ine `cdef::Fn::call`. `top_ptr` is
+    // SAFETY: Reverse of what was done in `cdef::Fn::call`. `top_ptr` is
     // derived from `top` and so is safe to calculate the offset from.
     let top_off = unsafe { top_ptr.cast::<BD::Pixel>().offset_from(top_base) } as usize;
     // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
     let bottom = *unsafe { FFISafe::get(bottom) };
+    let bottom_base = match bottom {
+        CdefBottom::Pic(pic) => pic.as_ptr::<BD>(),
+        CdefBottom::LineBuf(buf) => buf.as_mut_ptr().cast::<BD::Pixel>().cast_const(),
+    };
+    // SAFETY: Reverse of what was done in `cdef::Fn::call`. `bottom_ptr` is
+    // derived from `bottom` and so is safe to calculate the offset from.
+    let bottom_off = unsafe { bottom_ptr.cast::<BD::Pixel>().offset_from(bottom_base) } as usize;
     let bd = BD::from_c(bitdepth_max);
     cdef_filter_block_rust(
         dst,
         left,
-        (top, top_off),
+        top,
+        top_off,
         bottom,
+        bottom_off,
         pri_strength,
         sec_strength,
         dir,

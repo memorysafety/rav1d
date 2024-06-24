@@ -284,7 +284,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 )
                             };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            Some((top, CdefBottom::Pic(bottom)))
+                            Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
                         } else if !sbrow_start && by + 2 >= by_end {
                             let top = (
                                 &f.lf.cdef_line_buf,
@@ -292,7 +292,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     (sby * 4) as isize * y_stride + (bx * 4) as isize,
                                 ),
                             );
-                            let bottom = if resize {
+                            let (buf, offset) = if resize {
                                 (
                                     &f.lf.cdef_line_buf,
                                     f.lf.cdef_lpf_line[0].wrapping_add_signed(
@@ -308,12 +308,12 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     ),
                                 )
                             };
-                            Some((top, CdefBottom::LineBuf(bottom)))
+                            Some((top, CdefBottom::LineBuf(buf), offset))
                         } else {
                             None
                         };
 
-                        let (top, bot) = top_bot.unwrap_or_else(|| {
+                        let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
                             let top = (
                                 &f.lf.cdef_line_buf,
                                 f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
@@ -322,7 +322,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 ),
                             );
                             let bottom = bptrs[0] + (8 * y_stride);
-                            (top, CdefBottom::Pic(bottom))
+                            (top, CdefBottom::Pic(bottom.data), bottom.offset)
                         });
 
                         if y_pri_lvl != 0 {
@@ -332,7 +332,9 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
+                                    top_off,
                                     bot,
+                                    bot_off,
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
@@ -346,7 +348,9 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
+                                top_off,
                                 bot,
+                                bot_off,
                                 0,
                                 y_sec_lvl,
                                 0,
@@ -387,7 +391,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                         )
                                     };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    Some((top, CdefBottom::Pic(bottom)))
+                                    Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
                                 } else if !sbrow_start && by + 2 >= by_end {
                                     let top = (
                                         &f.lf.cdef_line_buf,
@@ -396,7 +400,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                                 + (bx * 4 >> ss_hor) as isize,
                                         ),
                                     );
-                                    let bottom = if resize {
+                                    let (buf, offset) = if resize {
                                         (
                                             &f.lf.cdef_line_buf,
                                             f.lf.cdef_lpf_line[pl].wrapping_add_signed(
@@ -415,12 +419,12 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                             ),
                                         )
                                     };
-                                    Some((top, CdefBottom::LineBuf(bottom)))
+                                    Some((top, CdefBottom::LineBuf(buf), offset))
                                 } else {
                                     None
                                 };
 
-                                let (top, bot) = top_bot.unwrap_or_else(|| {
+                                let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
                                     let top = (
                                         &f.lf.cdef_line_buf,
                                         f.lf.cdef_line[tf as usize][pl].wrapping_add_signed(
@@ -429,14 +433,16 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                         ),
                                     );
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    (top, CdefBottom::Pic(bottom))
+                                    (top, CdefBottom::Pic(bottom.data), bottom.offset)
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,
+                                    top_off,
                                     bot,
+                                    bot_off,
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl,
                                     uvdir,
