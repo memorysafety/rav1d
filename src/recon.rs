@@ -693,8 +693,7 @@ fn decode_coefs<BD: BitDepth>(
             ts_c.msac.rng,
         );
     }
-    let eob;
-    if eob_bin > 1 {
+    let eob = if eob_bin > 1 {
         let eob_hi_bit_cdf =
             &mut ts_c.cdf.coef.eob_hi_bit[t_dim.ctx as usize][chroma][eob_bin as usize];
         let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as c_uint;
@@ -704,14 +703,15 @@ fn decode_coefs<BD: BitDepth>(
                 t_dim.ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
             );
         }
-        eob = ((eob_hi_bit | 2) << (eob_bin - 2))
+        let eob = ((eob_hi_bit | 2) << (eob_bin - 2))
             | rav1d_msac_decode_bools(&mut ts_c.msac, eob_bin - 2);
         if dbg {
             println!("Post-eob[{}]: r={}", eob, ts_c.msac.rng);
         }
+        eob
     } else {
-        eob = eob_bin as u32;
-    }
+        eob_bin as u32
+    };
 
     // base tokens
     let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma];
