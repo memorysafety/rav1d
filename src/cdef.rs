@@ -5,8 +5,7 @@ use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::Align64;
-use crate::src::align::AlignedVec;
+use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
@@ -53,14 +52,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _top: *const FFISafe<DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>>,
+    _top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     _bottom: *const FFISafe<CdefBottom<'_>>,
 ) -> ());
 
 #[derive(Clone, Copy)]
 pub enum CdefBottom<'a> {
     Pic(Rav1dPictureDataComponentOffset<'a>),
-    LineBuf((&'a DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize)),
+    LineBuf((&'a DisjointMut<AlignedVec64<u8>>, usize)),
 }
 
 impl cdef::Fn {
@@ -73,7 +72,7 @@ impl cdef::Fn {
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
-        (top, top_off): (&DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize),
+        (top, top_off): (&DisjointMut<AlignedVec64<u8>>, usize),
         bottom: CdefBottom<'_>,
         pri_strength: c_int,
         sec_strength: u8,
@@ -175,7 +174,7 @@ fn padding<BD: BitDepth>(
     tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
     src: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    (top, top_off): (&DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize),
+    (top, top_off): (&DisjointMut<AlignedVec64<u8>>, usize),
     mut bottom: CdefBottom<'_>,
     w: usize,
     h: usize,
@@ -250,7 +249,7 @@ fn padding<BD: BitDepth>(
 fn cdef_filter_block_rust<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: (&DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>, usize),
+    top: (&DisjointMut<AlignedVec64<u8>>, usize),
     bottom: CdefBottom<'_>,
     pri_strength: c_int,
     sec_strength: c_int,
@@ -395,7 +394,7 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    top: *const FFISafe<DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>>,
+    top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     bottom: *const FFISafe<CdefBottom<'_>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `cdef_dir::Fn::call`.
@@ -566,7 +565,7 @@ unsafe extern "C" fn cdef_filter_neon_erased<
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _top: *const FFISafe<DisjointMut<AlignedVec<u8, Align64<[u8; 64]>>>>,
+    _top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     _bottom: *const FFISafe<CdefBottom<'_>>,
 ) {
     use crate::src::align::Align16;
