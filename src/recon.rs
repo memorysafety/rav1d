@@ -46,7 +46,6 @@ use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
-use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
@@ -292,35 +291,45 @@ fn get_skip_ctx(
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
             dir[..N] != [0x40; N]
         }
-        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, tx)| match tx as TxfmSize {
-            TX_4X4 => merge_ctx::<1>(dir),
-            TX_8X8 => merge_ctx::<2>(dir),
-            TX_16X16 => merge_ctx::<4>(dir),
-            TX_32X32 => merge_ctx::<8>(dir),
-            _ => unreachable!(),
-        });
-        (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
+
+        fn cdir(dir: &[u8]) -> u8 {
+            let cdir = match dir.len() {
+                1 => merge_ctx::<1>(dir),
+                2 => merge_ctx::<2>(dir),
+                4 => merge_ctx::<4>(dir),
+                8 => merge_ctx::<8>(dir),
+                _ => {
+                    debug_assert!(false);
+                    false
+                }
+            };
+            cdir as u8
+        }
+
+        (7 + (not_one_blk as u8) * 3) + cdir(a) + cdir(l)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
         /// Read and xor all the bytes.
-        fn merge_ctx(dir: &[u8], tx: TxfmSize) -> u8 {
-            if tx == TX_4X4 {
+        fn merge_ctx(dir: &[u8]) -> u8 {
+            let n = dir.len();
+            if n == 1 {
                 u8::read_ne(dir)
             } else {
-                (if tx == TX_8X8 {
+                (if n == 2 {
                     u16::read_ne(dir)
                 } else {
-                    (if tx == TX_16X16 {
+                    (if n == 4 {
                         u32::read_ne(dir)
                     } else {
-                        (if tx == TX_32X32 {
+                        (if n == 8 {
                             u64::read_ne(dir)
                         } else {
-                            (if tx == TX_64X64 {
+                            (if n == 16 {
                                 u128::read_ne(dir)
                             } else {
-                                unreachable!()
+                                debug_assert!(false);
+                                0
                             })
                             .merge()
                         })
@@ -331,10 +340,13 @@ fn get_skip_ctx(
                 .merge()
             }
         }
-        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)]
-            .map(|(dir, tx)| merge_ctx(dir, tx as TxfmSize))
-            .map(|ldir| cmp::min(ldir & 0x3f, 4) as usize);
-        dav1d_skip_ctx[la][ll]
+
+        fn ldir(dir: &[u8]) -> usize {
+            let ldir = merge_ctx(dir);
+            cmp::min(ldir & 0x3f, 4) as usize
+        }
+
+        dav1d_skip_ctx[ldir(a)][ldir(l)]
     }
 }
 
