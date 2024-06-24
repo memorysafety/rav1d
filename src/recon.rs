@@ -735,26 +735,56 @@ fn decode_coefs<BD: BitDepth>(
         let mut mag = 0;
 
         macro_rules! decode_coefs_class {
-            ($tx_class:expr, $stride:expr, $shift:expr, $shift2:expr, $mask:expr) => {{
+            ($tx_class:expr) => {{
                 let tx_class = const { $tx_class };
-                let stride: u8 = $stride;
-                let shift: u8 = $shift;
-                let shift2: u8 = $shift2;
-                let mask: u8 = $mask;
 
                 let lo_ctx_offsets;
                 let scan;
+                let stride;
                 match tx_class {
                     TxClass::TwoD => {
                         let is_rect = tx.is_rect() as usize;
                         lo_ctx_offsets =
                             Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
                         scan = dav1d_scans[tx as usize];
+                        stride = 4 * sh;
                     }
                     TxClass::H | TxClass::V => {
                         lo_ctx_offsets = None;
                         scan = &[];
+                        stride = 16;
                     }
+                }
+
+                let shift;
+                let shift2;
+                let mask;
+                let swh_zero;
+                match tx_class {
+                    TxClass::TwoD => {
+                        shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
+                        shift2 = 0;
+                        mask = 4 * sh - 1;
+                        swh_zero = sw;
+                    }
+                    TxClass::H => {
+                        shift = t_dim.lh + 2;
+                        shift2 = 0;
+                        mask = 4 * sh - 1;
+                        swh_zero = sh;
+                    }
+                    TxClass::V => {
+                        shift = t_dim.lw + 2;
+                        shift2 = t_dim.lh + 2;
+                        mask = 4 * sw - 1;
+                        swh_zero = sw;
+                    }
+                }
+
+                // Optimizes better than `.fill(0)`,
+                // which doesn't elide the bounds check, inline, or vectorize.
+                for i in 0..stride as usize * (4 * swh_zero as usize + 2) {
+                    levels[i] = 0;
                 }
 
                 let mut x;
@@ -929,42 +959,9 @@ fn decode_coefs<BD: BitDepth>(
         }
 
         match tx_class {
-            TxClass::TwoD => {
-                let stride = 4 * sh;
-                let shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
-                let shift2 = 0;
-                let mask = 4 * sh - 1;
-                // Optimizes better than `.fill(0)`,
-                // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride as usize * (4 * sw as usize + 2) {
-                    levels[i] = 0;
-                }
-                decode_coefs_class!(TxClass::TwoD, stride, shift, shift2, mask);
-            }
-            TxClass::H => {
-                let stride = 16;
-                let shift = t_dim.lh + 2;
-                let shift2 = 0;
-                let mask = 4 * sh - 1;
-                // Optimizes better than `.fill(0)`,
-                // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride as usize * (4 * sh as usize + 2) {
-                    levels[i] = 0;
-                }
-                decode_coefs_class!(TxClass::H, stride, shift, shift2, mask);
-            }
-            TxClass::V => {
-                let stride = 16;
-                let shift = t_dim.lw + 2;
-                let shift2 = t_dim.lh + 2;
-                let mask = 4 * sw - 1;
-                // Optimizes better than `.fill(0)`,
-                // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride as usize * (4 * sw as usize + 2) {
-                    levels[i] = 0;
-                }
-                decode_coefs_class!(TxClass::V, stride, shift, shift2, mask);
-            }
+            TxClass::TwoD => decode_coefs_class!(TxClass::TwoD),
+            TxClass::H => decode_coefs_class!(TxClass::H),
+            TxClass::V => decode_coefs_class!(TxClass::V),
         }
     } else {
         // dc-only
