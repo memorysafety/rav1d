@@ -95,7 +95,6 @@ use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
-use crate::src::levels::RectTxfmSize;
 use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
@@ -110,11 +109,7 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
 use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::lf_mask::rav1d_calc_eih;
@@ -149,7 +144,6 @@ use crate::src::refmvs::RefMvsFrame;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_block_sizes;
 use crate::src::tables::dav1d_comp_inter_pred_modes;
 use crate::src::tables::dav1d_filter_2d;
@@ -285,7 +279,7 @@ fn read_tx_tree(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
-    from: RectTxfmSize,
+    from: TxfmSize,
     depth: c_int,
     masks: &mut [u16; 2],
     x_off: usize,
@@ -298,10 +292,10 @@ fn read_tx_tree(
     let txh = t_dim.lh;
     let is_split;
 
-    if depth < 2 && from > TX_4X4 {
-        let cat = 2 * (TX_64X64 as c_int - t_dim.max as c_int) - depth;
-        let a = (*f.a[t.a].tx.index(bx4 as usize) < txw) as c_int;
-        let l = (*t.l.tx.index(by4 as usize) < txh) as c_int;
+    if depth < 2 && from > TxfmSize::S4x4 {
+        let cat = 2 * (TxfmSize::S64x64 as c_int - t_dim.max as c_int) - depth;
+        let a = ((*f.a[t.a].tx.index(bx4 as usize) as u8) < txw) as c_int;
+        let l = ((*t.l.tx.index(by4 as usize) as u8) < txh) as c_int;
 
         is_split = rav1d_msac_decode_bool_adapt(
             &mut ts_c.msac,
@@ -313,9 +307,9 @@ fn read_tx_tree(
     } else {
         is_split = false;
     }
-    if is_split && t_dim.max as TxfmSize > TX_8X8 {
-        let sub = t_dim.sub as RectTxfmSize;
-        let sub_t_dim = &dav1d_txfm_dimensions[usize::from(sub)]; // `from` used instead of `into` for rust-analyzer type inference
+    if is_split && t_dim.max > TxfmSize::S8x8 as _ {
+        let sub = t_dim.sub;
+        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w as c_int;
         let txsh = sub_t_dim.h as c_int;
 
@@ -377,7 +371,13 @@ fn read_tx_tree(
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, val)| {
-                case.set_disjoint(&dir.tx, if is_split { TX_4X4 } else { val });
+                let tx = if is_split {
+                    TxfmSize::S4x4
+                } else {
+                    // TODO check unwrap is optimized out
+                    TxfmSize::from_repr(val as _).unwrap()
+                };
+                case.set_disjoint(&dir.tx, tx);
             },
         );
     };
@@ -436,7 +436,7 @@ fn find_matching_ref(
         && t.b.x + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
-    let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
+    let bs = |rp: refmvs_block| rp.bs.dimensions();
     let matches = |rp: refmvs_block| rp.r#ref.r#ref[0] == r#ref + 1 && rp.r#ref.r#ref[1] == -1;
 
     if have_top {
@@ -541,7 +541,7 @@ fn derive_warpmv(
         *r.index(t.rt.r[(offset as isize + i as isize) as usize] + j as usize)
     };
 
-    let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
+    let bs = |rp: refmvs_block| rp.bs.dimensions();
 
     let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: refmvs_block| {
         pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
@@ -789,7 +789,7 @@ fn read_vartx_tree(
     bx4: c_int,
     by4: c_int,
 ) -> VarTx {
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as usize;
     let bh4 = b_dim[1] as usize;
 
@@ -799,8 +799,9 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TX_4X4) {
-        uvtx = TX_4X4;
+    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4)
+    {
+        uvtx = TxfmSize::S4x4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
@@ -808,7 +809,7 @@ fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set_disjoint(&dir.tx, TX_4X4);
+                    case.set_disjoint(&dir.tx, TxfmSize::S4x4);
                 },
             );
         }
@@ -819,13 +820,15 @@ fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
-                    case.set_disjoint(&dir.tx, b_dim[2 + dir_index]);
+                    // TODO check unwrap is optimized out
+                    let tx = TxfmSize::from_repr(b_dim[2 + dir_index] as _).unwrap();
+                    case.set_disjoint(&dir.tx, tx);
                 },
             );
         }
         uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
-        assert!(bw4 <= 16 || bh4 <= 16 || max_ytx == TX_64X64);
+        assert!(bw4 <= 16 || bh4 <= 16 || max_ytx == TxfmSize::S64x64);
         let ytx = &dav1d_txfm_dimensions[max_ytx as usize];
         let h = ytx.h as usize;
         let w = ytx.w as usize;
@@ -1092,7 +1095,7 @@ fn obmc_lowest_px(
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2] as c_int, 4) {
             let a_r = *r.index(ri[0] + t.b.x as usize + x as usize + 1);
-            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            let a_b_dim = a_r.bs.dimensions();
             if a_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = cmp::min(b_dim[1] as c_int, 16) >> 1;
                 mc_lowest_px(
@@ -1113,7 +1116,7 @@ fn obmc_lowest_px(
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
             let l_r = *r.index(ri[y as usize + 1 + 1] + t.b.x as usize - 1);
-            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            let l_b_dim = l_r.bs.dimensions();
             if l_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as c_int, 2, b_dim[1] as c_int);
                 mc_lowest_px(
@@ -1164,7 +1167,7 @@ fn decode_b(
 
     let ts = &f.ts[t.ts];
     let bd_fn = f.bd_fn();
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -1871,13 +1874,13 @@ fn decode_b(
         let frame_hdr = f.frame_hdr();
 
         let tx = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
-            b.uvtx = TX_4X4;
+            b.uvtx = TxfmSize::S4x4;
             b.uvtx
         } else {
             let mut tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[tx as usize];
-            if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
+            if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TxfmSize::S4x4 as _ {
                 let tctx = get_tx_ctx(&f.a[t.a], &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts_c.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth =
@@ -1890,7 +1893,7 @@ fn decode_b(
                 }
             }
             if debug_block_info!(f, t.b) {
-                println!("Post-tx[{}]: r={}", tx, ts_c.msac.rng);
+                println!("Post-tx[{:?}]: r={}", tx, ts_c.msac.rng);
             }
             tx
         };
@@ -1962,7 +1965,8 @@ fn decode_b(
             [by4 as usize, bx4 as usize],
             |case, (dir, lw_lh, dir_index)| {
                 case.set_disjoint(&dir.tx_intra, lw_lh as i8);
-                case.set_disjoint(&dir.tx, lw_lh);
+                // TODO check unwrap is optimized out
+                case.set_disjoint(&dir.tx, TxfmSize::from_repr(lw_lh as _).unwrap());
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
                 case.set_disjoint(&dir.pal_sz, pal_sz[0]);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
@@ -3064,8 +3068,8 @@ fn decode_b(
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
             if frame_hdr.segmentation.lossless[b.seg_id.get()] {
-                ytx = TX_4X4;
-                uvtx = TX_4X4;
+                ytx = TxfmSize::S4x4;
+                uvtx = TxfmSize::S4x4;
             }
             let lflvl = match ts.lflvl.get() {
                 TileStateRef::Frame => &f.lf.lvl,
@@ -3790,7 +3794,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     ctx.tx_lpf_y.get_mut().0.fill(2);
     ctx.tx_lpf_uv.get_mut().0.fill(1);
     ctx.tx_intra.get_mut().0.fill(-1);
-    ctx.tx.get_mut().0.fill(TX_64X64);
+    ctx.tx.get_mut().0.fill(TxfmSize::S64x64);
     if !keyframe {
         for r#ref in &mut ctx.r#ref {
             r#ref.get_mut().0.fill(-1);
@@ -4531,7 +4535,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     // setup dequant tables
     init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
     if frame_hdr.quant.qm != 0 {
-        for i in 0..N_RECT_TX_SIZES {
+        for i in 0..TxfmSize::COUNT {
             f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
             f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i];
             f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i];

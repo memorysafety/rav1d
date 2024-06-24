@@ -10,11 +10,9 @@ use crate::src::ctx::CaseSet;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
 use crate::src::levels::BlockSize;
-use crate::src::levels::RectTxfmSize;
 use crate::src::levels::SegmentId;
-use crate::src::levels::TX_4X4;
+use crate::src::levels::TxfmSize;
 use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
 use parking_lot::RwLock;
@@ -96,7 +94,7 @@ pub struct Av1Restoration {
 /// the existing `y_off` and `x_off` args and applied at each use site of `txa.
 fn decomp_tx(
     txa: &mut [[[[u8; 32]; 32]; 2]; 2],
-    from: RectTxfmSize,
+    from: TxfmSize,
     depth: usize,
     y_off: u8,
     x_off: u8,
@@ -108,13 +106,13 @@ fn decomp_tx(
     let y0 = (y_off * t_dim.h) as usize;
     let x0 = (x_off * t_dim.w) as usize;
 
-    let is_split = if from == TX_4X4 || depth > 1 {
+    let is_split = if from == TxfmSize::S4x4 || depth > 1 {
         false
     } else {
         (tx_masks[depth] >> (y_off * 4 + x_off)) & 1 != 0
     };
     if is_split {
-        let sub = t_dim.sub as RectTxfmSize;
+        let sub = t_dim.sub;
 
         decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
         if t_dim.w >= t_dim.h {
@@ -151,7 +149,7 @@ fn mask_edges_inter(
     w4: usize,
     h4: usize,
     skip: bool,
-    max_tx: RectTxfmSize,
+    max_tx: TxfmSize,
     tx_masks: &[u16; 2],
     a: &mut [u8],
     l: &mut [u8],
@@ -235,7 +233,7 @@ fn mask_edges_intra(
     bx4: usize,
     w4: usize,
     h4: usize,
-    tx: RectTxfmSize,
+    tx: TxfmSize,
     a: &mut [u8],
     l: &mut [u8],
 ) {
@@ -312,7 +310,7 @@ fn mask_edges_chroma(
     cw4: usize,
     ch4: usize,
     skip_inter: bool,
-    tx: RectTxfmSize,
+    tx: TxfmSize,
     a: &mut [u8],
     l: &mut [u8],
     ss_hor: usize,
@@ -397,8 +395,8 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     iw: c_int,
     ih: c_int,
     bs: BlockSize,
-    ytx: RectTxfmSize,
-    uvtx: RectTxfmSize,
+    ytx: TxfmSize,
+    uvtx: TxfmSize,
     layout: Rav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
@@ -407,7 +405,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = cmp::min(iw - bx, b_dim[0]);
     let bh4 = cmp::min(ih - by, b_dim[1]);
@@ -502,9 +500,9 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     ih: c_int,
     skip: bool,
     bs: BlockSize,
-    max_ytx: RectTxfmSize,
+    max_ytx: TxfmSize,
     tx_masks: &[u16; 2],
-    uvtx: RectTxfmSize,
+    uvtx: TxfmSize,
     layout: Rav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
@@ -514,7 +512,7 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     let is_gmv = is_gmv as usize;
     let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = cmp::min(iw - bx, b_dim[0]);
     let bh4 = cmp::min(ih - by, b_dim[1]);

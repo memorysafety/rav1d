@@ -45,8 +45,8 @@ use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
-use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
@@ -55,26 +55,7 @@ use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_8X4;
 use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
 use crate::src::levels::WHT_WHT;
 use crate::src::lf_apply::rav1d_copy_lpf;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
@@ -90,7 +71,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::scan::dav1d_scans;
-use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
@@ -283,7 +263,7 @@ fn get_skip_ctx(
     chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> InRange<u8, 0, { 13 - 1 }> {
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
         let ss_hor = layout != Rav1dPixelLayout::I444;
@@ -352,38 +332,37 @@ fn get_skip_ctx(
     InRange::new(skip_ctx).unwrap()
 }
 
-// `tx: RectTxfmSize` arg is also `TxfmSize`.
-// `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
-fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> c_uint {
+fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
+    use TxfmSize::*;
     let s = match tx {
-        TX_4X4 => {
+        S4x4 => {
             let mut t = u8::read_ne(a) as i32 >> 6;
             t += u8::read_ne(l) as i32 >> 6;
             t - 1 - 1
         }
-        TX_8X8 => {
+        S8x8 => {
             let mut t = u16::read_ne(a) as u32 & mask as u32;
             t += u16::read_ne(l) as u32 & mask as u32;
             t = t.wrapping_mul(0x4040404);
             (t >> 24) as i32 - 2 - 2
         }
-        TX_16X16 => {
+        S16x16 => {
             let mut t = (u32::read_ne(a) & mask as u32) >> 6;
             t += (u32::read_ne(l) & mask as u32) >> 6;
             t = t.wrapping_mul(mul as u32);
             (t >> 24) as i32 - 4 - 4
         }
-        TX_32X32 => {
+        S32x32 => {
             let mut t = (u64::read_ne(a) & mask) >> 6;
             t += (u64::read_ne(l) & mask) >> 6;
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 8 - 8
         }
-        TX_64X64 => {
+        S64x64 => {
             let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
             t += (u64::read_ne(&a[8..]) & mask) >> 6;
             t += (u64::read_ne(&l[0..]) & mask) >> 6;
@@ -391,95 +370,94 @@ fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> c_uint {
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 16 - 16
         }
-        RTX_4X8 => {
+        R4x8 => {
             let mut t = u8::read_ne(a) as u32 & mask as u32;
             t += u16::read_ne(l) as u32 & mask as u32;
             t = t.wrapping_mul(0x4040404);
             (t >> 24) as i32 - 1 - 2
         }
-        RTX_8X4 => {
+        R8x4 => {
             let mut t = u16::read_ne(a) as u32 & mask as u32;
             t += u8::read_ne(l) as u32 & mask as u32;
             t = t.wrapping_mul(0x4040404);
             (t >> 24) as i32 - 2 - 1
         }
-        RTX_8X16 => {
+        R8x16 => {
             let mut t = u16::read_ne(a) as u32 & mask as u32;
             t += u32::read_ne(l) & mask as u32;
             t = (t >> 6).wrapping_mul(mul as u32);
             (t >> 24) as i32 - 2 - 4
         }
-        RTX_16X8 => {
+        R16x8 => {
             let mut t = u32::read_ne(a) & mask as u32;
             t += u16::read_ne(l) as c_uint & mask as u32;
             t = (t >> 6).wrapping_mul(mul as u32);
             (t >> 24) as i32 - 4 - 2
         }
-        RTX_16X32 => {
+        R16x32 => {
             let mut t = (u32::read_ne(a) & mask as u32) as u64;
             t += u64::read_ne(l) & mask;
             t = (t >> 6).wrapping_mul(mul);
             (t >> 56) as i32 - 4 - 8
         }
-        RTX_32X16 => {
+        R32x16 => {
             let mut t = u64::read_ne(a) & mask;
             t += (u32::read_ne(l) & mask as u32) as u64;
             t = (t >> 6).wrapping_mul(mul);
             (t >> 56) as i32 - 8 - 4
         }
-        RTX_32X64 => {
+        R32x64 => {
             let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
             t += (u64::read_ne(&l[0..]) & mask) >> 6;
             t += (u64::read_ne(&l[8..]) & mask) >> 6;
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 8 - 16
         }
-        RTX_64X32 => {
+        R64x32 => {
             let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
             t += (u64::read_ne(&a[8..]) & mask) >> 6;
             t += (u64::read_ne(&l[0..]) & mask) >> 6;
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 16 - 8
         }
-        RTX_4X16 => {
+        R4x16 => {
             let mut t = u8::read_ne(a) as u32 & mask as u32;
             t += u32::read_ne(l) & mask as u32;
             t = (t >> 6).wrapping_mul(mul as u32);
             (t >> 24) as i32 - 1 - 4
         }
-        RTX_16X4 => {
+        R16x4 => {
             let mut t = u32::read_ne(a) & mask as u32;
             t += u8::read_ne(l) as u32 & mask as u32;
             t = (t >> 6).wrapping_mul(mul as u32);
             (t >> 24) as i32 - 4 - 1
         }
-        RTX_8X32 => {
+        R8x32 => {
             let mut t = (u16::read_ne(a) as u32 & mask as u32) as u64;
             t += u64::read_ne(l) & mask;
             t = (t >> 6).wrapping_mul(mul);
             (t >> 56) as i32 - 2 - 8
         }
-        RTX_32X8 => {
+        R32x8 => {
             let mut t = u64::read_ne(a) & mask;
             t += (u16::read_ne(l) as u32 & mask as u32) as u64;
             t = (t >> 6).wrapping_mul(mul);
             (t >> 56) as i32 - 8 - 2
         }
-        RTX_16X64 => {
+        R16x64 => {
             let mut t = (u32::read_ne(a) & mask as u32) as u64;
             t += u64::read_ne(&l[0..]) & mask;
             t = (t >> 6) + ((u64::read_ne(&l[8..]) & mask) >> 6);
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 4 - 16
         }
-        RTX_64X16 => {
+        R64x16 => {
             let mut t = u64::read_ne(&a[0..]) & mask;
             t += (u32::read_ne(l) & mask as u32) as u64;
             t = (t >> 6) + ((u64::read_ne(&a[8..]) & mask) >> 6);
             t = t.wrapping_mul(mul);
             (t >> 56) as i32 - 16 - 4
         }
-        _ => unreachable!(),
     };
 
     (s != 0) as c_uint + (s > 0) as c_uint
@@ -524,7 +502,7 @@ fn decode_coefs<BD: BitDepth>(
     t_cf: &mut Cf,
     a: &mut [u8],
     l: &mut [u8],
-    tx: RectTxfmSize,
+    tx: TxfmSize,
     bs: BlockSize,
     b: &Av1Block,
     plane: usize,
@@ -568,11 +546,11 @@ fn decode_coefs<BD: BitDepth>(
     use Av1BlockIntraInter::*;
     *txtp = match &b.ii {
         _ if lossless => {
-            assert!(t_dim.max == TX_4X4);
+            assert!(t_dim.max == TxfmSize::S4x4 as _);
             WHT_WHT
         }
-        Intra(_) if t_dim.max >= TX_32X32 => DCT_DCT,
-        Inter(_) if t_dim.max >= TX_64X64 => DCT_DCT,
+        Intra(_) if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
+        Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
         Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
         Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
@@ -587,7 +565,7 @@ fn decode_coefs<BD: BitDepth>(
                 intra.y_mode
             };
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TX_16X16 {
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TxfmSize::S16x16 as _ {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
@@ -604,7 +582,7 @@ fn decode_coefs<BD: BitDepth>(
             };
             if dbg {
                 println!(
-                    "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
+                    "Post-txtp-intra[{:?}->{}][{}][{}->{}]: r={}",
                     tx, t_dim.min, y_mode_nofilt, idx, txtp, ts_c.msac.rng,
                 );
             }
@@ -612,7 +590,7 @@ fn decode_coefs<BD: BitDepth>(
         }
         Inter(_) => {
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TX_32X32 {
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TxfmSize::S32x32 as _ {
                 let bool_idx = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter3[t_dim.min as usize],
@@ -623,7 +601,7 @@ fn decode_coefs<BD: BitDepth>(
                 } else {
                     IDTX
                 }
-            } else if t_dim.min == TX_16X16 {
+            } else if t_dim.min == TxfmSize::S16x16 as _ {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter2.0,
@@ -640,7 +618,7 @@ fn decode_coefs<BD: BitDepth>(
             };
             if dbg {
                 println!(
-                    "Post-txtp-inter[{}->{}][{}->{}]: r={}",
+                    "Post-txtp-inter[{:?}->{}][{}->{}]: r={}",
                     tx, t_dim.min, idx, txtp, ts_c.msac.rng,
                 );
             }
@@ -649,7 +627,8 @@ fn decode_coefs<BD: BitDepth>(
     };
 
     // find end-of-block (eob)
-    let tx2dszctx = cmp::min(t_dim.lw, TX_32X32 as u8) + cmp::min(t_dim.lh, TX_32X32 as u8);
+    let tx2dszctx =
+        cmp::min(t_dim.lw, TxfmSize::S32x32 as u8) + cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let chroma = chroma as usize;
     let is_1d = (tx_class != TxClass::TwoD) as usize;
@@ -742,7 +721,7 @@ fn decode_coefs<BD: BitDepth>(
         let mut scan: &[u16] = &[];
         match tx_class {
             TxClass::TwoD => {
-                let nonsquare_tx: c_uint = (tx >= RTX_4X8) as c_uint;
+                let nonsquare_tx: c_uint = (tx >= TxfmSize::R4x8) as c_uint;
                 let lo_ctx_offsets = Some(
                     &dav1d_lo_ctx_offsets
                         [nonsquare_tx.wrapping_add(tx as c_uint & nonsquare_tx) as usize],
@@ -1622,7 +1601,7 @@ fn read_coef_tree<BD: BitDepth>(
     mut ts_c: Option<&mut Rav1dTileStateContext>,
     bs: BlockSize,
     b: &Av1Block,
-    ytx: RectTxfmSize,
+    ytx: TxfmSize,
     depth: usize,
     tx_split: [u16; 2],
     x_off: c_int,
@@ -1640,7 +1619,7 @@ fn read_coef_tree<BD: BitDepth>(
     // use `TX_4X4` but can't be splitted.
     // Avoids an undefined left shift.
     if depth < 2 && tx_split[depth] != 0 && tx_split[depth] & 1 << y_off * 4 + x_off != 0 {
-        let sub = t_dim.sub as RectTxfmSize;
+        let sub = t_dim.sub;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w;
         let txsh = sub_t_dim.h;
@@ -1749,7 +1728,7 @@ fn read_coef_tree<BD: BitDepth>(
             );
             if debug_block_info!(f, t.b) {
                 println!(
-                    "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
+                    "Post-y-cf-blk[tx={:?},txtp={},eob={}]: r={}",
                     ytx, txtp, eob, ts_c.msac.rng,
                 );
             }
@@ -1823,7 +1802,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let by4 = t.b.y as usize & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0];
     let bh4 = b_dim[1];
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -1927,7 +1906,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                             if debug_block_info!(f, t.b) {
                                 println!(
-                                    "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
+                                    "Post-y-cf-blk[tx={:?},txtp={},eob={}]: r={}",
                                     intra.tx, txtp, eob, ts_c.msac.rng,
                                 );
                             }
@@ -2003,7 +1982,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             &mut t.cf,
                             &mut a_ccoef.index_mut((a_start.., ..a_len)),
                             &mut l_ccoef.index_mut((l_start.., ..l_len)),
-                            b.uvtx as RectTxfmSize,
+                            b.uvtx,
                             bs,
                             b,
                             1 + pl,
@@ -2013,7 +1992,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                         );
                         if debug_block_info!(f, t.b) {
                             println!(
-                                "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
+                                "Post-uv-cf-blk[pl={},tx={:?},txtp={},eob={}]: r={}",
                                 pl, b.uvtx, txtp, eob, ts_c.msac.rng,
                             );
                         }
@@ -2252,7 +2231,7 @@ fn obmc<BD: BitDepth>(
         while x < w4 && i < cmp::min(b_dim[2], 4) {
             // only odd blocks are considered for overlap handling, hence +1
             let a_r = *f.rf.r.index(r[0] + t.b.x as usize + x as usize + 1);
-            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            let a_b_dim = a_r.bs.dimensions();
             let step4 = clip(a_b_dim[0], 2, 16);
 
             if a_r.r#ref.r#ref[0] > 0 {
@@ -2300,7 +2279,7 @@ fn obmc<BD: BitDepth>(
         while y < h4 && i < cmp::min(b_dim[3], 4) {
             // only odd blocks are considered for overlap handling, hence +1
             let l_r = *f.rf.r.index(r[y as usize + 1 + 1] + t.b.x as usize - 1);
-            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            let l_b_dim = l_r.bs.dimensions();
             let step4 = clip(l_b_dim[1], 2, 16);
 
             if l_r.r#ref.r#ref[0] > 0 {
@@ -2455,7 +2434,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
@@ -2659,7 +2638,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                     .lcoef
                                     .index_mut(a_start..a_start + t_dim.w as usize),
                                 &mut t.l.lcoef.index_mut(l_start..l_start + t_dim.h as usize),
-                                intra.tx as RectTxfmSize,
+                                intra.tx,
                                 bs,
                                 b,
                                 0,
@@ -2670,7 +2649,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             cf = t.cf.select_mut::<BD>();
                             if debug_block_info!(f, t.b) {
                                 println!(
-                                    "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
+                                    "Post-y-cf-blk[tx={:?},txtp={},eob={}]: r={}",
                                     intra.tx,
                                     txtp,
                                     eob,
@@ -3026,7 +3005,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                     &mut t.cf,
                                     &mut a_ccoef.index_mut(a_start..a_start + uv_t_dim.w as usize),
                                     &mut l_ccoef.index_mut(l_start..l_start + uv_t_dim.h as usize),
-                                    b.uvtx as RectTxfmSize,
+                                    b.uvtx,
                                     bs,
                                     b,
                                     1 + pl,
@@ -3037,7 +3016,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 cf = t.cf.select_mut::<BD>();
                                 if debug_block_info!(f, t.b) {
                                     println!(
-                                            "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={} [x={},cbx4={}]",
+                                            "Post-uv-cf-blk[pl={},tx={:?},txtp={},eob={}]: r={} [x={},cbx4={}]",
                                             pl,
                                             b.uvtx,
                                             txtp,
@@ -3124,7 +3103,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
@@ -3917,7 +3896,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                 cf = t.cf.select_mut::<BD>();
                                 if debug_block_info!(f, t.b) {
                                     println!(
-                                        "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
+                                        "Post-uv-cf-blk[pl={},tx={:?},txtp={},eob={}]: r={}",
                                         pl,
                                         b.uvtx,
                                         txtp,

@@ -5,12 +5,14 @@ use crate::src::align::Align16;
 use crate::src::align::Align4;
 use crate::src::align::Align64;
 use crate::src::align::Align8;
+use crate::src::enum_map::DefaultValue;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterPredMode;
 use crate::src::levels::TxClass;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -45,32 +47,12 @@ use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_8X4;
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
 use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::VERT_RIGHT_PRED;
@@ -88,7 +70,7 @@ pub struct TxfmInfo {
     pub lh: u8,
     pub min: u8,
     pub max: u8,
-    pub sub: u8,
+    pub sub: TxfmSize,
     pub ctx: u8,
 }
 
@@ -178,7 +160,7 @@ pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLev
     ]
 };
 
-pub static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
+static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -203,263 +185,237 @@ pub static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
     [1, 1, 0, 0],
 ];
 
-pub static dav1d_txfm_dimensions: [TxfmInfo; N_RECT_TX_SIZES] = [
-    TxfmInfo {
-        w: 1,
-        h: 1,
-        lw: 0,
-        lh: 0,
-        min: 0,
-        max: 0,
-        sub: 0,
-        ctx: 0,
-    },
-    TxfmInfo {
-        w: 2,
-        h: 2,
-        lw: 1,
-        lh: 1,
-        min: 1,
-        max: 1,
-        sub: TX_4X4 as u8,
-        ctx: 1,
-    },
-    TxfmInfo {
-        w: 4,
-        h: 4,
-        lw: 2,
-        lh: 2,
-        min: 2,
-        max: 2,
-        sub: TX_8X8 as u8,
-        ctx: 2,
-    },
-    TxfmInfo {
-        w: 8,
-        h: 8,
-        lw: 3,
-        lh: 3,
-        min: 3,
-        max: 3,
-        sub: TX_16X16 as u8,
-        ctx: 3,
-    },
-    TxfmInfo {
-        w: 16,
-        h: 16,
-        lw: 4,
-        lh: 4,
-        min: 4,
-        max: 4,
-        sub: TX_32X32 as u8,
-        ctx: 4,
-    },
-    TxfmInfo {
-        w: 1,
-        h: 2,
-        lw: 0,
-        lh: 1,
-        min: 0,
-        max: 1,
-        sub: TX_4X4 as u8,
-        ctx: 1,
-    },
-    TxfmInfo {
-        w: 2,
-        h: 1,
-        lw: 1,
-        lh: 0,
-        min: 0,
-        max: 1,
-        sub: TX_4X4 as u8,
-        ctx: 1,
-    },
-    TxfmInfo {
-        w: 2,
-        h: 4,
-        lw: 1,
-        lh: 2,
-        min: 1,
-        max: 2,
-        sub: TX_8X8 as u8,
-        ctx: 2,
-    },
-    TxfmInfo {
-        w: 4,
-        h: 2,
-        lw: 2,
-        lh: 1,
-        min: 1,
-        max: 2,
-        sub: TX_8X8 as u8,
-        ctx: 2,
-    },
-    TxfmInfo {
-        w: 4,
-        h: 8,
-        lw: 2,
-        lh: 3,
-        min: 2,
-        max: 3,
-        sub: TX_16X16 as u8,
-        ctx: 3,
-    },
-    TxfmInfo {
-        w: 8,
-        h: 4,
-        lw: 3,
-        lh: 2,
-        min: 2,
-        max: 3,
-        sub: TX_16X16 as u8,
-        ctx: 3,
-    },
-    TxfmInfo {
-        w: 8,
-        h: 16,
-        lw: 3,
-        lh: 4,
-        min: 3,
-        max: 4,
-        sub: TX_32X32 as u8,
-        ctx: 4,
-    },
-    TxfmInfo {
-        w: 16,
-        h: 8,
-        lw: 4,
-        lh: 3,
-        min: 3,
-        max: 4,
-        sub: TX_32X32 as u8,
-        ctx: 4,
-    },
-    TxfmInfo {
-        w: 1,
-        h: 4,
-        lw: 0,
-        lh: 2,
-        min: 0,
-        max: 2,
-        sub: RTX_4X8 as u8,
-        ctx: 1,
-    },
-    TxfmInfo {
-        w: 4,
-        h: 1,
-        lw: 2,
-        lh: 0,
-        min: 0,
-        max: 2,
-        sub: RTX_8X4 as u8,
-        ctx: 1,
-    },
-    TxfmInfo {
-        w: 2,
-        h: 8,
-        lw: 1,
-        lh: 3,
-        min: 1,
-        max: 3,
-        sub: RTX_8X16 as u8,
-        ctx: 2,
-    },
-    TxfmInfo {
-        w: 8,
-        h: 2,
-        lw: 3,
-        lh: 1,
-        min: 1,
-        max: 3,
-        sub: RTX_16X8 as u8,
-        ctx: 2,
-    },
-    TxfmInfo {
-        w: 4,
-        h: 16,
-        lw: 2,
-        lh: 4,
-        min: 2,
-        max: 4,
-        sub: RTX_16X32 as u8,
-        ctx: 3,
-    },
-    TxfmInfo {
-        w: 16,
-        h: 4,
-        lw: 4,
-        lh: 2,
-        min: 2,
-        max: 4,
-        sub: RTX_32X16 as u8,
-        ctx: 3,
-    },
-];
+impl BlockSize {
+    #[inline]
+    pub fn dimensions(self) -> &'static [u8; 4] {
+        &dav1d_block_dimensions[self as usize]
+    }
+}
 
-pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; BlockSize::COUNT] = [
+pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
+    use TxfmSize::*;
     [
-        TX_64X64 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-    ],
+        TxfmInfo {
+            w: 1,
+            h: 1,
+            lw: 0,
+            lh: 0,
+            min: 0,
+            max: 0,
+            sub: DefaultValue::DEFAULT,
+            ctx: 0,
+        },
+        TxfmInfo {
+            w: 2,
+            h: 2,
+            lw: 1,
+            lh: 1,
+            min: 1,
+            max: 1,
+            sub: S4x4,
+            ctx: 1,
+        },
+        TxfmInfo {
+            w: 4,
+            h: 4,
+            lw: 2,
+            lh: 2,
+            min: 2,
+            max: 2,
+            sub: S8x8,
+            ctx: 2,
+        },
+        TxfmInfo {
+            w: 8,
+            h: 8,
+            lw: 3,
+            lh: 3,
+            min: 3,
+            max: 3,
+            sub: S16x16,
+            ctx: 3,
+        },
+        TxfmInfo {
+            w: 16,
+            h: 16,
+            lw: 4,
+            lh: 4,
+            min: 4,
+            max: 4,
+            sub: S32x32,
+            ctx: 4,
+        },
+        TxfmInfo {
+            w: 1,
+            h: 2,
+            lw: 0,
+            lh: 1,
+            min: 0,
+            max: 1,
+            sub: S4x4,
+            ctx: 1,
+        },
+        TxfmInfo {
+            w: 2,
+            h: 1,
+            lw: 1,
+            lh: 0,
+            min: 0,
+            max: 1,
+            sub: S4x4,
+            ctx: 1,
+        },
+        TxfmInfo {
+            w: 2,
+            h: 4,
+            lw: 1,
+            lh: 2,
+            min: 1,
+            max: 2,
+            sub: S8x8,
+            ctx: 2,
+        },
+        TxfmInfo {
+            w: 4,
+            h: 2,
+            lw: 2,
+            lh: 1,
+            min: 1,
+            max: 2,
+            sub: S8x8,
+            ctx: 2,
+        },
+        TxfmInfo {
+            w: 4,
+            h: 8,
+            lw: 2,
+            lh: 3,
+            min: 2,
+            max: 3,
+            sub: S16x16,
+            ctx: 3,
+        },
+        TxfmInfo {
+            w: 8,
+            h: 4,
+            lw: 3,
+            lh: 2,
+            min: 2,
+            max: 3,
+            sub: S16x16,
+            ctx: 3,
+        },
+        TxfmInfo {
+            w: 8,
+            h: 16,
+            lw: 3,
+            lh: 4,
+            min: 3,
+            max: 4,
+            sub: S32x32,
+            ctx: 4,
+        },
+        TxfmInfo {
+            w: 16,
+            h: 8,
+            lw: 4,
+            lh: 3,
+            min: 3,
+            max: 4,
+            sub: S32x32,
+            ctx: 4,
+        },
+        TxfmInfo {
+            w: 1,
+            h: 4,
+            lw: 0,
+            lh: 2,
+            min: 0,
+            max: 2,
+            sub: R4x8,
+            ctx: 1,
+        },
+        TxfmInfo {
+            w: 4,
+            h: 1,
+            lw: 2,
+            lh: 0,
+            min: 0,
+            max: 2,
+            sub: R8x4,
+            ctx: 1,
+        },
+        TxfmInfo {
+            w: 2,
+            h: 8,
+            lw: 1,
+            lh: 3,
+            min: 1,
+            max: 3,
+            sub: R8x16,
+            ctx: 2,
+        },
+        TxfmInfo {
+            w: 8,
+            h: 2,
+            lw: 3,
+            lh: 1,
+            min: 1,
+            max: 3,
+            sub: R16x8,
+            ctx: 2,
+        },
+        TxfmInfo {
+            w: 4,
+            h: 16,
+            lw: 2,
+            lh: 4,
+            min: 2,
+            max: 4,
+            sub: R16x32,
+            ctx: 3,
+        },
+        TxfmInfo {
+            w: 16,
+            h: 4,
+            lw: 4,
+            lh: 2,
+            min: 2,
+            max: 4,
+            sub: R32x16,
+            ctx: 3,
+        },
+    ]
+};
+
+pub static dav1d_max_txfm_size_for_bs: [[TxfmSize; 4]; BlockSize::COUNT] = {
+    use TxfmSize::*;
+    const DEFAULT: TxfmSize = DefaultValue::DEFAULT;
     [
-        TX_64X64 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-    ],
-    [TX_64X64 as u8, TX_32X32 as u8, 0, TX_32X32 as u8],
-    [
-        TX_64X64 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-    ],
-    [
-        RTX_64X32 as u8,
-        RTX_32X16 as u8,
-        TX_32X32 as u8,
-        TX_32X32 as u8,
-    ],
-    [
-        RTX_64X16 as u8,
-        RTX_32X8 as u8,
-        RTX_32X16 as u8,
-        RTX_32X16 as u8,
-    ],
-    [RTX_32X64 as u8, RTX_16X32 as u8, 0, TX_32X32 as u8],
-    [
-        TX_32X32 as u8,
-        TX_16X16 as u8,
-        RTX_16X32 as u8,
-        TX_32X32 as u8,
-    ],
-    [
-        RTX_32X16 as u8,
-        RTX_16X8 as u8,
-        TX_16X16 as u8,
-        RTX_32X16 as u8,
-    ],
-    [
-        RTX_32X8 as u8,
-        RTX_16X4 as u8,
-        RTX_16X8 as u8,
-        RTX_32X8 as u8,
-    ],
-    [RTX_16X64 as u8, RTX_8X32 as u8, 0, RTX_16X32 as u8],
-    [RTX_16X32 as u8, RTX_8X16 as u8, 0, RTX_16X32 as u8],
-    [TX_16X16 as u8, TX_8X8 as u8, RTX_8X16 as u8, TX_16X16 as u8],
-    [RTX_16X8 as u8, RTX_8X4 as u8, TX_8X8 as u8, RTX_16X8 as u8],
-    [RTX_16X4 as u8, RTX_8X4 as u8, RTX_8X4 as u8, RTX_16X4 as u8],
-    [RTX_8X32 as u8, RTX_4X16 as u8, 0, RTX_8X32 as u8],
-    [RTX_8X16 as u8, RTX_4X8 as u8, 0, RTX_8X16 as u8],
-    [TX_8X8 as u8, TX_4X4 as u8, RTX_4X8 as u8, TX_8X8 as u8],
-    [RTX_8X4 as u8, TX_4X4 as u8, TX_4X4 as u8, RTX_8X4 as u8],
-    [RTX_4X16 as u8, RTX_4X8 as u8, 0, RTX_4X16 as u8],
-    [RTX_4X8 as u8, TX_4X4 as u8, 0, RTX_4X8 as u8],
-    [TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8],
-];
+        [S64x64, S32x32, S32x32, S32x32],
+        [S64x64, S32x32, S32x32, S32x32],
+        [S64x64, S32x32, DEFAULT, S32x32],
+        [S64x64, S32x32, S32x32, S32x32],
+        [R64x32, R32x16, S32x32, S32x32],
+        [R64x16, R32x8, R32x16, R32x16],
+        [R32x64, R16x32, DEFAULT, S32x32],
+        [S32x32, S16x16, R16x32, S32x32],
+        [R32x16, R16x8, S16x16, R32x16],
+        [R32x8, R16x4, R16x8, R32x8],
+        [R16x64, R8x32, DEFAULT, R16x32],
+        [R16x32, R8x16, DEFAULT, R16x32],
+        [S16x16, S8x8, R8x16, S16x16],
+        [R16x8, R8x4, S8x8, R16x8],
+        [R16x4, R8x4, R8x4, R16x4],
+        [R8x32, R4x16, DEFAULT, R8x32],
+        [R8x16, R4x8, DEFAULT, R8x16],
+        [S8x8, S4x4, R4x8, S8x8],
+        [R8x4, S4x4, S4x4, R8x4],
+        [R4x16, R4x8, DEFAULT, R4x16],
+        [R4x8, S4x4, DEFAULT, R4x8],
+        [S4x4, S4x4, S4x4, S4x4],
+    ]
+};
 
 pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     let mut tbl = [0; N_UV_INTRA_PRED_MODES];
