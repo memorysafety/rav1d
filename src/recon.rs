@@ -182,7 +182,7 @@ pub(crate) type read_pal_uv_fn = fn(
 ) -> u8; // `pal_sz[1]`
 
 #[inline]
-fn read_golomb(msac: &mut MsacContext) -> c_uint {
+fn read_golomb(msac: &mut MsacContext) -> u32 {
     let mut len = 0;
     let mut val = 1;
 
@@ -190,7 +190,7 @@ fn read_golomb(msac: &mut MsacContext) -> c_uint {
         len += 1;
     }
     for _ in 0..len {
-        val = (val << 1) + rav1d_msac_decode_bool_equi(msac) as c_uint;
+        val = (val << 1) + rav1d_msac_decode_bool_equi(msac) as u32;
     }
 
     val - 1
