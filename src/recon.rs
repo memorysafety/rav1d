@@ -468,28 +468,28 @@ fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
 fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
-    hi_mag: &mut c_uint,
+    hi_mag: &mut u32,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: u32,
     y: u32,
     stride: u8,
 ) -> u8 {
     let stride = stride as usize;
-    let level = |y, x| levels[y * stride + x] as usize;
+    let level = |y, x| levels[y * stride + x] as u32;
 
     let mut mag = level(0, 1) + level(1, 0);
     let offset = match ctx_offsets {
         Some(ctx_offsets) => {
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
-            *hi_mag = mag as c_uint;
+            *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
             ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)]
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
             mag += level(0, 2);
-            *hi_mag = mag as c_uint;
+            *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
             26 + if y > 1 { 10 } else { y as u8 * 5 }
         }
