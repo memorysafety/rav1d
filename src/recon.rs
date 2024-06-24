@@ -751,7 +751,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mut y;
                 match TX_CLASS {
                     TxClass::TwoD => {
-                        rc = scan[eob as usize] as u32;
+                        rc = scan[eob as usize];
                         x = (rc >> shift) as u8;
                         y = rc as u8 & mask;
                     }
@@ -759,12 +759,12 @@ fn decode_coefs<BD: BitDepth>(
                         // Transposing reduces the stride and padding requirements.
                         x = eob as u8 & mask;
                         y = (eob >> shift) as u8;
-                        rc = eob as u32;
+                        rc = eob as u16;
                     }
                     TxClass::V => {
                         x = eob as u8 & mask;
                         y = (eob >> shift) as u8;
-                        rc = (x as u32) << shift2 | y as u32;
+                        rc = (x as u16) << shift2 | y as u16;
                     }
                 }
                 if dbg {
@@ -803,22 +803,22 @@ fn decode_coefs<BD: BitDepth>(
                 let mut i = eob - 1;
                 while i > 0 {
                     // ac
-                    let rc_i: u32;
+                    let rc_i;
                     match tx_class {
                         TxClass::TwoD => {
-                            rc_i = scan[i as usize] as u32;
+                            rc_i = scan[i as usize];
                             x = (rc_i >> shift) as u8;
                             y = rc_i as u8 & mask;
                         }
                         TxClass::H => {
                             x = i as u8 & mask;
                             y = (i >> shift) as u8;
-                            rc_i = i as u32;
+                            rc_i = i as u16;
                         }
                         TxClass::V => {
                             x = i as u8 & mask;
                             y = (i >> shift) as u8;
-                            rc_i = (x as u32) << shift2 | y as u32;
+                            rc_i = (x as u16) << shift2 | y as u16;
                         }
                     }
                     assert!(x < 32 && y < 32);
@@ -863,7 +863,7 @@ fn decode_coefs<BD: BitDepth>(
                             f,
                             t_cf,
                             rc_i as usize,
-                            (((tok as u32) << 11) | rc).as_::<BD::Coef>(),
+                            (((tok as u16) << 11) | rc).as_::<BD::Coef>(),
                         );
                         rc = rc_i;
                     } else {
@@ -872,7 +872,7 @@ fn decode_coefs<BD: BitDepth>(
                         tok *= 0x17ff41;
                         level[0] = tok as u8;
                         // `tok ? (tok << 11) | rc : 0`
-                        tok = ((tok >> 9) & rc.wrapping_add(!0x7ff));
+                        tok = ((tok >> 9) & (rc as u32).wrapping_add(!0x7ff));
                         if tok != 0 {
                             rc = rc_i;
                         }
@@ -1143,7 +1143,7 @@ fn decode_coefs<BD: BitDepth>(
                     (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
 
-                rc = rc_tok & 0x3ff;
+                rc = rc_tok as u16 & 0x3ff;
                 if !(rc != 0) {
                     break;
                 }
@@ -1193,7 +1193,7 @@ fn decode_coefs<BD: BitDepth>(
                     (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
                 );
 
-                rc = rc_tok & 0x3ff; // next non-zero `rc`, zero if `eob`
+                rc = rc_tok as u16 & 0x3ff; // next non-zero `rc`, zero if `eob`
                 if !(rc != 0) {
                     break;
                 }
