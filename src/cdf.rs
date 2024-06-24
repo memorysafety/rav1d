@@ -2,7 +2,6 @@
 
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
@@ -12,6 +11,7 @@ use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::MVJoint;
+use crate::src::levels::SegmentId;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_TX_SIZES;
@@ -103,7 +103,7 @@ pub struct CdfModeContext {
     pub angle_delta: Align16<[[u16; 8]; 8]>,
     pub filter_intra: Align16<[u16; 8]>,
     pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
-    pub seg_id: Align16<[[u16; RAV1D_MAX_SEGMENTS as usize]; 3]>,
+    pub seg_id: Align16<[[u16; SegmentId::COUNT]; 3]>,
     pub pal_sz: Align16<[[[u16; 8]; 7]; 2]>,
     pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
     pub filter: Align8<[[[u16; 4]; 8]; 2]>,
@@ -5021,7 +5021,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_4d!(N_TX_SIZES, 2, 41 /*42*/, 3, coef.base_tok);
     update_bit_2d!(2, 3, coef.dc_sign);
     update_cdf_4d!(4, 2, 21, 3, coef.br_tok);
-    update_cdf_2d!(3, (RAV1D_MAX_SEGMENTS - 1) as usize, m.seg_id);
+    update_cdf_2d!(3, SegmentId::COUNT - 1, m.seg_id);
     update_cdf_1d!(7, m.cfl_sign.0);
     update_cdf_2d!(6, 15, m.cfl_alpha);
     update_bit_0d!(m.restore_wiener);

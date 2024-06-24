@@ -4,7 +4,6 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::src::align::Align16;
 use crate::src::align::ArrayDefault;
 use crate::src::ctx::CaseSet;
@@ -12,6 +11,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
+use crate::src::levels::SegmentId;
 use crate::src::levels::TX_4X4;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::dav1d_block_dimensions;
@@ -671,12 +671,12 @@ fn calc_lf_value_chroma(
 }
 
 pub(crate) fn rav1d_calc_lf_values(
-    lflvl_values: &mut [Align16<[[[u8; 2]; 8]; 4]>; RAV1D_MAX_SEGMENTS as usize],
+    lflvl_values: &mut [Align16<[[[u8; 2]; 8]; 4]>; SegmentId::COUNT],
     hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 {
-        RAV1D_MAX_SEGMENTS as usize
+        SegmentId::COUNT
     } else {
         1
     };

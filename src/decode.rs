@@ -16,7 +16,6 @@ use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::headers::SgrIdx;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
@@ -98,6 +97,7 @@ use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
+use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DC_PRED;
@@ -186,13 +186,13 @@ fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &[[[RelaxedAtomic<u16>; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
+    dq: &[[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT],
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     let len = if segmentation_is_enabled {
-        RAV1D_MAX_SEGMENTS as usize
+        SegmentId::COUNT
     } else {
         1
     };
@@ -383,7 +383,8 @@ fn read_tx_tree(
     };
 }
 
-fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
+fn neg_deinterleave(diff: u8, r#ref: SegmentId, max: u8) -> u8 {
+    let r#ref = r#ref.get() as u8;
     if r#ref == 0 {
         diff
     } else if r#ref + 1 >= max {
@@ -798,7 +799,7 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id as usize] || max_ytx == TX_4X4) {
+    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TX_4X4) {
         uvtx = TX_4X4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -866,24 +867,23 @@ fn get_prev_frame_segid(
     b: Bxy,
     w4: c_int,
     h4: c_int,
-    ref_seg_map: &DisjointMutSlice<u8>,
+    ref_seg_map: &DisjointMutSlice<SegmentId>,
     stride: ptrdiff_t,
-) -> u8 {
+) -> SegmentId {
     assert!(frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
 
-    let mut prev_seg_id = 8;
+    let mut prev_seg_id = SegmentId::max();
     for y in 0..h4 as usize {
         let offset = (b.y as usize + y) * stride as usize + b.x as usize;
         prev_seg_id = ref_seg_map
-            .index(offset..offset + w4 as usize)
+            .index((offset.., ..w4 as usize))
             .iter()
             .copied()
             .fold(prev_seg_id, cmp::min);
-        if prev_seg_id == 0 {
+        if prev_seg_id == SegmentId::min() {
             break;
         }
     }
-    assert!(prev_seg_id < 8);
 
     prev_seg_id
 }
@@ -1330,17 +1330,14 @@ fn decode_b(
     let frame_hdr: &Rav1dFrameHeader = &f.frame_hdr.as_ref().unwrap();
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
-            if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                let seg_id =
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return Err(());
-                }
-                b.seg_id = seg_id;
-            } else {
-                b.seg_id = 0;
-            }
-            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+            b.seg_id = f
+                .prev_segmap
+                .as_ref()
+                .map(|prev_segmap| {
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride)
+                })
+                .unwrap_or_default();
+            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
                 let index =
@@ -1352,22 +1349,20 @@ fn decode_b(
                 seg_pred
             } {
                 // temporal predicted seg_id
-                if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                    let seg_id = get_prev_frame_segid(
-                        frame_hdr,
-                        t.b,
-                        w4,
-                        h4,
-                        &prev_segmap.inner,
-                        f.b4_stride,
-                    );
-                    if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                        return Err(());
-                    }
-                    b.seg_id = seg_id;
-                } else {
-                    b.seg_id = 0;
-                }
+                b.seg_id = f
+                    .prev_segmap
+                    .as_ref()
+                    .map(|prev_segmap| {
+                        get_prev_frame_segid(
+                            frame_hdr,
+                            t.b,
+                            w4,
+                            h4,
+                            &prev_segmap.inner,
+                            f.b4_stride,
+                        )
+                    })
+                    .unwrap_or_default();
             } else {
                 let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
                     t.b,
@@ -1379,27 +1374,26 @@ fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    RAV1D_MAX_SEGMENTS as usize - 1,
+                    SegmentId::COUNT - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
-                    b.seg_id = 0; // error?
+                let mut seg_id =
+                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if seg_id >= last_active_seg_id_plus1 {
+                    seg_id = 0; // error?
                 }
-                if b.seg_id >= RAV1D_MAX_SEGMENTS {
-                    b.seg_id = 0; // error?
-                }
+                b.seg_id = SegmentId::new(seg_id).unwrap_or_default(); // error?
             }
 
             if debug_block_info!(f, t.b) {
                 println!("Post-segid[preskip;{}]: r={}", b.seg_id, ts_c.msac.rng);
             }
 
-            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+            seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
         }
     } else {
-        b.seg_id = 0;
+        b.seg_id = Default::default();
     }
 
     // skip_mode
@@ -1447,16 +1441,13 @@ fn decode_b(
             seg_pred
         } {
             // temporal predicted seg_id
-            if let Some(prev_segmap) = f.prev_segmap.as_ref() {
-                let seg_id =
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride);
-                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return Err(());
-                }
-                b.seg_id = seg_id;
-            } else {
-                b.seg_id = 0;
-            }
+            b.seg_id = f
+                .prev_segmap
+                .as_ref()
+                .map(|prev_segmap| {
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride)
+                })
+                .unwrap_or_default();
         } else {
             let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
                 t.b,
@@ -1465,27 +1456,26 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            if b.skip != 0 {
-                b.seg_id = pred_seg_id;
+            b.seg_id = if b.skip != 0 {
+                pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    RAV1D_MAX_SEGMENTS as usize - 1,
+                    SegmentId::COUNT - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
-                    b.seg_id = 0; // error?
+                let mut seg_id =
+                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if seg_id >= last_active_seg_id_plus1 {
+                    seg_id = 0; // error?
                 }
-            }
-            if b.seg_id >= RAV1D_MAX_SEGMENTS {
-                b.seg_id = 0; // error?
-            }
+                SegmentId::new(seg_id).unwrap_or_default() // error?
+            };
         }
 
-        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
 
         if debug_block_info!(f, t.b) {
             println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts_c.msac.rng);
@@ -1683,7 +1673,7 @@ fn decode_b(
         let uv_angle;
         let cfl_alpha;
         if has_chroma {
-            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
                 cbw4 == 1 && cbh4 == 1
             } else {
                 (cfl_allowed_mask & (1 << bs as u8)) != 0
@@ -1882,7 +1872,7 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
 
-        let tx = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+        let tx = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
             b.uvtx = TX_4X4;
             b.uvtx
         } else {
@@ -1939,7 +1929,7 @@ fn decode_b(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
-                &lflvl[b.seg_id as usize],
+                &lflvl[b.seg_id.get()],
                 t.b,
                 f.w4,
                 f.h4,
@@ -3075,7 +3065,7 @@ fn decode_b(
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
-            if frame_hdr.segmentation.lossless[b.seg_id as usize] {
+            if frame_hdr.segmentation.lossless[b.seg_id.get()] {
                 ytx = TX_4X4;
                 uvtx = TX_4X4;
             }
@@ -3094,7 +3084,7 @@ fn decode_b(
                 // even though the whole array is not passed.
                 // Dereferencing this in Rust is UB, so instead
                 // we pass the indices as args, which are then applied at the use sites.
-                &lflvl[b.seg_id as usize],
+                &lflvl[b.seg_id.get()],
                 (r#ref[0] + 1) as usize,
                 is_globalmv == 0,
                 t.b,
@@ -3174,7 +3164,7 @@ fn decode_b(
         CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
             for i in 0..bh4 {
                 let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut(i..i + bw4), b.seg_id);
+                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id);
             }
         });
     }
@@ -5238,7 +5228,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     // Allocate one here and zero it out.
                     let segmap_size = f.b4_stride as usize * 32 * f.sb128h as usize;
                     // TODO fallible allocation
-                    (0..segmap_size).map(|_| 0).collect()
+                    (0..segmap_size).map(|_| Default::default()).collect()
                 }
                 (_, Some(prev_segmap)) => {
                     // We're not updating an existing map,

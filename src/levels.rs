@@ -3,6 +3,9 @@
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::enum_map::EnumKey;
 use bitflags::bitflags;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::mem;
 use std::ops::Neg;
 use strum::EnumCount;
@@ -496,13 +499,50 @@ impl Default for Av1BlockIntraInter {
     }
 }
 
+/// Within range `0..`[`SegmentId::COUNT`].
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SegmentId {
+    id: u8,
+}
+
+impl SegmentId {
+    pub const COUNT: usize = 8;
+
+    pub const fn new(id: u8) -> Option<Self> {
+        if id < Self::COUNT as _ {
+            Some(Self { id })
+        } else {
+            None
+        }
+    }
+
+    pub const fn get(&self) -> usize {
+        // Cheaply make sure it is in bounds in a way the compiler can see at call sites.
+        self.id as usize % Self::COUNT
+    }
+
+    pub fn min() -> Self {
+        Self::new(0).unwrap()
+    }
+
+    pub fn max() -> Self {
+        Self::new(Self::COUNT as u8 - 1).unwrap()
+    }
+}
+
+impl Display for SegmentId {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
     pub bp: BlockPartition,
-    pub seg_id: u8,
+    pub seg_id: SegmentId,
     pub skip_mode: u8,
     pub skip: u8,
     pub uvtx: RectTxfmSize,
