@@ -232,6 +232,8 @@ fn padding<BD: BitDepth>(
     for (i, y) in (h + 2..y_end).enumerate() {
         let tmp = &mut tmp[y * TMP_STRIDE..];
         let bottom_off = bottom_off.wrapping_add_signed(i as isize * stride);
+        // This is a fallback `fn`, so perf is not as important here, so an extra branch
+        // here should be okay.
         let bottom = match bottom {
             CdefBottom::Pic(pic) => &*pic.slice::<BD, _>((bottom_off.., ..x_end)),
             CdefBottom::LineBuf(buf) => &*buf.slice_as((bottom_off.., ..x_end)),
