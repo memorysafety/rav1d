@@ -8,7 +8,7 @@ use std::hint::unreachable_unchecked;
 ///
 /// `condition` must always be `true`.
 #[inline(always)]
-pub unsafe fn assume(condition: bool) {
+pub const unsafe fn assume(condition: bool) {
     if !condition {
         // SAFETY: `condition` is `true` by the `# Safety` preconditions.
         unsafe { unreachable_unchecked() };

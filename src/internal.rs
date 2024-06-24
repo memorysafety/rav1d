@@ -998,10 +998,10 @@ pub struct ScratchPal {
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
-pub struct ScratchLevelsPal([u8; 1088]);
+pub struct ScratchLevelsPal([u8; 32 * 34]);
 
 impl ScratchLevelsPal {
-    pub fn levels_mut(&mut self) -> &mut [u8; 1088] {
+    pub fn levels_mut(&mut self) -> &mut [u8; 32 * 34] {
         &mut self.0
     }
 
