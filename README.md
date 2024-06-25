@@ -69,3 +69,9 @@ The test script accepts additional arguments to configure how tests are run:
 * `-w WRAPPER` - Specify a wrapper binary to use to run the tests. This is necessary for testing under QEMU for platforms other than the host platform.
 
 You can learn more about how to build and test by referencing the CI scripts in the `.github/workflows` folder.
+
+# Using rav1d
+
+rav1d is designed to be a drop-in replacement for dav1d, so it primarily exposes a C API with the same usage as dav1d's.  dav1d's primary API documentation [can be found here](https://videolan.videolan.me/dav1d/dav1d_8h.html) for reference, and the equivalent Rust functions can be found in `src/lib.rs`. You can also reference the dav1d binary's code to see how it uses the API, which can be found at `tools/dav1d.rs`.
+
+A Rust API [is planned](https://github.com/memorysafety/rav1d/issues/1252) for addition in the future.
