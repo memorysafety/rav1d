@@ -2840,7 +2840,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         if (cbi_sz != f->frame_thread.cbi_sz) {
             dav1d_free_aligned(f->frame_thread.cbi);
             f->frame_thread.cbi =
-                dav1d_alloc_aligned(ALLOC_BLOCK, sizeof(*f->frame_thread.cbi) *
+                dav1d_alloc_aligned(sizeof(*f->frame_thread.cbi) *
                                     cbi_sz * 32 * 32 / 4, 64);
             if (!f->frame_thread.cbi) {
                 f->frame_thread.cbi_sz = 0;

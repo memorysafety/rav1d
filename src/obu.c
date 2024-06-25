@@ -1251,7 +1251,7 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
 
     // obu header
     const int obu_forbidden_bit = dav1d_get_bit(&gb);
-    if (c->strict_std_compliance && obu_forbidden_bit) goto error;
+    if (c->strict_std_compliance && obu_forbidden_bit) return dav1d_parse_obus_error(c, in, &gb);
     const enum Dav1dObuType type = dav1d_get_bits(&gb, 4);
     const int has_extension = dav1d_get_bit(&gb);
     const int has_length_field = dav1d_get_bit(&gb);
