@@ -1,5 +1,6 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
@@ -713,6 +714,37 @@ fn decode_coefs<BD: BitDepth>(
         eob_bin as u16
     };
 
+    struct Cf<'a, BD: BitDepth>(&'a mut [BD::Coef]);
+
+    impl<'a, BD: BitDepth> Cf<'a, BD> {
+        fn index(&self, rc: u16) -> usize {
+            let i = rc as usize & (self.0.len() - 1);
+            i
+        }
+
+        #[cfg_attr(debug_assertions, track_caller)]
+        pub fn get(&self, rc: u16) -> i32 {
+            self.0[self.index(rc)].into()
+        }
+
+        #[cfg_attr(debug_assertions, track_caller)]
+        pub fn set<T: ToPrimitive<BD::Coef>>(&mut self, rc: u16, value: T) {
+            self.0[self.index(rc)] = value.as_();
+        }
+    }
+
+    let sw = cmp::min(t_dim.w, 8) as usize;
+    let sh = cmp::min(t_dim.h, 8) as usize;
+    let cf_len = sw * 4 * sh * 4;
+    let cf = match cf {
+        CfSelect::Frame(offset) => &mut *f
+            .frame_thread
+            .cf
+            .mut_slice_as((offset as usize.., ..cf_len)),
+        CfSelect::Task => t_cf.select_mut::<BD>(),
+    };
+    let mut cf = Cf::<BD>(cf);
+
     // base tokens
     let mut rc;
     let mut dc_tok;
@@ -726,9 +758,7 @@ fn decode_coefs<BD: BitDepth>(
         eob: u16,
         tx: TxfmSize,
         dbg: bool,
-        cf: CfSelect,
-        f: &Rav1dFrameData,
-        t_cf: &mut Cf,
+        cf: &mut Cf<BD>,
     ) -> (u16, u32) {
         let tx_class = const { TxClass::from_repr(TX_CLASS) }.unwrap();
 
@@ -849,7 +879,7 @@ fn decode_coefs<BD: BitDepth>(
                 );
             }
         }
-        cf.set::<BD>(f, t_cf, rc, (tok.to::<i16>() << 11).into());
+        cf.set(rc, tok.to::<i16>() << 11);
         levels[x as usize * stride as usize + y as usize] = level_tok as u8;
         for i in (1..eob).rev() {
             // ac
@@ -907,7 +937,7 @@ fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 level[0] = (tok + (3 << 6)) as u8;
-                cf.set::<BD>(f, t_cf, rc_i, (((tok as u16) << 11) | rc).as_::<BD::Coef>());
+                cf.set(rc_i, ((tok as u16) << 11) | rc);
                 rc = rc_i;
             } else {
                 // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
@@ -930,7 +960,7 @@ fn decode_coefs<BD: BitDepth>(
                 if tok_non_zero {
                     rc = rc_i;
                 }
-                cf.set::<BD>(f, t_cf, rc_i, tok.as_::<BD::Coef>());
+                cf.set(rc_i, tok);
             }
         }
         // dc
@@ -971,15 +1001,16 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     if eob != 0 {
+        let cf = &mut cf;
         (rc, dc_tok) = match tx_class {
             TxClass::TwoD => decode_coefs_class::<{ TxClass::TwoD as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf, f, t_cf,
+                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::H => decode_coefs_class::<{ TxClass::H as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf, f, t_cf,
+                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::V => decode_coefs_class::<{ TxClass::V as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf, f, t_cf,
+                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
         };
     } else {
@@ -1080,12 +1111,7 @@ fn decode_coefs<BD: BitDepth>(
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
             dc_dq = cmp::min(dc_dq, cf_max + dc_sign);
-            cf.set::<BD>(
-                f,
-                t_cf,
-                0,
-                (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
-            );
+            cf.set(0, if dc_sign != 0 { -dc_dq } else { dc_dq });
 
             ac = if rc != 0 { Some(Ac::Qm(qm_tbl)) } else { None };
         } else {
@@ -1111,12 +1137,7 @@ fn decode_coefs<BD: BitDepth>(
                 assert!(dc_dq <= cf_max);
             }
             cul_level = dc_tok;
-            cf.set::<BD>(
-                f,
-                t_cf,
-                0,
-                (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
-            );
+            cf.set(0, if dc_sign != 0 { -dc_dq } else { dc_dq });
 
             ac = if rc != 0 { Some(Ac::NoQm) } else { None };
         }
@@ -1129,7 +1150,7 @@ fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
-                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc).as_::<c_uint>();
+                let rc_tok = cf.get(rc) as u32;
                 let mut tok;
                 let mut dq: c_uint = ac_dq
                     .wrapping_mul(qm_tbl[rc as usize] as c_uint)
@@ -1159,12 +1180,7 @@ fn decode_coefs<BD: BitDepth>(
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
                 dq_sat = cmp::min(dq as c_int, cf_max + sign as i32);
-                cf.set::<BD>(
-                    f,
-                    t_cf,
-                    rc,
-                    (if sign { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
-                );
+                cf.set(rc, if sign { -dq_sat } else { dq_sat });
 
                 rc = rc_tok as u16 & 0x3ff;
                 if !(rc != 0) {
@@ -1179,7 +1195,7 @@ fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
-                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc).as_::<c_uint>();
+                let rc_tok = cf.get(rc) as u32;
                 let mut tok: c_uint;
                 let mut dq;
 
@@ -1209,12 +1225,7 @@ fn decode_coefs<BD: BitDepth>(
                     assert!(dq <= cf_max);
                 }
                 cul_level = cul_level.wrapping_add(tok);
-                cf.set::<BD>(
-                    f,
-                    t_cf,
-                    rc,
-                    (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
-                );
+                cf.set(rc, if sign != 0 { -dq } else { dq });
 
                 rc = rc_tok as u16 & 0x3ff; // next non-zero `rc`, zero if `eob`
                 if !(rc != 0) {
@@ -1238,30 +1249,6 @@ enum CfSelect {
 
     /// Use `t.cf`.
     Task,
-}
-
-impl CfSelect {
-    fn set<BD: BitDepth>(self, f: &Rav1dFrameData, task_cf: &mut Cf, index: u16, value: BD::Coef) {
-        let index = index as usize % 1024; // Mask in-bounds.
-        match self {
-            CfSelect::Frame(offset) => {
-                let mut cf = f.frame_thread.cf.mut_element_as(offset as usize + index);
-                *cf = value;
-            }
-            CfSelect::Task => {
-                let cf = &mut task_cf.select_mut::<BD>()[index];
-                *cf = value;
-            }
-        };
-    }
-
-    fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: u16) -> BD::Coef {
-        let index = index as usize % 1024; // Mask in-bounds.
-        match self {
-            CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset as usize + index),
-            CfSelect::Task => t_cf.select::<BD>()[index],
-        }
-    }
 }
 
 fn read_coef_tree<BD: BitDepth>(

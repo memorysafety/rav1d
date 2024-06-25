@@ -158,6 +158,8 @@ pub trait BitDepth: Clone + Copy {
 
     type Coef: Copy
         + From<i16>
+        + Into<i32>
+        + FromPrimitive<i16>
         + FromPrimitive<u16>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
