@@ -3,6 +3,7 @@ use crate::include::stdint::*;
 use ::libc;
 use crate::src::msac::MsacContext;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
+use crate::src::tables::dav1d_txfm_dimensions;
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -64,7 +65,6 @@ extern "C" {
     static dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2];
     static dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5];
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
     static dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22];
     static dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8];
     static dav1d_partition_type_count: [uint8_t; 5];
@@ -4485,6 +4485,7 @@ unsafe fn DEBUG_BLOCK_INFO(
         && (*t).bx >= 8 && (*t).bx < 12
     // true
 }
+#[no_mangle]
 unsafe extern "C" fn decode_b(
     t: *mut Dav1dTaskContext,
     bl: BlockLevel,

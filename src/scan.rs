@@ -1,7 +1,7 @@
 use crate::include::stdint::*;
 use ::libc;
 
-static mut scan_4x4: [uint16_t; 16] = [
+const scan_4x4: [uint16_t; 16] = [
     0 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -19,7 +19,7 @@ static mut scan_4x4: [uint16_t; 16] = [
     11 as libc::c_int as uint16_t,
     15 as libc::c_int as uint16_t,
 ];
-static mut scan_4x8: [uint16_t; 32] = [
+const scan_4x8: [uint16_t; 32] = [
     0 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -53,7 +53,7 @@ static mut scan_4x8: [uint16_t; 32] = [
     23 as libc::c_int as uint16_t,
     31 as libc::c_int as uint16_t,
 ];
-static mut scan_4x16: [uint16_t; 64] = [
+const scan_4x16: [uint16_t; 64] = [
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -119,7 +119,7 @@ static mut scan_4x16: [uint16_t; 64] = [
     47 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
 ];
-static mut scan_8x4: [uint16_t; 32] = [
+const scan_8x4: [uint16_t; 32] = [
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
@@ -153,7 +153,7 @@ static mut scan_8x4: [uint16_t; 32] = [
     30 as libc::c_int as uint16_t,
     31 as libc::c_int as uint16_t,
 ];
-static mut scan_8x8: [uint16_t; 64] = [
+const scan_8x8: [uint16_t; 64] = [
     0 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -219,7 +219,7 @@ static mut scan_8x8: [uint16_t; 64] = [
     55 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
 ];
-static mut scan_8x16: [uint16_t; 128] = [
+const scan_8x16: [uint16_t; 128] = [
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -349,7 +349,7 @@ static mut scan_8x16: [uint16_t; 128] = [
     111 as libc::c_int as uint16_t,
     127 as libc::c_int as uint16_t,
 ];
-static mut scan_8x32: [uint16_t; 256] = [
+const scan_8x32: [uint16_t; 256] = [
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -607,7 +607,7 @@ static mut scan_8x32: [uint16_t; 256] = [
     223 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
 ];
-static mut scan_16x4: [uint16_t; 64] = [
+const scan_16x4: [uint16_t; 64] = [
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
@@ -673,7 +673,7 @@ static mut scan_16x4: [uint16_t; 64] = [
     62 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
 ];
-static mut scan_16x8: [uint16_t; 128] = [
+const scan_16x8: [uint16_t; 128] = [
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
@@ -803,7 +803,7 @@ static mut scan_16x8: [uint16_t; 128] = [
     126 as libc::c_int as uint16_t,
     127 as libc::c_int as uint16_t,
 ];
-static mut scan_16x16: [uint16_t; 256] = [
+const scan_16x16: [uint16_t; 256] = [
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -1061,7 +1061,7 @@ static mut scan_16x16: [uint16_t; 256] = [
     239 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
 ];
-static mut scan_16x32: [uint16_t; 512] = [
+const scan_16x32: [uint16_t; 512] = [
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -1575,7 +1575,7 @@ static mut scan_16x32: [uint16_t; 512] = [
     479 as libc::c_int as uint16_t,
     511 as libc::c_int as uint16_t,
 ];
-static mut scan_32x8: [uint16_t; 256] = [
+const scan_32x8: [uint16_t; 256] = [
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
@@ -1833,7 +1833,7 @@ static mut scan_32x8: [uint16_t; 256] = [
     254 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
 ];
-static mut scan_32x16: [uint16_t; 512] = [
+const scan_32x16: [uint16_t; 512] = [
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
@@ -2347,7 +2347,7 @@ static mut scan_32x16: [uint16_t; 512] = [
     510 as libc::c_int as uint16_t,
     511 as libc::c_int as uint16_t,
 ];
-static mut scan_32x32: [uint16_t; 1024] = [
+const scan_32x32: [uint16_t; 1024] = [
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -3373,8 +3373,7 @@ static mut scan_32x32: [uint16_t; 1024] = [
     991 as libc::c_int as uint16_t,
     1023 as libc::c_int as uint16_t,
 ];
-#[no_mangle]
-pub static mut dav1d_scans: [*const uint16_t; 19] = unsafe {
+pub const dav1d_scans: [*const uint16_t; 19] = unsafe {
     [
         scan_4x4.as_ptr(),
         scan_8x8.as_ptr(),

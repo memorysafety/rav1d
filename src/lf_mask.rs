@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use crate::src::tables::dav1d_txfm_dimensions;
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -13,7 +14,6 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
 }
 
 use crate::src::ctx::alias64;

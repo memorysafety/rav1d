@@ -431,8 +431,7 @@ pub static mut dav1d_block_dimensions: [[uint8_t; 4]; 22] = [
         0 as libc::c_int as uint8_t,
     ],
 ];
-#[no_mangle]
-pub static mut dav1d_txfm_dimensions: [TxfmInfo; 19] = [
+pub const dav1d_txfm_dimensions: [TxfmInfo; 19] = [
     {
         let mut init = TxfmInfo {
             w: 1 as libc::c_int as uint8_t,

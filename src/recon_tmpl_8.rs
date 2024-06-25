@@ -5,6 +5,8 @@ use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 use crate::{stdout};
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::scan::dav1d_scans;
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -20,7 +22,6 @@ extern "C" {
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
     static dav1d_txtp_from_uvmode: [uint8_t; 14];
     static dav1d_tx_types_per_set: [uint8_t; 40];
     static dav1d_filter_mode_to_y_mode: [uint8_t; 5];
@@ -99,7 +100,6 @@ extern "C" {
         dst: *const *mut pixel,
         sby: libc::c_int,
     );
-    static dav1d_scans: [*const uint16_t; 19];
     static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
