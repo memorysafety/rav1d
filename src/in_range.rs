@@ -61,3 +61,26 @@ where
         write!(f, "{}", self.0)
     }
 }
+
+macro_rules! impl_const_new {
+    ($T:ty) => {
+        impl<const MIN: u128, const MAX: u128> InRange<$T, MIN, MAX> {
+            pub const fn const_new(value: $T) -> Self {
+                assert!(value as u128 >= MIN && value as u128 <= MAX);
+                Self(value)
+            }
+        }
+    };
+}
+
+impl_const_new!(u8);
+impl_const_new!(u16);
+impl_const_new!(u32);
+impl_const_new!(u64);
+impl_const_new!(u128);
+
+impl_const_new!(i8);
+impl_const_new!(i16);
+impl_const_new!(i32);
+impl_const_new!(i64);
+impl_const_new!(i128);
