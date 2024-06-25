@@ -36,17 +36,28 @@ Currently we use the original [Meson](https://mesonbuild.com/) test suite for te
 
 To setup and run the tests, do the following:
 
-First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. Note that we build with the `--release` flag, adjust paths accordingly
-for debug or cross-target builds.
+First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. It's recommended to run tests with either the release or opt-dev profile as the debug build runs slowly and often causes tests to timeout. The opt-dev profile is generally ideal for development purposes as it enables some optimizations while leaving debug checks enabled.
 
 ```txt
 cargo build --release
+```
+
+Or:
+
+```txt
+cargo build --profile opt-dev
 ```
 
 Then you can run the tests with the `tests.sh` helper script:
 
 ```txt
 .github/workflows/test.sh -r target/release/dav1d
+```
+
+Or:
+
+```txt
+.github/workflows/test.sh -r target/opt-dev/dav1d
 ```
 
 The test script accepts additional arguments to configure how tests are run:
