@@ -849,7 +849,7 @@ fn decode_coefs<BD: BitDepth>(
                 );
             }
         }
-        cf.set::<BD>(f, t_cf, rc as usize, (tok.to::<i16>() << 11).into());
+        cf.set::<BD>(f, t_cf, rc, (tok.to::<i16>() << 11).into());
         levels[x as usize * stride as usize + y as usize] = level_tok as u8;
         for i in (1..eob).rev() {
             // ac
@@ -907,12 +907,7 @@ fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 level[0] = (tok + (3 << 6)) as u8;
-                cf.set::<BD>(
-                    f,
-                    t_cf,
-                    rc_i as usize,
-                    (((tok as u16) << 11) | rc).as_::<BD::Coef>(),
-                );
+                cf.set::<BD>(f, t_cf, rc_i, (((tok as u16) << 11) | rc).as_::<BD::Coef>());
                 rc = rc_i;
             } else {
                 // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
@@ -935,7 +930,7 @@ fn decode_coefs<BD: BitDepth>(
                 if tok_non_zero {
                     rc = rc_i;
                 }
-                cf.set::<BD>(f, t_cf, rc_i as usize, tok.as_::<BD::Coef>());
+                cf.set::<BD>(f, t_cf, rc_i, tok.as_::<BD::Coef>());
             }
         }
         // dc
@@ -1131,7 +1126,7 @@ fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
-                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc as usize).as_::<c_uint>();
+                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc).as_::<c_uint>();
                 let mut tok;
                 let mut dq: c_uint = ac_dq
                     // TODO: Remove `unwrap` once state machine control flow is cleaned up.
@@ -1165,7 +1160,7 @@ fn decode_coefs<BD: BitDepth>(
                 cf.set::<BD>(
                     f,
                     t_cf,
-                    rc as usize,
+                    rc,
                     (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
 
@@ -1182,7 +1177,7 @@ fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
-                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc as usize).as_::<c_uint>();
+                let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc).as_::<c_uint>();
                 let mut tok: c_uint;
                 let mut dq;
 
@@ -1215,7 +1210,7 @@ fn decode_coefs<BD: BitDepth>(
                 cf.set::<BD>(
                     f,
                     t_cf,
-                    rc as usize,
+                    rc,
                     (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
                 );
 
@@ -1244,13 +1239,8 @@ enum CfSelect {
 }
 
 impl CfSelect {
-    fn set<BD: BitDepth>(
-        self,
-        f: &Rav1dFrameData,
-        task_cf: &mut Cf,
-        index: usize,
-        value: BD::Coef,
-    ) {
+    fn set<BD: BitDepth>(self, f: &Rav1dFrameData, task_cf: &mut Cf, index: u16, value: BD::Coef) {
+        let index = index as usize;
         match self {
             CfSelect::Frame(offset) => {
                 let mut cf = f.frame_thread.cf.mut_element_as(offset + index);
@@ -1263,7 +1253,8 @@ impl CfSelect {
         };
     }
 
-    fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: usize) -> BD::Coef {
+    fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: u16) -> BD::Coef {
+        let index = index as usize;
         match self {
             CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset + index),
             CfSelect::Task => t_cf.select::<BD>()[index],
