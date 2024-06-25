@@ -1232,7 +1232,7 @@ fn decode_coefs<BD: BitDepth>(
 #[derive(Clone, Copy)]
 enum CfSelect {
     // Use `f.frame_thread.cf` at the specified offset.
-    Frame(usize),
+    Frame(u32),
 
     // Use `t.cf`.
     Task,
@@ -1243,7 +1243,7 @@ impl CfSelect {
         let index = index as usize;
         match self {
             CfSelect::Frame(offset) => {
-                let mut cf = f.frame_thread.cf.mut_element_as(offset + index);
+                let mut cf = f.frame_thread.cf.mut_element_as(offset as usize + index);
                 *cf = value;
             }
             CfSelect::Task => {
@@ -1256,7 +1256,7 @@ impl CfSelect {
     fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: u16) -> BD::Coef {
         let index = index as usize;
         match self {
-            CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset + index),
+            CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset as usize + index),
             CfSelect::Task => t_cf.select::<BD>()[index],
         }
     }
@@ -1363,14 +1363,15 @@ fn read_coef_tree<BD: BitDepth>(
         let mut cf_ctx = 0;
         let eob;
 
-        let cf = if t.frame_thread.pass != 0 {
-            let p = t.frame_thread.pass & 1;
-            CfSelect::Frame(ts.frame_thread[p as usize].cf.get_update(|i| {
-                i + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16
-            }))
-        } else {
-            CfSelect::Task
-        };
+        let cf =
+            if t.frame_thread.pass != 0 {
+                let p = t.frame_thread.pass & 1;
+                CfSelect::Frame(ts.frame_thread[p as usize].cf.get_update(|i| {
+                    i + cmp::min(t_dim.w, 8) as u32 * cmp::min(t_dim.h, 8) as u32 * 16
+                }))
+            } else {
+                CfSelect::Task
+            };
         if t.frame_thread.pass != 2 {
             let ts_c = ts_c.as_deref_mut().unwrap();
             eob = decode_coefs::<BD>(
@@ -1416,11 +1417,11 @@ fn read_coef_tree<BD: BitDepth>(
             });
             if t.frame_thread.pass == 1 {
                 let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
+                f.frame_thread.cbi[cbi_idx as usize].set(CodedBlockInfo::new(eob as i16, txtp));
             }
         } else {
             let cbi_idx = ts.frame_thread[0].cbi_idx.get_update(|i| i + 1);
-            let cbi = f.frame_thread.cbi[cbi_idx].get();
+            let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -1431,7 +1432,7 @@ fn read_coef_tree<BD: BitDepth>(
                     CfSelect::Frame(offset) => {
                         let len =
                             cmp::min(t_dim.h as usize, 8) * 4 * cmp::min(t_dim.w as usize, 8) * 4;
-                        &mut *f.frame_thread.cf.mut_slice_as((offset.., ..len))
+                        &mut *f.frame_thread.cf.mut_slice_as((offset as usize.., ..len))
                     }
                     CfSelect::Task => t.cf.select_mut::<BD>(),
                 };
@@ -1554,9 +1555,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             // This is fine since `decode_coefs` does not access `cf`.
                             // `decode_coefs` must not be changed to access `cf`.
                             let cf = CfSelect::Frame(ts.frame_thread[1].cf.get_update(|i| {
-                                i + cmp::min(t_dim.w as usize, 8)
-                                    * cmp::min(t_dim.h as usize, 8)
-                                    * 16
+                                i + cmp::min(t_dim.w, 8) as u32 * cmp::min(t_dim.h, 8) as u32 * 16
                             }));
                             let eob = decode_coefs::<BD>(
                                 f,
@@ -1582,7 +1581,8 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 );
                             }
                             let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                            f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
+                            f.frame_thread.cbi[cbi_idx as usize]
+                                .set(CodedBlockInfo::new(eob as i16, txtp));
                             CaseSet::<16, true>::many(
                                 [&t.l.lcoef, &f.a[t.a].lcoef],
                                 [
@@ -1662,10 +1662,11 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                         }
                         let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                        f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
+                        f.frame_thread.cbi[cbi_idx as usize]
+                            .set(CodedBlockInfo::new(eob as i16, txtp));
                         ts.frame_thread[1]
                             .cf
-                            .set(cf_idx + uv_t_dim.w as usize * uv_t_dim.h as usize * 16);
+                            .set(cf_idx + uv_t_dim.w as u32 * uv_t_dim.h as u32 * 16);
                         CaseSet::<16, true>::many(
                             [l_ccoef, a_ccoef],
                             [
@@ -2131,9 +2132,11 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                 let pal_idx = if t.frame_thread.pass != 0 {
                     let p = (t.frame_thread.pass & 1) as usize;
                     let frame_thread = &ts.frame_thread[p];
-                    let len = (bw4 * bh4 * 8) as usize;
+                    let len = (bw4 * bh4 * 8) as u32;
                     let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
-                    &*f.frame_thread.pal_idx.index((pal_idx.., ..len))
+                    &*f.frame_thread
+                        .pal_idx
+                        .index((pal_idx as usize.., ..len as usize))
                 } else {
                     &scratch.pal_idx_y
                 };
@@ -2277,15 +2280,16 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         let mut txtp = DCT_DCT;
                         if t.frame_thread.pass != 0 {
                             let p = (t.frame_thread.pass & 1) as usize;
-                            let len = cmp::min(t_dim.h as usize, 8)
-                                * 4
-                                * cmp::min(t_dim.w as usize, 8)
-                                * 4;
+                            let len =
+                                cmp::min(t_dim.h, 8) as u32 * 4 * cmp::min(t_dim.w, 8) as u32 * 4;
                             let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
-                            cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
+                            cf_guard = f
+                                .frame_thread
+                                .cf
+                                .mut_slice_as((cf_idx as usize.., ..len as usize));
                             cf = &mut *cf_guard;
                             let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                            let cbi = f.frame_thread.cbi[cbi_idx].get();
+                            let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -2479,11 +2483,13 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                     let y = t.b.y as usize;
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-                    let len = (cbw4 * cbh4 * 8) as usize;
+                    let len = (cbw4 * cbh4 * 8) as u32;
                     let pal_idx_offset = ts.frame_thread[p].pal_idx.get_update(|i| i + len);
                     (
                         &*f.frame_thread.pal.index::<BD>(index),
-                        &*f.frame_thread.pal_idx.index((pal_idx_offset.., ..len)),
+                        &*f.frame_thread
+                            .pal_idx
+                            .index((pal_idx_offset as usize.., ..len as usize)),
                     )
                 } else {
                     let scratch = t.scratch.inter_intra_mut();
@@ -2647,12 +2653,15 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             let cf;
                             if t.frame_thread.pass != 0 {
                                 let p = (t.frame_thread.pass & 1) as usize;
-                                let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
+                                let len = uv_t_dim.w as u32 * 4 * uv_t_dim.h as u32 * 4;
                                 let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
-                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
+                                cf_guard = f
+                                    .frame_thread
+                                    .cf
+                                    .mut_slice_as((cf_idx as usize.., ..len as usize));
                                 cf = &mut *cf_guard;
                                 let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                                let cbi = f.frame_thread.cbi[cbi_idx].get();
+                                let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
@@ -3525,12 +3534,15 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             let mut txtp;
                             if t.frame_thread.pass != 0 {
                                 let p = t.frame_thread.pass as usize & 1;
-                                let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
+                                let len = uvtx.h as u32 * 4 * uvtx.w as u32 * 4;
                                 let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
-                                cf_guard = f.frame_thread.cf.mut_slice_as((cf_idx.., ..len));
+                                cf_guard = f
+                                    .frame_thread
+                                    .cf
+                                    .mut_slice_as((cf_idx as usize.., ..len as usize));
                                 cf = &mut *cf_guard;
                                 let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                                let cbi = f.frame_thread.cbi[cbi_idx].get();
+                                let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {

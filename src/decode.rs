@@ -1816,9 +1816,12 @@ fn decode_b(
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
-                let len = usize::try_from(bw4 * bh4 * 8).unwrap();
+                let len = (bw4 * bh4 * 8) as u32;
                 let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
-                &mut *f.frame_thread.pal_idx.index_mut((pal_idx.., ..len))
+                &mut *f
+                    .frame_thread
+                    .pal_idx
+                    .index_mut((pal_idx as usize.., ..len as usize))
             } else {
                 &mut scratch.pal_idx_y
             };
@@ -1845,9 +1848,13 @@ fn decode_b(
             let mut pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &ts.frame_thread[p as usize];
-                let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
+                let len = (cbw4 * cbh4 * 8) as u32;
                 let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
-                Some(f.frame_thread.pal_idx.index_mut((pal_idx.., ..len)))
+                Some(
+                    f.frame_thread
+                        .pal_idx
+                        .index_mut((pal_idx as usize.., ..len as usize)),
+                )
             } else {
                 None
             };
@@ -3845,7 +3852,7 @@ fn setup_tile(
     data: &[u8],
     tile_row: usize,
     tile_col: usize,
-    tile_start_off: usize,
+    tile_start_off: u32,
 ) {
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
@@ -3858,20 +3865,20 @@ fn setup_tile(
         ts.frame_thread[p]
             .pal_idx
             .set(if !frame_thread.pal_idx.is_empty() {
-                tile_start_off * size_mul[1] as usize / 8
+                tile_start_off * size_mul[1] as u32 / 8
             } else {
                 0
             });
         ts.frame_thread[p]
             .cbi_idx
             .set(if !frame_thread.cbi.is_empty() {
-                tile_start_off * size_mul[0] as usize / 64
+                tile_start_off * size_mul[0] as u32 / 64
             } else {
                 0
             });
         ts.frame_thread[p].cf.set(if !frame_thread.cf.is_empty() {
             let bpc = BPC::from_bitdepth_max(bitdepth_max);
-            bpc.coef_stride(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int)
+            bpc.coef_stride(tile_start_off * size_mul[0] as u32 >> (seq_hdr.hbd == 0) as c_int)
         } else {
             0
         });
@@ -4620,7 +4627,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 &[]
             }
             .into_iter()
-            .map(|&it| it as usize)
+            .copied()
             .chain(iter::repeat(0)),
         )
         .enumerate()
