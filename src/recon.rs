@@ -1240,7 +1240,7 @@ enum CfSelect {
 
 impl CfSelect {
     fn set<BD: BitDepth>(self, f: &Rav1dFrameData, task_cf: &mut Cf, index: u16, value: BD::Coef) {
-        let index = index as usize;
+        let index = index as usize % 1024; // Mask in-bounds.
         match self {
             CfSelect::Frame(offset) => {
                 let mut cf = f.frame_thread.cf.mut_element_as(offset as usize + index);
@@ -1254,7 +1254,7 @@ impl CfSelect {
     }
 
     fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: u16) -> BD::Coef {
-        let index = index as usize;
+        let index = index as usize % 1024; // Mask in-bounds.
         match self {
             CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset as usize + index),
             CfSelect::Task => t_cf.select::<BD>()[index],
