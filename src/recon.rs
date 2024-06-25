@@ -916,12 +916,23 @@ fn decode_coefs<BD: BitDepth>(
                 rc = rc_i;
             } else {
                 // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
+
+                // If we do this after the `tok *= 0x17ff41`,
+                // it uses a mispredicted branch instead of `cmov`.
+                let tok_non_zero = tok != 0;
+
                 let mut tok = tok as u32;
                 tok *= 0x17ff41;
                 level[0] = tok as u8;
-                // `tok ? (tok << 11) | rc : 0`
+                let tok_check = if tok != 0 {
+                    ((tok as u16) << 11) | rc
+                } else {
+                    0
+                };
                 tok = (tok >> 9) & (rc as u32).wrapping_add(!0x7ff);
-                if tok != 0 {
+                debug_assert!(tok == tok_check as u32);
+                debug_assert!(tok_non_zero == (tok != 0));
+                if tok_non_zero {
                     rc = rc_i;
                 }
                 cf.set::<BD>(f, t_cf, rc_i as usize, tok.as_::<BD::Coef>());
