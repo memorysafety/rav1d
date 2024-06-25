@@ -1231,10 +1231,10 @@ fn decode_coefs<BD: BitDepth>(
 
 #[derive(Clone, Copy)]
 enum CfSelect {
-    // Use `f.frame_thread.cf` at the specified offset.
+    /// Use `f.frame_thread.cf` at the specified offset.
     Frame(u32),
 
-    // Use `t.cf`.
+    /// Use `t.cf`.
     Task,
 }
 
