@@ -1026,7 +1026,7 @@ fn decode_coefs<BD: BitDepth>(
         << (match BD::BPC {
             BPC::BPC8 => 8,
             BPC::BPC16 => f.cur.p.bpc,
-        })) as c_int;
+        })) as i32;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
 
@@ -1125,7 +1125,7 @@ fn decode_coefs<BD: BitDepth>(
         Some(Ac::Qm(qm_tbl)) => {
             let ac_dq: c_uint = dq_tbl[1].get() as c_uint;
             loop {
-                let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
+                let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac);
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
@@ -1154,16 +1154,16 @@ fn decode_coefs<BD: BitDepth>(
                 } else {
                     tok = rc_tok >> 11;
                     dq = dq.wrapping_mul(tok);
-                    assert!(dq <= 0xffffff);
+                    assert!(dq <= 0xffffff); // Optimized out.
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
-                dq_sat = cmp::min(dq as c_int, cf_max + sign);
+                dq_sat = cmp::min(dq as c_int, cf_max + sign as i32);
                 cf.set::<BD>(
                     f,
                     t_cf,
                     rc,
-                    (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
+                    (if sign { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
 
                 rc = rc_tok as u16 & 0x3ff;
