@@ -1,4 +1,6 @@
 use crate::src::assume::assume;
+use crate::src::const_fn::const_for;
+use crate::src::enum_map::DefaultValue;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -64,10 +66,22 @@ where
 
 macro_rules! impl_const_new {
     ($T:ty) => {
+        impl<const MIN: u128, const MAX: u128> DefaultValue for InRange<$T, MIN, MAX> {
+            const DEFAULT: Self = Self(0);
+        }
+
         impl<const MIN: u128, const MAX: u128> InRange<$T, MIN, MAX> {
             pub const fn const_new(value: $T) -> Self {
                 assert!(value as u128 >= MIN && value as u128 <= MAX);
                 Self(value)
+            }
+
+            pub const fn new_array<const N: usize>(a: [$T; N]) -> [Self; N] {
+                let mut b = [DefaultValue::DEFAULT; N];
+                const_for!(i in 0..N => {
+                    b[i] = Self::const_new(a[i]);
+                });
+                b
             }
         }
     };
