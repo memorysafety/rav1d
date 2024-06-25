@@ -1362,18 +1362,15 @@ fn read_coef_tree<BD: BitDepth>(
         let mut txtp = DCT_DCT;
         let mut cf_ctx = 0;
         let eob;
-        let cf;
 
-        if t.frame_thread.pass != 0 {
+        let cf = if t.frame_thread.pass != 0 {
             let p = t.frame_thread.pass & 1;
-            let cf_idx = ts.frame_thread[p as usize].cf.get();
-            cf = CfSelect::Frame(cf_idx);
-            ts.frame_thread[p as usize]
-                .cf
-                .set(cf_idx + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16);
+            CfSelect::Frame(ts.frame_thread[p as usize].cf.get_update(|i| {
+                i + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16
+            }))
         } else {
-            cf = CfSelect::Task;
-        }
+            CfSelect::Task
+        };
         if t.frame_thread.pass != 2 {
             let ts_c = ts_c.as_deref_mut().unwrap();
             eob = decode_coefs::<BD>(
@@ -1553,7 +1550,14 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let a_len = t_dim.w as usize;
                             let l_start = by4 + y as usize;
                             let l_len = t_dim.h as usize;
-                            let cf_idx = ts.frame_thread[1].cf.get();
+                            // Increment moved up from after `decode_coefs` call in C.
+                            // This is fine since `decode_coefs` does not access `cf`.
+                            // `decode_coefs` must not be changed to access `cf`.
+                            let cf = CfSelect::Frame(ts.frame_thread[1].cf.get_update(|i| {
+                                i + cmp::min(t_dim.w as usize, 8)
+                                    * cmp::min(t_dim.h as usize, 8)
+                                    * 16
+                            }));
                             let eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
@@ -1567,7 +1571,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 bs,
                                 b,
                                 0,
-                                CfSelect::Frame(cf_idx),
+                                cf,
                                 &mut txtp,
                                 &mut cf_ctx,
                             );
@@ -1579,12 +1583,6 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             }
                             let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
                             f.frame_thread.cbi[cbi_idx].set(CodedBlockInfo::new(eob as i16, txtp));
-                            ts.frame_thread[1].cf.set(
-                                cf_idx
-                                    + cmp::min(t_dim.w as usize, 8)
-                                        * cmp::min(t_dim.h as usize, 8)
-                                        * 16,
-                            );
                             CaseSet::<16, true>::many(
                                 [&t.l.lcoef, &f.a[t.a].lcoef],
                                 [
