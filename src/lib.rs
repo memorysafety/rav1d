@@ -47,7 +47,6 @@ use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
-use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
@@ -379,28 +378,23 @@ impl Rav1dPicture {
     }
 }
 
-#[allow(unsafe_op_in_unsafe_fn)]
-unsafe fn output_image(
-    c: &Rav1dContext,
-    state: &mut Rav1dState,
-    out: &mut Rav1dPicture,
-) -> Rav1dResult {
+fn output_image(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut res = Ok(());
 
-    let r#in: *mut Rav1dThreadPicture = if c.all_layers || state.max_spatial_id == 0 {
+    let r#in = if c.all_layers || state.max_spatial_id == 0 {
         &mut state.out
     } else {
         &mut state.cache
     };
-    if !c.apply_grain || !(*r#in).p.has_grain() {
-        *out = mem::take(&mut (*r#in).p);
+    if !c.apply_grain || !r#in.p.has_grain() {
+        *out = mem::take(&mut r#in.p);
     } else {
-        res = rav1d_apply_grain(c, out, &(*r#in).p);
+        res = rav1d_apply_grain(c, out, &r#in.p);
     }
-    let _ = mem::take(&mut *r#in);
+    let _ = mem::take(r#in);
 
     if !c.all_layers && state.max_spatial_id != 0 && state.out.p.data.is_some() {
-        *r#in = mem::take(&mut state.out);
+        state.cache = mem::take(&mut state.out);
     }
     res
 }
@@ -479,14 +473,12 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
             }
             let _ = mem::take(out_delayed);
             if output_picture_ready(c, state, false) {
-                // SAFETY: TODO remove when `output_image` is safe.
-                return unsafe { output_image(c, state, out) };
+                return output_image(c, state, out);
             }
         }
     }
     if output_picture_ready(c, state, true) {
-        // SAFETY: TODO remove when `output_image` is safe.
-        return unsafe { output_image(c, state, out) };
+        return output_image(c, state, out);
     }
     Err(EAGAIN)
 }
@@ -573,8 +565,7 @@ pub(crate) fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture) -> Rav
     gen_picture(c, state)?;
     mem::take(&mut state.cached_error).err_or(())?;
     if output_picture_ready(c, state, c.fc.len() == 1) {
-        // SAFETY: TODO remove when `output_image` is safe.
-        return unsafe { output_image(c, state, out) };
+        return output_image(c, state, out);
     }
     if c.fc.len() > 1 && drain {
         return drain_picture(c, state, out);
