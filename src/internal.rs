@@ -104,6 +104,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::OnceLock;
 use std::thread::JoinHandle;
+use strum::FromRepr;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
@@ -907,12 +908,24 @@ pub struct Rav1dTileState {
     pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
 }
 
-#[derive(Clone, Copy, Default, Atom)]
+#[derive(Clone, Copy, Default, FromRepr)]
 #[repr(u8)]
 pub enum TileStateRef {
     #[default]
     Frame,
     Local,
+}
+
+impl Atom for TileStateRef {
+    type Repr = u8;
+
+    fn pack(self) -> Self::Repr {
+        self as u8
+    }
+
+    fn unpack(src: Self::Repr) -> Self {
+        Self::from_repr(src).unwrap_or_default()
+    }
 }
 
 /// Array of 32 * 32 coef elements (either `i16` or `i32`).
