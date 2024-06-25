@@ -2,9 +2,39 @@
 
 **rav1d** is an AV1 cross-platform decoder, open-source, and focused on speed and correctness. It is a Rust port of [dav1d](https://code.videolan.org/videolan/dav1d).
 
+# Building
+
+rav1d is written in Rust and uses the standard Rust toolchain to build. The Rust toolchain can be installed by going to https://rustup.rs. rav1d currently builds with a nightly compiler, which is specified in `rust-toolchain.toml`. The correct nightly build will automatically be installed for you when you run `cargo build`.
+
+For x86 targets you'll also need to install [nasm](https://nasm.us/) in order to build with assembly support.
+
+A release build can then be made using cargo:
+
+```txt
+cargo build --release
+```
+
+For development purposes you may also want to use the opt-dev profile, which runs faster than a regular debug build but has all debug checks still enabled:
+
+```txt
+cargo build --profile opt-dev
+```
+
+## Cross-Compiling
+
+rav1d can be cross-compiled for a target other than the host platform using the Cargo `--target` flag. This may require passing additional arguments to the Rust compiler to tell it what linker to use. This can be done by setting the `RUSTFLAGS` enviroment variable and specifying the `linker` compiler flag. You'll also need to specify the `+crt-static` target feature. For example, compiling for `aarch64-unknown-linux-gnu` from a Ubuntu Linux machine would be done as follows:
+
+```txt
+RUSTFLAGS="-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc" cargo build --target aarch64-unknown-linux-gnu
+```
+
+This will require installing the appropriate cross-platform compiler and linker toolchain for your target platform. Examples of how we cross-compile rav1d in CI can be found in `.github/workflows/build-and-test-qemu.yml`.
+
 ## Running Tests
 
-Currently we use the original Meson test suite for testing the Rust port. To setup and run these tests, do the following:
+Currently we use the original [Meson](https://mesonbuild.com/) test suite for testing the Rust port. This means you'll need to [have Meson installed](https://mesonbuild.com/Getting-meson.html) to run tests.
+
+To setup and run the tests, do the following:
 
 First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. Note that we build with the `--release` flag, adjust paths accordingly
 for debug or cross-target builds.
