@@ -1401,6 +1401,8 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_ssse3);
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_ssse3);
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -1425,6 +1427,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_8bpc_avx512icl);
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_avx512icl);
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_avx512icl);
+    }
 }
 
 #[cfg(all(

@@ -130,6 +130,7 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
                 ) -> libc::c_uint,
         );
     }
+    #[cfg(target_arch = "x86_64")]
     if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint != 0 {
         (*s)
             .symbol_adapt16 = Some(

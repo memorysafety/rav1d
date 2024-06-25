@@ -2073,6 +2073,8 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 
     (*c).pal_pred = Some(dav1d_pal_pred_16bpc_ssse3);
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -2114,6 +2116,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
     (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_16bpc_avx512icl);
 
     (*c).pal_pred = Some(dav1d_pal_pred_16bpc_avx512icl);
+    }
 }
 
 #[cfg(feature = "asm")]

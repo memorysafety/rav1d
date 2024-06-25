@@ -1217,6 +1217,8 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_ssse3);
     }
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -1241,6 +1243,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx512icl);
         (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx512icl);
         (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx512icl);
+    }
     }
 }
 

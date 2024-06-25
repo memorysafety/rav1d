@@ -738,6 +738,8 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
     (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_ssse3);
     (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_ssse3);
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -755,6 +757,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
     (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_avx512icl);
     (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_avx512icl);
     (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_avx512icl);
+    }
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

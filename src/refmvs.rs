@@ -2043,6 +2043,8 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
         return;
     }
 
+    #[cfg(target_arch = "x86_64")]
+    {
     (*c).splat_mv = Some(dav1d_splat_mv_avx2);
 
     if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
@@ -2050,6 +2052,7 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
     }
 
     (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
+    }
 }
 
 #[inline(always)]

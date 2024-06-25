@@ -5362,6 +5362,8 @@ unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
         return;
     }
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -5466,6 +5468,7 @@ unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
     (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx512icl);
     (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx512icl);
     (*c).resize = Some(dav1d_resize_16bpc_avx512icl);
+    }
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

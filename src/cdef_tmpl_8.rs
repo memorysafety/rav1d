@@ -934,6 +934,8 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse4);
     (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse4);
 
+    #[cfg(target_arch = "x86_64")]
+    {
     if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
@@ -950,6 +952,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx512icl);
     (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx512icl);
     (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx512icl);
+    }
 }
 
 #[inline(always)]
