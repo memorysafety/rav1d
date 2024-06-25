@@ -802,7 +802,7 @@ fn decode_coefs<BD: BitDepth>(
         let mut y;
         match tx_class {
             TxClass::TwoD => {
-                rc = scan[eob as usize];
+                rc = scan[eob as usize].get();
                 x = (rc >> shift) as u8;
                 y = rc as u8 & mask;
             }
@@ -856,7 +856,7 @@ fn decode_coefs<BD: BitDepth>(
             let rc_i;
             match tx_class {
                 TxClass::TwoD => {
-                    rc_i = scan[i as usize];
+                    rc_i = scan[i as usize].get();
                     x = (rc_i >> shift) as u8;
                     y = rc_i as u8 & mask;
                 }
