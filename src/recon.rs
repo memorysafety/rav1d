@@ -929,7 +929,7 @@ fn decode_coefs<BD: BitDepth>(
                 } else {
                     0
                 };
-                tok = (tok >> 9) & (rc as u32).wrapping_add(!0x7ff);
+                tok = (tok >> 9) & (rc as u32 + !0x7ff);
                 debug_assert!(tok == tok_check as u32);
                 debug_assert!(tok_non_zero == (tok != 0));
                 if tok_non_zero {
