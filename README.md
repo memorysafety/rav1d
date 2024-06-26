@@ -13,8 +13,8 @@ nightly compiler for armv7 and riscv. The project is configured to use a nightly
 compiler by default via `rust-toolchain.toml`, but a stable build can be made
 with the `+stable` cargo flag.
 
-For x86 targets, you'll also need to install [`nasm`](https://nasm.us/) in order to
-build with assembly support.
+For x86 targets, you'll also need to install [`nasm`](https://nasm.us/) in order
+to build with assembly support.
 
 A release build can then be made using cargo:
 
@@ -33,6 +33,25 @@ To build just librav1d using a stable compiler:
 
 ```sh
 cargo +stable build --lib --release
+```
+
+## Feature Flags
+
+The following feature flags are supported:
+
+* `asm` - Enables optimized assembly routines, if available for the target
+  platform.
+* `bitdepth_8` - Enables support for 8 bitdepth decoding.
+* `bitdepth_16` - Enables support for 10 and 12 bitdepth decoding.
+
+All of these features are enabled by default. In order to build a version of
+librav1d that disables one or more of these features use the
+`--no-default-features` flag in combination with the `--features` flag to enable
+any desired features. For example, to build without assembly routines, which is
+useful when testing the Rust fallback functions, do the following:
+
+```sh
+cargo build --no-default-features --features="bitdepth_8,bitdepth_16"
 ```
 
 ## Cross-Compiling
