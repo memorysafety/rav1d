@@ -13,7 +13,7 @@ nightly compiler for armv7 and riscv. The project is configured to use a nightly
 compiler by default via `rust-toolchain.toml`, but a stable build can be made
 with the `+stable` cargo flag.
 
-For x86 targets you'll also need to install [nasm](https://nasm.us/) in order to
+For x86 targets, you'll also need to install [`nasm`](https://nasm.us/) in order to
 build with assembly support.
 
 A release build can then be made using cargo:
@@ -22,7 +22,7 @@ A release build can then be made using cargo:
 cargo build --release
 ```
 
-For development purposes you may also want to use the opt-dev profile, which
+For development purposes you may also want to use the `opt-dev` profile, which
 runs faster than a regular debug build but has all debug checks still enabled:
 
 ```sh
@@ -122,5 +122,5 @@ the equivalent Rust functions can be found in `src/lib.rs`. You can also
 reference the dav1d binary's code to see how it uses the API, which can be found
 at `tools/dav1d.rs`.
 
-A Rust API [is planned](https://github.com/memorysafety/rav1d/issues/1252) for
+A [Rust API is planned](https://github.com/memorysafety/rav1d/issues/1252) for
 addition in the future.
