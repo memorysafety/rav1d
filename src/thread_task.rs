@@ -15,6 +15,7 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
+use crate::src::filmgrain::FG_BLOCK_SIZE;
 use crate::src::internal::Grain;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
@@ -711,7 +712,7 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
     row = ttd.delayed_fg_progress[0].fetch_add(1, Ordering::SeqCst);
     let _ = task_thread_lock.take();
     let delayed_fg = ttd.delayed_fg.try_read().unwrap();
-    progmax = delayed_fg.out.p.h + 31 >> 5;
+    progmax = (delayed_fg.out.p.h + FG_BLOCK_SIZE as i32 - 1) / FG_BLOCK_SIZE as i32;
     loop {
         if (row + 1) < progmax {
             ttd.cond.notify_one();

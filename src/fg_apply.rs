@@ -7,7 +7,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::src::filmgrain::BLOCK_SIZE;
+use crate::src::filmgrain::FG_BLOCK_SIZE;
 use crate::src::internal::GrainBD;
 use std::cmp;
 
@@ -146,7 +146,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
 
     if data.num_y_points != 0 {
-        let bh = cmp::min(h - row * BLOCK_SIZE, BLOCK_SIZE);
+        let bh = cmp::min(h - row * FG_BLOCK_SIZE, FG_BLOCK_SIZE);
         dsp.fgy_32x32xn.call(
             &out_data[0],
             &in_data[0],
@@ -164,12 +164,12 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
         return;
     }
 
-    let bh = cmp::min(h - row * BLOCK_SIZE, BLOCK_SIZE) + ss_y >> ss_y;
+    let bh = cmp::min(h - row * FG_BLOCK_SIZE, FG_BLOCK_SIZE) + ss_y >> ss_y;
 
     // extend padding pixels
     if out.p.w as usize & ss_x != 0 {
         let luma = in_data[0].with_offset::<BD>();
-        let luma = luma + (row * BLOCK_SIZE) as isize * luma.pixel_stride::<BD>();
+        let luma = luma + (row * FG_BLOCK_SIZE) as isize * luma.pixel_stride::<BD>();
         for y in 0..bh {
             let luma = luma + (y as isize * (luma.pixel_stride::<BD>() << ss_y));
             let padding = &mut *(luma + (out.p.w as usize - 1)).slice_mut::<BD>(2);
@@ -225,7 +225,7 @@ pub(crate) fn rav1d_apply_grain<BD: BitDepth>(
     r#in: &Rav1dPicture,
 ) {
     let mut grain = Default::default();
-    let rows = out.p.h as usize + 31 >> 5;
+    let rows = (out.p.h as usize + FG_BLOCK_SIZE - 1) / FG_BLOCK_SIZE;
 
     rav1d_prep_grain::<BD>(dsp, out, r#in, &mut grain);
     for row in 0..rows {
