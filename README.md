@@ -18,20 +18,20 @@ build with assembly support.
 
 A release build can then be made using cargo:
 
-```txt
+```sh
 cargo build --release
 ```
 
 For development purposes you may also want to use the opt-dev profile, which
 runs faster than a regular debug build but has all debug checks still enabled:
 
-```txt
+```sh
 cargo build --profile opt-dev
 ```
 
 To build just librav1d using a stable compiler:
 
-```txt
+```sh
 cargo +stable build --lib --release
 ```
 
@@ -45,7 +45,7 @@ You'll also need to specify the `+crt-static` target feature. For example,
 compiling for `aarch64-unknown-linux-gnu` from a Ubuntu Linux machine would be
 done as follows:
 
-```txt
+```sh
 RUSTFLAGS="-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc" cargo build --target aarch64-unknown-linux-gnu
 ```
 
@@ -68,25 +68,25 @@ the debug build runs slowly and often causes tests to timeout. The opt-dev
 profile is generally ideal for development purposes as it enables some
 optimizations while leaving debug checks enabled.
 
-```txt
+```sh
 cargo build --release
 ```
 
 Or:
 
-```txt
+```sh
 cargo build --profile opt-dev
 ```
 
 Then you can run the tests with the `tests.sh` helper script:
 
-```txt
+```sh
 .github/workflows/test.sh -r target/release/dav1d
 ```
 
 Or:
 
-```txt
+```sh
 .github/workflows/test.sh -r target/opt-dev/dav1d
 ```
 
