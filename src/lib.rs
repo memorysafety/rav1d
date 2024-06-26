@@ -381,7 +381,8 @@ impl Rav1dPicture {
 fn output_image(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut res = Ok(());
 
-    let r#in = if c.all_layers || state.max_spatial_id == 0 {
+    let use_cache = !c.all_layers && state.max_spatial_id != 0;
+    let r#in = if !use_cache {
         &mut state.out
     } else {
         &mut state.cache
@@ -393,7 +394,7 @@ fn output_image(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPicture
     }
     let _ = mem::take(r#in);
 
-    if !c.all_layers && state.max_spatial_id != 0 && state.out.p.data.is_some() {
+    if use_cache && state.out.p.data.is_some() {
         state.cache = mem::take(&mut state.out);
     }
     res
