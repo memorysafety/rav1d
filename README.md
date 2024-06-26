@@ -38,12 +38,18 @@ cargo +stable build --lib --release
 ## Cross-Compiling
 
 rav1d can be cross-compiled for a target other than the host platform using the
-Cargo `--target` flag. This may require passing additional arguments to the Rust
-compiler to tell it what linker to use. This can be done by setting the
-`RUSTFLAGS` enviroment variable and specifying the `linker` compiler flag.
-You'll also need to specify the `+crt-static` target feature. For example,
-compiling for `aarch64-unknown-linux-gnu` from a Ubuntu Linux machine would be
-done as follows:
+Cargo `--target` flag. This will require passing additional arguments to the
+Rust compiler to tell it what linker to use. This can be done by setting the
+`RUSTFLAGS` enviroment variable and specifying the `linker` compiler flag. For
+example, compiling for `aarch64-unknown-linux-gnu` from a Ubuntu Linux machine
+would be done as follows:
+
+```sh
+RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc" cargo build --target aarch64-unknown-linux-gnu
+```
+
+If you're cross-compiling in order to run tests under QEMU you'll also need to
+specify the `+crt-static` target feature.
 
 ```sh
 RUSTFLAGS="-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc" cargo build --target aarch64-unknown-linux-gnu
