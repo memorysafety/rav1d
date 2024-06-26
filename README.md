@@ -7,10 +7,11 @@ and correctness. It is a Rust port of
 # Building
 
 rav1d is written in Rust and uses the standard Rust toolchain to build. The Rust
-toolchain can be installed by going to https://rustup.rs. rav1d currently builds
-with a nightly compiler, which is specified in `rust-toolchain.toml`. The
-correct nightly build will automatically be installed for you when you run
-`cargo build`.
+toolchain can be installed by going to https://rustup.rs. The rav1d library
+builds on stable Rust for x86, x86_64, and aarch64, but currently requires a
+nightly compiler for armv7 and riscv. The project is configured to use a nightly
+compiler by default via `rust-toolchain.toml`, but a stable build can be made
+with the `+stable` cargo flag.
 
 For x86 targets you'll also need to install [nasm](https://nasm.us/) in order to
 build with assembly support.
@@ -26,6 +27,12 @@ runs faster than a regular debug build but has all debug checks still enabled:
 
 ```txt
 cargo build --profile opt-dev
+```
+
+To build just librav1d using a stable compiler:
+
+```txt
+cargo +stable build --lib --release
 ```
 
 ## Cross-Compiling
