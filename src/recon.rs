@@ -463,10 +463,8 @@ fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
     (s != 0) as c_uint + (s > 0) as c_uint
 }
 
-#[inline]
 fn get_lo_ctx(
     levels: &[u8],
-    tx_class: TxClass,
     hi_mag: &mut c_uint,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: usize,
@@ -476,19 +474,16 @@ fn get_lo_ctx(
     let level = |y, x| levels[y * stride + x] as usize;
 
     let mut mag = level(0, 1) + level(1, 0);
-    let offset = match tx_class {
-        TxClass::TwoD => {
-            mag += level(1, 1);
-            *hi_mag = mag as c_uint;
-            mag += level(0, 2) + level(2, 0);
-            ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
-        }
-        TxClass::H | TxClass::V => {
-            mag += level(0, 2);
-            *hi_mag = mag as c_uint;
-            mag += level(0, 3) + level(0, 4);
-            26 + if y > 1 { 10 } else { y * 5 }
-        }
+    let offset = if let Some(ctx_offsets) = ctx_offsets {
+        mag += level(1, 1);
+        *hi_mag = mag as c_uint;
+        mag += level(0, 2) + level(2, 0);
+        ctx_offsets[cmp::min(y, 4)][cmp::min(x, 4)] as usize
+    } else {
+        mag += level(0, 2);
+        *hi_mag = mag as c_uint;
+        mag += level(0, 3) + level(0, 4);
+        26 + if y > 1 { 10 } else { y * 5 }
     };
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }
@@ -819,7 +814,6 @@ fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
@@ -891,7 +885,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1015,7 +1009,6 @@ fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
@@ -1084,7 +1077,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1208,7 +1201,6 @@ fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
@@ -1277,7 +1269,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
