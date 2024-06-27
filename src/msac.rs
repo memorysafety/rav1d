@@ -255,7 +255,8 @@ pub fn rav1d_msac_decode_uniform(s: &mut MsacContext, n: c_uint) -> c_int {
 }
 
 const EC_PROB_SHIFT: c_uint = 6;
-const EC_MIN_PROB: c_uint = 4; // must be <= (1 << EC_PROB_SHIFT) / 16
+const EC_MIN_PROB: c_uint = 4;
+const _: () = assert!(EC_MIN_PROB <= (1 << EC_PROB_SHIFT) / 16);
 
 const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
 
