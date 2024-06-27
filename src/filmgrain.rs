@@ -42,7 +42,7 @@ use crate::include::common::bitdepth::bd_fn;
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
-pub const BLOCK_SIZE: usize = 32;
+pub const FG_BLOCK_SIZE: usize = 32;
 
 const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
@@ -123,7 +123,7 @@ impl fgy_32x32xn::Fn {
         row_num: usize,
         bd: BD,
     ) {
-        let row_strides = (row_num * BLOCK_SIZE) as isize;
+        let row_strides = (row_num * FG_BLOCK_SIZE) as isize;
         let dst_row = dst.with_offset::<BD>() + row_strides * dst.pixel_stride::<BD>();
         let src_row = src.with_offset::<BD>() + row_strides * src.pixel_stride::<BD>();
         let dst_row_ptr = dst_row.as_mut_ptr::<BD>().cast();
@@ -195,7 +195,7 @@ impl fguv_32x32xn::Fn {
         bd: BD,
     ) {
         let ss_y = (layout == Rav1dPixelLayoutSubSampled::I420) as usize;
-        let row_strides = (row_num * BLOCK_SIZE) as isize;
+        let row_strides = (row_num * FG_BLOCK_SIZE) as isize;
         let dst_row = dst.with_offset::<BD>() + (row_strides * dst.pixel_stride::<BD>() >> ss_y);
         let src_row = src.with_offset::<BD>() + (row_strides * src.pixel_stride::<BD>() >> ss_y);
         let dst_row_ptr = dst_row.as_mut_ptr::<BD>().cast();
@@ -572,7 +572,7 @@ fn sample_lut<BD: BitDepth>(
     let randval = offsets[bx][by] as usize;
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & ((1 << 4) - 1)));
-    grain_lut[offy + y + (BLOCK_SIZE >> suby) * by][offx + x + (BLOCK_SIZE >> subx) * bx]
+    grain_lut[offy + y + (FG_BLOCK_SIZE >> suby) * by][offx + x + (FG_BLOCK_SIZE >> subx) * bx]
         .as_::<i32>()
 }
 
@@ -638,13 +638,13 @@ fn fgy_32x32xn_rust<BD: BitDepth>(
 
     let mut seed = row_seed(rows, row_num, data);
 
-    assert!(dst_row.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
+    assert!(dst_row.stride() % (FG_BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
-    // process this row in BLOCK_SIZE^2 blocks
-    for bx in (0..pw).step_by(BLOCK_SIZE) {
-        let bw = cmp::min(BLOCK_SIZE, pw - bx);
+    // process this row in FG_BLOCK_SIZE^2 blocks
+    for bx in (0..pw).step_by(FG_BLOCK_SIZE) {
+        let bw = cmp::min(FG_BLOCK_SIZE, pw - bx);
 
         if data.overlap_flag && bx != 0 {
             // shift previous offsets left
@@ -780,13 +780,13 @@ fn fguv_32x32xn_rust<BD: BitDepth>(
 
     let mut seed = row_seed(rows, row_num, data);
 
-    assert!(dst_row.stride() % (BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
+    assert!(dst_row.stride() % (FG_BLOCK_SIZE * mem::size_of::<BD::Pixel>()) as isize == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
-    // process this row in BLOCK_SIZE^2 blocks (subsampled)
-    for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
-        let bw = cmp::min(BLOCK_SIZE >> sx, pw - bx);
+    // process this row in FG_BLOCK_SIZE^2 blocks (subsampled)
+    for bx in (0..pw).step_by(FG_BLOCK_SIZE >> sx) {
+        let bw = cmp::min(FG_BLOCK_SIZE >> sx, pw - bx);
         if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
@@ -1011,8 +1011,8 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
-    // process this row in BLOCK_SIZE^2 blocks
-    for bx in (0..pw).step_by(BLOCK_SIZE) {
+    // process this row in FG_BLOCK_SIZE^2 blocks
+    for bx in (0..pw).step_by(FG_BLOCK_SIZE) {
         if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
@@ -1128,8 +1128,8 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
-    // process this row in BLOCK_SIZE^2 blocks (subsampled)
-    for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
+    // process this row in FG_BLOCK_SIZE^2 blocks (subsampled)
+    for bx in (0..pw).step_by(FG_BLOCK_SIZE >> sx) {
         if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
