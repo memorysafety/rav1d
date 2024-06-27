@@ -40,6 +40,7 @@
 use crate::src::disjoint_mut::AsMutPtr;
 use crate::src::disjoint_mut::DisjointMut;
 use std::iter::zip;
+use std::ptr;
 
 /// Perform a `memset` optimized for lengths that are small powers of 2.
 ///
@@ -75,6 +76,37 @@ pub fn small_memset<T: Clone + Copy, const UP_TO: usize, const WITH_DEFAULT: boo
     }
 }
 
+/// # Safety
+///
+/// `buf` must be correctly aligned and dereferencable (but need not be
+/// initialized). `T` must not have a destructor.
+fn small_memset_raw<T: Clone + Copy, const UP_TO: usize, const WITH_DEFAULT: bool>(
+    buf: *mut [T],
+    val: T,
+    offset: usize,
+    len: usize,
+) {
+    //assert!(buf.len() >= offset && buf.len() - offset >= len);
+    // SAFETY: `buf` is correctly aligned for type T and offset is within bounds.
+    let buf = unsafe { (buf as *mut T).add(offset) };
+    match len {
+        01 if UP_TO >= 01 => unsafe { ptr::write(buf as *mut [T; 01], [val; 01]) },
+        02 if UP_TO >= 02 => unsafe { ptr::write(buf as *mut [T; 02], [val; 02]) },
+        04 if UP_TO >= 04 => unsafe { ptr::write(buf as *mut [T; 04], [val; 04]) },
+        08 if UP_TO >= 08 => unsafe { ptr::write(buf as *mut [T; 08], [val; 08]) },
+        16 if UP_TO >= 16 => unsafe { ptr::write(buf as *mut [T; 16], [val; 16]) },
+        32 if UP_TO >= 32 => unsafe { ptr::write(buf as *mut [T; 32], [val; 32]) },
+        64 if UP_TO >= 64 => unsafe { ptr::write(buf as *mut [T; 64], [val; 64]) },
+        _ => {
+            if WITH_DEFAULT {
+                for i in 0..len {
+                    unsafe { buf.add(i).write(val) };
+                }
+            }
+        }
+    }
+}
+
 pub struct CaseSetter<const UP_TO: usize, const WITH_DEFAULT: bool> {
     offset: usize,
     len: usize,
@@ -98,6 +130,15 @@ impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAUL
     {
         let mut buf = buf.index_mut(self.offset..self.offset + self.len);
         small_memset::<V, UP_TO, WITH_DEFAULT>(&mut *buf, val);
+    }
+
+    /// # Safety
+    ///
+    /// `buf` must be correctly aligned and dereferencable (but need not be
+    /// initialized).
+    #[inline]
+    pub unsafe fn set_raw<T: Clone + Copy>(&self, buf: *mut [T], val: T) {
+        small_memset_raw::<T, UP_TO, WITH_DEFAULT>(buf, val, self.offset, self.len);
     }
 }
 
