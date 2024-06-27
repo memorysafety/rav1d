@@ -408,7 +408,7 @@ unsafe extern "C" fn rav1d_msac_decode_symbol_adapt_c(
     //
     // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
     // where it comes from `cdf.len()`.
-    let cdf = unsafe { std::slice::from_raw_parts_mut(cdf, cdf_len) };
+    let cdf = unsafe { slice::from_raw_parts_mut(cdf, cdf_len) };
 
     rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols as u8) as c_uint
 }
