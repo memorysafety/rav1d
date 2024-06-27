@@ -82,6 +82,7 @@ use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
+use assert_matches::debug_assert_matches;
 use libc::intptr_t;
 use std::array;
 use std::cmp;
@@ -467,30 +468,46 @@ fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
 fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
-    hi_mag: &mut c_uint,
+    hi_mag: &mut u32,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
-    x: usize,
-    y: usize,
-    stride: usize,
-) -> usize {
-    let level = |y, x| levels[y * stride + x] as usize;
+    x: u32,
+    y: u32,
+    stride: u8,
+) -> u8 {
+    let stride = stride as usize;
+    let level = |y, x| levels[y * stride + x] as u32;
 
-    let mut mag = level(0, 1) + level(1, 0);
-    let offset = match tx_class {
-        TxClass::TwoD => {
+    // Note that the first `mag` initialization is moved inside the `match`
+    // so that the different bounds checks can be done inside the `match`,
+    // as putting them outside the `match` in an identical one trips up LLVM.
+    let mut mag;
+    let offset;
+    match ctx_offsets {
+        Some(ctx_offsets) => {
+            level(2, 1); // Bounds check all at once.
+            mag = level(0, 1) + level(1, 0);
+            debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
-            *hi_mag = mag as c_uint;
+            *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
-            ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
+            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)];
         }
-        TxClass::H | TxClass::V => {
+        None => {
+            debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
+            level(1, 4); // Bounds check all at once.
+            mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
-            *hi_mag = mag as c_uint;
+            *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
-            26 + if y > 1 { 10 } else { y * 5 }
+            offset = 26 + if y > 1 { 10 } else { y as u8 * 5 };
         }
-    };
-    offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
+    }
+    offset
+        + if mag > 512 {
+            4
+        } else {
+            ((mag + 64) >> 7) as u8
+        }
 }
 
 fn decode_coefs<BD: BitDepth>(
@@ -516,7 +533,7 @@ fn decode_coefs<BD: BitDepth>(
     let ts = &f.ts[ts];
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
+    let lossless = frame_hdr.segmentation.lossless.get(b.seg_id.get());
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
@@ -709,9 +726,9 @@ fn decode_coefs<BD: BitDepth>(
         let sh = cmp::min(t_dim.h, 8);
 
         // eob
-        let mut ctx: c_uint = 1
-            + (eob > sw as c_int * sh as c_int * 2) as c_uint
-            + (eob > sw as c_int * sh as c_int * 4) as c_uint;
+        let mut ctx = 1
+            + (eob > sw as c_int * sh as c_int * 2) as u8
+            + (eob > sw as c_int * sh as c_int * 4) as u8;
         let eob_tok =
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2) as c_int;
         let mut tok = eob_tok + 1;
@@ -727,7 +744,7 @@ fn decode_coefs<BD: BitDepth>(
                         [nonsquare_tx.wrapping_add(tx as c_uint & nonsquare_tx) as usize],
                 );
                 scan = dav1d_scans[tx as usize];
-                let stride = 4 * sh as usize;
+                let stride = 4 * sh;
                 let shift: c_uint = if t_dim.lh < 4 {
                     t_dim.lh as c_uint + 2
                 } else {
@@ -737,7 +754,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sh as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sw as usize + 2) {
+                for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -793,7 +810,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     // ac
@@ -816,16 +833,8 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -842,16 +851,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -891,7 +895,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -904,16 +908,12 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
@@ -935,7 +935,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sh as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sh as usize + 2) {
+                for i in 0..stride as usize * (4 * sh as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -990,7 +990,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1012,16 +1012,8 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1038,16 +1030,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -1084,7 +1071,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1097,16 +1084,12 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
@@ -1128,7 +1111,7 @@ fn decode_coefs<BD: BitDepth>(
                 let mask: c_uint = 4 * sw as c_uint - 1;
                 // Optimizes better than `.fill(0)`,
                 // which doesn't elide the bounds check, inline, or vectorize.
-                for i in 0..stride * (4 * sw as usize + 2) {
+                for i in 0..stride as usize * (4 * sw as usize + 2) {
                     levels[i] = 0;
                 }
                 let mut x: c_uint;
@@ -1183,7 +1166,7 @@ fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[x as usize * stride + y as usize] = level_tok as u8;
+                levels[x as usize * stride as usize + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1205,16 +1188,8 @@ fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[x as usize * stride + y as usize..];
-                    ctx = get_lo_ctx(
-                        level,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        x as usize,
-                        y as usize,
-                        stride,
-                    ) as c_uint;
+                    let level = &mut levels[x as usize * stride as usize + y as usize..];
+                    ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
@@ -1231,16 +1206,11 @@ fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                        ctx = if y > (tx_class == TxClass::TwoD) as c_uint {
                             14
                         } else {
                             7
-                        }) as c_uint)
-                            .wrapping_add(if mag > 12 {
-                                6
-                            } else {
-                                mag.wrapping_add(1) >> 1
-                            });
+                        } + if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                         tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                             as c_int;
                         if dbg {
@@ -1277,7 +1247,7 @@ fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
                 };
                 dc_tok =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3)
@@ -1290,16 +1260,12 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = levels[0 * stride + 1] as c_uint
-                            + levels[1 * stride + 0] as c_uint
-                            + levels[1 * stride + 1] as c_uint;
+                        mag = levels[0 * stride as usize + 1] as c_uint
+                            + levels[1 * stride as usize + 0] as c_uint
+                            + levels[1 * stride as usize + 1] as c_uint;
                     }
                     mag &= 63;
-                    ctx = if mag > 12 {
-                        6
-                    } else {
-                        mag.wrapping_add(1) >> 1
-                    };
+                    ctx = if mag > 12 { 6 } else { (mag as u8 + 1) >> 1 };
                     dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
                         as c_uint;
                     if dbg {
