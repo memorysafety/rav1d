@@ -223,7 +223,7 @@ fn mask_edges_inter(
     for (l, txa) in l[..h4].iter_mut().zip(&txa[0][0][..h4]) {
         *l = txa[w4 - 1];
     }
-    a[..w4].copy_from_slice(&mut txa[1][0][h4 - 1][..w4]);
+    a[..w4].copy_from_slice(&txa[1][0][h4 - 1][..w4]);
 }
 
 #[inline]
