@@ -99,6 +99,10 @@ impl TxfmSize {
             }
         }
     }
+
+    pub const fn is_rect(self) -> bool {
+        self as u8 >= Self::R4x8 as u8
+    }
 }
 
 #[repr(u8)]
