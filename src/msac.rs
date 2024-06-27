@@ -261,7 +261,7 @@ const _: () = assert!(EC_MIN_PROB <= (1 << EC_PROB_SHIFT) / 16);
 const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
 
 #[inline]
-fn ctx_refill(s: &mut MsacAsmContext) {
+fn ctx_refill(s: &mut MsacContext) {
     let mut c = (EC_WIN_SIZE as c_int) - 24 - s.cnt;
     let mut dif = s.dif;
     s.with_buf(|mut buf| {
@@ -285,7 +285,7 @@ fn ctx_refill(s: &mut MsacAsmContext) {
 }
 
 #[inline]
-fn ctx_norm(s: &mut MsacAsmContext, dif: ec_win, rng: c_uint) {
+fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: c_uint) {
     let d = 15 ^ (31 ^ clz(rng));
     let cnt = s.cnt;
     assert!(rng <= 65535);
@@ -352,11 +352,7 @@ pub fn rav1d_msac_decode_subexp(s: &mut MsacContext, r#ref: c_uint, n: c_uint, m
 /// Return value is in the range `0..=n_symbols`.
 ///
 /// `n_symbols` is in the range `0..16`, so it is really a `u4`.
-fn rav1d_msac_decode_symbol_adapt_rust(
-    s: &mut MsacAsmContext,
-    cdf: &mut [u16],
-    n_symbols: u8,
-) -> u8 {
+fn rav1d_msac_decode_symbol_adapt_rust(s: &mut MsacContext, cdf: &mut [u16], n_symbols: u8) -> u8 {
     let c = (s.dif >> (EC_WIN_SIZE - 16)) as c_uint;
     let r = s.rng >> 8;
     let mut u;
@@ -396,6 +392,10 @@ fn rav1d_msac_decode_symbol_adapt_rust(
     val as u8
 }
 
+/// # Safety
+///
+/// Must be called through [`Rav1dMsacDSPContext::symbol_adapt16`]
+/// in [`rav1d_msac_decode_symbol_adapt16`].
 #[cfg_attr(not(all(feature = "asm", target_arch = "x86_64")), allow(dead_code))]
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn rav1d_msac_decode_symbol_adapt_c(
@@ -404,9 +404,17 @@ unsafe extern "C" fn rav1d_msac_decode_symbol_adapt_c(
     n_symbols: usize,
     cdf_len: usize,
 ) -> c_uint {
-    // # Safety
-    //
-    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
+    // SAFETY: In the `rav1d_msac_decode_symbol_adapt16` caller,
+    // `&mut s.asm` is passed, so we can reverse this to get back `s`.
+    // The `.sub` is safe since were are subtracting the offset of `asm` within `s`,
+    // so that will stay in bounds of the `s: MsacContext` allocated object.
+    let s = unsafe {
+        &mut *ptr::from_mut(s)
+            .sub(mem::offset_of!(MsacContext, asm))
+            .cast::<MsacContext>()
+    };
+
+    // SAFETY: This is only called from [`dav1d_msac_decode_symbol_adapt16`],
     // where it comes from `cdf.len()`.
     let cdf = unsafe { slice::from_raw_parts_mut(cdf, cdf_len) };
 
@@ -486,18 +494,17 @@ impl MsacContext {
 #[inline(always)]
 pub fn rav1d_msac_decode_symbol_adapt4(s: &mut MsacContext, cdf: &mut [u16], n_symbols: u8) -> u8 {
     debug_assert!(n_symbols < 4);
-    let s = &mut s.asm;
     let ret;
     cfg_if! {
         if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt4_sse2(s, cdf.as_mut_ptr(), n_symbols as usize)
+                dav1d_msac_decode_symbol_adapt4_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
         } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt4_neon(s, cdf.as_mut_ptr(), n_symbols as usize)
+                dav1d_msac_decode_symbol_adapt4_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
         } else {
             ret = rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
@@ -513,18 +520,17 @@ pub fn rav1d_msac_decode_symbol_adapt4(s: &mut MsacContext, cdf: &mut [u16], n_s
 #[inline(always)]
 pub fn rav1d_msac_decode_symbol_adapt8(s: &mut MsacContext, cdf: &mut [u16], n_symbols: u8) -> u8 {
     debug_assert!(n_symbols < 8);
-    let s = &mut s.asm;
     let ret;
     cfg_if! {
         if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt8_sse2(s, cdf.as_mut_ptr(), n_symbols as usize)
+                dav1d_msac_decode_symbol_adapt8_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
         } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt8_neon(s, cdf.as_mut_ptr(), n_symbols as usize)
+                dav1d_msac_decode_symbol_adapt8_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
         } else {
             ret = rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
@@ -545,17 +551,17 @@ pub fn rav1d_msac_decode_symbol_adapt16(s: &mut MsacContext, cdf: &mut [u16], n_
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                (s.symbol_adapt16)(s, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
+                (s.symbol_adapt16)(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
             };
         } else if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt16_sse2(s, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
+                dav1d_msac_decode_symbol_adapt16_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
             };
         } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
-                dav1d_msac_decode_symbol_adapt16_neon(s, cdf.as_mut_ptr(), n_symbols as usize)
+                dav1d_msac_decode_symbol_adapt16_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
         } else {
             ret = rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
