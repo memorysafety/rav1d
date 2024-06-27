@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
@@ -184,30 +186,6 @@ impl MsacAsmContext {
     fn allow_update_cdf(&self) -> bool {
         self.allow_update_cdf != 0
     }
-
-    fn set_buf(&mut self, buf: &[u8]) {
-        let Range { start, end } = buf.as_ptr_range();
-        self.buf_pos = start;
-        self.buf_end = end;
-    }
-
-    /// # Safety
-    ///
-    /// Not actually `'static`, but the lifetime safety is
-    /// guaranteed by [`Self::new`]'s safety preconditions.
-    pub fn buf(&self) -> &'static [u8] {
-        // SAFETY: [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
-        // and are only set in [`Self::set_buf`] and [`Self::new`],
-        // which derive them from a valid slice.
-        unsafe {
-            let len = self.buf_end.offset_from(self.buf_pos) as usize;
-            slice::from_raw_parts(self.buf_pos, len)
-        }
-    }
-
-    fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
-        self.set_buf(f(self.buf()));
-    }
 }
 
 #[derive(Default)]
@@ -227,6 +205,32 @@ impl Deref for MsacContext {
 impl DerefMut for MsacContext {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.asm
+    }
+}
+
+impl MsacContext {
+    fn set_buf(&mut self, buf: &[u8]) {
+        let Range { start, end } = buf.as_ptr_range();
+        self.buf_pos = start;
+        self.buf_end = end;
+    }
+
+    /// # Safety
+    ///
+    /// The lifetime is at least `'a`, the lifetime of `self`,
+    /// since [`Self`] owns [`Self::_data`], which owns the buffer.
+    pub fn buf<'a>(&self) -> &'a [u8] {
+        // SAFETY: [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
+        // and are only set in [`Self::set_buf`] and [`Self::new`],
+        // which derive them from a valid slice.
+        unsafe {
+            let len = self.buf_end.offset_from(self.buf_pos) as usize;
+            slice::from_raw_parts(self.buf_pos, len)
+        }
+    }
+
+    fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
+        self.set_buf(f(self.buf()));
     }
 }
 
