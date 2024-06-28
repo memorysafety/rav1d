@@ -81,7 +81,7 @@ impl<T> Sub<isize> for WithOffset<T> {
     }
 }
 
-impl<'a, P: Pixels> WithOffset<&'a P> {
+impl<P: Pixels> WithOffset<P> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {

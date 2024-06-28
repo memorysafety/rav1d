@@ -59,3 +59,13 @@ pub trait Pixels {
         self.as_byte_mut_ptr() == other.as_byte_mut_ptr()
     }
 }
+
+impl<'a, P: Pixels> Pixels for &'a P {
+    fn byte_len(&self) -> usize {
+        (*self).byte_len()
+    }
+
+    fn as_byte_mut_ptr(&self) -> *mut u8 {
+        (*self).as_byte_mut_ptr()
+    }
+}
