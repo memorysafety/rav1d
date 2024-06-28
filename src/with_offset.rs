@@ -3,6 +3,9 @@ use std::ops::AddAssign;
 use std::ops::Sub;
 use std::ops::SubAssign;
 
+use crate::include::common::bitdepth::BitDepth;
+use crate::src::pixels::Pixels;
+
 #[derive(Clone, Copy)]
 pub struct WithOffset<T> {
     pub data: T,
@@ -74,5 +77,19 @@ impl<T> Sub<isize> for WithOffset<T> {
     fn sub(mut self, rhs: isize) -> Self::Output {
         self -= rhs;
         self
+    }
+}
+
+impl<'a, P: Pixels> WithOffset<&'a P> {
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.data.as_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        self.data.as_mut_ptr_at::<BD>(self.offset)
     }
 }

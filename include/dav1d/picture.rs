@@ -364,18 +364,6 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
 
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
-        self.data.as_ptr_at::<BD>(self.offset)
-    }
-
-    #[inline] // Inline to see bounds checks in order to potentially elide them.
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
-        self.data.as_mut_ptr_at::<BD>(self.offset)
-    }
-
-    #[inline] // Inline to see bounds checks in order to potentially elide them.
-    #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<BD: BitDepth>(
         &self,
     ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
