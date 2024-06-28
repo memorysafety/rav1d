@@ -186,12 +186,6 @@ impl MsacAsmContext {
     fn allow_update_cdf(&self) -> bool {
         self.allow_update_cdf != 0
     }
-
-    fn set_buf(&mut self, buf: &[u8]) {
-        let Range { start, end } = buf.as_ptr_range();
-        self.buf_pos = start;
-        self.buf_end = end;
-    }
 }
 
 #[derive(Default)]
@@ -230,7 +224,8 @@ impl MsacContext {
         let data = &**self.data.as_ref().unwrap();
         let buf = &data[self.buf_index()..];
         let buf = f(buf);
-        self.asm.set_buf(buf);
+        self.buf_pos = buf.as_ptr();
+        // We don't actually need to set `self.buf_end` since it has not changed.
     }
 }
 
