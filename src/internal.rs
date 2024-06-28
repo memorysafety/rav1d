@@ -92,6 +92,7 @@ use parking_lot::Condvar;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
 use parking_lot::RwLockReadGuard;
+use try_lock::TryLock;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
@@ -885,7 +886,7 @@ pub struct Rav1dTileStateContext {
 #[derive(Default)]
 #[repr(C, align(32))]
 pub struct Rav1dTileState {
-    pub context: Mutex<Rav1dTileStateContext>,
+    pub context: TryLock<Rav1dTileStateContext>,
 
     pub tiling: Rav1dTileState_tiling,
 
