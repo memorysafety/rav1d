@@ -1207,10 +1207,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                         {
                             let f = fc.data.try_read().unwrap();
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                // SAFETY: TODO make safe
-                                unsafe {
-                                    (f.bd_fn().filter_sbrow_deblock_cols)(c, &f, &mut tc, sby);
-                                }
+                                (f.bd_fn().filter_sbrow_deblock_cols)(c, &f, &mut tc, sby);
                             }
                         }
                         if ensure_progress(
@@ -1230,10 +1227,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                     TaskType::DeblockRows => {
                         let f = fc.data.try_read().unwrap();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            // SAFETY: TODO make safe
-                            unsafe {
-                                (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
-                            }
+                            (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
                         }
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -1300,10 +1294,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                // SAFETY: TODO make safe
-                                unsafe {
-                                    (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
-                                }
+                                (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
                             }
                         }
                         task_type = TaskType::LoopRestoration;
@@ -1314,10 +1305,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
-                            // SAFETY: TODO make safe
-                            unsafe {
-                                (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
-                            }
+                            (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
                         }
                         task_type = TaskType::ReconstructionProgress;
                         continue 'fallthrough;

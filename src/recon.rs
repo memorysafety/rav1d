@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::ToPrimitive;
@@ -146,7 +148,7 @@ pub(crate) type recon_b_inter_fn = fn(
 ) -> Result<(), ()>;
 
 pub(crate) type filter_sbrow_fn =
-    unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
+    fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
 pub(crate) type backup_ipred_edge_fn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
@@ -3685,7 +3687,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     tc: &mut Rav1dTaskContext,
@@ -3707,12 +3709,14 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
             let ss_ver = f.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
             p[i] - ((8 * p[i].pixel_stride::<BD>()) >> ss_ver as u8)
         });
-        rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby);
+        // TODO make safe
+        unsafe { rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby) };
     }
 
     let n_blks = sbsz - 2 * ((sby + 1) < f.sbh) as c_int;
     let end = cmp::min(start + n_blks, f.bh);
-    rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby);
+    // TODO make safe
+    unsafe { rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby) };
 }
 
 pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
@@ -3771,7 +3775,7 @@ pub(crate) fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     rav1d_lr_sbrow::<BD>(c, f, sr_p, sby);
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
