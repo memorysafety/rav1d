@@ -522,10 +522,10 @@ pub(crate) fn rav1d_create_lf_mask_inter(
 
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
+        assert!(level_cache_off + (bh4 - 1) * b4_stride + bw4 < level_cache.len());
         for _y in 0..bh4 {
             for x in 0..bw4 {
                 let idx = level_cache_off + x;
-                assert!(idx < level_cache.len());
                 // SAFETY: The Y portion of this element (indices 0 and 1) is not
                 // concurrently accessed by any other threads and the assert above ensures
                 // that it is in bounds.
