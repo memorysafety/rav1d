@@ -227,10 +227,12 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
 pub struct Rav1dPictureDataComponent(DisjointMut<Rav1dPictureDataComponentInner>);
 
 impl Pixels for Rav1dPictureDataComponent {
-    type Buf = Rav1dPictureDataComponentInner;
+    fn byte_len(&self) -> usize {
+        self.0.len()
+    }
 
-    fn as_buf(&self) -> &DisjointMut<Self::Buf> {
-        &self.0
+    fn as_byte_mut_ptr(&self) -> *mut u8 {
+        self.0.as_mut_ptr()
     }
 }
 
@@ -253,7 +255,7 @@ impl Rav1dPictureDataComponent {
         if stride >= 0 {
             return 0;
         }
-        BD::pxstride(self.len() - (-stride) as usize)
+        BD::pxstride(self.byte_len() - (-stride) as usize)
     }
 
     pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset {
@@ -269,7 +271,7 @@ impl Rav1dPictureDataComponent {
         let stride = self.stride();
         if stride < 0 {
             // SAFETY: This puts `ptr` one element past the end of the slice of pixels.
-            let ptr = unsafe { ptr.add(self.len()) };
+            let ptr = unsafe { ptr.add(self.byte_len()) };
             // SAFETY: `stride` is negative and `-stride < len`, so this should stay in bounds.
             let ptr = unsafe { ptr.offset(stride) };
             ptr
@@ -290,7 +292,7 @@ impl Rav1dPictureDataComponent {
     }
 
     fn as_dav1d(&self) -> Option<NonNull<c_void>> {
-        if self.len() == 0 {
+        if self.byte_len() == 0 {
             None
         } else {
             NonNull::new(self.as_strided_byte_mut_ptr().cast())

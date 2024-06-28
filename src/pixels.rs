@@ -1,28 +1,23 @@
 use std::mem;
 
 use crate::include::common::bitdepth::BitDepth;
-use crate::src::disjoint_mut::AsMutPtr;
-use crate::src::disjoint_mut::DisjointMut;
 
 pub trait Pixels {
-    type Buf: AsMutPtr<Target = u8>;
-
-    fn as_buf(&self) -> &DisjointMut<Self::Buf>;
-
     /// Length in number of [`u8`] bytes.
-    fn len(&self) -> usize {
-        self.as_buf().len()
-    }
+    fn byte_len(&self) -> usize;
+
+    /// Absolute ptr to [`u8`] bytes.
+    fn as_byte_mut_ptr(&self) -> *mut u8;
 
     /// Length in number of [`BitDepth::Pixel`]s.
     fn pixel_len<BD: BitDepth>(&self) -> usize {
-        self.len() / mem::size_of::<BD::Pixel>()
+        self.byte_len() / mem::size_of::<BD::Pixel>()
     }
 
     /// Absolute ptr to [`BitDepth::Pixel`]s.
     fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
         // SAFETY: Transmutation is safe because we verify this with `zerocopy` in `Self::slice`.
-        self.as_buf().as_mut_ptr().cast()
+        self.as_byte_mut_ptr().cast()
     }
 
     /// Absolute ptr to [`BitDepth::Pixel`]s.
@@ -61,6 +56,6 @@ pub trait Pixels {
 
     /// Determine if they reference the same data.
     fn ref_eq(&self, other: &Self) -> bool {
-        self.as_buf().as_mut_ptr() == other.as_buf().as_mut_ptr()
+        self.as_byte_mut_ptr() == other.as_byte_mut_ptr()
     }
 }
