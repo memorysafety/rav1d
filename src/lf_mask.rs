@@ -488,6 +488,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     );
 }
 
+#[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_inter(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
