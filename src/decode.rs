@@ -1142,6 +1142,7 @@ fn decode_b(
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
 ) -> Result<(), ()> {
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     use std::fmt;
 
     /// Helper struct for printing a number as a signed hexidecimal value.
@@ -1484,7 +1485,6 @@ fn decode_b(
         }
     }
 
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     // cdef index
     if b.skip == 0 {
         let idx = if seq_hdr.sb128 != 0 {
