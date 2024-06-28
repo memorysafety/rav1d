@@ -18,6 +18,7 @@ use crate::src::internal::SCRATCH_INTER_INTRA_BUF_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
 use crate::src::internal::SEG_MASK_LEN;
 use crate::src::levels::Filter2d;
+use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;

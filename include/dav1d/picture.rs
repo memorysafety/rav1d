@@ -27,6 +27,7 @@ use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
 use crate::src::pixels::Pixels;
+use crate::src::strided::Strided;
 use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -233,22 +234,18 @@ impl Pixels for Rav1dPictureDataComponent {
     }
 }
 
+impl Strided for Rav1dPictureDataComponent {
+    fn stride(&self) -> isize {
+        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
+        unsafe { (*self.0.inner()).stride }
+    }
+}
+
 impl Rav1dPictureDataComponent {
     pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
         Self(DisjointMut::new(
             Rav1dPictureDataComponentInner::wrap_buf::<BD>(buf, stride),
         ))
-    }
-
-    /// Stride in number of [`u8`] bytes.
-    pub fn stride(&self) -> isize {
-        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
-        unsafe { (*self.0.inner()).stride }
-    }
-
-    /// Stride in number of [`BitDepth::Pixel`]s.
-    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
-        BD::pxstride(self.stride())
     }
 
     pub fn pixel_offset<BD: BitDepth>(&self) -> usize {

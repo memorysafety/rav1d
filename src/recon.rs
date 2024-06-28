@@ -72,6 +72,7 @@ use crate::src::msac::MsacContext;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::pixels::Pixels as _;
 use crate::src::scan::dav1d_scans;
+use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
