@@ -8,6 +8,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::strided::Strided as _;
 use crate::src::unstable_extensions::as_chunks;
 use crate::src::unstable_extensions::flatten;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;

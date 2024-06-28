@@ -9,6 +9,7 @@ use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::BLOCK_SIZE;
 use crate::src::internal::GrainBD;
+use crate::src::strided::Strided as _;
 use std::cmp;
 
 fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {

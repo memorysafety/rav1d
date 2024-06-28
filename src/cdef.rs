@@ -7,6 +7,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::cpu::CpuFlags;
 use crate::src::ffi_safe::FFISafe;
+use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;

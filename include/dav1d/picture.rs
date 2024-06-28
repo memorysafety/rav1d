@@ -351,14 +351,6 @@ impl Rav1dPictureDataComponent {
 pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
-    pub fn stride(&self) -> isize {
-        self.data.stride()
-    }
-
-    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
-        self.data.pixel_stride::<BD>()
-    }
-
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<BD: BitDepth>(

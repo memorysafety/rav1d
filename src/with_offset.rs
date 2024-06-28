@@ -5,6 +5,7 @@ use std::ops::SubAssign;
 
 use crate::include::common::bitdepth::BitDepth;
 use crate::src::pixels::Pixels;
+use crate::src::strided::Strided;
 
 #[derive(Clone, Copy)]
 pub struct WithOffset<T> {
@@ -91,5 +92,11 @@ impl<'a, P: Pixels> WithOffset<&'a P> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
         self.data.as_mut_ptr_at::<BD>(self.offset)
+    }
+}
+
+impl<'a, S: Strided> Strided for WithOffset<&'a S> {
+    fn stride(&self) -> isize {
+        self.data.stride()
     }
 }
