@@ -52,6 +52,7 @@ pub mod src {
     mod getbits;
     pub(crate) mod relaxed_atomic;
     mod unstable_extensions;
+    pub(crate) mod with_offset;
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
     mod extensions;
