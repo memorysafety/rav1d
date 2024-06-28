@@ -3633,7 +3633,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
@@ -3661,7 +3661,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     );
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
