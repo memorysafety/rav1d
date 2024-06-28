@@ -1,11 +1,10 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::src::pixels::Pixels;
+use crate::src::strided::Strided;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Sub;
 use std::ops::SubAssign;
-
-use crate::include::common::bitdepth::BitDepth;
-use crate::src::pixels::Pixels;
-use crate::src::strided::Strided;
 
 #[derive(Clone, Copy)]
 pub struct WithOffset<T> {
@@ -95,7 +94,7 @@ impl<P: Pixels> WithOffset<P> {
     }
 }
 
-impl<'a, S: Strided> Strided for WithOffset<&'a S> {
+impl<S: Strided> Strided for WithOffset<S> {
     fn stride(&self) -> isize {
         self.data.stride()
     }

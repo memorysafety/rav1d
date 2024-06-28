@@ -1,6 +1,9 @@
-use std::mem;
-
 use crate::include::common::bitdepth::BitDepth;
+use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointMut;
+use crate::src::strided::WithStride;
+use std::mem;
+use std::ops::Deref;
 
 pub trait Pixels {
     /// Length in number of [`u8`] bytes.
@@ -67,5 +70,25 @@ impl<'a, P: Pixels> Pixels for &'a P {
 
     fn as_byte_mut_ptr(&self) -> *mut u8 {
         (*self).as_byte_mut_ptr()
+    }
+}
+
+impl<P: Pixels> Pixels for WithStride<P> {
+    fn byte_len(&self) -> usize {
+        self.deref().byte_len()
+    }
+
+    fn as_byte_mut_ptr(&self) -> *mut u8 {
+        self.deref().as_byte_mut_ptr()
+    }
+}
+
+impl<T: AsMutPtr<Target = u8>> Pixels for DisjointMut<T> {
+    fn byte_len(&self) -> usize {
+        self.len()
+    }
+
+    fn as_byte_mut_ptr(&self) -> *mut u8 {
+        self.as_mut_ptr()
     }
 }

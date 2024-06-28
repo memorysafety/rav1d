@@ -1,13 +1,25 @@
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
+use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::pixels::Pixels;
 use crate::src::strided::Strided;
+use crate::src::strided::WithStride;
 
-pub enum PicOrBuf<'a, B> {
+pub enum PicOrBuf<'a, T: AsMutPtr<Target = u8>> {
     Pic(&'a Rav1dPictureDataComponent),
-    Buf(B),
+    Buf(WithStride<&'a DisjointMut<T>>),
 }
 
-impl<'a, B: Pixels> Pixels for PicOrBuf<'a, B> {
+/// Manual `impl` since `T: Clone` is not required.
+impl<'a, T: AsMutPtr<Target = u8>> Clone for PicOrBuf<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, T: AsMutPtr<Target = u8>> Copy for PicOrBuf<'a, T> {}
+
+impl<'a, T: AsMutPtr<Target = u8>> Pixels for PicOrBuf<'a, T> {
     fn byte_len(&self) -> usize {
         match self {
             Self::Pic(pic) => pic.byte_len(),
@@ -23,7 +35,7 @@ impl<'a, B: Pixels> Pixels for PicOrBuf<'a, B> {
     }
 }
 
-impl<'a, B: Strided> Strided for PicOrBuf<'a, B> {
+impl<'a, T: AsMutPtr<Target = u8>> Strided for PicOrBuf<'a, T> {
     fn stride(&self) -> isize {
         match self {
             Self::Pic(pic) => pic.stride(),

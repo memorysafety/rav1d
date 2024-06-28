@@ -12,6 +12,13 @@ pub trait Strided {
     }
 }
 
+impl<'a, S: Strided> Strided for &'a S {
+    fn stride(&self) -> isize {
+        (*self).stride()
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct WithStride<T> {
     pub buf: T,
     pub stride: isize,
