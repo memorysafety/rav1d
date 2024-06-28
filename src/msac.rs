@@ -186,12 +186,18 @@ impl MsacAsmContext {
     fn allow_update_cdf(&self) -> bool {
         self.allow_update_cdf != 0
     }
+
+    fn set_buf(&mut self, buf: &[u8]) {
+        let Range { start, end } = buf.as_ptr_range();
+        self.buf_pos = start;
+        self.buf_end = end;
+    }
 }
 
 #[derive(Default)]
 pub struct MsacContext {
     asm: MsacAsmContext,
-    _data: Option<CArc<[u8]>>,
+    data: Option<CArc<[u8]>>,
 }
 
 impl Deref for MsacContext {
@@ -209,28 +215,22 @@ impl DerefMut for MsacContext {
 }
 
 impl MsacContext {
-    fn set_buf(&mut self, buf: &[u8]) {
-        let Range { start, end } = buf.as_ptr_range();
-        self.buf_pos = start;
-        self.buf_end = end;
+    pub fn data(&self) -> &[u8] {
+        &**self.data.as_ref().unwrap()
     }
 
-    /// # Safety
-    ///
-    /// The lifetime is at least `'a`, the lifetime of `self`,
-    /// since [`Self`] owns [`Self::_data`], which owns the buffer.
-    pub fn buf<'a>(&self) -> &'a [u8] {
-        // SAFETY: [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
-        // and are only set in [`Self::set_buf`] and [`Self::new`],
-        // which derive them from a valid slice.
-        unsafe {
-            let len = self.buf_end.offset_from(self.buf_pos) as usize;
-            slice::from_raw_parts(self.buf_pos, len)
-        }
+    pub fn buf_index(&self) -> usize {
+        // We safely subtract instead of unsafely use `ptr::offset_from`
+        // as asm sets `buf_pos`, so we don't need to rely on its safety,
+        // and because codegen is no less optimal this way.
+        self.buf_pos as usize - self.data().as_ptr() as usize
     }
 
     fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
-        self.set_buf(f(self.buf()));
+        let data = &**self.data.as_ref().unwrap();
+        let buf = &data[self.buf_index()..];
+        let buf = f(buf);
+        self.asm.set_buf(buf);
     }
 }
 
@@ -484,7 +484,7 @@ impl MsacContext {
         };
         let mut s = Self {
             asm,
-            _data: Some(data),
+            data: Some(data),
         };
         let _ = dsp.symbol_adapt16; // Silence unused warnings.
         ctx_refill(&mut s);
