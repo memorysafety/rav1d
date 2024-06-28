@@ -53,10 +53,10 @@ impl<'a, T: AsMutPtr<Target = u8>> WithOffset<PicOrBuf<'a, T>> {
         }
     }
 
-    pub fn buf(buf: &'a DisjointMut<T>, stride: isize, offset: usize) -> Self {
+    pub fn buf(buf: WithOffset<WithStride<&'a DisjointMut<T>>>) -> Self {
         Self {
-            data: PicOrBuf::Buf(WithStride { buf, stride }),
-            offset,
+            data: PicOrBuf::Buf(buf.data),
+            offset: buf.offset,
         }
     }
 }
