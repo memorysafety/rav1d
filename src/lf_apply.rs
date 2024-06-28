@@ -12,17 +12,19 @@ use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::strided::Strided as _;
+use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
-// The loop filter buffer stores 12 rows of pixels. A superblock block will
-// contain at most 2 stripes. Each stripe requires 4 rows pixels (2 above
-// and 2 below) the final 4 rows are used to swap the bottom of the last
-// stripe with the top of the next super block row.
-unsafe fn backup_lpf<BD: BitDepth>(
+/// The loop filter buffer stores 12 rows of pixels.
+/// A superblock block will contain at most 2 stripes.
+/// Each stripe requires 4 rows pixels (2 above and 2 below).
+/// The final 4 rows are used to swap the bottom of
+/// the last stripe with the top of the next super block row.
+fn backup_lpf<BD: BitDepth>(
     c: &Rav1dContext,
     dst: &DisjointMut<AlignedVec64<u8>>,
     mut dst_offset: usize, // in pixel units
@@ -83,8 +85,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
             dsp.mc.resize.call::<BD>(
-                dst.mut_slice_as((dst_offset.., ..dst_w)).as_mut_ptr(),
-                dst_stride,
+                WithOffset::buf(dst, dst_stride, dst_offset),
                 src,
                 dst_w,
                 n_lines as usize,
@@ -147,7 +148,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     };
 }
 
-pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
+pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     src: [Rav1dPictureDataComponentOffset; 3],

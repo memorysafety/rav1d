@@ -86,6 +86,7 @@ use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
+use crate::src::with_offset::WithOffset;
 use assert_matches::debug_assert_matches;
 use libc::intptr_t;
 use std::array;
@@ -3714,7 +3715,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby);
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
+pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
     f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
@@ -3741,8 +3742,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
         f.dsp.mc.resize.call::<BD>(
-            dst.as_mut_ptr::<BD>(),
-            dst.stride(),
+            WithOffset::pic(dst),
             src,
             dst_w as usize,
             (cmp::min(img_h, h_end) + h_start) as usize,

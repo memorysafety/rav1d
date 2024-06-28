@@ -4,6 +4,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::pixels::Pixels;
 use crate::src::strided::Strided;
 use crate::src::strided::WithStride;
+use crate::src::with_offset::WithOffset;
 
 pub enum PicOrBuf<'a, T: AsMutPtr<Target = u8>> {
     Pic(&'a Rav1dPictureDataComponent),
@@ -40,6 +41,22 @@ impl<'a, T: AsMutPtr<Target = u8>> Strided for PicOrBuf<'a, T> {
         match self {
             Self::Pic(pic) => pic.stride(),
             Self::Buf(buf) => buf.stride(),
+        }
+    }
+}
+
+impl<'a, T: AsMutPtr<Target = u8>> WithOffset<PicOrBuf<'a, T>> {
+    pub fn pic(pic: WithOffset<&'a Rav1dPictureDataComponent>) -> Self {
+        Self {
+            data: PicOrBuf::Pic(pic.data),
+            offset: pic.offset,
+        }
+    }
+
+    pub fn buf(buf: &'a DisjointMut<T>, stride: isize, offset: usize) -> Self {
+        Self {
+            data: PicOrBuf::Buf(WithStride { buf, stride }),
+            offset,
         }
     }
 }
