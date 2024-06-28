@@ -50,6 +50,7 @@ pub mod src {
     mod fg_apply;
     mod filmgrain;
     mod getbits;
+    pub(crate) mod pixels;
     pub(crate) mod relaxed_atomic;
     mod unstable_extensions;
     pub(crate) mod with_offset;
