@@ -355,7 +355,6 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     let len = endy4 - starty4;
     let y_dst = |x| y_dst + x * 4;
     y_dst(w).as_ptr::<BD>(); // Bounds check
-    let mask = &mask[..w];
     for x in 0..w {
         if !have_left && x == 0 {
             continue;
@@ -429,7 +428,6 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     let v_dst = |x| v_dst + x * 4;
     u_dst(w).as_ptr::<BD>(); // Bounds check
     v_dst(w).as_ptr::<BD>(); // Bounds check
-    let mask = &mask[..w];
     let lvl = &lvl[..w];
     for x in 0..w {
         if !have_left && x == 0 {
