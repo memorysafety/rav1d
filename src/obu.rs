@@ -1143,11 +1143,7 @@ fn parse_segmentation(
             update_data = true;
         } else {
             update_map = gb.get_bit();
-            temporal = if update_map {
-                gb.get_bit()
-            } else {
-                false
-            };
+            temporal = if update_map { gb.get_bit() } else { false };
             update_data = gb.get_bit();
         }
 
@@ -1646,10 +1642,7 @@ fn parse_film_grain_data(
         }
     }
 
-    if seqhdr.ss_hor
-        && seqhdr.ss_ver
-        && (num_uv_points[0] != 0) != (num_uv_points[1] != 0)
-    {
+    if seqhdr.ss_hor && seqhdr.ss_ver && (num_uv_points[0] != 0) != (num_uv_points[1] != 0) {
         return Err(EINVAL);
     }
 
@@ -1993,9 +1986,8 @@ fn parse_frame_hdr(
     }
     debug.post(gb, "frametype-specific-bits");
 
-    let refresh_context = (!seqhdr.reduced_still_picture_header
-        && disable_cdf_update == 0
-        && !gb.get_bit()) as u8;
+    let refresh_context =
+        (!seqhdr.reduced_still_picture_header && disable_cdf_update == 0 && !gb.get_bit()) as u8;
     debug.post(gb, "refresh_context");
 
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;

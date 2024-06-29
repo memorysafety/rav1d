@@ -802,8 +802,7 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4)
-    {
+    if !b.skip && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4) {
         uvtx = TxfmSize::S4x4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -816,7 +815,7 @@ fn read_vartx_tree(
                 },
             );
         }
-    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
+    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip {
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&t.l, 1), (&f.a[t.a], 0)],
@@ -1414,21 +1413,20 @@ fn decode_b(
         b.skip_mode = rav1d_msac_decode_bool_adapt(
             &mut ts_c.msac,
             &mut ts_c.cdf.m.skip_mode.0[smctx as usize],
-        ) as u8;
+        );
         if debug_block_info!(f, t.b) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts_c.msac.rng);
         }
     } else {
-        b.skip_mode = 0;
+        b.skip_mode = false;
     }
 
     // skip
-    if b.skip_mode != 0 || seg.map(|seg| seg.skip).unwrap_or(false) {
-        b.skip = 1;
+    if b.skip_mode || seg.map(|seg| seg.skip).unwrap_or(false) {
+        b.skip = true;
     } else {
         let sctx = *f.a[t.a].skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
-        b.skip =
-            rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx as usize]) as u8;
+        b.skip = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx as usize]);
         if debug_block_info!(f, t.b) {
             println!("Post-skip[{}]: r={}", b.skip, ts_c.msac.rng);
         }
@@ -1439,7 +1437,7 @@ fn decode_b(
         && frame_hdr.segmentation.update_map
         && !frame_hdr.segmentation.seg_data.preskip
     {
-        if b.skip == 0 && frame_hdr.segmentation.temporal && {
+        if !b.skip && frame_hdr.segmentation.temporal && {
             let index = *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
@@ -1463,7 +1461,7 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            b.seg_id = if b.skip != 0 {
+            b.seg_id = if b.skip {
                 pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
@@ -1490,7 +1488,7 @@ fn decode_b(
     }
 
     // cdef index
-    if b.skip == 0 {
+    if !b.skip {
         let idx = if seq_hdr.sb128 {
             ((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)
         } else {
@@ -1532,7 +1530,7 @@ fn decode_b(
                 } else {
                     BlockSize::Bs64x64
                 })
-                || b.skip == 0);
+                || !b.skip);
 
         let prev_delta_lf = ts.last_delta_lf.get();
 
@@ -1623,7 +1621,7 @@ fn decode_b(
         }
     }
 
-    let intra = if b.skip_mode != 0 {
+    let intra = if b.skip_mode {
         false
     } else if frame_hdr.frame_type.is_inter_or_switch() {
         match seg {
@@ -1985,7 +1983,7 @@ fn decode_b(
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, 0);
                 case.set_disjoint(&dir.intra, 1);
-                case.set_disjoint(&dir.skip, b.skip);
+                case.set_disjoint(&dir.skip, b.skip as u8);
                 // see aomedia bug 2183 for why we use luma coordinates here
                 case.set(
                     &mut t.pal_sz_uv[dir_index],
@@ -2194,7 +2192,7 @@ fn decode_b(
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, 0);
                 case.set_disjoint(&dir.intra, 0);
-                case.set_disjoint(&dir.skip, b.skip);
+                case.set_disjoint(&dir.skip, b.skip as u8);
             },
         );
         if has_chroma {
@@ -2213,7 +2211,7 @@ fn decode_b(
 
         let mut has_subpel_filter;
 
-        let is_comp = if b.skip_mode != 0 {
+        let is_comp = if b.skip_mode {
             true
         } else if seg
             .map(|seg| seg.r#ref == -1 && !seg.globalmv && !seg.skip)
@@ -2249,7 +2247,7 @@ fn decode_b(
             drl_idx,
             r#ref,
             interintra_type,
-        } = if b.skip_mode != 0 {
+        } = if b.skip_mode {
             let r#ref = [
                 frame_hdr.skip_mode.refs[0] as i8,
                 frame_hdr.skip_mode.refs[1] as i8,
@@ -3101,7 +3099,7 @@ fn decode_b(
                 t.b,
                 f.w4,
                 f.h4,
-                b.skip != 0,
+                b.skip,
                 bs,
                 ytx,
                 &tx_split,
@@ -3136,9 +3134,9 @@ fn decode_b(
             [by4 as usize, bx4 as usize],
             |case, (dir, dir_index)| {
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, b.skip_mode);
+                case.set_disjoint(&dir.skip_mode, b.skip_mode as u8);
                 case.set_disjoint(&dir.intra, 0);
-                case.set_disjoint(&dir.skip, b.skip);
+                case.set_disjoint(&dir.skip, b.skip as u8);
                 case.set_disjoint(&dir.pal_sz, 0);
                 // see aomedia bug 2183 for why this is outside if (has_chroma)
                 case.set(&mut t.pal_sz_uv[dir_index], 0);
@@ -3179,7 +3177,7 @@ fn decode_b(
             }
         });
     }
-    if b.skip == 0 {
+    if !b.skip {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
@@ -5254,10 +5252,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         }
 
         f.cur_segmap = Some(
-            match (
-                frame_hdr.segmentation.update_map,
-                f.prev_segmap.as_mut(),
-            ) {
+            match (frame_hdr.segmentation.update_map, f.prev_segmap.as_mut()) {
                 (true, _) | (false, None) => {
                     // If we're updating an existing map,
                     // we need somewhere to put the new values.

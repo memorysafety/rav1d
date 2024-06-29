@@ -49,7 +49,8 @@ fn lr_stripe<BD: BitDepth>(
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
     let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
-    lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128 as u8) - 4)) as isize * lpf_stride + x as isize;
+    lpf_offset +=
+        (have_tt * (sby * (4 << seq_hdr.sb128 as u8) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
 
