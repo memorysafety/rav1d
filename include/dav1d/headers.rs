@@ -774,18 +774,26 @@ pub struct Rav1dMasteringDisplay {
 
 pub type Dav1dMasteringDisplay = Rav1dMasteringDisplay;
 
+/// An immutable ptr to [`Rav1dITUTT35::payload`].
+///
+/// [`Rav1dITUTT35::payload`] is a [`Box`], so it doesn't move,
+/// and [`Self::payload`]'s lifetime is that of the [`Rav1dITUTT35`],
+/// which is itself stored in a [`Box`] as returned from [`Rav1dITUTT35::to_immut`].
+#[repr(transparent)]
+pub struct ITUTT35PayloadPtr(*const u8);
+
+/// SAFETY: The raw ptr is immutable and essentially a `&[u8]`, which is [`Send`].
+unsafe impl Send for ITUTT35PayloadPtr {}
+
+/// SAFETY: The raw ptr is immutable and essentially a `&[u8]`, which is [`Sync`].
+unsafe impl Sync for ITUTT35PayloadPtr {}
+
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: u8,
     pub country_code_extension_byte: u8,
     pub payload_size: usize,
-
-    /// An immutable ptr to [`Rav1dITUTT35::payload`].
-    ///
-    /// [`Rav1dITUTT35::payload`] is a [`Box`], so it doesn't move,
-    /// and [`Self::payload`]'s lifetime is that of the [`Rav1dITUTT35`],
-    /// which is itself stored in a [`Box`] as returned from [`Rav1dITUTT35::to_immut`].
-    pub payload: *const u8,
+    pub payload: ITUTT35PayloadPtr,
 }
 
 #[repr(C)]
@@ -806,7 +814,7 @@ impl From<&Rav1dITUTT35> for Dav1dITUTT35 {
             country_code,
             country_code_extension_byte,
             payload_size: payload.len(),
-            payload: payload.as_ptr(),
+            payload: ITUTT35PayloadPtr(payload.as_ptr()),
         }
     }
 }
