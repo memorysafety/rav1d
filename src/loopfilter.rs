@@ -7,12 +7,11 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::strided::Strided as _;
-use crate::src::unstable_extensions::as_chunks;
-use crate::src::unstable_extensions::flatten;
 use crate::src::with_offset::WithOffset;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
@@ -36,20 +35,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     w: c_int,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lvl: *const FFISafe<WithOffset<&[[u8; 4]]>>,
+    _lvl: *const FFISafe<WithOffset<&DisjointMut<Vec<u8>>>>,
 ) -> ());
-
-/// Slice `[u8; 4]`s from `lvl`, but "unaligned",
-/// meaning the `[u8; 4]`s can straddle
-/// adjacent `[u8; 4]`s in the `lvl` slice.
-///
-/// Note that this does not result in actual unaligned reads,
-/// since `[u8; 4]` has an alignment of 1.
-/// This optimizes to a single slice with a bounds check.
-#[inline(always)]
-fn unaligned_lvl_slice(lvl: &[[u8; 4]], y: usize) -> &[[u8; 4]] {
-    as_chunks(&flatten(lvl)[y..]).0
-}
 
 impl loopfilter_sb::Fn {
     pub fn call<BD: BitDepth>(
@@ -57,14 +44,15 @@ impl loopfilter_sb::Fn {
         f: &Rav1dFrameData,
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
-        mut lvl: WithOffset<&[[u8; 4]]>,
-        lvl_y_offset: usize,
+        lvl: WithOffset<&DisjointMut<Vec<u8>>>,
         w: usize,
     ) {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let stride = dst.stride();
-        lvl.data = unaligned_lvl_slice(lvl.data, lvl_y_offset);
-        let lvl_ptr = lvl.data[lvl.offset..].as_ptr();
+        assert!(lvl.offset <= lvl.data.len());
+        // SAFETY: `lvl.offset` is in bounds, just checked above.
+        let lvl_ptr = unsafe { lvl.data.as_mut_ptr().add(lvl.offset) };
+        let lvl_ptr = lvl_ptr.cast::<[u8; 4]>();
         let b4_stride = f.b4_stride;
         let lut = &f.lf.lim_lut;
         let w = w as c_int;
@@ -302,7 +290,7 @@ enum YUV {
 fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
     mut dst: Rav1dPictureDataComponentOffset,
     vmask: &[u32; 3],
-    mut lvl: WithOffset<&[[u8; 4]]>,
+    mut lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _wh: c_int,
@@ -331,11 +319,12 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
             if vm & xy == 0 {
                 break 'block;
             }
-            let L = if lvl.data[lvl.offset][0] != 0 {
-                lvl.data[lvl.offset][0]
+            let L = *lvl.data.index(lvl.offset);
+            let L = if L != 0 {
+                L
             } else {
-                // SAFETY: TODO will make this safe
-                unsafe { (*lvl.data[lvl.offset..].as_ptr().sub(b4_strideb))[0] }
+                let lvl = lvl - 4 * b4_strideb;
+                *lvl.data.index(lvl.offset)
             };
             if L == 0 {
                 break 'block;
@@ -361,7 +350,7 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
         }
         xy <<= 1;
         dst += 4 * stridea;
-        lvl += b4_stridea;
+        lvl += 4 * b4_stridea;
     }
 }
 
@@ -379,7 +368,7 @@ unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, c
     wh: c_int,
     bitdepth_max: c_int,
     dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    lvl: *const FFISafe<WithOffset<&[[u8; 4]]>>,
+    lvl: *const FFISafe<WithOffset<&DisjointMut<Vec<u8>>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loopfilter_sb::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };
