@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::src::c_box::CBox;
 use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
