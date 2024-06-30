@@ -212,7 +212,7 @@ impl<T: ?Sized> CArc<T> {
     pub unsafe fn from_raw(raw: RawCArc<T>) -> Self {
         // Safety: The [`RawCArc`] contains the output of [`Arc::into_raw`],
         // so we can call [`Arc::from_raw`] on it.
-        let owner = raw.0.into_arc();
+        let owner = unsafe { raw.0.into_arc() };
         owner.into()
     }
 }
