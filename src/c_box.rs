@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -15,8 +17,15 @@ pub struct Free {
 }
 
 impl Free {
+    /// # Safety
+    ///
+    /// `ptr` is a [`NonNull`]`<T>` and `free` deallocates it.
+    /// It must not be used after this call as it is deallocated.
     pub unsafe fn free(&self, ptr: *mut c_void) {
-        (self.free)(ptr as *const u8, self.cookie)
+        // SAFETY: `self` came from `CBox::from_c`,
+        // which requires `self.free` to deallocate the `NonNull<T>` passed to it,
+        // and `self.cookie` to be passed to it, which it is.
+        unsafe { (self.free)(ptr as *const u8, self.cookie) }
     }
 }
 
@@ -85,7 +94,9 @@ impl<T: ?Sized> CBox<T> {
     /// # Safety
     ///
     /// `data` must be valid to dereference
-    /// until `free` is called on it, which must deallocate it.
+    /// until `free.free` is called on it, which must deallocate it.
+    /// `free.free` is always called with `free.cookie`,
+    /// which must be accessed thread-safely.
     pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
         Self::C {
             data,

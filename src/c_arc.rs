@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::src::c_box::CBox;
 use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
@@ -212,7 +214,7 @@ impl<T: ?Sized> CArc<T> {
     pub unsafe fn from_raw(raw: RawCArc<T>) -> Self {
         // Safety: The [`RawCArc`] contains the output of [`Arc::into_raw`],
         // so we can call [`Arc::from_raw`] on it.
-        let owner = raw.0.into_arc();
+        let owner = unsafe { raw.0.into_arc() };
         owner.into()
     }
 }
