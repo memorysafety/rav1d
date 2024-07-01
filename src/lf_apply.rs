@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
@@ -365,10 +367,10 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 }
 
 #[inline]
-unsafe fn filter_plane_cols_y<BD: BitDepth>(
+fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: &[[u8; 4]],
+    lvl: WithOffset<&[[u8; 4]]>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
@@ -396,16 +398,16 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         } else {
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
-        let lvl = &lvl[x..];
+        let lvl = lvl + x;
         lf_sb.y.h.call::<BD>(f, y_dst(x), &hmask, lvl, 0, len);
     }
 }
 
 #[inline]
-unsafe fn filter_plane_rows_y<BD: BitDepth>(
+fn filter_plane_rows_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: &[[u8; 4]],
+    lvl: WithOffset<&[[u8; 4]]>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
@@ -420,7 +422,6 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     let len = endy4 - starty4;
     let y_dst = |i| y_dst + (i as isize * 4 * y_dst.pixel_stride::<BD>());
     y_dst(len - 1).as_ptr::<BD>(); // Bounds check
-    let lvl = &lvl[..1 + (len - 1) * b4_stride];
     for i in 0..len {
         let y = i + starty4;
         if !have_top && y == 0 {
@@ -429,16 +430,16 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
         let vmask = mask[y % mask.len()] // To elide the bounds check.
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
-        let lvl = &lvl[i * b4_stride..];
+        let lvl = lvl + i * b4_stride;
         lf_sb.y.v.call::<BD>(f, y_dst(i), &vmask, lvl, 1, w);
     }
 }
 
 #[inline]
-unsafe fn filter_plane_cols_uv<BD: BitDepth>(
+fn filter_plane_cols_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: &[[u8; 4]],
+    lvl: WithOffset<&[[u8; 4]]>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
@@ -455,7 +456,6 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     u_dst(w).as_ptr::<BD>(); // Bounds check
     v_dst(w).as_ptr::<BD>(); // Bounds check
     let mask = &mask[..w];
-    let lvl = &lvl[..w];
     for x in 0..w {
         if !have_left && x == 0 {
             continue;
@@ -472,17 +472,17 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
         let hmask = [hmask[0], hmask[1], 0];
-        let lvl = &lvl[x..];
+        let lvl = lvl + x;
         lf_sb.uv.h.call::<BD>(f, u_dst(x), &hmask, lvl, 2, len);
         lf_sb.uv.h.call::<BD>(f, v_dst(x), &hmask, lvl, 3, len);
     }
 }
 
 #[inline]
-unsafe fn filter_plane_rows_uv<BD: BitDepth>(
+fn filter_plane_rows_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: &[[u8; 4]],
+    lvl: WithOffset<&[[u8; 4]]>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
@@ -501,7 +501,6 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     let v_dst = |i| v_dst + (i as isize * 4 * v_dst.pixel_stride::<BD>());
     u_dst(len - 1).as_ptr::<BD>(); // Bounds check
     v_dst(len - 1).as_ptr::<BD>(); // Bounds check
-    let lvl = &lvl[..1 + (len - 1) * b4_stride];
     for i in 0..len {
         let y = i + starty4;
         if !have_top && y == 0 {
@@ -511,13 +510,13 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
         let vmask = [vmask[0], vmask[1], 0];
-        let lvl = &lvl[i * b4_stride..];
+        let lvl = lvl + i * b4_stride;
         lf_sb.uv.v.call::<BD>(f, u_dst(i), &vmask, lvl, 2, w);
         lf_sb.uv.v.call::<BD>(f, v_dst(i), &vmask, lvl, 3, w);
     }
 }
 
-pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
+pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     f: &Rav1dFrameData,
     [py, pu, pv]: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
@@ -625,16 +624,20 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let lflvl = &f.lf.mask[lflvl_offset..];
-    let mut level_ptr = &*f
+    let lvl = &*f
         .lf
         .level
         .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
+    let lvl = WithOffset {
+        data: lvl,
+        offset: 0,
+    };
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_y::<BD>(
             f,
             have_left,
-            level_ptr,
+            lvl + x * 32,
             &lflvl[x].filter_y[0],
             py + x * 128,
             cmp::min(32, f.w4 - x as c_int * 32) as usize,
@@ -642,21 +645,24 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             endy4 as usize,
         );
         have_left = true;
-        level_ptr = &level_ptr[32..];
     }
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let mut level_ptr = &*f
+    let lvl = &*f
         .lf
         .level
         .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
+    let lvl = WithOffset {
+        data: lvl,
+        offset: 0,
+    };
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
-            level_ptr,
+            lvl + x * (32 >> ss_hor),
             &lflvl[x].filter_uv[0],
             pu + x * (128 >> ss_hor),
             pv + x * (128 >> ss_hor),
@@ -666,11 +672,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             ss_ver,
         );
         have_left = true;
-        level_ptr = &level_ptr[32 >> ss_hor..];
     }
 }
 
-pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
+pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     f: &Rav1dFrameData,
     p: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
@@ -689,15 +694,19 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let mut level_ptr = &*f
+    let lvl = &*f
         .lf
         .level
         .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
+    let lvl = WithOffset {
+        data: lvl,
+        offset: 0,
+    };
     for x in 0..f.sb128w as usize {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
-            level_ptr,
+            lvl + x * 32,
             f.b4_stride as usize,
             &lflvl[x].filter_y[1],
             p[0] + 128 * x,
@@ -705,7 +714,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             starty4 as usize,
             endy4 as usize,
         );
-        level_ptr = &level_ptr[32..];
     }
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -713,16 +721,20 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let mut level_ptr = &*f
+    let lvl = &*f
         .lf
         .level
         .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
+    let lvl = WithOffset {
+        data: lvl,
+        offset: 0,
+    };
     let [_, pu, pv] = p;
     for x in 0..f.sb128w as usize {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
-            level_ptr,
+            lvl + x * (32 >> ss_hor),
             f.b4_stride as usize,
             &lflvl[x].filter_uv[1],
             pu + (x * 128 >> ss_hor),
@@ -732,6 +744,5 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             uv_endy4 as usize,
             ss_hor,
         );
-        level_ptr = &level_ptr[32 >> ss_hor..];
     }
 }

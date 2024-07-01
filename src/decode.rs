@@ -4797,9 +4797,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             }
 
             // loopfilter + cdef + restoration
-            //
-            // SAFETY: Function call with all safe args, will be marked safe.
-            unsafe { (f.bd_fn().filter_sbrow)(c, f, &mut t, sby) };
+            (f.bd_fn().filter_sbrow)(c, f, &mut t, sby);
         }
     }
 
