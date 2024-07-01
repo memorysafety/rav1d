@@ -29,6 +29,37 @@ impl Free {
     }
 }
 
+/// Same as [`core::ptr::Unique`].
+///
+/// A wrapper around a [`NonNull`]`<T>` that indicates that the possessor
+/// of this wrapper owns the referent.
+///
+/// [`Unique`]`<T>` behaves "as if" it were an instance of `T`.
+/// It implements [`Send`]/[`Sync`] if `T: `[`Send`]/[`Sync`].
+/// It also implies the kind of strong aliasing guarantees an instance of `T` can expect:
+/// the referent of the pointer should not be modified
+/// without a unique path to its owning [`Unique`].
+///
+/// Unlike [`NonNull`]`<T>`, `Unique<T>` is covariant over `T`.
+/// This should always be correct for any type which upholds [`Unique`]'s aliasing requirements.
+#[derive(Debug)]
+pub struct Unique<T: ?Sized> {
+    pointer: NonNull<T>,
+    // NOTE: this marker has no consequences for variance, but is necessary
+    // for dropck to understand that we logically own a `T`.
+    //
+    // For details, see:
+    // https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md#phantom-data
+    _marker: PhantomData<T>,
+}
+
+/// SAFETY: [`Unique`] is [`Send`] if `T: `[`Send`]
+/// because the data it references is unaliased.
+unsafe impl<T: Send + ?Sized> Send for Unique<T> {}
+
+/// SAFETY: [`Unique`] is [`Sync`] if `T: `[`Sync`]
+unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
+
 /// A C/custom [`Box`].
 ///
 /// That is, it is analogous to a [`Box`],
@@ -44,14 +75,8 @@ pub enum CBox<T: ?Sized> {
         /// * Never moved.
         /// * Valid to dereference.
         /// * `free`d by the `free` `fn` ptr below.
-        data: NonNull<T>,
+        data: Unique<T>,
         free: Free,
-        /// This marker has no consequences for variance,
-        /// but is necessary for dropck to understand that we logically own a `T`.
-        ///
-        /// For details, see [`std::ptr::Unique::_marker`] and
-        /// <https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md#phantom-data>.
-        _phantom: PhantomData<T>,
     },
 }
 
@@ -59,7 +84,7 @@ impl<T: ?Sized> AsRef<T> for CBox<T> {
     fn as_ref(&self) -> &T {
         match self {
             Self::Rust(r#box) => r#box.as_ref(),
-            Self::C { data, .. } => unsafe { data.as_ref() },
+            Self::C { data, .. } => unsafe { data.pointer.as_ref() },
         }
     }
 }
@@ -77,7 +102,7 @@ impl<T: ?Sized> Drop for CBox<T> {
         match self {
             Self::Rust(_) => {} // Drop normally.
             Self::C { data, free, .. } => {
-                let ptr = data.as_ptr();
+                let ptr = data.pointer.as_ptr();
                 // Safety: See below.
                 // The [`FnFree`] won't run Rust's `fn drop`,
                 // so we have to do this ourselves first.
@@ -99,9 +124,11 @@ impl<T: ?Sized> CBox<T> {
     /// which must be accessed thread-safely.
     pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
         Self::C {
-            data,
+            data: Unique {
+                pointer: data,
+                _marker: PhantomData,
+            },
             free,
-            _phantom: PhantomData,
         }
     }
 
