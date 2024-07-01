@@ -774,16 +774,20 @@ pub struct Rav1dMasteringDisplay {
 
 pub type Dav1dMasteringDisplay = Rav1dMasteringDisplay;
 
-#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: u8,
     pub country_code_extension_byte: u8,
     pub payload_size: usize,
-    pub payload: *mut u8,
+
+    /// An immutable ptr to [`Rav1dITUTT35::payload`].
+    ///
+    /// [`Rav1dITUTT35::payload`] is a [`Box`], so it doesn't move,
+    /// and [`Self::payload`]'s lifetime is that of the [`Rav1dITUTT35`],
+    /// which is itself stored in a [`Box`] as returned from [`Rav1dITUTT35::to_immut`].
+    pub payload: *const u8,
 }
 
-#[derive(Clone)]
 #[repr(C)]
 pub struct Rav1dITUTT35 {
     pub country_code: u8,
@@ -791,19 +795,18 @@ pub struct Rav1dITUTT35 {
     pub payload: Box<[u8]>,
 }
 
-impl From<Rav1dITUTT35> for Dav1dITUTT35 {
-    fn from(value: Rav1dITUTT35) -> Self {
+impl From<&Rav1dITUTT35> for Dav1dITUTT35 {
+    fn from(value: &Rav1dITUTT35) -> Self {
         let Rav1dITUTT35 {
             country_code,
             country_code_extension_byte,
-            payload,
-        } = value;
+            ref payload,
+        } = *value;
         Self {
             country_code,
             country_code_extension_byte,
             payload_size: payload.len(),
-            // Cast to a thin ptr.
-            payload: Box::into_raw(payload).cast::<u8>(),
+            payload: payload.as_ptr(),
         }
     }
 }
@@ -815,7 +818,7 @@ impl Rav1dITUTT35 {
         let mutable = Arc::into_inner(mutable).unwrap().into_inner();
         let immutable = mutable.into_boxed_slice();
         let rav1d = immutable;
-        let dav1d = rav1d.iter().cloned().map(Dav1dITUTT35::from).collect();
+        let dav1d = rav1d.iter().map(Dav1dITUTT35::from).collect();
         Arc::new(DRav1d { rav1d, dav1d })
     }
 }
