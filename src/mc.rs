@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -7,6 +9,7 @@ use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
@@ -18,11 +21,13 @@ use crate::src::internal::SCRATCH_INTER_INTRA_BUF_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
 use crate::src::internal::SEG_MASK_LEN;
 use crate::src::levels::Filter2d;
+use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
+use crate::src::with_offset::WithOffset;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::ffi::c_int;
@@ -988,9 +993,8 @@ fn emu_edge_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn resize_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: isize,
+fn resize_rust<BD: BitDepth>(
+    dst: WithOffset<PicOrBuf<AlignedVec64<u8>>>,
     src: Rav1dPictureDataComponentOffset,
     dst_w: usize,
     h: usize,
@@ -1003,10 +1007,13 @@ unsafe fn resize_rust<BD: BitDepth>(
     for y in 0..h {
         let mut mx = mx0;
         let mut src_x = -1 - 3;
-        let dst = dst.offset(y as isize * BD::pxstride(dst_stride));
+        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
         let src = src + (y as isize * src.pixel_stride::<BD>());
         let src = &*src.slice::<BD>(src_w);
-        let dst = slice::from_raw_parts_mut(dst, dst_w);
+        let dst = match dst.data {
+            PicOrBuf::Pic(pic) => &mut *pic.slice_mut::<BD, _>((dst.offset.., ..dst_w)),
+            PicOrBuf::Buf(buf) => &mut *buf.mut_slice_as((dst.offset.., ..dst_w)),
+        };
         for dst_x in 0..dst_w {
             let f = &dav1d_resize_filter[(mx >> 8) as usize];
             dst[dst_x] = bd.iclip_pixel(
@@ -1496,13 +1503,13 @@ wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     mx: i32,
     bitdepth_max: i32,
     _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: *const FFISafe<WithOffset<PicOrBuf<AlignedVec64<u8>>>>,
 ) -> ());
 
 impl resize::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        dst_stride: isize,
+        dst: WithOffset<PicOrBuf<AlignedVec64<u8>>>,
         src: Rav1dPictureDataComponentOffset,
         dst_w: usize,
         h: usize,
@@ -1511,7 +1518,8 @@ impl resize::Fn {
         mx: i32,
         bd: BD,
     ) {
-        let dst = dst.cast();
+        let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+        let dst_stride = dst.stride();
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let dst_w = dst_w as c_int;
@@ -1519,9 +1527,13 @@ impl resize::Fn {
         let src_w = src_w as c_int;
         let bd = bd.into_c();
         let src = FFISafe::new(&src);
-        self.get()(
-            dst, dst_stride, src_ptr, src_stride, dst_w, h, src_w, dx, mx, bd, src,
-        )
+        let dst = FFISafe::new(&dst);
+        // SAFETY: Fallback `fn resize_rust` is safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_ptr, dst_stride, src_ptr, src_stride, dst_w, h, src_w, dx, mx, bd, src, dst,
+            )
+        }
     }
 }
 
@@ -1915,8 +1927,8 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
 }
 
 unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    dst_stride: isize,
+    _dst_ptr: *mut DynPixel,
+    _dst_stride: isize,
     _src_ptr: *const DynPixel,
     _src_stride: isize,
     dst_w: i32,
@@ -1926,15 +1938,17 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     mx0: i32,
     bitdepth_max: i32,
     src: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: *const FFISafe<WithOffset<PicOrBuf<AlignedVec64<u8>>>>,
 ) {
-    let dst = dst.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `resize::Fn::call`.
+    let dst = *unsafe { FFISafe::get(dst) };
     // SAFETY: Was passed as `FFISafe::new(_)` in `resize::Fn::call`.
     let src = *unsafe { FFISafe::get(src) };
     let dst_w = dst_w as usize;
     let h = h as usize;
     let src_w = src_w as usize;
     let bd = BD::from_c(bitdepth_max);
-    resize_rust(dst, dst_stride, src, dst_w, h, src_w, dx, mx0, bd)
+    resize_rust(dst, src, dst_w, h, src_w, dx, mx0, bd)
 }
 
 impl Rav1dMCDSPContext {
