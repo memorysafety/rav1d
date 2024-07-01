@@ -870,9 +870,9 @@ pub struct Rav1dTileState_tiling {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: RelaxedAtomic<usize>, // Offset into `f.frame_thread.pal_idx`
-    pub cbi_idx: RelaxedAtomic<usize>, // Offset into `f.frame_thread.cbi`
-    pub cf: RelaxedAtomic<usize>,      // Offset into `f.frame_thread.cf`
+    pub pal_idx: RelaxedAtomic<u32>, // Offset into `f.frame_thread.pal_idx`
+    pub cbi_idx: RelaxedAtomic<u32>, // Offset into `f.frame_thread.cbi`
+    pub cf: RelaxedAtomic<u32>,      // Offset into `f.frame_thread.cf`
 }
 
 #[derive(Default)]
