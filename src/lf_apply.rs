@@ -370,7 +370,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&[[u8; 4]]>,
+    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
@@ -398,8 +398,8 @@ fn filter_plane_cols_y<BD: BitDepth>(
         } else {
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
-        let lvl = lvl + x;
-        lf_sb.y.h.call::<BD>(f, y_dst(x), &hmask, lvl, 0, len);
+        let lvl = |y| lvl + (4 * x + y);
+        lf_sb.y.h.call::<BD>(f, y_dst(x), &hmask, lvl(0), len);
     }
 }
 
@@ -407,7 +407,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
 fn filter_plane_rows_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&[[u8; 4]]>,
+    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
@@ -430,8 +430,8 @@ fn filter_plane_rows_y<BD: BitDepth>(
         let vmask = mask[y % mask.len()] // To elide the bounds check.
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
-        let lvl = lvl + i * b4_stride;
-        lf_sb.y.v.call::<BD>(f, y_dst(i), &vmask, lvl, 1, w);
+        let lvl = |y| lvl + (4 * i * b4_stride + y);
+        lf_sb.y.v.call::<BD>(f, y_dst(i), &vmask, lvl(1), w);
     }
 }
 
@@ -439,7 +439,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
 fn filter_plane_cols_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&[[u8; 4]]>,
+    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
@@ -472,9 +472,9 @@ fn filter_plane_cols_uv<BD: BitDepth>(
             mask.each_ref().map(|[_, b]| b.get() as u32)
         };
         let hmask = [hmask[0], hmask[1], 0];
-        let lvl = lvl + x;
-        lf_sb.uv.h.call::<BD>(f, u_dst(x), &hmask, lvl, 2, len);
-        lf_sb.uv.h.call::<BD>(f, v_dst(x), &hmask, lvl, 3, len);
+        let lvl = |y| lvl + (4 * x + y);
+        lf_sb.uv.h.call::<BD>(f, u_dst(x), &hmask, lvl(2), len);
+        lf_sb.uv.h.call::<BD>(f, v_dst(x), &hmask, lvl(3), len);
     }
 }
 
@@ -482,7 +482,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
 fn filter_plane_rows_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&[[u8; 4]]>,
+    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
@@ -510,9 +510,9 @@ fn filter_plane_rows_uv<BD: BitDepth>(
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
         let vmask = [vmask[0], vmask[1], 0];
-        let lvl = lvl + i * b4_stride;
-        lf_sb.uv.v.call::<BD>(f, u_dst(i), &vmask, lvl, 2, w);
-        lf_sb.uv.v.call::<BD>(f, v_dst(i), &vmask, lvl, 3, w);
+        let lvl = |y| lvl + (4 * i * b4_stride + y);
+        lf_sb.uv.v.call::<BD>(f, u_dst(i), &vmask, lvl(2), w);
+        lf_sb.uv.v.call::<BD>(f, v_dst(i), &vmask, lvl(3), w);
     }
 }
 
@@ -624,20 +624,16 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let lflvl = &f.lf.mask[lflvl_offset..];
-    let lvl = &*f
-        .lf
-        .level
-        .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     let lvl = WithOffset {
-        data: lvl,
-        offset: 0,
+        data: &f.lf.level,
+        offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
     };
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_y::<BD>(
             f,
             have_left,
-            lvl + x * 32,
+            lvl + 4 * x * 32,
             &lflvl[x].filter_y[0],
             py + x * 128,
             cmp::min(32, f.w4 - x as c_int * 32) as usize,
@@ -649,20 +645,16 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let lvl = &*f
-        .lf
-        .level
-        .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     let lvl = WithOffset {
-        data: lvl,
-        offset: 0,
+        data: &f.lf.level,
+        offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
     have_left = false;
     for x in 0..f.sb128w as usize {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
-            lvl + x * (32 >> ss_hor),
+            lvl + 4 * x * (32 >> ss_hor),
             &lflvl[x].filter_uv[0],
             pu + x * (128 >> ss_hor),
             pv + x * (128 >> ss_hor),
@@ -694,19 +686,15 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let lvl = &*f
-        .lf
-        .level
-        .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
     let lvl = WithOffset {
-        data: lvl,
-        offset: 0,
+        data: &f.lf.level,
+        offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
     };
     for x in 0..f.sb128w as usize {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
-            lvl + x * 32,
+            lvl + 4 * x * 32,
             f.b4_stride as usize,
             &lflvl[x].filter_y[1],
             p[0] + 128 * x,
@@ -721,20 +709,16 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let lvl = &*f
-        .lf
-        .level
-        .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
     let lvl = WithOffset {
-        data: lvl,
-        offset: 0,
+        data: &f.lf.level,
+        offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
     let [_, pu, pv] = p;
     for x in 0..f.sb128w as usize {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
-            lvl + x * (32 >> ss_hor),
+            lvl + 4 * x * (32 >> ss_hor),
             f.b4_stride as usize,
             &lflvl[x].filter_uv[1],
             pu + (x * 128 >> ss_hor),

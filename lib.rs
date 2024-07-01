@@ -54,7 +54,6 @@ pub mod src {
     pub(crate) mod pixels;
     pub(crate) mod relaxed_atomic;
     pub(crate) mod strided;
-    mod unstable_extensions;
     pub(crate) mod with_offset;
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.

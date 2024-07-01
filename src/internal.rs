@@ -693,7 +693,7 @@ impl TxLpfRightEdge {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
-    pub level: DisjointMut<Vec<[u8; 4]>>,
+    pub level: DisjointMut<Vec<u8>>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
