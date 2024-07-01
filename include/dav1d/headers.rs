@@ -839,9 +839,9 @@ pub struct Rav1dSequenceHeaderOperatingPoint {
     pub minor_level: u8,
     pub initial_display_delay: u8,
     pub idc: u16,
-    pub tier: u8,
-    pub decoder_model_param_present: u8,
-    pub display_model_param_present: u8,
+    pub tier: bool,
+    pub decoder_model_param_present: bool,
+    pub display_model_param_present: bool,
 }
 
 impl From<Dav1dSequenceHeaderOperatingPoint> for Rav1dSequenceHeaderOperatingPoint {
@@ -860,9 +860,9 @@ impl From<Dav1dSequenceHeaderOperatingPoint> for Rav1dSequenceHeaderOperatingPoi
             minor_level,
             initial_display_delay,
             idc,
-            tier,
-            decoder_model_param_present,
-            display_model_param_present,
+            tier: tier != 0,
+            decoder_model_param_present: decoder_model_param_present != 0,
+            display_model_param_present: display_model_param_present != 0,
         }
     }
 }
@@ -883,9 +883,9 @@ impl From<Rav1dSequenceHeaderOperatingPoint> for Dav1dSequenceHeaderOperatingPoi
             minor_level,
             initial_display_delay,
             idc,
-            tier,
-            decoder_model_param_present,
-            display_model_param_present,
+            tier: tier.into(),
+            decoder_model_param_present: decoder_model_param_present.into(),
+            display_model_param_present: display_model_param_present.into(),
         }
     }
 }
@@ -903,7 +903,7 @@ pub struct Dav1dSequenceHeaderOperatingParameterInfo {
 pub struct Rav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: u32,
     pub encoder_buffer_delay: u32,
-    pub low_delay_mode: u8,
+    pub low_delay_mode: bool,
 }
 
 impl From<Dav1dSequenceHeaderOperatingParameterInfo> for Rav1dSequenceHeaderOperatingParameterInfo {
@@ -916,7 +916,7 @@ impl From<Dav1dSequenceHeaderOperatingParameterInfo> for Rav1dSequenceHeaderOper
         Self {
             decoder_buffer_delay,
             encoder_buffer_delay,
-            low_delay_mode,
+            low_delay_mode: low_delay_mode != 0,
         }
     }
 }
@@ -931,7 +931,7 @@ impl From<Rav1dSequenceHeaderOperatingParameterInfo> for Dav1dSequenceHeaderOper
         Self {
             decoder_buffer_delay,
             encoder_buffer_delay,
-            low_delay_mode,
+            low_delay_mode: low_delay_mode.into(),
         }
     }
 }
@@ -1020,7 +1020,6 @@ impl TryFrom<u8> for Rav1dProfile {
 }
 
 #[derive(Clone)]
-#[repr(C)]
 pub struct Rav1dSequenceHeader {
     pub profile: Rav1dProfile,
     pub max_width: c_int,
@@ -1031,52 +1030,52 @@ pub struct Rav1dSequenceHeader {
     pub mtrx: Rav1dMatrixCoefficients,
     pub chr: Rav1dChromaSamplePosition,
     pub hbd: u8,
-    pub color_range: u8,
+    pub color_range: bool,
     pub num_operating_points: u8,
     pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
-    pub still_picture: u8,
-    pub reduced_still_picture_header: u8,
-    pub timing_info_present: u8,
+    pub still_picture: bool,
+    pub reduced_still_picture_header: bool,
+    pub timing_info_present: bool,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_tick: u32,
     /// > 0 if defined, 0 otherwise
     pub time_scale: u32,
-    pub equal_picture_interval: u8,
+    pub equal_picture_interval: bool,
     pub num_ticks_per_picture: u32,
-    pub decoder_model_info_present: u8,
+    pub decoder_model_info_present: bool,
     pub encoder_decoder_buffer_delay_length: u8,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_decoding_tick: u32,
     pub buffer_removal_delay_length: u8,
     pub frame_presentation_delay_length: u8,
-    pub display_model_info_present: u8,
+    pub display_model_info_present: bool,
     pub width_n_bits: u8,
     pub height_n_bits: u8,
-    pub frame_id_numbers_present: u8,
+    pub frame_id_numbers_present: bool,
     pub delta_frame_id_n_bits: u8,
     pub frame_id_n_bits: u8,
-    pub sb128: u8,
-    pub filter_intra: u8,
-    pub intra_edge_filter: u8,
-    pub inter_intra: u8,
-    pub masked_compound: u8,
-    pub warped_motion: u8,
-    pub dual_filter: u8,
-    pub order_hint: u8,
-    pub jnt_comp: u8,
-    pub ref_frame_mvs: u8,
+    pub sb128: bool,
+    pub filter_intra: bool,
+    pub intra_edge_filter: bool,
+    pub inter_intra: bool,
+    pub masked_compound: bool,
+    pub warped_motion: bool,
+    pub dual_filter: bool,
+    pub order_hint: bool,
+    pub jnt_comp: bool,
+    pub ref_frame_mvs: bool,
     pub screen_content_tools: Rav1dAdaptiveBoolean,
     pub force_integer_mv: Rav1dAdaptiveBoolean,
     pub order_hint_n_bits: u8,
-    pub super_res: u8,
-    pub cdef: u8,
-    pub restoration: u8,
-    pub ss_hor: u8,
-    pub ss_ver: u8,
-    pub monochrome: u8,
-    pub color_description_present: u8,
-    pub separate_uv_delta_q: u8,
-    pub film_grain_present: u8,
+    pub super_res: bool,
+    pub cdef: bool,
+    pub restoration: bool,
+    pub ss_hor: bool,
+    pub ss_ver: bool,
+    pub monochrome: bool,
+    pub color_description_present: bool,
+    pub separate_uv_delta_q: bool,
+    pub film_grain_present: bool,
     pub operating_parameter_info:
         [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
 }
@@ -1265,49 +1264,49 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
             hbd,
-            color_range,
+            color_range: color_range != 0,
             num_operating_points,
             operating_points: operating_points.map(|c| c.into()),
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
+            still_picture: still_picture != 0,
+            reduced_still_picture_header: reduced_still_picture_header != 0,
+            timing_info_present: timing_info_present != 0,
             num_units_in_tick,
             time_scale,
-            equal_picture_interval,
+            equal_picture_interval: equal_picture_interval != 0,
             num_ticks_per_picture,
-            decoder_model_info_present,
+            decoder_model_info_present: decoder_model_info_present != 0,
             encoder_decoder_buffer_delay_length,
             num_units_in_decoding_tick,
             buffer_removal_delay_length,
             frame_presentation_delay_length,
-            display_model_info_present,
+            display_model_info_present: display_model_info_present != 0,
             width_n_bits,
             height_n_bits,
-            frame_id_numbers_present,
+            frame_id_numbers_present: frame_id_numbers_present != 0,
             delta_frame_id_n_bits,
             frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
+            sb128: sb128 != 0,
+            filter_intra: filter_intra != 0,
+            intra_edge_filter: intra_edge_filter != 0,
+            inter_intra: inter_intra != 0,
+            masked_compound: masked_compound != 0,
+            warped_motion: warped_motion != 0,
+            dual_filter: dual_filter != 0,
+            order_hint: order_hint != 0,
+            jnt_comp: jnt_comp != 0,
+            ref_frame_mvs: ref_frame_mvs != 0,
             screen_content_tools: screen_content_tools.try_into().unwrap(),
             force_integer_mv: force_integer_mv.try_into().unwrap(),
             order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
+            super_res: super_res != 0,
+            cdef: cdef != 0,
+            restoration: restoration != 0,
+            ss_hor: ss_hor != 0,
+            ss_ver: ss_ver != 0,
+            monochrome: monochrome != 0,
+            color_description_present: color_description_present != 0,
+            separate_uv_delta_q: separate_uv_delta_q != 0,
+            film_grain_present: film_grain_present != 0,
             operating_parameter_info: operating_parameter_info.map(|c| c.into()),
         }
     }
@@ -1380,49 +1379,49 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             mtrx: mtrx.into(),
             chr: chr.into(),
             hbd,
-            color_range,
+            color_range: color_range.into(),
             num_operating_points,
             operating_points: operating_points.map(|rust| rust.into()),
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
+            still_picture: still_picture.into(),
+            reduced_still_picture_header: reduced_still_picture_header.into(),
+            timing_info_present: timing_info_present.into(),
             num_units_in_tick,
             time_scale,
-            equal_picture_interval,
+            equal_picture_interval: equal_picture_interval.into(),
             num_ticks_per_picture,
-            decoder_model_info_present,
+            decoder_model_info_present: decoder_model_info_present.into(),
             encoder_decoder_buffer_delay_length,
             num_units_in_decoding_tick,
             buffer_removal_delay_length,
             frame_presentation_delay_length,
-            display_model_info_present,
+            display_model_info_present: display_model_info_present.into(),
             width_n_bits,
             height_n_bits,
-            frame_id_numbers_present,
+            frame_id_numbers_present: frame_id_numbers_present.into(),
             delta_frame_id_n_bits,
             frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
+            sb128: sb128.into(),
+            filter_intra: filter_intra.into(),
+            intra_edge_filter: intra_edge_filter.into(),
+            inter_intra: inter_intra.into(),
+            masked_compound: masked_compound.into(),
+            warped_motion: warped_motion.into(),
+            dual_filter: dual_filter.into(),
+            order_hint: order_hint.into(),
+            jnt_comp: jnt_comp.into(),
+            ref_frame_mvs: ref_frame_mvs.into(),
             screen_content_tools: screen_content_tools.into(),
             force_integer_mv: force_integer_mv.into(),
             order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
+            super_res: super_res.into(),
+            cdef: cdef.into(),
+            restoration: restoration.into(),
+            ss_hor: ss_hor.into(),
+            ss_ver: ss_ver.into(),
+            monochrome: monochrome.into(),
+            color_description_present: color_description_present.into(),
+            separate_uv_delta_q: separate_uv_delta_q.into(),
+            film_grain_present: film_grain_present.into(),
             operating_parameter_info: operating_parameter_info.map(|rust| rust.into()),
         }
     }
@@ -1442,7 +1441,6 @@ pub struct Dav1dSegmentationData {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
 pub struct Rav1dSegmentationData {
     pub delta_q: i16,
     pub delta_lf_y_v: i8,
@@ -1450,8 +1448,8 @@ pub struct Rav1dSegmentationData {
     pub delta_lf_u: i8,
     pub delta_lf_v: i8,
     pub r#ref: i8,
-    pub skip: u8,
-    pub globalmv: u8,
+    pub skip: bool,
+    pub globalmv: bool,
 }
 
 impl From<Dav1dSegmentationData> for Rav1dSegmentationData {
@@ -1473,8 +1471,8 @@ impl From<Dav1dSegmentationData> for Rav1dSegmentationData {
             delta_lf_u,
             delta_lf_v,
             r#ref,
-            skip,
-            globalmv,
+            skip: skip != 0,
+            globalmv: globalmv != 0,
         }
     }
 }
@@ -1498,8 +1496,8 @@ impl From<Rav1dSegmentationData> for Dav1dSegmentationData {
             delta_lf_u,
             delta_lf_v,
             r#ref,
-            skip,
-            globalmv,
+            skip: skip.into(),
+            globalmv: globalmv.into(),
         }
     }
 }
@@ -1513,10 +1511,9 @@ pub struct Dav1dSegmentationDataSet {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
 pub struct Rav1dSegmentationDataSet {
     pub d: [Rav1dSegmentationData; SegmentId::COUNT],
-    pub preskip: u8,
+    pub preskip: bool,
     pub last_active_segid: i8,
 }
 
@@ -1529,7 +1526,7 @@ impl From<Dav1dSegmentationDataSet> for Rav1dSegmentationDataSet {
         } = value;
         Self {
             d: d.map(|c| c.into()),
-            preskip,
+            preskip: preskip != 0,
             last_active_segid,
         }
     }
@@ -1544,7 +1541,7 @@ impl From<Rav1dSegmentationDataSet> for Dav1dSegmentationDataSet {
         } = value;
         Self {
             d: d.map(|rust| rust.into()),
-            preskip,
+            preskip: preskip.into(),
             last_active_segid,
         }
     }
@@ -2106,10 +2103,10 @@ pub struct Dav1dFrameHeader_segmentation {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_segmentation {
-    pub enabled: u8,
-    pub update_map: u8,
-    pub temporal: u8,
-    pub update_data: u8,
+    pub enabled: bool,
+    pub update_map: bool,
+    pub temporal: bool,
+    pub update_data: bool,
     pub seg_data: Rav1dSegmentationDataSet,
     /// TODO compress `[bool; 8]` into `u8`.
     pub lossless: [bool; SegmentId::COUNT],
@@ -2128,10 +2125,10 @@ impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
             qidx,
         } = value;
         Self {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
+            enabled: enabled != 0,
+            update_map: update_map != 0,
+            temporal: temporal != 0,
+            update_data: update_data != 0,
             seg_data: seg_data.into(),
             lossless: lossless.map(|e| e != 0),
             qidx,
@@ -2151,10 +2148,10 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
             qidx,
         } = value;
         Self {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
+            enabled: enabled.into(),
+            update_map: update_map.into(),
+            temporal: temporal.into(),
+            update_data: update_data.into(),
             seg_data: seg_data.into(),
             lossless: lossless.map(|e| e as u8),
             qidx,
@@ -2495,8 +2492,8 @@ pub struct Rav1dFrameSize {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameSkipMode {
-    pub allowed: u8,
-    pub enabled: u8,
+    pub allowed: bool,
+    pub enabled: bool,
     pub refs: [i8; 2],
 }
 
@@ -2650,8 +2647,8 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             txfm_mode: txfm_mode.try_into().unwrap(),
             switchable_comp_refs,
             skip_mode: Rav1dFrameSkipMode {
-                allowed: skip_mode_allowed,
-                enabled: skip_mode_enabled,
+                allowed: skip_mode_allowed != 0,
+                enabled: skip_mode_enabled != 0,
                 refs: skip_mode_refs,
             },
             warp_motion,
@@ -2766,8 +2763,8 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             restoration: restoration.into(),
             txfm_mode: txfm_mode.into(),
             switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
+            skip_mode_allowed: skip_mode_allowed.into(),
+            skip_mode_enabled: skip_mode_enabled.into(),
             skip_mode_refs,
             warp_motion,
             reduced_txtp_set,

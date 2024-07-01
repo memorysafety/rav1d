@@ -161,7 +161,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_dir: &[u8; 8] = &UV_DIRS[(layout == Rav1dPixelLayout::I422) as usize];
 
     let have_tt = c.tc.len() > 1;
-    let sb128 = f.seq_hdr.as_ref().unwrap().sb128;
+    let sb128 = f.seq_hdr.as_ref().unwrap().sb128 as u8;
     let resize = frame_hdr.size.width[0] != frame_hdr.size.width[1];
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
