@@ -6,6 +6,7 @@
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
 
+use crate::src::assume::assume;
 use crate::src::disjoint_mut::AsMutPtr;
 use std::marker::PhantomData;
 use std::mem;
@@ -104,6 +105,9 @@ macro_rules! def_align {
             type Target = V;
 
             unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
+                // SAFETY: `ptr` is safe to deref and thus is aligned.
+                unsafe { assume(ptr.is_aligned()) }
+
                 // SAFETY: `$name` (`Align*`) is a `#[repr(C)]` aligned wrapper around `[V; N]`,
                 // so a `*mut Self` is the same as a `*mut V` to the first `V`.
                 ptr.cast()
@@ -245,7 +249,14 @@ unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
         // SAFETY: `.as_mut_ptr()` does not materialize a `&mut` to
         // the underlying slice, so we can still allow `&`s into this slice.
-        unsafe { &mut *ptr }.as_mut_ptr()
+        let ptr = unsafe { &mut *ptr }.as_mut_ptr();
+
+        // SAFETY: `AlignedVec` stores `C`s internally,
+        // so `*mut T` is really `*mut C`.
+        // Since it's stored in a `Vec`, it's aligned.
+        unsafe { assume(ptr.cast::<C>().is_aligned()) };
+
+        ptr
     }
 
     fn len(&self) -> usize {
