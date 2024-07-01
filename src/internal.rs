@@ -928,17 +928,19 @@ impl Atom for TileStateRef {
     }
 }
 
+pub const CF_LEN: usize = 32 * 32;
+
 /// Array of 32 * 32 coef elements (either `i16` or `i32`).
 #[derive(FromZeroes)]
 #[repr(align(64))]
-pub struct Cf([i32; 32 * 32]);
+pub struct Cf([i32; CF_LEN]);
 
 impl Cf {
-    pub fn select<BD: BitDepth>(&self) -> &[BD::Coef; 32 * 32] {
+    pub fn select<BD: BitDepth>(&self) -> &[BD::Coef; CF_LEN] {
         FromBytes::ref_from_prefix(AsBytes::as_bytes(&self.0)).unwrap()
     }
 
-    pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [BD::Coef; 32 * 32] {
+    pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [BD::Coef; CF_LEN] {
         FromBytes::mut_from_prefix(AsBytes::as_bytes_mut(&mut self.0)).unwrap()
     }
 }
