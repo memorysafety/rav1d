@@ -42,10 +42,36 @@ pub struct CArc<T: ?Sized> {
 
     /// The same as [`Self::stable_ref`] but it never changes.
     #[cfg(debug_assertions)]
-    base_stable_ref: NonNull<T>,
+    base_stable_ref: StableRef<T>,
 
-    stable_ref: NonNull<T>,
+    stable_ref: StableRef<T>,
 }
+
+/// A stable reference, stored as a raw ptr.
+///
+/// # Safety
+///
+/// The raw ptr of a [`StableRef`] must have a stable address.
+/// Even if `T`'s owning type, e.x. a [`Box`]`<T>`, is moved,
+/// ptrs to `T` must remain valid and thus "stable".
+///
+/// Thus, it can be stored relative to its owner.
+#[derive(Debug)]
+struct StableRef<T: ?Sized>(NonNull<T>);
+
+impl<T: ?Sized> Clone for StableRef<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: ?Sized> Copy for StableRef<T> {}
+
+/// SAFETY: [`StableRef`]`<T>`, if it follows its safety guarantees, is essentially a `&T`/`&mut T`, which is [`Send`] if `T: `[`Send`]`.
+unsafe impl<T: Send + ?Sized> Send for StableRef<T> {}
+
+/// SAFETY: [`StableRef`]`<T>`, if it follows its safety guarantees, is essentially a `&T`/`&mut T`, which is [`Sync`] if `T: `[`Sync`].
+unsafe impl<T: Send + ?Sized> Sync for StableRef<T> {}
 
 impl<T: ?Sized> AsRef<T> for CArc<T> {
     fn as_ref(&self) -> &T {
@@ -57,12 +83,13 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
             // Some extra checks to check if our ptrs are definitely invalid.
 
             let real_ref = (*self.owner).as_ref().get_ref();
-            assert_eq!(real_ref.to::<NonNull<T>>(), self.base_stable_ref);
+            assert_eq!(real_ref.to::<NonNull<T>>(), self.base_stable_ref.0);
 
             // Cast through `*const ()` and use [`pointer::byte_offset_from`]
             // to remove any fat ptr metadata.
             let offset = unsafe {
                 self.stable_ref
+                    .0
                     .as_ptr()
                     .cast::<()>()
                     .byte_offset_from((real_ref as *const T).cast::<()>())
@@ -72,7 +99,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
             let out_of_bounds = offset > len;
             if out_of_bounds {
                 dbg!(real_ref as *const T);
-                dbg!(self.stable_ref.as_ptr());
+                dbg!(self.stable_ref.0.as_ptr());
                 dbg!(offset);
                 dbg!(len);
                 panic!("CArc::stable_ref is out of bounds");
@@ -83,9 +110,9 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         // derived from [`Self::owner`]'s through [`CBox::as_ref`]
         // and is thus safe to dereference.
         // The [`CBox`] is [`Pin`]ned and
-        // [`Self::stable_Ref`] is always updated on writes to [`Self::owner`],
+        // [`Self::stable_ref`] is always updated on writes to [`Self::owner`],
         // so they are always in sync.
-        unsafe { self.stable_ref.as_ref() }
+        unsafe { self.stable_ref.0.as_ref() }
     }
 }
 
@@ -116,7 +143,7 @@ impl<T: ?Sized> Clone for CArc<T> {
 
 impl<T: ?Sized> From<Arc<Pin<CBox<T>>>> for CArc<T> {
     fn from(owner: Arc<Pin<CBox<T>>>) -> Self {
-        let stable_ref = (*owner).as_ref().get_ref().into();
+        let stable_ref = StableRef((*owner).as_ref().get_ref().into());
         Self {
             owner,
             #[cfg(debug_assertions)]
@@ -229,7 +256,7 @@ impl<T> CArc<[T]> {
     where
         I: SliceIndex<[T], Output = [T]>,
     {
-        self.stable_ref = self.as_ref()[range].into();
+        self.stable_ref = StableRef(self.as_ref()[range].into());
     }
 
     pub fn split_at(this: Self, mid: usize) -> (Self, Self) {
