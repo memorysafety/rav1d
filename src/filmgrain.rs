@@ -19,6 +19,7 @@ use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::GrainLut;
+use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_gaussian_sequence;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::intptr_t;

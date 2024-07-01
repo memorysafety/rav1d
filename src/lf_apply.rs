@@ -11,6 +11,7 @@ use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::relaxed_atomic::RelaxedAtomic;
+use crate::src::strided::Strided as _;
 use libc::ptrdiff_t;
 use std::array;
 use std::cmp;

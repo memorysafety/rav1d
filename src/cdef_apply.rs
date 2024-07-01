@@ -10,6 +10,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
+use crate::src::strided::Strided as _;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;

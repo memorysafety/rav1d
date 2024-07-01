@@ -26,16 +26,15 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
+use crate::src::pixels::Pixels;
+use crate::src::strided::Strided;
+use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
-use std::ops::Add;
-use std::ops::AddAssign;
-use std::ops::Sub;
-use std::ops::SubAssign;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To as _;
@@ -227,6 +226,23 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
 
 pub struct Rav1dPictureDataComponent(DisjointMut<Rav1dPictureDataComponentInner>);
 
+impl Pixels for Rav1dPictureDataComponent {
+    fn byte_len(&self) -> usize {
+        self.0.len()
+    }
+
+    fn as_byte_mut_ptr(&self) -> *mut u8 {
+        self.0.as_mut_ptr()
+    }
+}
+
+impl Strided for Rav1dPictureDataComponent {
+    fn stride(&self) -> isize {
+        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
+        unsafe { (*self.0.inner()).stride }
+    }
+}
+
 impl Rav1dPictureDataComponent {
     pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
         Self(DisjointMut::new(
@@ -234,33 +250,12 @@ impl Rav1dPictureDataComponent {
         ))
     }
 
-    /// Length in number of [`u8`] bytes.
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    /// Length in number of [`BitDepth::Pixel`]s.
-    pub fn pixel_len<BD: BitDepth>(&self) -> usize {
-        self.len() / mem::size_of::<BD::Pixel>()
-    }
-
-    /// Stride in number of [`u8`] bytes.
-    pub fn stride(&self) -> isize {
-        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
-        unsafe { (*self.0.inner()).stride }
-    }
-
-    /// Stride in number of [`BitDepth::Pixel`]s.
-    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
-        BD::pxstride(self.stride())
-    }
-
     pub fn pixel_offset<BD: BitDepth>(&self) -> usize {
         let stride = self.stride();
         if stride >= 0 {
             return 0;
         }
-        BD::pxstride(self.len() - (-stride) as usize)
+        BD::pxstride(self.byte_len() - (-stride) as usize)
     }
 
     pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset {
@@ -276,53 +271,13 @@ impl Rav1dPictureDataComponent {
         let stride = self.stride();
         if stride < 0 {
             // SAFETY: This puts `ptr` one element past the end of the slice of pixels.
-            let ptr = unsafe { ptr.add(self.len()) };
+            let ptr = unsafe { ptr.add(self.byte_len()) };
             // SAFETY: `stride` is negative and `-stride < len`, so this should stay in bounds.
             let ptr = unsafe { ptr.offset(stride) };
             ptr
         } else {
             ptr
         }
-    }
-
-    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s.
-    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
-        // SAFETY: Transmutation is safe because we verify this with `zerocopy` in `Self::slice`.
-        self.0.as_mut_ptr().cast()
-    }
-
-    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s.
-    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
-        self.as_mut_ptr::<BD>().cast_const()
-    }
-
-    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
-    ///
-    /// Bounds checked, but not [`DisjointMut`]-checked.
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
-        #[inline(never)]
-        #[cfg_attr(debug_assertions, track_caller)]
-        fn out_of_bounds(pixel_offset: usize, pixel_len: usize) -> ! {
-            panic!(
-                "pixel offset {pixel_offset} out of range for slice of pixel length {pixel_len}"
-            );
-        }
-
-        let pixel_len = self.pixel_len::<BD>();
-        if pixel_offset > pixel_len {
-            out_of_bounds(pixel_offset, pixel_len);
-        }
-        // SAFETY: We just checked that `pixel_offset` is in bounds.
-        unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
-    }
-
-    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
-    ///
-    /// Bounds checked, but not [`DisjointMut`]-checked.
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_ptr_at<BD: BitDepth>(&self, offset: usize) -> *const BD::Pixel {
-        self.as_mut_ptr_at::<BD>(offset).cast_const()
     }
 
     /// Strided ptr to [`BitDepth::Pixel`]s.
@@ -337,7 +292,7 @@ impl Rav1dPictureDataComponent {
     }
 
     fn as_dav1d(&self) -> Option<NonNull<c_void>> {
-        if self.len() == 0 {
+        if self.byte_len() == 0 {
             None
         } else {
             NonNull::new(self.as_strided_byte_mut_ptr().cast())
@@ -348,11 +303,6 @@ impl Rav1dPictureDataComponent {
         let dst = &mut *self.0.index_mut(..);
         let src = &*src.0.index(..);
         dst.clone_from_slice(src);
-    }
-
-    /// Determine if they reference the same data.
-    pub fn ref_eq(&self, other: &Self) -> bool {
-        self.0.as_mut_ptr() == other.0.as_mut_ptr()
     }
 
     #[inline] // Inline to see bounds checks in order to potentially elide them.
@@ -400,101 +350,9 @@ impl Rav1dPictureDataComponent {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Rav1dPictureDataComponentOffset<'a> {
-    pub data: &'a Rav1dPictureDataComponent,
-    pub offset: usize,
-}
-
-impl<'a> AddAssign<usize> for Rav1dPictureDataComponentOffset<'a> {
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn add_assign(&mut self, rhs: usize) {
-        self.offset += rhs;
-    }
-}
-
-impl<'a> SubAssign<usize> for Rav1dPictureDataComponentOffset<'a> {
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn sub_assign(&mut self, rhs: usize) {
-        self.offset -= rhs;
-    }
-}
-
-impl<'a> AddAssign<isize> for Rav1dPictureDataComponentOffset<'a> {
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn add_assign(&mut self, rhs: isize) {
-        self.offset = self.offset.wrapping_add_signed(rhs);
-    }
-}
-
-impl<'a> SubAssign<isize> for Rav1dPictureDataComponentOffset<'a> {
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn sub_assign(&mut self, rhs: isize) {
-        self.offset = self.offset.wrapping_add_signed(-rhs);
-    }
-}
-
-impl<'a> Add<usize> for Rav1dPictureDataComponentOffset<'a> {
-    type Output = Self;
-
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn add(mut self, rhs: usize) -> Self::Output {
-        self += rhs;
-        self
-    }
-}
-
-impl<'a> Sub<usize> for Rav1dPictureDataComponentOffset<'a> {
-    type Output = Self;
-
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn sub(mut self, rhs: usize) -> Self::Output {
-        self -= rhs;
-        self
-    }
-}
-
-impl<'a> Add<isize> for Rav1dPictureDataComponentOffset<'a> {
-    type Output = Self;
-
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn add(mut self, rhs: isize) -> Self::Output {
-        self += rhs;
-        self
-    }
-}
-
-impl<'a> Sub<isize> for Rav1dPictureDataComponentOffset<'a> {
-    type Output = Self;
-
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn sub(mut self, rhs: isize) -> Self::Output {
-        self -= rhs;
-        self
-    }
-}
+pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
-    pub fn stride(&self) -> isize {
-        self.data.stride()
-    }
-
-    pub fn pixel_stride<BD: BitDepth>(&self) -> isize {
-        self.data.pixel_stride::<BD>()
-    }
-
-    #[inline] // Inline to see bounds checks in order to potentially elide them.
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
-        self.data.as_ptr_at::<BD>(self.offset)
-    }
-
-    #[inline] // Inline to see bounds checks in order to potentially elide them.
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
-        self.data.as_mut_ptr_at::<BD>(self.offset)
-    }
-
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<BD: BitDepth>(

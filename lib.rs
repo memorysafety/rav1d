@@ -50,8 +50,12 @@ pub mod src {
     mod fg_apply;
     mod filmgrain;
     mod getbits;
+    pub(crate) mod pic_or_buf;
+    pub(crate) mod pixels;
     pub(crate) mod relaxed_atomic;
+    pub(crate) mod strided;
     mod unstable_extensions;
+    pub(crate) mod with_offset;
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
     mod extensions;
