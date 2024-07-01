@@ -229,6 +229,14 @@ impl<T> CArc<[T]> {
     {
         self.stable_ref = self.as_ref()[range].into();
     }
+
+    pub fn split_at(this: Self, mid: usize) -> (Self, Self) {
+        let mut first = this.clone();
+        let mut second = this;
+        first.slice_in_place(..mid);
+        second.slice_in_place(mid..);
+        (first, second)
+    }
 }
 
 impl<T> CArc<[T]>
