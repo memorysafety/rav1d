@@ -1028,12 +1028,12 @@ fn decode_coefs<BD: BitDepth>(
         << (match BD::BPC {
             BPC::BPC8 => 8,
             BPC::BPC16 => f.cur.p.bpc,
-        })) as c_int;
+        })) as i32;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
 
-    enum Ac {
-        Qm,
+    enum Ac<'a> {
+        Qm(&'a [u8]),
         NoQm,
     }
 
@@ -1041,7 +1041,10 @@ fn decode_coefs<BD: BitDepth>(
     if dc_tok == 0 {
         cul_level = 0;
         dc_sign_level = 1 << 6;
-        ac = Some(if qm_tbl.is_some() { Ac::Qm } else { Ac::NoQm });
+        ac = Some(match qm_tbl {
+            Some(qm_tbl) => Ac::Qm(qm_tbl),
+            None => Ac::NoQm,
+        });
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as c_int;
         let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
@@ -1086,7 +1089,7 @@ fn decode_coefs<BD: BitDepth>(
                 (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
             );
 
-            ac = if rc != 0 { Some(Ac::Qm) } else { None };
+            ac = if rc != 0 { Some(Ac::Qm(qm_tbl)) } else { None };
         } else {
             // non-qmatrix is the common case and allows for additional optimizations
             if dc_tok == 15 {
@@ -1121,18 +1124,17 @@ fn decode_coefs<BD: BitDepth>(
         }
     }
     match ac {
-        Some(Ac::Qm) => {
+        Some(Ac::Qm(qm_tbl)) => {
             let ac_dq: c_uint = dq_tbl[1].get() as c_uint;
             loop {
-                let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
+                let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac);
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts_c.msac.rng);
                 }
                 let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc).as_::<c_uint>();
                 let mut tok;
                 let mut dq: c_uint = ac_dq
-                    // TODO: Remove `unwrap` once state machine control flow is cleaned up.
-                    .wrapping_mul(qm_tbl.unwrap()[rc as usize] as c_uint)
+                    .wrapping_mul(qm_tbl[rc as usize] as c_uint)
                     .wrapping_add(16)
                     >> 5;
                 let dq_sat;
@@ -1154,16 +1156,16 @@ fn decode_coefs<BD: BitDepth>(
                 } else {
                     tok = rc_tok >> 11;
                     dq = dq.wrapping_mul(tok);
-                    assert!(dq <= 0xffffff);
+                    assert!(dq <= 0xffffff); // Optimized out.
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
-                dq_sat = cmp::min(dq as c_int, cf_max + sign);
+                dq_sat = cmp::min(dq as c_int, cf_max + sign as i32);
                 cf.set::<BD>(
                     f,
                     t_cf,
                     rc,
-                    (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
+                    (if sign { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
 
                 rc = rc_tok as u16 & 0x3ff;
