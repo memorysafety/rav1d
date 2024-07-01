@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::ulog2;
@@ -5,6 +7,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
+use crate::src::cdef::CdefBottom;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
@@ -125,7 +128,7 @@ fn adjust_strength(strength: u8, var: c_uint) -> c_int {
     strength as c_int * (4 + i) + 8 >> 4
 }
 
-pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
+pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -261,66 +264,66 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             0
                         };
 
-                        let mut top = 0 as *const BD::Pixel;
-                        let mut bot = 0 as *const BD::Pixel;
-                        let mut offset: ptrdiff_t;
-                        let st_y: bool;
-
-                        if !have_tt {
-                            st_y = true;
+                        let top_bot = if !have_tt {
+                            None
                         } else if sbrow_start && by == by_start {
-                            if resize {
-                                offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
-                                top = &*f
-                                    .lf
-                                    .cdef_line_buf
-                                    .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
+                            let top = if resize {
+                                (
+                                    &f.lf.cdef_line_buf,
+                                    f.lf.cdef_lpf_line[0].wrapping_add_signed(
+                                        ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize,
+                                    ),
+                                )
                             } else {
-                                offset = (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
-                                    + (bx * 4) as isize;
-                                top = &*f
-                                    .lf
-                                    .lr_line_buf
-                                    .element_as((f.lf.lr_lpf_line[0] as isize + offset) as usize);
-                            }
+                                (
+                                    &f.lf.lr_line_buf,
+                                    f.lf.lr_lpf_line[0].wrapping_add_signed(
+                                        (sby * (4 << sb128) - 4) as isize * y_stride
+                                            + (bx * 4) as isize,
+                                    ),
+                                )
+                            };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            bot = bottom.as_ptr::<BD>();
-                            st_y = false;
+                            Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
                         } else if !sbrow_start && by + 2 >= by_end {
-                            offset = (sby * 4) as isize * y_stride + (bx * 4) as isize;
-                            top = &*f.lf.cdef_line_buf.element_as(
-                                (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
+                            let top = (
+                                &f.lf.cdef_line_buf,
+                                f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
+                                    (sby * 4) as isize * y_stride + (bx * 4) as isize,
+                                ),
                             );
-                            if resize {
-                                offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
-                                // FIXME incorrect; should be kept as an offset for later slices.
-                                bot = &*f
-                                    .lf
-                                    .cdef_line_buf
-                                    .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
+                            let (buf, offset) = if resize {
+                                (
+                                    &f.lf.cdef_line_buf,
+                                    f.lf.cdef_lpf_line[0].wrapping_add_signed(
+                                        (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize,
+                                    ),
+                                )
                             } else {
-                                let line = sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                offset = line as isize * y_stride + (bx * 4) as isize;
-                                // FIXME incorrect; should be kept as an offset for later slices.
-                                bot = &*f
-                                    .lf
-                                    .lr_line_buf
-                                    .element_as((f.lf.lr_lpf_line[0] as isize + offset) as usize);
-                            }
-                            st_y = false;
+                                let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
+                                (
+                                    &f.lf.lr_line_buf,
+                                    f.lf.lr_lpf_line[0].wrapping_add_signed(
+                                        line as isize * y_stride + (bx * 4) as isize,
+                                    ),
+                                )
+                            };
+                            Some((top, CdefBottom::LineBuf(buf), offset))
                         } else {
-                            st_y = true;
-                        }
+                            None
+                        };
 
-                        if st_y {
-                            offset = have_tt as isize * (sby * 4) as isize * y_stride
-                                + (bx * 4) as isize;
-                            top = &*f.lf.cdef_line_buf.element_as(
-                                (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
+                        let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
+                            let top = (
+                                &f.lf.cdef_line_buf,
+                                f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
+                                    have_tt as isize * (sby * 4) as isize * y_stride
+                                        + (bx * 4) as isize,
+                                ),
                             );
                             let bottom = bptrs[0] + (8 * y_stride);
-                            bot = bottom.as_ptr::<BD>();
-                        }
+                            (top, CdefBottom::Pic(bottom.data), bottom.offset)
+                        });
 
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
@@ -329,7 +332,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
+                                    top_off,
                                     bot,
+                                    bot_off,
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
@@ -343,7 +348,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
+                                top_off,
                                 bot,
+                                bot_off,
                                 0,
                                 y_sec_lvl,
                                 0,
@@ -362,72 +369,79 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 0
                             };
                             for pl in 1..=2 {
-                                let st_uv: bool;
-                                if !have_tt {
-                                    st_uv = true;
+                                let top_bot = if !have_tt {
+                                    None
                                 } else if sbrow_start && by == by_start {
-                                    if resize {
-                                        offset = ((sby - 1) * 4) as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        top = &*f.lf.cdef_line_buf.element_as(
-                                            (f.lf.cdef_lpf_line[pl] as isize + offset) as usize,
-                                        );
+                                    let top = if resize {
+                                        (
+                                            &f.lf.cdef_line_buf,
+                                            f.lf.cdef_lpf_line[pl].wrapping_add_signed(
+                                                ((sby - 1) * 4) as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                        )
                                     } else {
-                                        let line_0 = sby * ((4 as c_int) << sb128) - 4;
-                                        offset = line_0 as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        top = &*f.lf.lr_line_buf.element_as(
-                                            (f.lf.lr_lpf_line[pl] as isize + offset) as usize,
-                                        );
-                                    }
+                                        let line = sby * (4 << sb128) - 4;
+                                        (
+                                            &f.lf.lr_line_buf,
+                                            f.lf.lr_lpf_line[pl].wrapping_add_signed(
+                                                line as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                        )
+                                    };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    bot = bottom.as_ptr::<BD>();
-                                    st_uv = false;
+                                    Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
                                 } else if !sbrow_start && by + 2 >= by_end {
-                                    let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
-                                        + (bx * 4 >> ss_hor) as isize;
-                                    top = &*f.lf.cdef_line_buf.element_as(
-                                        (f.lf.cdef_line[tf as usize][pl] as isize + top_offset)
-                                            as usize,
+                                    let top = (
+                                        &f.lf.cdef_line_buf,
+                                        f.lf.cdef_line[tf as usize][pl].wrapping_add_signed(
+                                            (sby * 8) as isize * uv_stride
+                                                + (bx * 4 >> ss_hor) as isize,
+                                        ),
                                     );
-                                    if resize {
-                                        offset = (sby * 4 + 2) as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        // FIXME incorrect; should be kept as an offset for later slices.
-                                        bot = &*f.lf.cdef_line_buf.element_as(
-                                            (f.lf.cdef_lpf_line[pl] as isize + offset) as usize,
-                                        );
+                                    let (buf, offset) = if resize {
+                                        (
+                                            &f.lf.cdef_line_buf,
+                                            f.lf.cdef_lpf_line[pl].wrapping_add_signed(
+                                                (sby * 4 + 2) as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                        )
                                     } else {
-                                        let line =
-                                            sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                        offset =
-                                            line as isize * uv_stride + (bx * 4 >> ss_hor) as isize;
-                                        // FIXME incorrect; should be kept as an offset for later slices.
-                                        bot = &*f.lf.lr_line_buf.element_as(
-                                            (f.lf.lr_lpf_line[pl] as isize + offset) as usize,
-                                        );
-                                    }
-                                    st_uv = false;
+                                        let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
+                                        (
+                                            &f.lf.lr_line_buf,
+                                            f.lf.lr_lpf_line[pl].wrapping_add_signed(
+                                                line as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                        )
+                                    };
+                                    Some((top, CdefBottom::LineBuf(buf), offset))
                                 } else {
-                                    st_uv = true;
-                                }
+                                    None
+                                };
 
-                                if st_uv {
-                                    let offset = have_tt as isize * (sby * 8) as isize * uv_stride
-                                        + (bx * 4 >> ss_hor) as isize;
-                                    top = &*f.lf.cdef_line_buf.element_as(
-                                        (f.lf.cdef_line[tf as usize][pl] as isize + offset)
-                                            as usize,
+                                let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
+                                    let top = (
+                                        &f.lf.cdef_line_buf,
+                                        f.lf.cdef_line[tf as usize][pl].wrapping_add_signed(
+                                            have_tt as isize * (sby * 8) as isize * uv_stride
+                                                + (bx * 4 >> ss_hor) as isize,
+                                        ),
                                     );
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    bot = bottom.as_ptr::<BD>();
-                                }
+                                    (top, CdefBottom::Pic(bottom.data), bottom.offset)
+                                });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,
+                                    top_off,
                                     bot,
+                                    bot_off,
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl,
                                     uvdir,

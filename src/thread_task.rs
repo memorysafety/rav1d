@@ -1275,10 +1275,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                // SAFETY: TODO make safe
-                                unsafe {
-                                    (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
-                                }
+                                (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
                             }
                             drop(f);
                             reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
