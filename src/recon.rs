@@ -949,25 +949,23 @@ fn decode_coefs<BD: BitDepth>(
                 rc = rc_i;
             } else {
                 // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
-
-                // If we do this after the `tok *= 0x17ff41`,
-                // it uses a mispredicted branch instead of `cmov`.
-                let tok_non_zero = tok != 0;
-
-                let mut tok = tok as u32;
-                tok *= 0x17ff41;
+                let tok = tok as u32 * 0x17ff41;
                 level[0] = tok as u8;
+
                 let tok_check = if tok != 0 {
                     ((tok as u16) << 11) | rc
                 } else {
                     0
                 };
-                tok = (tok >> 9) & (rc as u32 + !0x7ff);
+
+                // This is optimized differently from C to avoid branches,
+                // as simple branches are not always optimized to branchless `cmov`s.
+                let mask = tok >> 9;
+                let tok = mask & (rc as u32 + !0x7ff);
+                let mask = mask as u16;
+                rc = (rc_i & mask) | (rc & !mask);
+
                 debug_assert!(tok == tok_check as u32);
-                debug_assert!(tok_non_zero == (tok != 0));
-                if tok_non_zero {
-                    rc = rc_i;
-                }
                 cf.set(rc_i, tok);
             }
         }
