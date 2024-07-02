@@ -4,6 +4,9 @@ use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
 use libc::fread;
+#[cfg(target_os = "windows")]
+use libc::fseek;
+#[cfg(not(target_os = "windows"))]
 use libc::fseeko;
 use libc::strerror;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -237,7 +240,7 @@ unsafe extern "C" fn annexb_open(
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const c_char);
     if ((*c).f).is_null() {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
             file,
             strerror(*errno_location()),
@@ -254,9 +257,15 @@ unsafe extern "C" fn annexb_open(
         if res < 0 {
             break;
         }
+        #[cfg(target_os = "windows")]
+        fseek((*c).f, len as libc::c_long, 1 as c_int);
+        #[cfg(not(target_os = "windows"))]
         fseeko((*c).f, len as libc::off_t, 1 as c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
+    #[cfg(target_os = "windows")]
+    fseek((*c).f, 0, 0 as c_int);
+    #[cfg(not(target_os = "windows"))]
     fseeko((*c).f, 0, 0 as c_int);
     return 0 as c_int;
 }
@@ -292,7 +301,7 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
         ((*c).frame_unit_size).wrapping_sub(len.wrapping_add(res as usize)) as usize;
     if fread(ptr as *mut c_void, len, 1, (*c).f) != 1 {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );

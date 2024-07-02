@@ -329,16 +329,16 @@ unsafe extern "C" fn usage(app: *const c_char, reason: *const c_char, args: ...)
     if !reason.is_null() {
         let mut args_0: ::core::ffi::VaListImpl;
         args_0 = args.clone();
-        vfprintf(stderr, reason, args_0.as_va_list());
-        fprintf(stderr, b"\n\n\0" as *const u8 as *const c_char);
+        vfprintf(stderr(), reason, args_0.as_va_list());
+        fprintf(stderr(), b"\n\n\0" as *const u8 as *const c_char);
     }
     fprintf(
-        stderr,
+        stderr(),
         b"Usage: %s [options]\n\n\0" as *const u8 as *const c_char,
         app,
     );
     fprintf(
-        stderr,
+        stderr(),
         b"Supported options:\n --input/-i $file:     input file\n --output/-o $file:    output file (%%n, %%w or %%h will be filled in for per-frame files)\n --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)\n --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)\n                       use 'frame' as prefix to write per-frame files; if filename contains %%n, will default to writing per-frame files\n --quiet/-q:           disable status messages\n --frametimes $file:   dump frame times to file\n --limit/-l $num:      stop decoding after $num frames\n --skip/-s $num:       skip decoding of the first $num frames\n --realtime [$fract]:  limit framerate, optional argument to override input framerate\n --realtimecache $num: set the size of the cache in realtime mode (default: 0)\n --version/-v:         print version and exit\n --threads $num:       number of threads (default: 0)\n --framedelay $num:    maximum frame delay, capped at $threads (default: 0);\n                       set to 1 for low-latency decoding\n --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)\n --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)\n --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)\n --sizelimit $num:     stop decoding if the frame size exceeds the specified limit\n --strict $num:        whether to abort decoding on standard compliance violations\n                       that don't affect bitstream decoding (default: 1)\n --verify $md5:        verify decoded md5. implies --muxer md5, no output\n --cpumask $mask:      restrict permitted CPU instruction sets (0, %s; default: -1)\n --negstride:          use negative picture strides\n                       this is mostly meant as a developer option\n --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)\n --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)\n --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)\n\0"
             as *const u8 as *const c_char, ALLOWED_CPU_MASKS.as_ptr()
     );
@@ -784,7 +784,7 @@ pub unsafe fn parse(
             }
             118 => {
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"%s\n\0" as *const u8 as *const c_char,
                     dav1d_version(),
                 );

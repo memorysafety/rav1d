@@ -4,6 +4,9 @@ use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
 use libc::fread;
+#[cfg(target_os = "windows")]
+use libc::fseek;
+#[cfg(not(target_os = "windows"))]
 use libc::fseeko;
 use libc::ftello;
 use libc::ptrdiff_t;
@@ -81,7 +84,7 @@ unsafe extern "C" fn ivf_open(
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const c_char);
     if ((*c).f).is_null() {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
             file,
             strerror(*errno_location()),
@@ -90,7 +93,7 @@ unsafe extern "C" fn ivf_open(
     } else {
         if fread(hdr.as_mut_ptr() as *mut c_void, 32, 1, (*c).f) != 1 {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to read stream header: %s\n\0" as *const u8 as *const c_char,
                 strerror(*errno_location()),
             );
@@ -100,7 +103,7 @@ unsafe extern "C" fn ivf_open(
             let dkif = b"DKIF";
             if hdr[..dkif.len()] != dkif[..] {
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"%s is not an IVF file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
                         as *const c_char,
                     file,
@@ -116,7 +119,7 @@ unsafe extern "C" fn ivf_open(
                 let av01 = b"AV01";
                 if hdr[8..][..av01.len()] != av01[..] {
                     fprintf(
-                        stderr,
+                        stderr(),
                         b"%s is not an AV1 file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
                             as *const c_char,
                         file,
@@ -236,7 +239,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
     }
     if fread(ptr as *mut c_void, sz as usize, 1, (*c).f) != 1 {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
@@ -266,7 +269,7 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> c_int {
         match current_block {
             679495355492430298 => {
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"Failed to seek: %s\n\0" as *const u8 as *const c_char,
                     strerror(*errno_location()),
                 );

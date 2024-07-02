@@ -10,5 +10,11 @@ cfg_if::cfg_if! {
         pub unsafe fn errno_location() -> *mut c_int {
             libc::__error()
         }
+    } else if #[cfg(target_os = "windows")] {
+        pub extern "C" fn _errno() -> *mut c_int;
+
+        pub unsafe fn errno_location() -> *mut c_int {
+            _errno()
+        }
     }
 }

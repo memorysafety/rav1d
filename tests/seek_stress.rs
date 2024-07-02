@@ -117,7 +117,7 @@ unsafe fn decode_frame(
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
-                stderr,
+                stderr(),
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                 libc::strerror(-res),
             );
@@ -128,7 +128,7 @@ unsafe fn decode_frame(
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
-                stderr,
+                stderr(),
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                 libc::strerror(-res),
             );
@@ -279,7 +279,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let version: *const c_char = dav1d_version();
     if libc::strcmp(version, b"966d63c1\0" as *const u8 as *const c_char) != 0 {
         libc::fprintf(
-            stderr,
+            stderr(),
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8 as *const c_char,
             version,
             b"966d63c1\0" as *const u8 as *const c_char,

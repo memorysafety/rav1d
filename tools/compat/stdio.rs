@@ -14,5 +14,17 @@ cfg_if::cfg_if! {
             #[link_name = "__stderrp"]
             pub static mut stderr: *mut libc::FILE;
         }
+    } else if #[cfg(target_os = "windows")] {
+        extern "C" {
+             fn __acrt_iob_func(fileno: u32) -> *mut libc::FILE;
+
+             pub fn stdout() -> *mut libc::FILE {
+                __acrt_iob_func(1)
+             }
+
+             pub fn stderr() -> *mut libc::FILE {
+                __acrt_iob_func(2)
+             }
+        }
     }
 }
