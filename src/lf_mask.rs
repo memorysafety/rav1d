@@ -668,7 +668,7 @@ pub(crate) fn rav1d_calc_lf_values(
     }
 
     let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into();
-    let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
+    let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled {
         Some(&mr_deltas)
     } else {
         None

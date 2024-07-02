@@ -2296,8 +2296,8 @@ pub struct Rav1dFrameHeader_loopfilter {
     pub level_y: [u8; 2],
     pub level_u: u8,
     pub level_v: u8,
-    pub mode_ref_delta_enabled: u8,
-    pub mode_ref_delta_update: u8,
+    pub mode_ref_delta_enabled: bool,
+    pub mode_ref_delta_update: bool,
     pub mode_ref_deltas: Rav1dLoopfilterModeRefDeltas,
     pub sharpness: u8,
 }
@@ -2317,8 +2317,8 @@ impl From<Dav1dFrameHeader_loopfilter> for Rav1dFrameHeader_loopfilter {
             level_y,
             level_u,
             level_v,
-            mode_ref_delta_enabled,
-            mode_ref_delta_update,
+            mode_ref_delta_enabled: mode_ref_delta_enabled != 0,
+            mode_ref_delta_update: mode_ref_delta_update != 0,
             mode_ref_deltas: mode_ref_deltas.into(),
             sharpness,
         }
@@ -2340,8 +2340,8 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
             level_y,
             level_u,
             level_v,
-            mode_ref_delta_enabled,
-            mode_ref_delta_update,
+            mode_ref_delta_enabled: mode_ref_delta_enabled as u8,
+            mode_ref_delta_update: mode_ref_delta_update as u8,
             mode_ref_deltas: mode_ref_deltas.into(),
             sharpness,
         }

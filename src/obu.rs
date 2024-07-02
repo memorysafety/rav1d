@@ -1250,8 +1250,8 @@ fn parse_loopfilter(
         level_v = 0;
         level_u = level_v;
         sharpness = 0;
-        mode_ref_delta_enabled = 1;
-        mode_ref_delta_update = 1;
+        mode_ref_delta_enabled = true;
+        mode_ref_delta_update = true;
         mode_ref_deltas = default_mode_ref_deltas.clone();
     } else {
         level_y = [gb.get_bits(6) as u8, gb.get_bits(6) as u8];
@@ -1279,10 +1279,10 @@ fn parse_loopfilter(
                 .mode_ref_deltas
                 .clone();
         }
-        mode_ref_delta_enabled = gb.get_bit() as u8;
-        if mode_ref_delta_enabled != 0 {
-            mode_ref_delta_update = gb.get_bit() as u8;
-            if mode_ref_delta_update != 0 {
+        mode_ref_delta_enabled = gb.get_bit();
+        if mode_ref_delta_enabled {
+            mode_ref_delta_update = gb.get_bit();
+            if mode_ref_delta_update {
                 for i in 0..8 {
                     if gb.get_bit() {
                         mode_ref_deltas.ref_delta[i as usize] = gb.get_sbits(7) as i8;
