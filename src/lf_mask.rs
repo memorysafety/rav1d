@@ -386,6 +386,8 @@ fn mask_edges_chroma(
     );
 }
 
+// not inline in C, and inlining in Rust doesn't seem to improve performance
+#[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_intra(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<u8>>,

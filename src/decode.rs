@@ -781,6 +781,8 @@ struct VarTx {
     tx_split1: u16,
 }
 
+// not inlined in C and inlining in Rust degrades performance slightly
+#[inline(never)]
 fn read_vartx_tree(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
