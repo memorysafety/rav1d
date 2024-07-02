@@ -28,10 +28,11 @@ use strum::EnumCount;
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfContext {
-    pub m: CdfModeContext,
-    pub kfym: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
     pub coef: CdfCoefContext,
+    pub m: CdfModeContext,
+    pub mi: CdfModeInterContext,
     pub mv: CdfMvContext,
+    pub kfym: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
 }
 
 #[derive(Clone)]
@@ -87,12 +88,11 @@ pub struct CdfCoefContext {
     pub dc_sign: Align4<[[[u16; 2]; 3]; 2]>,
 }
 
+/// Buffers padded to [4]/[8]/[16] for SIMD where needed.
 #[derive(Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
-    pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
     pub uv_mode: Align32<[[[u16; N_UV_INTRA_PRED_MODES + 2]; N_INTRA_PRED_MODES]; 2]>,
-    pub wedge_idx: Align32<[[u16; 16]; 9]>,
     pub partition: Align32<[[[u16; BlockPartition::COUNT + 6]; 4]; BlockLevel::COUNT]>,
     pub cfl_alpha: Align32<[[u16; 16]; 6]>,
     pub txtp_inter1: Align32<[[u16; 16]; 2]>,
@@ -102,23 +102,44 @@ pub struct CdfModeContext {
     pub cfl_sign: Align16<[u16; 8]>,
     pub angle_delta: Align16<[[u16; 8]; 8]>,
     pub filter_intra: Align16<[u16; 8]>,
-    pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
     pub seg_id: Align16<[[u16; SegmentId::COUNT]; 3]>,
     pub pal_sz: Align16<[[[u16; 8]; 7]; 2]>,
     pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
-    pub filter: Align8<[[[u16; 4]; 8]; 2]>,
     pub txsz: Align8<[[[u16; 4]; 3]; 4]>,
-    pub motion_mode: Align8<[[u16; 4]; BlockSize::COUNT]>,
     pub delta_q: Align8<[u16; 4]>,
     pub delta_lf: Align8<[[u16; 4]; 5]>,
-    pub interintra_mode: Align8<[[u16; 4]; 4]>,
     pub restore_switchable: Align8<[u16; 4]>,
     pub restore_wiener: Align4<[u16; 2]>,
     pub restore_sgrproj: Align4<[u16; 2]>,
-    pub interintra: Align4<[[u16; 2]; 7]>,
-    pub interintra_wedge: Align4<[[u16; 2]; 7]>,
     pub txtp_inter3: Align4<[[u16; 2]; 4]>,
     pub use_filter_intra: Align4<[[u16; 2]; BlockSize::COUNT]>,
+    pub txpart: Align4<[[[u16; 2]; 3]; 7]>,
+    pub skip: Align4<[[u16; 2]; 3]>,
+    pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
+    pub pal_uv: Align4<[[u16; 2]; 2]>,
+
+    /// key/intra
+    pub intrabc: Align4<[u16; 2]>,
+}
+
+impl Default for CdfModeContext {
+    fn default() -> Self {
+        av1_default_cdf.clone()
+    }
+}
+
+/// Buffers padded to [4]/[8]/[16] for SIMD where needed.
+#[derive(Clone)]
+#[repr(C)]
+pub struct CdfModeInterContext {
+    // inter/switch
+    pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
+    pub wedge_idx: Align32<[[u16; 16]; 9]>,
+    pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
+    pub filter: Align8<[[[u16; Rav1dFilterMode::N_FILTERS]; 8]; 2]>,
+    pub interintra_mode: Align8<[[u16; 4]; 4]>,
+    pub motion_mode: Align8<[[u16; 3 + 1]; BlockSize::COUNT]>,
+    pub skip_mode: Align4<[[u16; 2]; 3]>,
     pub newmv_mode: Align4<[[u16; 2]; 6]>,
     pub globalmv_mode: Align4<[[u16; 2]; 2]>,
     pub refmv_mode: Align4<[[u16; 2]; 6]>,
@@ -133,19 +154,15 @@ pub struct CdfModeContext {
     pub comp_fwd_ref: Align4<[[[u16; 2]; 3]; 3]>,
     pub comp_bwd_ref: Align4<[[[u16; 2]; 3]; 2]>,
     pub comp_uni_ref: Align4<[[[u16; 2]; 3]; 3]>,
-    pub txpart: Align4<[[[u16; 2]; 3]; 7]>,
-    pub skip: Align4<[[u16; 2]; 3]>,
-    pub skip_mode: Align4<[[u16; 2]; 3]>,
     pub seg_pred: Align4<[[u16; 2]; 3]>,
+    pub interintra: Align4<[[u16; 2]; 7]>,
+    pub interintra_wedge: Align4<[[u16; 2]; 7]>,
     pub obmc: Align4<[[u16; 2]; BlockSize::COUNT]>,
-    pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
-    pub pal_uv: Align4<[[u16; 2]; 2]>,
-    pub intrabc: Align4<[u16; 2]>,
 }
 
-impl Default for CdfModeContext {
+impl Default for CdfModeInterContext {
     fn default() -> Self {
-        av1_default_cdf.clone()
+        av1_default_cdf_inter.clone()
     }
 }
 
@@ -233,20 +250,6 @@ const fn cdf3d<const P: usize, const N: usize, const M: usize, const L: usize, c
 }
 
 static av1_default_cdf: CdfModeContext = CdfModeContext {
-    y_mode: Align32(cdf1d([
-        [
-            22801, 23489, 24293, 24756, 25601, 26123, 26606, 27418, 27945, 29228, 29685, 30349,
-        ],
-        [
-            18673, 19845, 22631, 23318, 23950, 24649, 25527, 27364, 28152, 29701, 29984, 30852,
-        ],
-        [
-            19770, 20979, 23396, 23939, 24241, 24654, 25136, 27073, 27830, 29360, 29730, 30659,
-        ],
-        [
-            20155, 21301, 22838, 23178, 23261, 23533, 23703, 24804, 25352, 26575, 27016, 28049,
-        ],
-    ])),
     uv_mode: Align32([
         cdf1d([
             [
@@ -340,44 +343,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
             ],
         ]),
     ]),
-    wedge_idx: Align32(cdf1d([
-        [
-            2438, 4440, 6599, 8663, 11005, 12874, 15751, 18094, 20359, 22362, 24127, 25702, 27752,
-            29450, 31171,
-        ],
-        [
-            806, 3266, 6005, 6738, 7218, 7367, 7771, 14588, 16323, 17367, 18452, 19422, 22839,
-            26127, 29629,
-        ],
-        [
-            2779, 3738, 4683, 7213, 7775, 8017, 8655, 14357, 17939, 21332, 24520, 27470, 29456,
-            30529, 31656,
-        ],
-        [
-            1684, 3625, 5675, 7108, 9302, 11274, 14429, 17144, 19163, 20961, 22884, 24471, 26719,
-            28714, 30877,
-        ],
-        [
-            1142, 3491, 6277, 7314, 8089, 8355, 9023, 13624, 15369, 16730, 18114, 19313, 22521,
-            26012, 29550,
-        ],
-        [
-            2742, 4195, 5727, 8035, 8980, 9336, 10146, 14124, 17270, 20533, 23434, 25972, 27944,
-            29570, 31416,
-        ],
-        [
-            1727, 3948, 6101, 7796, 9841, 12344, 15766, 18944, 20638, 22038, 23963, 25311, 26988,
-            28766, 31012,
-        ],
-        [
-            154, 987, 1925, 2051, 2088, 2111, 2151, 23033, 23703, 24284, 24985, 25684, 27259,
-            28883, 30911,
-        ],
-        [
-            1135, 1322, 1493, 2635, 2696, 2737, 2770, 21016, 22935, 25057, 27251, 29173, 30089,
-            30960, 31933,
-        ],
-    ])),
     partition: Align32([
         cdf1d([
             [27899, 28219, 28529, 32484, 32539, 32619, 32639],
@@ -546,16 +511,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
         [3605, 10428, 12459, 17676, 21244, 30655],
     ])),
     filter_intra: Align16(cdf0d([8949, 12776, 17211, 29558])),
-    comp_inter_mode: Align16(cdf1d([
-        [7760, 13823, 15808, 17641, 19156, 20666, 26891],
-        [10730, 19452, 21145, 22749, 24039, 25131, 28724],
-        [10664, 20221, 21588, 22906, 24295, 25387, 28436],
-        [13298, 16984, 20471, 24182, 25067, 25736, 26422],
-        [18904, 23325, 25242, 27432, 27898, 28258, 30758],
-        [10725, 17454, 20124, 22820, 24195, 25168, 26046],
-        [17125, 24273, 25814, 27492, 28214, 28704, 30592],
-        [13046, 23214, 24505, 25942, 27435, 28442, 29330],
-    ])),
     seg_id: Align16(cdf1d([
         [5622, 7893, 16093, 18233, 27809, 28373, 32533],
         [14274, 18230, 22557, 24935, 29980, 30851, 32344],
@@ -673,6 +628,134 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
             ]),
         ],
     ]),
+    txsz: Align8(cdf2d([
+        [[19968, 0], [19968, 0], [24320, 0]],
+        [[12272, 30172], [12272, 30172], [18677, 30848]],
+        [[12986, 15180], [12986, 15180], [24302, 25602]],
+        [[5782, 11475], [5782, 11475], [16803, 22759]],
+    ])),
+    delta_q: Align8(cdf0d([28160, 32120, 32677])),
+    delta_lf: Align8(cdf1d([
+        [28160, 32120, 32677],
+        [28160, 32120, 32677],
+        [28160, 32120, 32677],
+        [28160, 32120, 32677],
+        [28160, 32120, 32677],
+    ])),
+    restore_switchable: Align8(cdf0d([9413, 22581])),
+    restore_wiener: Align4(cdf0d([11570])),
+    restore_sgrproj: Align4(cdf0d([16855])),
+    txtp_inter3: Align4(cdf1d([[16384], [4167], [1998], [748]])),
+    use_filter_intra: Align4(cdf1d([
+        [16384],
+        [16384],
+        [16384],
+        [16384],
+        [16384],
+        [16384],
+        [16384],
+        [22343],
+        [12756],
+        [18101],
+        [16384],
+        [14301],
+        [12408],
+        [9394],
+        [10368],
+        [20229],
+        [12551],
+        [7866],
+        [5893],
+        [12770],
+        [6743],
+        [4621],
+    ])),
+    txpart: Align4(cdf2d([
+        [[28581], [23846], [20847]],
+        [[24315], [18196], [12133]],
+        [[18791], [10887], [11005]],
+        [[27179], [20004], [11281]],
+        [[26549], [19308], [14224]],
+        [[28015], [21546], [14400]],
+        [[28165], [22401], [16088]],
+    ])),
+    skip: Align4(cdf1d([[31671], [16515], [4576]])),
+    pal_y: Align4(cdf2d([
+        [[31676], [3419], [1261]],
+        [[31912], [2859], [980]],
+        [[31823], [3400], [781]],
+        [[32030], [3561], [904]],
+        [[32309], [7337], [1462]],
+        [[32265], [4015], [1521]],
+        [[32450], [7946], [129]],
+    ])),
+    pal_uv: Align4(cdf1d([[32461], [21488]])),
+    intrabc: Align4(cdf0d([30531])),
+};
+
+static av1_default_cdf_inter: CdfModeInterContext = CdfModeInterContext {
+    y_mode: Align32(cdf1d([
+        [
+            22801, 23489, 24293, 24756, 25601, 26123, 26606, 27418, 27945, 29228, 29685, 30349,
+        ],
+        [
+            18673, 19845, 22631, 23318, 23950, 24649, 25527, 27364, 28152, 29701, 29984, 30852,
+        ],
+        [
+            19770, 20979, 23396, 23939, 24241, 24654, 25136, 27073, 27830, 29360, 29730, 30659,
+        ],
+        [
+            20155, 21301, 22838, 23178, 23261, 23533, 23703, 24804, 25352, 26575, 27016, 28049,
+        ],
+    ])),
+    wedge_idx: Align32(cdf1d([
+        [
+            2438, 4440, 6599, 8663, 11005, 12874, 15751, 18094, 20359, 22362, 24127, 25702, 27752,
+            29450, 31171,
+        ],
+        [
+            806, 3266, 6005, 6738, 7218, 7367, 7771, 14588, 16323, 17367, 18452, 19422, 22839,
+            26127, 29629,
+        ],
+        [
+            2779, 3738, 4683, 7213, 7775, 8017, 8655, 14357, 17939, 21332, 24520, 27470, 29456,
+            30529, 31656,
+        ],
+        [
+            1684, 3625, 5675, 7108, 9302, 11274, 14429, 17144, 19163, 20961, 22884, 24471, 26719,
+            28714, 30877,
+        ],
+        [
+            1142, 3491, 6277, 7314, 8089, 8355, 9023, 13624, 15369, 16730, 18114, 19313, 22521,
+            26012, 29550,
+        ],
+        [
+            2742, 4195, 5727, 8035, 8980, 9336, 10146, 14124, 17270, 20533, 23434, 25972, 27944,
+            29570, 31416,
+        ],
+        [
+            1727, 3948, 6101, 7796, 9841, 12344, 15766, 18944, 20638, 22038, 23963, 25311, 26988,
+            28766, 31012,
+        ],
+        [
+            154, 987, 1925, 2051, 2088, 2111, 2151, 23033, 23703, 24284, 24985, 25684, 27259,
+            28883, 30911,
+        ],
+        [
+            1135, 1322, 1493, 2635, 2696, 2737, 2770, 21016, 22935, 25057, 27251, 29173, 30089,
+            30960, 31933,
+        ],
+    ])),
+    comp_inter_mode: Align16(cdf1d([
+        [7760, 13823, 15808, 17641, 19156, 20666, 26891],
+        [10730, 19452, 21145, 22749, 24039, 25131, 28724],
+        [10664, 20221, 21588, 22906, 24295, 25387, 28436],
+        [13298, 16984, 20471, 24182, 25067, 25736, 26422],
+        [18904, 23325, 25242, 27432, 27898, 28258, 30758],
+        [10725, 17454, 20124, 22820, 24195, 25168, 26046],
+        [17125, 24273, 25814, 27492, 28214, 28704, 30592],
+        [13046, 23214, 24505, 25942, 27435, 28442, 29330],
+    ])),
     filter: Align8(cdf2d([
         [
             [31935, 32720],
@@ -694,12 +777,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
             [601, 943],
             [14969, 21398],
         ],
-    ])),
-    txsz: Align8(cdf2d([
-        [[19968, 0], [19968, 0], [24320, 0]],
-        [[12272, 30172], [12272, 30172], [18677, 30848]],
-        [[12986, 15180], [12986, 15180], [24302, 25602]],
-        [[5782, 11475], [5782, 11475], [16803, 22759]],
     ])),
     motion_mode: Align8(cdf1d([
         [32507, 32558],
@@ -725,23 +802,12 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
         [0; 2],
         [0; 2],
     ])),
-    delta_q: Align8(cdf0d([28160, 32120, 32677])),
-    delta_lf: Align8(cdf1d([
-        [28160, 32120, 32677],
-        [28160, 32120, 32677],
-        [28160, 32120, 32677],
-        [28160, 32120, 32677],
-        [28160, 32120, 32677],
-    ])),
     interintra_mode: Align8(cdf1d([
         [8192, 16384, 24576],
         [1875, 11082, 27332],
         [2473, 9996, 26388],
         [4238, 11537, 25926],
     ])),
-    restore_switchable: Align8(cdf0d([9413, 22581])),
-    restore_wiener: Align4(cdf0d([11570])),
-    restore_sgrproj: Align4(cdf0d([16855])),
     interintra: Align4(cdf1d([[16384], [26887], [27597], [30237], [0], [0], [0]])),
     interintra_wedge: Align4(cdf1d([
         [20036],
@@ -751,31 +817,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
         [29564],
         [29444],
         [26872],
-    ])),
-    txtp_inter3: Align4(cdf1d([[16384], [4167], [1998], [748]])),
-    use_filter_intra: Align4(cdf1d([
-        [16384],
-        [16384],
-        [16384],
-        [16384],
-        [16384],
-        [16384],
-        [16384],
-        [22343],
-        [12756],
-        [18101],
-        [16384],
-        [14301],
-        [12408],
-        [9394],
-        [10368],
-        [20229],
-        [12551],
-        [7866],
-        [5893],
-        [12770],
-        [6743],
-        [4621],
     ])),
     newmv_mode: Align4(cdf1d([[24035], [16630], [15339], [8386], [12222], [4676]])),
     globalmv_mode: Align4(cdf1d([[2175], [1054]])),
@@ -833,16 +874,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
         [[3865], [14173], [25120]],
         [[3128], [15270], [26710]],
     ])),
-    txpart: Align4(cdf2d([
-        [[28581], [23846], [20847]],
-        [[24315], [18196], [12133]],
-        [[18791], [10887], [11005]],
-        [[27179], [20004], [11281]],
-        [[26549], [19308], [14224]],
-        [[28015], [21546], [14400]],
-        [[28165], [22401], [16088]],
-    ])),
-    skip: Align4(cdf1d([[31671], [16515], [4576]])),
     skip_mode: Align4(cdf1d([[32621], [20708], [8127]])),
     seg_pred: Align4(cdf1d([[16384], [16384], [16384]])),
     obmc: Align4(cdf1d([
@@ -869,17 +900,6 @@ static av1_default_cdf: CdfModeContext = CdfModeContext {
         [0],
         [0],
     ])),
-    pal_y: Align4(cdf2d([
-        [[31676], [3419], [1261]],
-        [[31912], [2859], [980]],
-        [[31823], [3400], [781]],
-        [[32030], [3561], [904]],
-        [[32309], [7337], [1462]],
-        [[32265], [4015], [1521]],
-        [[32450], [7946], [129]],
-    ])),
-    pal_uv: Align4(cdf1d([[32461], [21488]])),
-    intrabc: Align4(cdf0d([30531])),
 };
 static default_mv_component_cdf: CdfMvComponent = CdfMvComponent {
     classes: Align32(cdf0d([
@@ -4929,7 +4949,6 @@ pub(crate) fn rav1d_cdf_thread_update(
 ) {
     macro_rules! update_cdf_1d {
         ($n1d:expr, $($name:tt)+) => {
-            dst.$($name)+ = src.$($name)+;
             dst.$($name)+[$n1d] = 0
         }
     }
@@ -4958,57 +4977,9 @@ pub(crate) fn rav1d_cdf_thread_update(
         }
     }
 
-    macro_rules! update_bit_0d {
-        ($($name:tt)+) => {
-            dst.$($name)+[0] = src.$($name)+[0];
-            dst.$($name)+[1] = 0
-        }
-    }
+    dst.coef = src.coef.clone();
+    dst.m = src.m.clone();
 
-    macro_rules! update_bit_1d {
-        ($n1d:expr, $($name:tt)+) => {
-            for i in 0..$n1d {
-                update_bit_0d!( $($name)+[i]);
-            }
-        }
-    }
-
-    macro_rules! update_bit_2d {
-        ($n1d:expr, $n2d:expr, $($name:tt)+) => {
-            for j in 0..$n1d {
-                update_bit_1d!($n2d, $($name)+[j]);
-            }
-        }
-    }
-
-    macro_rules! update_bit_3d {
-        ($n1d:expr, $n2d:expr, $n3d:expr, $($name:tt)+) => {
-            for k in 0..$n1d {
-                update_bit_2d!($n2d, $n3d, $($name)+[k]);
-            }
-        }
-    }
-
-    update_bit_1d!(BlockSize::COUNT, m.use_filter_intra);
-    update_cdf_1d!(4, m.filter_intra.0);
-    for k in 0..2 {
-        update_cdf_2d!(
-            N_INTRA_PRED_MODES,
-            N_UV_INTRA_PRED_MODES - 1 - (k == 0) as usize,
-            m.uv_mode[k]
-        );
-    }
-    update_cdf_2d!(8, 6, m.angle_delta);
-    for k in 0..TxfmSize::NUM_SQUARE - 1 {
-        update_cdf_2d!(3, cmp::min(k + 1, 2), m.txsz[k]);
-    }
-    update_cdf_3d!(2, N_INTRA_PRED_MODES, 6, m.txtp_intra1);
-    update_cdf_3d!(3, N_INTRA_PRED_MODES, 4, m.txtp_intra2);
-    update_bit_1d!(3, m.skip);
-    for k in 0..BlockLevel::COUNT {
-        update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
-    }
-    update_bit_2d!(TxfmSize::NUM_SQUARE, 13, coef.skip);
     update_cdf_3d!(2, 2, 4, coef.eob_bin_16);
     update_cdf_3d!(2, 2, 5, coef.eob_bin_32);
     update_cdf_3d!(2, 2, 6, coef.eob_bin_64);
@@ -5016,78 +4987,102 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_3d!(2, 2, 8, coef.eob_bin_256);
     update_cdf_2d!(2, 9, coef.eob_bin_512);
     update_cdf_2d!(2, 10, coef.eob_bin_1024);
-    update_bit_3d!(TxfmSize::NUM_SQUARE, 2, 11 /*22*/, coef.eob_hi_bit);
     update_cdf_4d!(TxfmSize::NUM_SQUARE, 2, 4, 2, coef.eob_base_tok);
     update_cdf_4d!(TxfmSize::NUM_SQUARE, 2, 41 /*42*/, 3, coef.base_tok);
-    update_bit_2d!(2, 3, coef.dc_sign);
     update_cdf_4d!(4, 2, 21, 3, coef.br_tok);
-    update_cdf_2d!(3, SegmentId::COUNT - 1, m.seg_id);
-    update_cdf_1d!(7, m.cfl_sign.0);
+    update_cdf_4d!(TxfmSize::NUM_SQUARE, 2, 11 /*22*/, 1, coef.eob_hi_bit);
+    update_cdf_3d!(TxfmSize::NUM_SQUARE, 13, 1, coef.skip);
+    update_cdf_3d!(2, 3, 1, coef.dc_sign);
+
+    for k in 0..2 {
+        update_cdf_2d!(
+            N_INTRA_PRED_MODES,
+            N_UV_INTRA_PRED_MODES - 1 - (k == 0) as usize,
+            m.uv_mode[k]
+        );
+    }
+    for k in 0..BlockLevel::COUNT {
+        update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
+    }
     update_cdf_2d!(6, 15, m.cfl_alpha);
-    update_bit_0d!(m.restore_wiener);
-    update_bit_0d!(m.restore_sgrproj);
-    update_cdf_1d!(2, m.restore_switchable.0);
-    update_cdf_1d!(3, m.delta_q.0);
-    update_cdf_2d!(5, 3, m.delta_lf);
-    update_bit_2d!(7, 3, m.pal_y);
-    update_bit_1d!(2, m.pal_uv);
+    update_cdf_2d!(2, 15, m.txtp_inter1);
+    update_cdf_1d!(11, m.txtp_inter2.0);
+    update_cdf_3d!(2, N_INTRA_PRED_MODES, 6, m.txtp_intra1);
+    update_cdf_3d!(3, N_INTRA_PRED_MODES, 4, m.txtp_intra2);
+    update_cdf_1d!(7, m.cfl_sign.0);
+    update_cdf_2d!(8, 6, m.angle_delta);
+    update_cdf_1d!(4, m.filter_intra.0);
+    update_cdf_2d!(3, SegmentId::COUNT - 1, m.seg_id);
     update_cdf_3d!(2, 7, 6, m.pal_sz);
     for l in 0..2 {
         for k in 0..7 {
             update_cdf_2d!(5, k + 1, m.color_map[l][k]);
         }
     }
-    update_bit_2d!(7, 3, m.txpart);
-    update_cdf_2d!(2, 15, m.txtp_inter1);
-    update_cdf_1d!(11, m.txtp_inter2.0);
-    update_bit_1d!(4, m.txtp_inter3);
+    for k in 0..TxfmSize::NUM_SQUARE - 1 {
+        update_cdf_2d!(3, cmp::min(k + 1, 2), m.txsz[k]);
+    }
+    update_cdf_1d!(3, m.delta_q.0);
+    update_cdf_2d!(5, 3, m.delta_lf);
+    update_cdf_1d!(2, m.restore_switchable.0);
+    update_cdf_1d!(1, m.restore_wiener);
+    update_cdf_1d!(1, m.restore_sgrproj);
+    update_cdf_2d!(4, 1, m.txtp_inter3);
+    update_cdf_2d!(BlockSize::COUNT, 1, m.use_filter_intra);
+    update_cdf_3d!(7, 3, 1, m.txpart);
+    update_cdf_2d!(3, 1, m.skip);
+    update_cdf_3d!(7, 3, 1, m.pal_y);
+    update_cdf_2d!(2, 1, m.pal_uv);
 
     if hdr.frame_type.is_key_or_intra() {
         return;
     }
 
-    update_bit_1d!(3, m.skip_mode);
-    update_cdf_2d!(4, N_INTRA_PRED_MODES - 1, m.y_mode);
+    dst.mi = src.mi.clone();
+    dst.mv = src.mv.clone();
+
+    update_cdf_2d!(4, N_INTRA_PRED_MODES - 1, mi.y_mode);
+    update_cdf_2d!(9, 15, mi.wedge_idx);
+    update_cdf_2d!(8, N_COMP_INTER_PRED_MODES - 1, mi.comp_inter_mode);
     update_cdf_3d!(
         2,
         8,
         Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
-        m.filter
+        mi.filter
     );
-    update_bit_1d!(6, m.newmv_mode);
-    update_bit_1d!(2, m.globalmv_mode);
-    update_bit_1d!(6, m.refmv_mode);
-    update_bit_1d!(3, m.drl_bit);
-    update_cdf_2d!(8, N_COMP_INTER_PRED_MODES - 1, m.comp_inter_mode);
-    update_bit_1d!(4, m.intra);
-    update_bit_1d!(5, m.comp);
-    update_bit_1d!(5, m.comp_dir);
-    update_bit_1d!(6, m.jnt_comp);
-    update_bit_1d!(6, m.mask_comp);
-    update_bit_1d!(9, m.wedge_comp);
-    update_cdf_2d!(9, 15, m.wedge_idx);
-    update_bit_2d!(6, 3, m.r#ref);
-    update_bit_2d!(3, 3, m.comp_fwd_ref);
-    update_bit_2d!(2, 3, m.comp_bwd_ref);
-    update_bit_2d!(3, 3, m.comp_uni_ref);
-    update_bit_1d!(3, m.seg_pred);
-    update_bit_1d!(4, m.interintra);
-    update_bit_1d!(7, m.interintra_wedge);
-    update_cdf_2d!(4, 3, m.interintra_mode);
-    update_cdf_2d!(BlockSize::COUNT, 2, m.motion_mode);
-    update_bit_1d!(BlockSize::COUNT, m.obmc);
+    update_cdf_2d!(4, 3, mi.interintra_mode);
+    update_cdf_2d!(BlockSize::COUNT, 2, mi.motion_mode);
+    update_cdf_2d!(3, 1, mi.skip_mode);
+    update_cdf_2d!(6, 1, mi.newmv_mode);
+    update_cdf_2d!(2, 1, mi.globalmv_mode);
+    update_cdf_2d!(6, 1, mi.refmv_mode);
+    update_cdf_2d!(3, 1, mi.drl_bit);
+    update_cdf_2d!(4, 1, mi.intra);
+    update_cdf_2d!(5, 1, mi.comp);
+    update_cdf_2d!(5, 1, mi.comp_dir);
+    update_cdf_2d!(6, 1, mi.jnt_comp);
+    update_cdf_2d!(6, 1, mi.mask_comp);
+    update_cdf_2d!(9, 1, mi.wedge_comp);
+    update_cdf_3d!(6, 3, 1, mi.r#ref);
+    update_cdf_3d!(3, 3, 1, mi.comp_fwd_ref);
+    update_cdf_3d!(2, 3, 1, mi.comp_bwd_ref);
+    update_cdf_3d!(3, 3, 1, mi.comp_uni_ref);
+    update_cdf_2d!(3, 1, mi.seg_pred);
+    update_cdf_2d!(4, 1, mi.interintra);
+    update_cdf_2d!(7, 1, mi.interintra_wedge);
+    update_cdf_2d!(BlockSize::COUNT, 1, mi.obmc);
 
-    update_cdf_1d!(MVJoint::all().bits() as usize, mv.joint.0);
     for k in 0..2 {
         update_cdf_1d!(10, mv.comp[k].classes.0);
-        update_bit_0d!(mv.comp[k].class0);
-        update_bit_1d!(10, mv.comp[k].classN);
+        update_cdf_1d!(1, mv.comp[k].sign);
+        update_cdf_1d!(1, mv.comp[k].class0);
         update_cdf_2d!(2, 3, mv.comp[k].class0_fp);
+        update_cdf_1d!(1, mv.comp[k].class0_hp);
+        update_cdf_2d!(10, 1, mv.comp[k].classN);
         update_cdf_1d!(3, mv.comp[k].classN_fp.0);
-        update_bit_0d!(mv.comp[k].class0_hp);
-        update_bit_0d!(mv.comp[k].classN_hp);
-        update_bit_0d!(mv.comp[k].sign);
+        update_cdf_1d!(1, mv.comp[k].classN_hp);
     }
+    update_cdf_1d!(MVJoint::all().bits() as usize, mv.joint.0);
 }
 
 pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
@@ -5099,6 +5094,7 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
         CdfThreadContext::Cdf(src) => src.cdf.try_read().unwrap().clone(),
         &CdfThreadContext::QCat(i) => CdfContext {
             m: Default::default(),
+            mi: Default::default(),
             kfym: default_kf_y_mode_cdf,
             // `i` is the sum of 3 `bool`s
             coef: av1_default_coef_cdf[i as usize & 3].clone(),
