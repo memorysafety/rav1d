@@ -2209,9 +2209,9 @@ pub struct Dav1dFrameHeader_delta_lf {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_delta_lf {
-    pub present: u8,
+    pub present: bool,
     pub res_log2: u8,
-    pub multi: u8,
+    pub multi: bool,
 }
 
 impl From<Dav1dFrameHeader_delta_lf> for Rav1dFrameHeader_delta_lf {
@@ -2222,9 +2222,9 @@ impl From<Dav1dFrameHeader_delta_lf> for Rav1dFrameHeader_delta_lf {
             multi,
         } = value;
         Self {
-            present,
+            present: present != 0,
             res_log2,
-            multi,
+            multi: multi != 0,
         }
     }
 }
@@ -2237,9 +2237,9 @@ impl From<Rav1dFrameHeader_delta_lf> for Dav1dFrameHeader_delta_lf {
             multi,
         } = value;
         Self {
-            present,
+            present: present as u8,
             res_log2,
-            multi,
+            multi: multi as u8,
         }
     }
 }

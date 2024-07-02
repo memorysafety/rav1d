@@ -1558,8 +1558,8 @@ fn decode_b(
                 );
             }
 
-            if frame_hdr.delta.lf.present != 0 {
-                let n_lfs = if frame_hdr.delta.lf.multi != 0 {
+            if frame_hdr.delta.lf.present {
+                let n_lfs = if frame_hdr.delta.lf.multi {
                     if f.cur.p.layout != Rav1dPixelLayout::I400 {
                         4
                     } else {
