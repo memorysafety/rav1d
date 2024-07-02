@@ -1210,26 +1210,14 @@ fn parse_delta(
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_delta {
     let q = {
-        let present = if quant.yac != 0 {
-            gb.get_bit() as u8
-        } else {
-            0
-        };
-        let res_log2 = if present != 0 {
-            gb.get_bits(2) as u8
-        } else {
-            0
-        };
+        let present = if quant.yac != 0 { gb.get_bit() } else { false };
+        let res_log2 = if present { gb.get_bits(2) as u8 } else { 0 };
         Rav1dFrameHeader_delta_q { present, res_log2 }
     };
     let lf = {
-        let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as u8;
-        let res_log2 = if present != 0 {
-            gb.get_bits(2) as u8
-        } else {
-            0
-        };
-        let multi = if present != 0 { gb.get_bit() as u8 } else { 0 };
+        let present = q.present && !allow_intrabc && gb.get_bit();
+        let res_log2 = if present { gb.get_bits(2) as u8 } else { 0 };
+        let multi = if present { gb.get_bit() } else { false };
         Rav1dFrameHeader_delta_lf {
             present,
             res_log2,

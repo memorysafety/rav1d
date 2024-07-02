@@ -1523,7 +1523,7 @@ fn decode_b(
     let not_sb128 = !seq_hdr.sb128 as c_int;
     if t.b.x & (31 >> not_sb128) == 0 && t.b.y & (31 >> not_sb128) == 0 {
         let prev_qidx = ts.last_qidx.get();
-        let have_delta_q = frame_hdr.delta.q.present != 0
+        let have_delta_q = frame_hdr.delta.q.present
             && (bs
                 != (if seq_hdr.sb128 {
                     BlockSize::Bs128x128
@@ -4572,7 +4572,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
     // setup dequant tables
     init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
-    if frame_hdr.quant.qm != 0 {
+    if frame_hdr.quant.qm {
         for i in 0..TxfmSize::COUNT {
             f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
             f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i];

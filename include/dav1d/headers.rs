@@ -2174,21 +2174,27 @@ pub struct Dav1dFrameHeader_delta_q {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_delta_q {
-    pub present: u8,
+    pub present: bool,
     pub res_log2: u8,
 }
 
 impl From<Dav1dFrameHeader_delta_q> for Rav1dFrameHeader_delta_q {
     fn from(value: Dav1dFrameHeader_delta_q) -> Self {
         let Dav1dFrameHeader_delta_q { present, res_log2 } = value;
-        Self { present, res_log2 }
+        Self {
+            present: present != 0,
+            res_log2,
+        }
     }
 }
 
 impl From<Rav1dFrameHeader_delta_q> for Dav1dFrameHeader_delta_q {
     fn from(value: Rav1dFrameHeader_delta_q) -> Self {
         let Rav1dFrameHeader_delta_q { present, res_log2 } = value;
-        Self { present, res_log2 }
+        Self {
+            present: present as u8,
+            res_log2,
+        }
     }
 }
 
