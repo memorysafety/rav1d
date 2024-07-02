@@ -2491,7 +2491,7 @@ pub struct Rav1dFrameSize {
     pub render_width: c_int,
     pub render_height: c_int,
     pub super_res: Rav1dFrameHeader_super_res,
-    pub have_render_size: u8,
+    pub have_render_size: bool,
 }
 
 #[derive(Clone, Default)]
@@ -2611,7 +2611,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
                 render_width,
                 render_height,
                 super_res: super_res.into(),
-                have_render_size,
+                have_render_size: have_render_size != 0,
             },
             film_grain: film_grain.into(),
             frame_type: frame_type.try_into().unwrap(),
@@ -2749,7 +2749,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             render_width,
             render_height,
             super_res: super_res.into(),
-            have_render_size,
+            have_render_size: have_render_size.into(),
             allow_intrabc: allow_intrabc.into(),
             frame_ref_short_signaling,
             refidx,

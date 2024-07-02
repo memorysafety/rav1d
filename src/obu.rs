@@ -639,7 +639,7 @@ fn parse_frame_size(
                         enabled,
                         width_scale_denominator,
                     },
-                    have_render_size: 0,
+                    have_render_size: false,
                 });
             }
         }
@@ -665,10 +665,10 @@ fn parse_frame_size(
         width_scale_denominator = 8;
         width0 = width1;
     }
-    let have_render_size = gb.get_bit() as u8;
+    let have_render_size = gb.get_bit();
     let render_width;
     let render_height;
-    if have_render_size != 0 {
+    if have_render_size {
         render_width = gb.get_bits(16) as c_int + 1;
         render_height = gb.get_bits(16) as c_int + 1;
     } else {
