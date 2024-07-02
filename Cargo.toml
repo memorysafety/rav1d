@@ -61,4 +61,4 @@ panic = "abort"
 
 [profile.release-with-debug]
 inherits = "release"
-debug = true
+debug = "line-tables-only"
