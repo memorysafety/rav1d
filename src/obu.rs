@@ -1015,11 +1015,11 @@ fn parse_quant(
         vac_delta = Default::default();
     }
     debug.post(gb, "quant");
-    let qm = gb.get_bit() as u8;
+    let qm = gb.get_bit();
     let qm_y;
     let qm_u;
     let qm_v;
-    if qm != 0 {
+    if qm {
         qm_y = gb.get_bits(4) as u8;
         qm_u = gb.get_bits(4) as u8;
         qm_v = if seqhdr.separate_uv_delta_q {
