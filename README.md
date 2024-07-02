@@ -74,10 +74,18 @@ you'll also need to specify the `+crt-static` target feature.
 RUSTFLAGS="-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc" cargo build --target aarch64-unknown-linux-gnu
 ```
 
-This will require installing the appropriate cross-platform compiler and linker
-toolchain for your target platform. Examples of how we cross-compile rav1d in CI
-can be found in
+This will require installing the `rustup` component for the target platform and
+the appropriate cross-platform compiler/linker toolchain for your target
+platform. Examples of how we cross-compile rav1d in CI can be found in
 [`.github/workflows/build-and-test-qemu.yml`](.github/workflows/build-and-test-qemu.yml).
+
+The following targets are currently supported:
+
+* `x86_64-unknown-linux-gnu`
+* `i686-unknown-linux-gnu`
+* `armv7-unknown-linux-gnueabihf`
+* `aarch64-unknown-linux-gnu`
+* `riscv64gc-unknown-linux-gnu`
 
 ## Running Tests
 
