@@ -1,7 +1,15 @@
+#[cfg(target_os = "windows")]
+use crate::compat::getopt::getopt_long;
+#[cfg(target_os = "windows")]
+use crate::compat::getopt::option;
+#[cfg(target_os = "windows")]
+use crate::compat::stdio::sprintf;
 use crate::compat::stdio::stderr;
 use libc::fprintf;
+#[cfg(not(target_os = "windows"))]
 use libc::getopt_long;
 use libc::memset;
+#[cfg(not(target_os = "windows"))]
 use libc::option;
 use libc::strcat;
 use libc::strcmp;
@@ -804,7 +812,7 @@ pub unsafe fn parse(
             }
             118 => {
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"%s\n\0" as *const u8 as *const c_char,
                     dav1d_version(),
                 );

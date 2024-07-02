@@ -90,7 +90,7 @@ pub unsafe fn input_open(
         }
         if (demuxers[i as usize]).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const c_char,
                 name,
             );
@@ -106,7 +106,7 @@ pub unsafe fn input_open(
         let probe_data: *mut u8 = malloc(probe_sz as usize) as *mut u8;
         if probe_data.is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
             );
             return -ENOMEM;
@@ -114,7 +114,7 @@ pub unsafe fn input_open(
         let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const c_char);
         if f.is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to open input file %s: %s\n\0" as *const u8 as *const c_char,
                 filename,
                 strerror(*errno_location()),
@@ -130,7 +130,7 @@ pub unsafe fn input_open(
         if res == 0 {
             free(probe_data as *mut c_void);
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to read probe data\n\0" as *const u8 as *const c_char,
             );
             return if *errno_location() != 0 {
@@ -152,7 +152,7 @@ pub unsafe fn input_open(
         free(probe_data as *mut c_void);
         if (demuxers[i as usize]).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const c_char,
                 filename,
             );
@@ -165,7 +165,7 @@ pub unsafe fn input_open(
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
         );
         return -ENOMEM;

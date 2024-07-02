@@ -27,9 +27,16 @@ strum = { version = "0.25.0", features = ["derive"] }
 to_method = "1.1.0"
 zerocopy = { version = "0.7.32", features = ["derive"] }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Performance",
+    "Win32_System_SystemInformation",
+] }
+
 [build-dependencies]
 cc = "1.0.79"
-nasm-rs = "0.2.4"
+nasm-rs = { version = "0.2.4", features = ["parallel"] }
 
 [features]
 default = ["asm", "bitdepth_8", "bitdepth_16"]

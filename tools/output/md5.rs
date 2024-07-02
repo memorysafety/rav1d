@@ -76,12 +76,12 @@ unsafe extern "C" fn md5_open(
     mut _fps: *const c_uint,
 ) -> c_int {
     if strcmp(file, b"-\0" as *const u8 as *const c_char) == 0 {
-        (*md5).f = stdout;
+        (*md5).f = stdout();
     } else {
         (*md5).f = fopen(file, b"wb\0" as *const u8 as *const c_char);
         if ((*md5).f).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
                 file,
                 strerror(*errno_location()),
@@ -598,7 +598,7 @@ unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
         i += 1;
     }
     fprintf((*md5).f, b"\n\0" as *const u8 as *const c_char);
-    if (*md5).f != stdout {
+    if (*md5).f != stdout() {
         fclose((*md5).f);
     }
 }

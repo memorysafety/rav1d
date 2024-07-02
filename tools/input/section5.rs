@@ -1,10 +1,13 @@
 use crate::compat::errno::errno_location;
+#[cfg(target_os = "windows")]
+use crate::compat::stdio::fseeko;
 use crate::compat::stdio::stderr;
 use libc::fclose;
 use libc::feof;
 use libc::fopen;
 use libc::fprintf;
 use libc::fread;
+#[cfg(not(target_os = "windows"))]
 use libc::fseeko;
 use libc::strerror;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -192,7 +195,7 @@ unsafe extern "C" fn section5_open(
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const c_char);
     if ((*c).f).is_null() {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
             file,
             strerror(*errno_location()),
@@ -304,7 +307,7 @@ unsafe extern "C" fn section5_read(c: *mut Section5InputContext, data: *mut Dav1
     }
     if fread(ptr as *mut c_void, total_bytes, 1, (*c).f) != 1 {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );

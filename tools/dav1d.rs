@@ -3,6 +3,8 @@
 
 mod compat {
     pub mod errno;
+    #[cfg(target_os = "windows")]
+    pub mod getopt;
     pub mod stdio;
 } // mod compat
 mod input {
@@ -45,7 +47,6 @@ use libc::free;
 use libc::isatty;
 use libc::memset;
 use libc::ptrdiff_t;
-use libc::snprintf;
 use libc::strcpy;
 use libc::strerror;
 use libc::EAGAIN;
@@ -91,28 +92,43 @@ use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::time::Duration;
 
-unsafe fn get_time_nanos() -> u64 {
-    let mut ts: libc::timespec = libc::timespec {
-        tv_sec: 0,
-        tv_nsec: 0,
-    };
-    libc::clock_gettime(1, &mut ts);
-    return (1000000000 as c_ulonglong)
-        .wrapping_mul(ts.tv_sec as c_ulonglong)
-        .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
+#[cfg(target_os = "windows")]
+use crate::compat::stdio::snprintf;
+#[cfg(not(target_os = "windows"))]
+use libc::snprintf;
+
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "windows")] {
+        use windows_sys::Win32::System::Performance::QueryPerformanceCounter;
+        use windows_sys::Win32::System::Performance::QueryPerformanceFrequency;
+
+        unsafe fn get_time_nanos() -> u64 {
+            let mut frequency = 0i64;
+            QueryPerformanceFrequency(&mut frequency);
+            let mut t = 0i64;
+            QueryPerformanceCounter(&mut t);
+            let seconds: u64 = (t / frequency).try_into().unwrap();
+            let fractions: u64 = (t % frequency).try_into().unwrap();
+            return 1000000000 * seconds + 1000000000 * fractions / frequency as u64;
+        }
+    } else {
+        unsafe fn get_time_nanos() -> u64 {
+            let mut ts: libc::timespec = libc::timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            };
+            libc::clock_gettime(1, &mut ts);
+            return (1000000000 as c_ulonglong)
+                .wrapping_mul(ts.tv_sec as c_ulonglong)
+                .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
+        }
+    }
 }
 
 unsafe fn sleep_nanos(d: u64) {
-    // TODO: C version has Windows specific code path
-    let ts: libc::timespec = {
-        let init = libc::timespec {
-            tv_sec: d as libc::time_t / 1000000000,
-            tv_nsec: d as libc::time_t % 1000000000,
-        };
-        init
-    };
-    libc::nanosleep(&ts, std::ptr::null_mut::<libc::timespec>());
+    std::thread::sleep(Duration::from_nanos(d));
 }
 
 unsafe fn synchronize(
@@ -205,7 +221,7 @@ unsafe fn print_stats(istty: c_int, n: c_uint, num: c_uint, elapsed: u64, i_fps:
             b"\n\0" as *const u8 as *const c_char,
         );
     }
-    fputs(buf.as_mut_ptr(), stderr);
+    fputs(buf.as_mut_ptr(), stderr());
 }
 
 unsafe extern "C" fn picture_alloc(
@@ -276,7 +292,7 @@ unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: Option<NonNull<c_v
 }
 
 unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
-    let istty = isatty(fileno(stderr));
+    let istty = isatty(fileno(stderr()));
     let mut res;
     let mut cli_settings: CLISettings = CLISettings {
         outputfile: 0 as *const c_char,
@@ -343,7 +359,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let [_, major, minor, patch] = dav1d_version_api().to_be_bytes();
     if DAV1D_API_VERSION_MAJOR != major || DAV1D_API_VERSION_MINOR > minor {
         fprintf(
-            stderr,
+            stderr(),
             b"Version mismatch (library: %d.%d.%d, executable: %d.%d.%d)\n\0" as *const u8
                 as *const c_char,
             major as c_int,
@@ -385,7 +401,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     }
     if cli_settings.quiet == 0 {
         fprintf(
-            stderr,
+            stderr(),
             b"dav1d %s - by VideoLAN\n\0" as *const u8 as *const c_char,
             dav1d_version(),
         );
@@ -469,7 +485,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         }
         if seq_skip != 0 && cli_settings.quiet == 0 {
             fprintf(
-                stderr,
+                stderr(),
                 b"skipped %u packets due to missing sequence header\n\0" as *const u8
                     as *const c_char,
                 seq_skip,
@@ -515,7 +531,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             if res != -EAGAIN {
                 dav1d_data_unref(NonNull::new(&mut data));
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
@@ -528,7 +544,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         if res < 0 {
             if res != -EAGAIN {
                 fprintf(
-                    stderr,
+                    stderr(),
                     b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
@@ -589,7 +605,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             if res < 0 {
                 if res != -EAGAIN {
                     fprintf(
-                        stderr,
+                        stderr(),
                         b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                         strerror(-res),
                     );
@@ -644,7 +660,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     input_close(in_0);
     if !out.is_null() {
         if cli_settings.quiet == 0 && istty != 0 {
-            fprintf(stderr, b"\n\0" as *const u8 as *const c_char);
+            fprintf(stderr(), b"\n\0" as *const u8 as *const c_char);
         }
         if !(cli_settings.verify).is_null() {
             res |= output_verify(out, cli_settings.verify);
@@ -652,7 +668,10 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             output_close(out);
         }
     } else {
-        fprintf(stderr, b"No data decoded\n\0" as *const u8 as *const c_char);
+        fprintf(
+            stderr(),
+            b"No data decoded\n\0" as *const u8 as *const c_char,
+        );
         res = 1 as c_int;
     }
     dav1d_close(NonNull::new(&mut c));
