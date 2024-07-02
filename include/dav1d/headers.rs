@@ -1900,7 +1900,7 @@ pub struct Dav1dFrameHeader_tiling {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Rav1dFrameHeader_tiling {
-    pub uniform: u8,
+    pub uniform: bool,
     pub n_bytes: u8,
     pub min_log2_cols: u8,
     pub max_log2_cols: u8,
@@ -1953,7 +1953,7 @@ impl From<Dav1dFrameHeader_tiling> for Rav1dFrameHeader_tiling {
             update,
         } = value;
         Self {
-            uniform,
+            uniform: uniform != 0,
             n_bytes,
             min_log2_cols,
             max_log2_cols,
@@ -1988,7 +1988,7 @@ impl From<Rav1dFrameHeader_tiling> for Dav1dFrameHeader_tiling {
             update,
         } = value;
         Self {
-            uniform,
+            uniform: uniform as u8,
             n_bytes,
             min_log2_cols,
             max_log2_cols,

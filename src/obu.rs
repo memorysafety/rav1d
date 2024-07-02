@@ -843,7 +843,7 @@ fn parse_tiling(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_tiling> {
-    let uniform = gb.get_bit() as u8;
+    let uniform = gb.get_bit();
     let sbsz_min1 = (64 << seqhdr.sb128 as u8) - 1;
     let sbsz_log2 = 6 + seqhdr.sb128 as u8;
     let sbw = size.width[0] + sbsz_min1 >> sbsz_log2;
@@ -860,7 +860,7 @@ fn parse_tiling(
     let mut rows;
     let mut col_start_sb = [0; RAV1D_MAX_TILE_COLS + 1];
     let mut row_start_sb = [0; RAV1D_MAX_TILE_ROWS + 1];
-    if uniform != 0 {
+    if uniform {
         log2_cols = min_log2_cols;
         while log2_cols < max_log2_cols && gb.get_bit() {
             log2_cols += 1;
