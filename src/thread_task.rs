@@ -1033,7 +1033,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                             res_0 = rav1d_decode_frame_init_cdf(c, fc, &mut f, &fc.in_cdf());
                         }
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.refresh_context != 0 && !fc.task_thread.update_set.get() {
+                        if frame_hdr.refresh_context && !fc.task_thread.update_set.get() {
                             f.out_cdf.progress().unwrap().store(
                                 (if res_0.is_err() {
                                     TILE_ERROR
@@ -1150,7 +1150,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                             reset_task_cur(c, ttd, t.frame_idx);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                            if frame_hdr.refresh_context != 0
+                            if frame_hdr.refresh_context
                                 && tc.frame_thread.pass <= 1
                                 && fc.task_thread.update_set.get()
                                 && frame_hdr.tiling.update as usize == tile_idx

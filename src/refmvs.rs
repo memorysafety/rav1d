@@ -1630,7 +1630,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
 
     // temporal MV setup
     rf.n_mfmvs = 0;
-    if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
+    if frm_hdr.use_ref_frame_mvs && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
         if rp_ref[0].is_some() && ref_ref_poc[0][6] != ref_poc[3] {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 0; // last

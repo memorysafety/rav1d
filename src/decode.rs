@@ -2216,7 +2216,7 @@ fn decode_b(
         } else if seg
             .map(|seg| seg.r#ref == -1 && !seg.globalmv && !seg.skip)
             .unwrap_or(true)
-            && frame_hdr.switchable_comp_refs != 0
+            && frame_hdr.switchable_comp_refs
             && cmp::min(bw4, bh4) > 1
         {
             let ctx = get_comp_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
@@ -2868,7 +2868,7 @@ fn decode_b(
             // motion variation
             let motion_mode;
             let mut matrix = None;
-            if frame_hdr.switchable_motion_mode != 0
+            if frame_hdr.switchable_motion_mode
                 && interintra_type == None
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
@@ -2897,7 +2897,7 @@ fn decode_b(
                 );
                 let allow_warp = (f.svc[r#ref[0] as usize][0].scale == 0
                     && !frame_hdr.force_integer_mv
-                    && frame_hdr.warp_motion != 0
+                    && frame_hdr.warp_motion
                     && mask[0] | mask[1] != 0) as c_int;
 
                 motion_mode = MotionMode::from_repr(if allow_warp != 0 {
@@ -3910,7 +3910,7 @@ fn setup_tile(
     ts.last_qidx = frame_hdr.quant.yac.into();
     ts.last_delta_lf = Default::default();
 
-    ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
+    ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update, &c.dsp.msac);
 
     ts.tiling.row = tile_row as i32;
     ts.tiling.col = tile_col as i32;
@@ -4159,7 +4159,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         return Err(());
     }
 
-    if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
+    if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs {
         c.dsp.refmvs.load_tmvs.call(
             &f.rf,
             &f.mvs,
@@ -4583,7 +4583,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     }
 
     // setup jnt_comp weights
-    if frame_hdr.switchable_comp_refs != 0 {
+    if frame_hdr.switchable_comp_refs {
         let ref_pocs: [_; 7] =
             array::from_fn(|i| f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset);
         for i in 0..ref_pocs.len() {
@@ -4629,7 +4629,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
 ) -> Rav1dResult {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
-    if frame_hdr.refresh_context != 0 {
+    if frame_hdr.refresh_context {
         *f.out_cdf.cdf_write() = rav1d_cdf_thread_copy(in_cdf);
     }
 
@@ -4712,7 +4712,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == tiling.update as usize && frame_hdr.refresh_context != 0 {
+            if j == tiling.update as usize && frame_hdr.refresh_context {
                 fc.task_thread.update_set.set(true);
             }
             data = rest_data;
@@ -4770,7 +4770,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
             t.b.y = sby << 4 + seq_hdr.sb128 as u8;
             let by_end = t.b.y + f.sb_step >> 1;
-            if frame_hdr.use_ref_frame_mvs != 0 {
+            if frame_hdr.use_ref_frame_mvs {
                 c.dsp.refmvs.load_tmvs.call(
                     &f.rf,
                     &f.mvs,
@@ -4835,7 +4835,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     let _ = mem::take(&mut f.sr_cur);
     let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
     if let Some(frame_hdr) = &f.frame_hdr {
-        if frame_hdr.refresh_context != 0 {
+        if frame_hdr.refresh_context {
             if let Some(progress) = f.out_cdf.progress() {
                 progress.store(
                     if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
@@ -4887,8 +4887,7 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
             } else {
                 res = rav1d_decode_frame_main(c, &mut f);
                 let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                if res.is_ok() && frame_hdr.refresh_context != 0 && fc.task_thread.update_set.get()
-                {
+                if res.is_ok() && frame_hdr.refresh_context && fc.task_thread.update_set.get() {
                     rav1d_cdf_thread_update(
                         frame_hdr,
                         &mut f.out_cdf.cdf_write(),
@@ -4974,7 +4973,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     ) {
         fc.task_thread.error.store(1, Ordering::Relaxed);
         let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
-        if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
+        if f.frame_hdr.as_ref().unwrap().refresh_context {
             let _ = mem::take(&mut f.out_cdf);
         }
         for i in 0..7 {
@@ -5087,7 +5086,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
         *fc.in_cdf.try_write().unwrap() = state.cdf[pri_ref].clone();
     }
-    if frame_hdr.refresh_context != 0 {
+    if frame_hdr.refresh_context {
         let res = rav1d_cdf_thread_alloc(c.fc.len() > 1);
         match res {
             Err(e) => {
@@ -5169,7 +5168,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
 
     // move f->cur into output queue
     if c.fc.len() == 1 {
-        if frame_hdr.show_frame != 0 || c.output_invisible_frames {
+        if frame_hdr.show_frame || c.output_invisible_frames {
             *out = f.sr_cur.clone();
             state.event_flags |= f.sr_cur.flags.into();
         }
@@ -5212,7 +5211,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         } else {
             f.refpoc.fill(0);
         }
-        if frame_hdr.use_ref_frame_mvs != 0 {
+        if frame_hdr.use_ref_frame_mvs {
             for i in 0..7 {
                 let refidx = frame_hdr.refidx[i] as usize;
                 let ref_w = (ref_coded_width[i] + 7 >> 3) << 1;
@@ -5286,7 +5285,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
             }
             state.refs[i].p = f.sr_cur.clone();
 
-            if frame_hdr.refresh_context != 0 {
+            if frame_hdr.refresh_context {
                 state.cdf[i] = f.out_cdf.clone();
             } else {
                 state.cdf[i] = fc.in_cdf.try_read().unwrap().clone();

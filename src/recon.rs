@@ -590,7 +590,7 @@ fn decode_coefs<BD: BitDepth>(
                 intra.y_mode
             };
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TxfmSize::S16x16 as _ {
+            let txtp = if frame_hdr.reduced_txtp_set || t_dim.min == TxfmSize::S16x16 as _ {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
@@ -615,7 +615,7 @@ fn decode_coefs<BD: BitDepth>(
         }
         Inter(_) => {
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TxfmSize::S32x32 as _ {
+            let txtp = if frame_hdr.reduced_txtp_set || t_dim.max == TxfmSize::S32x32 as _ {
                 let bool_idx = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter3[t_dim.min as usize],
