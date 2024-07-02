@@ -2,17 +2,71 @@
 cfg_if::cfg_if! {
     if #[cfg(any(target_os = "linux", target_os = "android"))] {
         extern "C" {
-            pub static mut stdout: *mut libc::FILE;
+            #[link_name = "stdout"]
+            pub static mut __stdoutp: *mut libc::FILE;
 
-            pub static mut stderr: *mut libc::FILE;
+            #[link_name = "stderr"]
+            pub static mut __stderrp: *mut libc::FILE;
+        }
+
+        pub unsafe extern "C" fn stdout() -> *mut libc::FILE {
+            __stdoutp
+        }
+
+        pub unsafe extern "C" fn stderr() -> *mut libc::FILE {
+            __stderrp
         }
     } else if #[cfg(target_os = "macos")] {
         extern "C" {
-            #[link_name = "__stdoutp"]
-            pub static mut stdout: *mut libc::FILE;
+            pub static mut __stdoutp: *mut libc::FILE;
 
-            #[link_name = "__stderrp"]
-            pub static mut stderr: *mut libc::FILE;
+            pub static mut __stderrp: *mut libc::FILE;
+        }
+
+        pub unsafe extern "C" fn stdout() -> *mut libc::FILE {
+            __stdoutp
+        }
+
+        pub unsafe extern "C" fn stderr() -> *mut libc::FILE {
+            __stderrp
+        }
+    } else if #[cfg(target_os = "windows")] {
+        use libc::fseek;
+        use libc::ftell;
+
+        extern "C" {
+            fn __acrt_iob_func(fileno: u32) -> *mut libc::FILE;
+            pub fn snprintf(
+                s: *mut libc::c_char,
+                n: libc::size_t,
+                format: *const libc::c_char,
+                ...
+            ) -> libc::c_int;
+            pub fn sprintf(
+                s: *mut libc::c_char,
+                format: *const libc::c_char,
+                ...
+            ) -> libc::c_int;
+        }
+
+        pub unsafe extern "C" fn stdout() -> *mut libc::FILE {
+            __acrt_iob_func(1)
+        }
+
+        pub unsafe extern "C" fn stderr() -> *mut libc::FILE {
+            __acrt_iob_func(2)
+        }
+
+        pub unsafe extern "C" fn fseeko(
+            stream: *mut libc::FILE,
+            offset: libc::off_t,
+            whence: libc::c_int
+        ) -> libc::c_int {
+            fseek(stream, offset.into(), whence)
+        }
+
+        pub unsafe extern "C" fn ftello(stream: *mut libc::FILE) -> libc::off_t {
+            ftell(stream).into()
         }
     }
 }

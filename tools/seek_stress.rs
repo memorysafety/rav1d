@@ -3,6 +3,8 @@
 
 mod compat {
     pub mod errno;
+    #[cfg(target_os = "windows")]
+    pub mod getopt;
     pub mod stdio;
 } // mod compat
 mod input {
@@ -62,19 +64,28 @@ use std::ffi::c_double;
 use std::ffi::c_float;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-unsafe fn get_seed() -> c_uint {
-    let mut ts: libc::timespec = libc::timespec {
-        tv_sec: 0,
-        tv_nsec: 0,
-    };
-    libc::clock_gettime(1, &mut ts);
-    return (1000000000 as c_ulonglong)
-        .wrapping_mul(ts.tv_sec as c_ulonglong)
-        .wrapping_add(ts.tv_nsec as c_ulonglong) as c_uint;
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "windows")] {
+        unsafe fn get_seed() -> c_uint {
+            windows_sys::Win32::System::SystemInformation::GetTickCount()
+        }
+    } else {
+        use std::ffi::c_ulonglong;
+
+        unsafe fn get_seed() -> c_uint {
+            let mut ts: libc::timespec = libc::timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            };
+            libc::clock_gettime(1, &mut ts);
+            return (1000000000 as c_ulonglong)
+                .wrapping_mul(ts.tv_sec as c_ulonglong)
+                .wrapping_add(ts.tv_nsec as c_ulonglong) as c_uint;
+        }
+    }
 }
 
 static mut xs_state: [u32; 4] = [0; 4];
@@ -110,7 +121,7 @@ unsafe fn decode_frame(
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
-                stderr,
+                stderr(),
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                 libc::strerror(-res),
             );
@@ -121,7 +132,7 @@ unsafe fn decode_frame(
     if res < 0 {
         if res != -EAGAIN {
             libc::fprintf(
-                stderr,
+                stderr(),
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                 libc::strerror(-res),
             );
@@ -272,7 +283,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let version: *const c_char = dav1d_version();
     if libc::strcmp(version, b"966d63c1\0" as *const u8 as *const c_char) != 0 {
         libc::fprintf(
-            stderr,
+            stderr(),
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8 as *const c_char,
             version,
             b"966d63c1\0" as *const u8 as *const c_char,

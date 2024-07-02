@@ -53,12 +53,12 @@ unsafe extern "C" fn yuv_open(
     mut _fps: *const c_uint,
 ) -> c_int {
     if strcmp(file, b"-\0" as *const u8 as *const c_char) == 0 {
-        (*c).f = stdout;
+        (*c).f = stdout();
     } else {
         (*c).f = fopen(file, b"wb\0" as *const u8 as *const c_char);
         if ((*c).f).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
                 file,
                 strerror(*errno_location()),
@@ -130,7 +130,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
     }
     dav1d_picture_unref(NonNull::new(p));
     fprintf(
-        stderr,
+        stderr(),
         b"Failed to write frame data: %s\n\0" as *const u8 as *const c_char,
         strerror(*errno_location()),
     );
@@ -138,7 +138,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
 }
 
 unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
-    if (*c).f != stdout {
+    if (*c).f != stdout() {
         fclose((*c).f);
     }
 }

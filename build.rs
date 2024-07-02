@@ -1,5 +1,7 @@
 #![deny(clippy::all)]
 
+use std::env;
+
 #[cfg(feature = "asm")]
 mod asm {
     use std::collections::HashSet;
@@ -274,8 +276,10 @@ mod asm {
             nasm.files(asm_file_paths);
             #[cfg(debug_assertions)]
             nasm.flag("-g");
-            #[cfg(debug_assertions)]
+            #[cfg(all(debug_assertions, not(windows)))]
             nasm.flag("-Fdwarf");
+            #[cfg(all(debug_assertions, windows))]
+            nasm.flag("-fwin64");
             nasm.flag(&format!("-I{}/", out_dir.to_str().unwrap()));
             nasm.flag("-Isrc/");
             let obj = nasm.compile_objects().unwrap_or_else(|e| {
@@ -307,5 +311,24 @@ fn main() {
     #[cfg(feature = "asm")]
     {
         asm::main();
+    }
+
+    let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if os == "windows" {
+        // for sprintf, snprintf, etc.
+        println!("cargo:rustc-link-lib=static=oldnames");
+        // TODO: stop using a hard-coded, version-specific apth
+        println!(
+            r"cargo:rustc-link-search=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\lib\x64"
+        );
+
+        let getopt = "getopt";
+        cc::Build::new()
+            .files([&"tools/compat/getopt.c"])
+            .include("include/compat")
+            .debug(cfg!(debug_assertions))
+            .compile(&getopt);
+        // cc automatically outputs the following line
+        // println!("cargo:rustc-link-lib=static={getopt}");
     }
 }

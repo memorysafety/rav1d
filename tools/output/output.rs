@@ -1,8 +1,11 @@
+#[cfg(target_os = "windows")]
+use crate::compat::stdio::snprintf;
 use crate::compat::stdio::stderr;
 use libc::fprintf;
 use libc::free;
 use libc::malloc;
 use libc::memcpy;
+#[cfg(not(target_os = "windows"))]
 use libc::snprintf;
 use libc::strchr;
 use libc::strcmp;
@@ -129,7 +132,7 @@ pub unsafe fn output_open(
         }
         if (muxers[i as usize]).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to find muxer named \"%s\"\n\0" as *const u8 as *const c_char,
                 name,
             );
@@ -141,7 +144,7 @@ pub unsafe fn output_open(
         let ext: *const c_char = find_extension(filename);
         if ext.is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"No extension found for file %s\n\0" as *const u8 as *const c_char,
                 filename,
             );
@@ -158,7 +161,7 @@ pub unsafe fn output_open(
         }
         if (muxers[i as usize]).is_null() {
             fprintf(
-                stderr,
+                stderr(),
                 b"Failed to find muxer for extension \"%s\"\n\0" as *const u8 as *const c_char,
                 ext,
             );
@@ -169,7 +172,7 @@ pub unsafe fn output_open(
         as *mut MuxerContext;
     if c.is_null() {
         fprintf(
-            stderr,
+            stderr(),
             b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
         );
         return -ENOMEM;
