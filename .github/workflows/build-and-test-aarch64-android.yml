@@ -1,0 +1,38 @@
+name: build and test on android
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+jobs:
+  test-in-android-emulator:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: add NDK toolchain to path
+        run: |
+            echo "$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+      - name: git checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: cache rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: aarch64-android-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: cargo build for aarch64-linux-android
+        run:  |
+            rustup target add aarch64-linux-android
+            cargo build --target aarch64-linux-android --release
+        env:
+          AR: llvm-ar
+          CC: aarch64-linux-android26-clang
+          RUSTFLAGS: "-C linker=aarch64-linux-android26-clang -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/17/lib/linux/aarch64 -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26"
+
