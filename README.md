@@ -8,8 +8,8 @@ and correctness. It is a Rust port of
 
 rav1d is written in Rust and uses the standard Rust toolchain to build. The Rust
 toolchain can be installed by going to https://rustup.rs. The rav1d library
-builds on stable Rust for `i686`, `x86_64`, and `aarch64`, but currently
-requires a nightly compiler for `armv7` and `riscv64`. The project is configured
+builds on stable Rust for `x86`, `x86_64`, and `aarch64`, but currently
+requires a nightly compiler for `arm` and `riscv64`. The project is configured
 to use a nightly compiler by default via `rust-toolchain.toml`, but a stable
 library build can be made with the `+stable` cargo flag.
 
