@@ -6,6 +6,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
 use crate::src::align::ArrayDefault;
+use crate::src::ctx::set_ctx;
 use crate::src::ctx::CaseSet;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
@@ -14,6 +15,7 @@ use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::TxfmInfo;
 use libc::ptrdiff_t;
 use parking_lot::RwLock;
 use std::cmp;
@@ -128,16 +130,37 @@ fn decomp_tx(
         let lw = cmp::min(2, t_dim.lw);
         let lh = cmp::min(2, t_dim.lh);
 
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
-            for y in 0..t_dim.h as usize {
-                case.set(&mut txa[0][0][y0 + y], lw);
-                case.set(&mut txa[1][0][y0 + y], lh);
-                txa[0][1][y0 + y][x0] = t_dim.w;
-            }
-        });
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
-            case.set(&mut txa[1][1][y0], t_dim.h);
-        });
+        CaseSet::<16, false>::one(
+            (),
+            t_dim.w as usize,
+            x0,
+            set_ctx!(||'a, case, _dir: (),
+                t_dim: &'a TxfmInfo,
+                txa: &'a mut [[[[u8; 32]; 32]; 2]; 2],
+                y0: usize,
+                x0: usize,
+                lw: u8,
+                lh: u8,
+            ||  {
+                for y in 0..t_dim.h as usize {
+                    case.set(&mut txa[0][0][y0 + y], lw);
+                    case.set(&mut txa[1][0][y0 + y], lh);
+                    txa[0][1][y0 + y][x0] = t_dim.w;
+                }
+            }),
+        );
+        CaseSet::<16, false>::one(
+            (),
+            t_dim.w as usize,
+            x0,
+            set_ctx!(||'a, case, _dir: (),
+                t_dim: &'a TxfmInfo,
+                txa: &'a mut [[[[u8; 32]; 32]; 2]; 2],
+                y0: usize,
+            ||  {
+                case.set(&mut txa[1][1][y0], t_dim.h);
+            }),
+        );
     };
 }
 
@@ -297,9 +320,10 @@ fn mask_edges_intra(
         [(a, thl4c), (l, twl4c)],
         [w4 as usize, h4 as usize],
         [0, 0],
-        |case, (dir, tl4c)| {
+        set_ctx!(||case, dir: (&mut [u8], u8),|| {
+            let (dir, tl4c) = dir;
             case.set(dir, tl4c);
-        },
+        }),
     );
 }
 
@@ -380,9 +404,10 @@ fn mask_edges_chroma(
         [(a, thl4c), (l, twl4c)],
         [cw4 as usize, ch4 as usize],
         [0, 0],
-        |case, (dir, tl4c)| {
+        set_ctx!(||case, dir: (&mut [u8], u8),|| {
+            let (dir, tl4c) = dir;
             case.set(dir, tl4c);
-        },
+        }),
     );
 }
 
