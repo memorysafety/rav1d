@@ -112,7 +112,7 @@ Or:
 cargo build --profile opt-dev
 ```
 
-Then you can run the tests with the [`tests.sh`](.github/workflows/test.sh)
+Then you can run the tests with the [`test.sh`](.github/workflows/test.sh)
 helper script:
 
 ```sh
@@ -127,9 +127,9 @@ Or:
 
 The test script accepts additional arguments to configure how tests are run:
 
-* `-s PATH` - Specify a path to the seek-stress binary in order to run the
-  seek-stress tests. This is generally in the same output directory as the main
-  `dav1d` binary, e.g. `target/release/seek_stress`.
+* `-s PATH` - Specify a path to the `seek_stress` binary in order to run the
+  `seek_stress` tests. This is generally in the same output directory as the
+  main `dav1d` binary, e.g. `target/release/seek_stress`.
 * `-t MULTIPLIER` - Specify a multiplier for the test timeout. Allows for tests
   to take longer to run, e.g. if running tests with a debug build.
 * `-f DELAY` - Specify a frame delay for the tests. If specified the tests will
