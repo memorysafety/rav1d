@@ -642,8 +642,8 @@ fn boxsum5<BD: BitDepth>(
 
 #[inline(never)]
 fn selfguided_filter<BD: BitDepth>(
-    dst: &mut [BD::Coef; 24576],
-    src: &[BD::Pixel; 27300],
+    dst: &mut [BD::Coef; 64 * 384],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
     n: c_int,
@@ -1267,17 +1267,17 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
+        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
         let sumsq: *mut i32 = &mut *sumsq_mem
             .0
             .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
+            .offset(((384 + 16) * 2 + 8) as isize);
         let a: *mut i32 = sumsq;
-        let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
+        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
         let sum: *mut i16 = &mut *sum_mem
             .0
             .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
+            .offset(((384 + 16) * 2 + 16) as isize);
         let b: *mut i16 = sum;
         rav1d_sgr_box3_h_neon::<BD>(
             sumsq,
@@ -1410,17 +1410,17 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
+        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
         let sumsq: *mut i32 = &mut *sumsq_mem
             .0
             .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
+            .offset(((384 + 16) * 2 + 8) as isize);
         let a: *mut i32 = sumsq;
-        let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
+        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
         let sum: *mut i16 = &mut *sum_mem
             .0
             .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
+            .offset(((384 + 16) * 2 + 16) as isize);
         let b: *mut i16 = sum;
         rav1d_sgr_box5_h_neon::<BD>(
             sumsq,
