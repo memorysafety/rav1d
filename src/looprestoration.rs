@@ -711,6 +711,8 @@ fn selfguided_filter<BD: BitDepth>(
                 * 3
     }
 
+    const MAX_RESTORATION_WIDTH: usize = 256 * 3 / 2;
+
     let mut src = &src[3 * REST_UNIT_STRIDE + 3..];
     let mut dst = dst.as_mut_slice();
     if n == 25 {
@@ -721,7 +723,7 @@ fn selfguided_filter<BD: BitDepth>(
                 let b = six_neighbors(&A, i as isize);
                 dst[i] = ((b - a * src[i].as_::<c_int>() + (1 << 8)) >> 9).as_();
             }
-            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
@@ -730,7 +732,7 @@ fn selfguided_filter<BD: BitDepth>(
                 let b = A[i] * 6 + (A[i as isize - 1] + A[i + 1]) * 5;
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
-            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
