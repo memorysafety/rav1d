@@ -172,14 +172,13 @@ pub struct Rav1dLoopRestorationDSPContext {
     pub sgr: [loop_restoration_filter::Fn; 3],
 }
 
-// 256 * 1.5 + 3 + 3 = 390
-const REST_UNIT_STRIDE: usize = 390;
+const REST_UNIT_STRIDE: usize = 256 * 3 / 2 + 3 + 3;
 
 // TODO Reuse p when no padding is needed (add and remove lpf pixels in p)
 // TODO Chroma only requires 2 rows of padding.
 #[inline(never)]
 fn padding<BD: BitDepth>(
-    dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    dst: &mut [BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
@@ -396,13 +395,13 @@ fn wiener_rust<BD: BitDepth>(
 ) {
     // Wiener filtering is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.into(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
 
     // Values stored between horizontal and vertical filtering don't
     // fit in a u8.
-    let mut hor = [0; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut hor = [0; (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     let filter = &params.filter;
     let bitdepth = bd.bitdepth().as_::<c_int>();
@@ -475,9 +474,9 @@ fn wiener_rust<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum3<BD: BitDepth>(
-    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
 ) {
@@ -567,9 +566,9 @@ fn boxsum3<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum5<BD: BitDepth>(
-    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
 ) {
@@ -655,10 +654,10 @@ fn selfguided_filter<BD: BitDepth>(
 
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut sumsq = [0; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+    let mut sumsq = [0; (64 + 2 + 2) * REST_UNIT_STRIDE];
     // By inverting A and B after the boxsums, B can be of size coef instead
     // of i32
-    let mut sum = [0.as_::<BD::Coef>(); 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+    let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
 
     let step = (n == 25) as c_int + 1;
     if n == 25 {
@@ -805,7 +804,7 @@ fn sgr_5x5_rust<BD: BitDepth>(
 ) {
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     // Selfguided filter outputs to a maximum stripe height of 64 and a
     // maximum restoration width of 384 (256 * 1.5)
@@ -869,7 +868,7 @@ fn sgr_3x3_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst = [0.as_(); 64 * 384];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
@@ -930,7 +929,7 @@ fn sgr_mix_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst0 = [0.as_(); 64 * 384];
     let mut dst1 = [0.as_(); 64 * 384];
 
