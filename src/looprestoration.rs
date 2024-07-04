@@ -1581,35 +1581,6 @@ unsafe fn rav1d_sgr_weighted2_neon<BD: BitDepth>(
     )
 }
 
-/// # Safety
-///
-/// Must be called by [`loop_restoration_filter::Fn::call`].
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
-    _p_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
-    left: *const LeftPixelRow<DynPixel>,
-    lpf: *const DynPixel,
-    w: c_int,
-    h: c_int,
-    params: &LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
-) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
-    let left = left.cast();
-    let lpf = lpf.cast();
-    let bd = BD::from_c(bitdepth_max);
-    let w = w as usize;
-    let h = h as usize;
-    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
-    let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_filter_5x5_neon(p, left, lpf, w, h, params, edges, bd)
-}
-
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
@@ -1627,35 +1598,6 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     let sgr = params.sgr();
     rav1d_sgr_filter2_neon(&mut tmp.0, dst, left, lpf, w, h, sgr.s0, edges, bd);
     rav1d_sgr_weighted1_neon(dst, dst, &mut tmp.0, w, h, sgr.w0, bd);
-}
-
-/// # Safety
-///
-/// Must be called by [`loop_restoration_filter::Fn::call`].
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
-    _p_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
-    left: *const LeftPixelRow<DynPixel>,
-    lpf: *const DynPixel,
-    w: c_int,
-    h: c_int,
-    params: &LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
-) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
-    let left = left.cast();
-    let lpf = lpf.cast();
-    let w = w as usize;
-    let h = h as usize;
-    let bd = BD::from_c(bitdepth_max);
-    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
-    let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_filter_3x3_neon(p, left, lpf, w, h, params, edges, bd)
 }
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
@@ -3444,35 +3386,6 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     }
 }
 
-/// # Safety
-///
-/// Must be called by [`loop_restoration_filter::Fn::call`].
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
-    _p_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
-    left: *const LeftPixelRow<DynPixel>,
-    lpf: *const DynPixel,
-    w: c_int,
-    h: c_int,
-    params: &LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
-) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
-    let left = left.cast();
-    let lpf = lpf.cast();
-    let bd = BD::from_c(bitdepth_max);
-    let w = w as usize;
-    let h = h as usize;
-    // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
-    let left = unsafe { slice::from_raw_parts(left, h) };
-    sgr_filter_mix_neon(p, left, lpf, w, h, params, edges, bd)
-}
-
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
@@ -3493,6 +3406,96 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     rav1d_sgr_filter1_neon(&mut tmp2.0, dst, left, lpf, w, h, sgr.s1, edges, bd);
     let wt = [sgr.w0, sgr.w1];
     rav1d_sgr_weighted2_neon(dst, dst, &mut tmp1.0, &mut tmp2.0, w, h, &wt, bd);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+mod neon_erased {
+    use super::*;
+
+    /// # Safety
+    ///
+    /// Must be called by [`loop_restoration_filter::Fn::call`].
+    pub unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
+        _p_ptr: *mut DynPixel,
+        _stride: ptrdiff_t,
+        left: *const LeftPixelRow<DynPixel>,
+        lpf: *const DynPixel,
+        w: c_int,
+        h: c_int,
+        params: &LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: c_int,
+        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    ) {
+        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+        let p = *unsafe { FFISafe::get(p) };
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let bd = BD::from_c(bitdepth_max);
+        let w = w as usize;
+        let h = h as usize;
+        // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+        let left = unsafe { slice::from_raw_parts(left, h) };
+        sgr_filter_5x5_neon(p, left, lpf, w, h, params, edges, bd)
+    }
+
+    /// # Safety
+    ///
+    /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    pub unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
+        _p_ptr: *mut DynPixel,
+        _stride: ptrdiff_t,
+        left: *const LeftPixelRow<DynPixel>,
+        lpf: *const DynPixel,
+        w: c_int,
+        h: c_int,
+        params: &LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: c_int,
+        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    ) {
+        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+        let p = *unsafe { FFISafe::get(p) };
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let w = w as usize;
+        let h = h as usize;
+        let bd = BD::from_c(bitdepth_max);
+        // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+        let left = unsafe { slice::from_raw_parts(left, h) };
+        sgr_filter_3x3_neon(p, left, lpf, w, h, params, edges, bd)
+    }
+
+    /// # Safety
+    ///
+    /// Must be called by [`loop_restoration_filter::Fn::call`].
+    pub unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
+        _p_ptr: *mut DynPixel,
+        _stride: ptrdiff_t,
+        left: *const LeftPixelRow<DynPixel>,
+        lpf: *const DynPixel,
+        w: c_int,
+        h: c_int,
+        params: &LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: c_int,
+        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    ) {
+        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
+        let p = *unsafe { FFISafe::get(p) };
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let bd = BD::from_c(bitdepth_max);
+        let w = w as usize;
+        let h = h as usize;
+        // SAFETY: Length sliced in `loop_restoration_filter::Fn::call`.
+        let left = unsafe { slice::from_raw_parts(left, h) };
+        sgr_filter_mix_neon(p, left, lpf, w, h, params, edges, bd)
+    }
 }
 
 impl Rav1dLoopRestorationDSPContext {
@@ -3610,6 +3613,8 @@ impl Rav1dLoopRestorationDSPContext {
         }
 
         if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+            use neon_erased::*;
+
             self.sgr[0] = loop_restoration_filter::Fn::new(sgr_filter_5x5_neon_erased::<BD>);
             self.sgr[1] = loop_restoration_filter::Fn::new(sgr_filter_3x3_neon_erased::<BD>);
             self.sgr[2] = loop_restoration_filter::Fn::new(sgr_filter_mix_neon_erased::<BD>);
