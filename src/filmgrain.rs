@@ -966,6 +966,10 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     )
 }
 
+/// # Safety
+///
+/// Must be called by [`fgy_32x32xn::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
     dst_row_ptr: *mut DynPixel,
@@ -994,7 +998,7 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
+fn fgy_32x32xn_neon<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1034,22 +1038,29 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             r#type |= 2; // overlap x
         }
 
-        bd_fn!(decl_fgy_32x32xn_neon_fn, BD, fgy_32x32, neon)(
-            dst_row.add(bx).cast(),
-            src_row.add(bx).cast(),
-            stride,
-            scaling.cast(),
-            data.scaling_shift.into(),
-            grain_lut.cast(),
-            &offsets,
-            bh,
-            data.clip_to_restricted_range as ptrdiff_t,
-            r#type as ptrdiff_t,
-            bd.into_c(),
-        );
+        // SAFETY: asm should be safe.
+        unsafe {
+            bd_fn!(decl_fgy_32x32xn_neon_fn, BD, fgy_32x32, neon)(
+                dst_row.add(bx).cast(),
+                src_row.add(bx).cast(),
+                stride,
+                scaling.cast(),
+                data.scaling_shift.into(),
+                grain_lut.cast(),
+                &offsets,
+                bh,
+                data.clip_to_restricted_range as ptrdiff_t,
+                r#type as ptrdiff_t,
+                bd.into_c(),
+            )
+        };
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`fguv_32x32xn::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn fguv_32x32xn_neon_erased<
     BD: BitDepth,
@@ -1104,7 +1115,7 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, const IS_SY: bool>(
+fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, const IS_SY: bool>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1153,27 +1164,30 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
         if data.chroma_scaling_from_luma {
             r#type |= 4;
         }
-        (match NM {
-            420 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_420, neon),
-            422 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_422, neon),
-            444 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_444, neon),
-            _ => unreachable!(),
-        })(
-            dst_row.add(bx).cast(),
-            src_row.add(bx).cast(),
-            stride,
-            scaling.cast(),
-            data_c,
-            grain_lut.cast(),
-            luma_row.add(bx << sx).cast(),
-            luma_stride,
-            &offsets,
-            bh as ptrdiff_t,
-            uv as ptrdiff_t,
-            is_id as ptrdiff_t,
-            r#type as ptrdiff_t,
-            bd.into_c(),
-        );
+        // SAFETY: asm should be safe.
+        unsafe {
+            (match NM {
+                420 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_420, neon),
+                422 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_422, neon),
+                444 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_444, neon),
+                _ => unreachable!(),
+            })(
+                dst_row.add(bx).cast(),
+                src_row.add(bx).cast(),
+                stride,
+                scaling.cast(),
+                data_c,
+                grain_lut.cast(),
+                luma_row.add(bx << sx).cast(),
+                luma_stride,
+                &offsets,
+                bh as ptrdiff_t,
+                uv as ptrdiff_t,
+                is_id as ptrdiff_t,
+                r#type as ptrdiff_t,
+                bd.into_c(),
+            )
+        };
     }
 }
 
