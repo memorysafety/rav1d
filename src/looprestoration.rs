@@ -1126,8 +1126,8 @@ mod neon {
         bd: BD,
     ) {
         let filter = &params.filter;
-        let mut mid: Align16<[i16; 68 * 384]> = Align16([0; 68 * 384]);
-        let mid_stride: c_int = w + 7 & !7;
+        let mut mid = Align16([0; 68 * 384]);
+        let mid_stride = w + 7 & !7;
         rav1d_wiener_filter_h_neon(
             &mut mid.0[2 * mid_stride as usize..],
             left,
@@ -1272,17 +1272,17 @@ mod neon {
         bd: BD,
     ) {
         let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq: *mut i32 = &mut *sumsq_mem
+        let sumsq = sumsq_mem
             .0
             .as_mut_ptr()
             .offset(((384 + 16) * 2 + 8) as isize);
-        let a: *mut i32 = sumsq;
+        let a = sumsq;
         let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum: *mut i16 = &mut *sum_mem
+        let sum = sum_mem
             .0
             .as_mut_ptr()
             .offset(((384 + 16) * 2 + 16) as isize);
-        let b: *mut i16 = sum;
+        let b = sum;
         rav1d_sgr_box3_h_neon::<BD>(
             sumsq,
             sum,
@@ -1416,17 +1416,17 @@ mod neon {
         bd: BD,
     ) {
         let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq: *mut i32 = &mut *sumsq_mem
+        let sumsq = sumsq_mem
             .0
             .as_mut_ptr()
             .offset(((384 + 16) * 2 + 8) as isize);
-        let a: *mut i32 = sumsq;
+        let a = sumsq;
         let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum: *mut i16 = &mut *sum_mem
+        let sum = sum_mem
             .0
             .as_mut_ptr()
             .offset(((384 + 16) * 2 + 16) as isize);
-        let b: *mut i16 = sum;
+        let b = sum;
         rav1d_sgr_box5_h_neon::<BD>(
             sumsq,
             sum,
@@ -2022,7 +2022,7 @@ mod neon {
         rav1d_sgr_finish_filter2_2rows_neon(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
         rav1d_sgr_finish_filter1_2rows_neon(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
 
-        let wt: [i16; 2] = [w0 as i16, w1 as i16];
+        let wt = [w0 as i16, w1 as i16];
         macro_rules! asm_fn {
             (fn $name:ident) => {{
                 extern "C" {
