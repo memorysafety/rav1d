@@ -660,7 +660,7 @@ fn selfguided_filter<BD: BitDepth>(
     // of i32
     let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
 
-    let step = (n == 25) as c_int + 1;
+    let step = (n == 25) as usize + 1;
     if n == 25 {
         boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     } else {
@@ -673,7 +673,7 @@ fn selfguided_filter<BD: BitDepth>(
 
     let mut AA = A.clone() - REST_UNIT_STRIDE;
     let mut BB = B.clone() - REST_UNIT_STRIDE;
-    for _ in (-1..h as isize + 1).step_by(step as usize) {
+    for _ in (-1..h as isize + 1).step_by(step) {
         for i in -1..w as isize + 1 {
             let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
             let b = BB[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
@@ -1272,16 +1272,10 @@ mod neon {
         bd: BD,
     ) {
         let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq = sumsq_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize);
+        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
         let a = sumsq;
         let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum = sum_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize);
+        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
         let b = sum;
         rav1d_sgr_box3_h_neon::<BD>(
             sumsq,
@@ -1295,25 +1289,25 @@ mod neon {
         );
         if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box3_h_neon::<BD>(
-                &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
-                &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
+                sumsq.offset(-2 * (384 + 16)),
+                sum.offset(-2 * (384 + 16)),
                 None,
                 lpf,
                 src.stride(),
                 w,
-                2 as c_int,
+                2,
                 edges,
             );
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box3_h_neon::<BD>(
-                &mut *sumsq.offset((h * (384 + 16)) as isize),
-                &mut *sum.offset((h * (384 + 16)) as isize),
+                sumsq.offset(h as isize * (384 + 16)),
+                sum.offset(h as isize * (384 + 16)),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
                 w,
-                2 as c_int,
+                2,
                 edges,
             );
         }
@@ -1416,16 +1410,10 @@ mod neon {
         bd: BD,
     ) {
         let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq = sumsq_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize);
+        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
         let a = sumsq;
         let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum = sum_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize);
+        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
         let b = sum;
         rav1d_sgr_box5_h_neon::<BD>(
             sumsq,
@@ -1439,8 +1427,8 @@ mod neon {
         );
         if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box5_h_neon::<BD>(
-                &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
-                &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
+                sumsq.offset(-2 * (384 + 16)),
+                sum.offset(-2 * (384 + 16)),
                 None,
                 lpf,
                 src.stride(),
@@ -1451,8 +1439,8 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box5_h_neon::<BD>(
-                &mut *sumsq.offset((h * (384 + 16)) as isize),
-                &mut *sum.offset((h * (384 + 16)) as isize),
+                sumsq.offset(h as isize * (384 + 16)),
+                sum.offset(h as isize * (384 + 16)),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
