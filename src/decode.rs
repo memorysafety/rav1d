@@ -26,7 +26,7 @@ use crate::src::cdf::rav1d_cdf_thread_init_static;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfThreadContext;
-use crate::src::ctx::CaseSet;
+use crate::src::ctx::case_set;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutSlice;
@@ -368,19 +368,21 @@ fn read_tx_tree(
         }
         t.b.y -= txsh;
     } else {
-        CaseSet::<16, false>::many(
-            [(&t.l, txh), (&f.a[t.a], txw)],
-            [t_dim.h as usize, t_dim.w as usize],
-            [by4 as usize, bx4 as usize],
-            |case, (dir, val)| {
+        case_set!(
+            up_to = 16,
+            ctx = [(&t.l, txh), (&f.a[t.a], txw)],
+            len = [t_dim.h as usize, t_dim.w as usize],
+            offset = [by4 as usize, bx4 as usize],
+            {
+                let (dir, val) = ctx;
                 let tx = if is_split {
                     TxfmSize::S4x4
                 } else {
                     // TODO check unwrap is optimized out
                     TxfmSize::from_repr(val as _).unwrap()
                 };
-                case.set_disjoint(&dir.tx, tx);
-            },
+                set_disjoint!(&dir.tx, tx);
+            }
         );
     };
 }
@@ -808,26 +810,29 @@ fn read_vartx_tree(
         uvtx = TxfmSize::S4x4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [bh4 as usize, bw4 as usize],
-                [by4 as usize, bx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.tx, TxfmSize::S4x4);
-                },
+            case_set!(
+                up_to = 32,
+                dir = [&t.l, &f.a[t.a]],
+                len = [bh4, bw4],
+                offset = [by4 as usize, bx4 as usize],
+                {
+                    set_disjoint!(&dir.tx, TxfmSize::S4x4);
+                }
             );
         }
     } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
         if txfm_mode == Rav1dTxfmMode::Switchable {
-            CaseSet::<32, false>::many(
-                [(&t.l, 1), (&f.a[t.a], 0)],
-                [bh4 as usize, bw4 as usize],
-                [by4 as usize, bx4 as usize],
-                |case, (dir, dir_index)| {
+            case_set!(
+                up_to = 32,
+                ctx = [(&t.l, 1), (&f.a[t.a], 0)],
+                len = [bh4, bw4],
+                offset = [by4 as usize, bx4 as usize],
+                {
+                    let (dir, dir_index) = ctx;
                     // TODO check unwrap is optimized out
                     let tx = TxfmSize::from_repr(b_dim[2 + dir_index] as _).unwrap();
-                    case.set_disjoint(&dir.tx, tx);
-                },
+                    set_disjoint!(&dir.tx, tx);
+                }
             );
         }
         uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
@@ -1203,14 +1208,15 @@ fn decode_b(
                 } else {
                     y_mode
                 };
-                CaseSet::<32, false>::many(
-                    [&t.l, &f.a[t.a]],
-                    [bh4 as usize, bw4 as usize],
-                    [by4 as usize, bx4 as usize],
-                    |case, dir| {
-                        case.set_disjoint(&dir.mode, y_mode_nofilt);
-                        case.set_disjoint(&dir.intra, 1);
-                    },
+                case_set!(
+                    up_to = 32,
+                    dir = [&t.l, &f.a[t.a]],
+                    len = [bh4 as usize, bw4 as usize],
+                    offset = [by4 as usize, bx4 as usize],
+                    {
+                        set_disjoint!(&dir.mode, y_mode_nofilt);
+                        set_disjoint!(&dir.intra, 1);
+                    }
                 );
                 if frame_type.is_inter_or_switch() {
                     let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
@@ -1228,13 +1234,14 @@ fn decode_b(
                 }
 
                 if has_chroma {
-                    CaseSet::<32, false>::many(
-                        [&t.l, &f.a[t.a]],
-                        [cbh4 as usize, cbw4 as usize],
-                        [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
-                            case.set_disjoint(&dir.uvmode, intra.uv_mode);
-                        },
+                    case_set!(
+                        up_to = 32,
+                        dir = [&t.l, &f.a[t.a]],
+                        len = [cbh4 as usize, cbw4 as usize],
+                        offset = [cby4 as usize, cbx4 as usize],
+                        {
+                            set_disjoint!(&dir.uvmode, intra.uv_mode);
+                        }
                     );
                 }
             }
@@ -1278,15 +1285,16 @@ fn decode_b(
                 (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)?;
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
-                CaseSet::<32, false>::many(
-                    [&t.l, &f.a[t.a]],
-                    [bh4 as usize, bw4 as usize],
-                    [by4 as usize, bx4 as usize],
-                    |case, dir| {
-                        case.set_disjoint(&dir.filter[0], filter[0].into());
-                        case.set_disjoint(&dir.filter[1], filter[1].into());
-                        case.set_disjoint(&dir.intra, 0);
-                    },
+                case_set!(
+                    up_to = 32,
+                    dir = [&t.l, &f.a[t.a]],
+                    len = [bh4 as usize, bw4 as usize],
+                    offset = [by4 as usize, bx4 as usize],
+                    {
+                        set_disjoint!(&dir.filter[0], filter[0].into());
+                        set_disjoint!(&dir.filter[1], filter[1].into());
+                        set_disjoint!(&dir.intra, 0);
+                    }
                 );
 
                 if frame_type.is_inter_or_switch() {
@@ -1307,13 +1315,14 @@ fn decode_b(
                 }
 
                 if has_chroma {
-                    CaseSet::<32, false>::many(
-                        [&t.l, &f.a[t.a]],
-                        [cbh4 as usize, cbw4 as usize],
-                        [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
-                            case.set_disjoint(&dir.uvmode, DC_PRED);
-                        },
+                    case_set!(
+                        up_to = 32,
+                        dir = [&t.l, &f.a[t.a]],
+                        len = [cbh4 as usize, cbw4 as usize],
+                        offset = [cby4 as usize, cbx4 as usize],
+                        {
+                            set_disjoint!(&dir.uvmode, DC_PRED);
+                        }
                     );
                 }
             }
@@ -1970,45 +1979,48 @@ fn decode_b(
             y_mode
         };
         let is_inter_or_switch = f.frame_hdr().frame_type.is_inter_or_switch();
-        CaseSet::<32, false>::many(
-            [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
-            [bh4 as usize, bw4 as usize],
-            [by4 as usize, bx4 as usize],
-            |case, (dir, lw_lh, dir_index)| {
-                case.set_disjoint(&dir.tx_intra, lw_lh as i8);
+        case_set!(
+            up_to = 32,
+            ctx = [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
+            len = [bh4 as usize, bw4 as usize],
+            offset = [by4 as usize, bx4 as usize],
+            {
+                let (dir, lw_lh, dir_index) = ctx;
+                set_disjoint!(&dir.tx_intra, lw_lh as i8);
                 // TODO check unwrap is optimized out
-                case.set_disjoint(&dir.tx, TxfmSize::from_repr(lw_lh as _).unwrap());
-                case.set_disjoint(&dir.mode, y_mode_nofilt);
-                case.set_disjoint(&dir.pal_sz, pal_sz[0]);
-                case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
-                case.set_disjoint(&dir.intra, 1);
-                case.set_disjoint(&dir.skip, b.skip);
+                set_disjoint!(&dir.tx, TxfmSize::from_repr(lw_lh as _).unwrap());
+                set_disjoint!(&dir.mode, y_mode_nofilt);
+                set_disjoint!(&dir.pal_sz, pal_sz[0]);
+                set_disjoint!(&dir.seg_pred, seg_pred.into());
+                set_disjoint!(&dir.skip_mode, 0);
+                set_disjoint!(&dir.intra, 1);
+                set_disjoint!(&dir.skip, b.skip);
                 // see aomedia bug 2183 for why we use luma coordinates here
-                case.set(
+                set!(
                     &mut t.pal_sz_uv[dir_index],
-                    if has_chroma { pal_sz[1] } else { 0 },
+                    if has_chroma { pal_sz[1] } else { 0 }
                 );
                 if is_inter_or_switch {
-                    case.set_disjoint(&dir.comp_type, None);
-                    case.set_disjoint(&dir.r#ref[0], -1);
-                    case.set_disjoint(&dir.r#ref[1], -1);
-                    case.set_disjoint(&dir.filter[0], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
-                    case.set_disjoint(&dir.filter[1], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
+                    set_disjoint!(&dir.comp_type, None);
+                    set_disjoint!(&dir.r#ref[0], -1);
+                    set_disjoint!(&dir.r#ref[1], -1);
+                    set_disjoint!(&dir.filter[0], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
+                    set_disjoint!(&dir.filter[1], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
                 }
-            },
+            }
         );
         if pal_sz[0] != 0 {
             (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [cbh4 as usize, cbw4 as usize],
-                [cby4 as usize, cbx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.uvmode, uv_mode);
-                },
+            case_set!(
+                up_to = 32,
+                dir = [&t.l, &f.a[t.a]],
+                len = [cbh4 as usize, cbw4 as usize],
+                offset = [cby4 as usize, cbx4 as usize],
+                {
+                    set_disjoint!(&dir.uvmode, uv_mode);
+                }
             );
             if pal_sz[1] != 0 {
                 (bd_fn.copy_pal_block_uv)(
@@ -2179,30 +2191,33 @@ fn decode_b(
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
 
-        CaseSet::<32, false>::many(
-            [(&t.l, 1), (&f.a[t.a], 0)],
-            [bh4 as usize, bw4 as usize],
-            [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
-                case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
-                case.set_disjoint(&dir.mode, DC_PRED);
-                case.set_disjoint(&dir.pal_sz, 0);
+        case_set!(
+            up_to = 32,
+            ctx = [(&t.l, 1), (&f.a[t.a], 0)],
+            len = [bh4 as usize, bw4 as usize],
+            offfset = [by4 as usize, bx4 as usize],
+            {
+                let (dir, dir_index) = ctx;
+                set_disjoint!(&dir.tx_intra, b_dim[2 + dir_index] as i8);
+                set_disjoint!(&dir.mode, DC_PRED);
+                set_disjoint!(&dir.pal_sz, 0);
                 // see aomedia bug 2183 for why this is outside `if has_chroma {}`
-                case.set(&mut t.pal_sz_uv[dir_index], 0);
-                case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
-                case.set_disjoint(&dir.intra, 0);
-                case.set_disjoint(&dir.skip, b.skip);
-            },
+                set!(&mut t.pal_sz_uv[dir_index], 0);
+                set_disjoint!(&dir.seg_pred, seg_pred.into());
+                set_disjoint!(&dir.skip_mode, 0);
+                set_disjoint!(&dir.intra, 0);
+                set_disjoint!(&dir.skip, b.skip);
+            }
         );
         if has_chroma {
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [cbh4 as usize, cbw4 as usize],
-                [cby4 as usize, cbx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.uvmode, DC_PRED);
-                },
+            case_set!(
+                up_to = 32,
+                dir = [&t.l, &f.a[t.a]],
+                len = [cbh4 as usize, cbw4 as usize],
+                offset = [cby4 as usize, cbx4 as usize],
+                {
+                    set_disjoint!(&dir.uvmode, DC_PRED);
+                }
             );
         }
     } else {
@@ -3132,36 +3147,39 @@ fn decode_b(
             splat_oneref_mv(c, t, &f.rf, bs, &inter, bw4 as usize, bh4 as usize);
         }
 
-        CaseSet::<32, false>::many(
-            [(&t.l, 1), (&f.a[t.a], 0)],
-            [bh4 as usize, bw4 as usize],
-            [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
-                case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, b.skip_mode);
-                case.set_disjoint(&dir.intra, 0);
-                case.set_disjoint(&dir.skip, b.skip);
-                case.set_disjoint(&dir.pal_sz, 0);
+        case_set!(
+            up_to = 32,
+            ctx = [(&t.l, 1), (&f.a[t.a], 0)],
+            len = [bh4 as usize, bw4 as usize],
+            offset = [by4 as usize, bx4 as usize],
+            {
+                let (dir, dir_index) = ctx;
+                set_disjoint!(&dir.seg_pred, seg_pred.into());
+                set_disjoint!(&dir.skip_mode, b.skip_mode);
+                set_disjoint!(&dir.intra, 0);
+                set_disjoint!(&dir.skip, b.skip);
+                set_disjoint!(&dir.pal_sz, 0);
                 // see aomedia bug 2183 for why this is outside if (has_chroma)
-                case.set(&mut t.pal_sz_uv[dir_index], 0);
-                case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
-                case.set_disjoint(&dir.comp_type, comp_type);
-                case.set_disjoint(&dir.filter[0], filter[0]);
-                case.set_disjoint(&dir.filter[1], filter[1]);
-                case.set_disjoint(&dir.mode, inter_mode);
-                case.set_disjoint(&dir.r#ref[0], r#ref[0]);
-                case.set_disjoint(&dir.r#ref[1], r#ref[1]);
-            },
+                set!(&mut t.pal_sz_uv[dir_index], 0);
+                set_disjoint!(&dir.tx_intra, b_dim[2 + dir_index] as i8);
+                set_disjoint!(&dir.comp_type, comp_type);
+                set_disjoint!(&dir.filter[0], filter[0]);
+                set_disjoint!(&dir.filter[1], filter[1]);
+                set_disjoint!(&dir.mode, inter_mode);
+                set_disjoint!(&dir.r#ref[0], r#ref[0]);
+                set_disjoint!(&dir.r#ref[1], r#ref[1]);
+            }
         );
 
         if has_chroma {
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [cbh4 as usize, cbw4 as usize],
-                [cby4 as usize, cbx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.uvmode, DC_PRED);
-                },
+            case_set!(
+                up_to = 32,
+                dir = [&t.l, &f.a[t.a]],
+                len = [cbh4 as usize, cbw4 as usize],
+                offset = [cby4 as usize, cbx4 as usize],
+                {
+                    set_disjoint!(&dir.uvmode, DC_PRED);
+                }
             );
         }
     }
@@ -3174,10 +3192,11 @@ fn decode_b(
         let b4_stride = usize::try_from(f.b4_stride).unwrap();
         let cur_segmap = &f.cur_segmap.as_ref().unwrap().inner;
         let offset = by * b4_stride + bx;
-        CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
+        case_set!(up_to = 32, len = bw4, case_offset = 0, {
             for i in 0..bh4 {
                 let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id);
+                let buf = &mut cur_segmap.index_mut((i.., ..bw4));
+                set!(buf, b.seg_id);
             }
         });
     }
@@ -3792,16 +3811,18 @@ fn decode_sb(
     if matches!(pass, FrameThreadPassState::First(_))
         && (bp != BlockPartition::Split || bl == BlockLevel::Bl8x8)
     {
-        CaseSet::<16, false>::many(
-            [(&f.a[t.a], 0), (&t.l, 1)],
-            [hsz as usize; 2],
-            [bx8 as usize, by8 as usize],
-            |case, (dir, dir_index)| {
-                case.set_disjoint(
+        case_set!(
+            up_to = 16,
+            ctx = [(&f.a[t.a], 0), (&t.l, 1)],
+            len = [hsz as usize, hsz as usize],
+            offset = [bx8 as usize, by8 as usize],
+            {
+                let (dir, dir_index) = ctx;
+                set_disjoint!(
                     &dir.partition,
-                    dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
+                    dav1d_al_part_ctx[dir_index][bl as usize][bp as usize]
                 );
-            },
+            }
         );
     }
 
