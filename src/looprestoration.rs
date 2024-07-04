@@ -19,6 +19,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::iter;
 use std::mem;
 use std::ops::Add;
 use std::slice;
@@ -420,7 +421,7 @@ fn wiener_rust<BD: BitDepth>(
                 sum += tmp[i + 3].to::<i32>() * 128;
             }
 
-            for (&tmp, &filter) in std::iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
+            for (&tmp, &filter) in iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
                 sum += tmp.to::<i32>() * filter as c_int;
             }
 
@@ -1141,7 +1142,7 @@ mod neon {
         if edges.contains(LrEdgeFlags::TOP) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[..],
-                core::ptr::null(),
+                ptr::null(),
                 lpf,
                 stride,
                 &filter[0],
@@ -1154,7 +1155,7 @@ mod neon {
         if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[(2 + h as usize) * mid_stride as usize..],
-                core::ptr::null(),
+                ptr::null(),
                 lpf.offset(6 * BD::pxstride(stride)),
                 stride,
                 &filter[0],
@@ -1172,7 +1173,7 @@ mod neon {
             h,
             &filter[1],
             edges,
-            (mid_stride as usize * ::core::mem::size_of::<i16>()) as ptrdiff_t,
+            (mid_stride as usize * mem::size_of::<i16>()) as ptrdiff_t,
             bd,
         );
     }
