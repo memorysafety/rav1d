@@ -927,7 +927,7 @@ mod neon {
         offsets: &[[c_int; 2]; 2],
         h: c_int,
         clip: ptrdiff_t,
-        type_0: ptrdiff_t,
+        r#type: ptrdiff_t,
         bitdepth_max: c_int,
     ) -> ());
 
@@ -945,7 +945,7 @@ mod neon {
             offsets: &[[c_int; 2]; 2],
             h: c_int,
             clip: bool,
-            type_0: c_int,
+            r#type: c_int,
             bd: BD,
         ) {
             let dst = dst.cast();
@@ -954,7 +954,7 @@ mod neon {
             let scaling_shift = scaling_shift as c_int;
             let grain_lut = grain_lut.cast();
             let clip = clip as ptrdiff_t;
-            let type_0 = type_0 as ptrdiff_t;
+            let r#type = r#type as ptrdiff_t;
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe {
@@ -968,7 +968,7 @@ mod neon {
                     offsets,
                     h,
                     clip,
-                    type_0,
+                    r#type,
                     bd,
                 )
             }
@@ -1074,7 +1074,7 @@ mod neon {
         h: ptrdiff_t,
         uv: ptrdiff_t,
         is_id: ptrdiff_t,
-        type_0: ptrdiff_t,
+        r#type: ptrdiff_t,
         bitdepth_max: c_int,
     ) -> ());
 
@@ -1095,7 +1095,7 @@ mod neon {
             h: c_int,
             uv: c_int,
             is_id: c_int,
-            type_0: c_int,
+            r#type: c_int,
             bd: BD,
         ) {
             let dst = dst.cast();
@@ -1106,7 +1106,7 @@ mod neon {
             let h = h as ptrdiff_t;
             let uv = uv as ptrdiff_t;
             let is_id = is_id as ptrdiff_t;
-            let type_0 = type_0 as ptrdiff_t;
+            let r#type = r#type as ptrdiff_t;
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe {
@@ -1123,7 +1123,7 @@ mod neon {
                     h,
                     uv,
                     is_id,
-                    type_0,
+                    r#type,
                     bd,
                 )
             }
