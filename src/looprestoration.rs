@@ -26,15 +26,6 @@ use zerocopy::AsBytes;
 use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use ::{std::ffi::c_void, std::ptr};
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use crate::src::align::Align16;
-
-#[cfg(all(feature = "asm", target_arch = "arm"))]
-use libc::intptr_t;
-
 #[cfg(all(
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
@@ -981,6 +972,11 @@ fn sgr_mix_rust<BD: BitDepth>(
 mod neon {
     use super::*;
 
+    use crate::src::align::Align16;
+    use libc::intptr_t;
+    use std::ffi::c_void;
+    use std::ptr;
+
     extern "C" {
         fn dav1d_sgr_box3_v_neon(
             sumsq: *mut i32,
@@ -1633,6 +1629,10 @@ mod neon {
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
     use super::*;
+
+    use crate::src::align::Align16;
+    use std::ffi::c_void;
+    use std::ptr;
 
     fn rotate<const LEN: usize, const MID: usize>(
         a: &mut [*mut i32; LEN],
