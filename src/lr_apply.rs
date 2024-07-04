@@ -49,7 +49,8 @@ fn lr_stripe<BD: BitDepth>(
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
     let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
-    lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize * lpf_stride + x as isize;
+    lpf_offset +=
+        (have_tt * (sby * (4 << seq_hdr.sb128 as u8) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
 
@@ -253,9 +254,9 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
     if restore_planes & LR_RESTORE_Y as c_int != 0 {
         let h = f.sr_cur.p.p.h;
         let w = f.sr_cur.p.p.w;
-        let next_row_y = (sby + 1) << 6 + seq_hdr.sb128;
+        let next_row_y = (sby + 1) << 6 + seq_hdr.sb128 as u8;
         let row_h = cmp::min(next_row_y - 8 * not_last, h);
-        let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
+        let y_stripe = (sby << 6 + seq_hdr.sb128 as u8) - offset_y;
         lr_sbrow::<BD>(
             c,
             f,

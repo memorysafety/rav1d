@@ -177,7 +177,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     angle: &mut c_int,
     tw: c_int,
     th: c_int,
-    filter_edge: u8,
+    filter_edge: bool,
     topleft_out: &mut [BD::Pixel],
     topleft_out_offset: usize, // position of top-left sample in `topleft_out`
     bd: BD,
@@ -347,7 +347,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         } else {
             (1 << bitdepth >> 1).as_::<BD::Pixel>()
         };
-        if mode == Z2_PRED && tw + th >= 6 && filter_edge != 0 {
+        if mode == Z2_PRED && tw + th >= 6 && filter_edge {
             corner[1] = ((corner[0].as_::<c_int>() + corner[2].as_::<c_int>()) * 5
                 + corner[1].as_::<c_int>() * 6
                 + 8

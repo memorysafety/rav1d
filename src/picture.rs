@@ -271,7 +271,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
 
     // Don't clear these flags from `c.frame_flags` if the frame is not going to be output.
     // This way they will be added to the next visible frame too.
-    let flags_mask = if (frame_hdr.show_frame != 0 || output_invisible_frames)
+    let flags_mask = if (frame_hdr.show_frame || output_invisible_frames)
         && max_spatial_id == frame_hdr.spatial_id
     {
         PictureFlags::empty()
@@ -280,8 +280,8 @@ pub(crate) fn rav1d_thread_picture_alloc(
     };
     p.flags = *frame_flags;
     *frame_flags &= flags_mask;
-    p.visible = frame_hdr.show_frame != 0;
-    p.showable = frame_hdr.showable_frame != 0;
+    p.visible = frame_hdr.show_frame;
+    p.showable = frame_hdr.showable_frame;
     p.progress = if have_frame_mt {
         Some(Default::default())
     } else {

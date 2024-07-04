@@ -656,7 +656,7 @@ pub(crate) fn rav1d_calc_lf_values(
     hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
-    let n_seg = if hdr.segmentation.enabled != 0 {
+    let n_seg = if hdr.segmentation.enabled {
         SegmentId::COUNT
     } else {
         1
@@ -668,13 +668,13 @@ pub(crate) fn rav1d_calc_lf_values(
     }
 
     let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into();
-    let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
+    let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled {
         Some(&mr_deltas)
     } else {
         None
     };
     for s in 0..n_seg {
-        let segd = if hdr.segmentation.enabled != 0 {
+        let segd = if hdr.segmentation.enabled {
             Some(&hdr.segmentation.seg_data.d[s])
         } else {
             None
@@ -690,21 +690,21 @@ pub(crate) fn rav1d_calc_lf_values(
         calc_lf_value(
             &mut lflvl_values[s][1],
             hdr.loopfilter.level_y[1],
-            lf_delta[if hdr.delta.lf.multi != 0 { 1 } else { 0 }],
+            lf_delta[if hdr.delta.lf.multi { 1 } else { 0 }],
             segd.map(|segd| segd.delta_lf_y_h).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s][2],
             hdr.loopfilter.level_u,
-            lf_delta[if hdr.delta.lf.multi != 0 { 2 } else { 0 }],
+            lf_delta[if hdr.delta.lf.multi { 2 } else { 0 }],
             segd.map(|segd| segd.delta_lf_u).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s][3],
             hdr.loopfilter.level_v,
-            lf_delta[if hdr.delta.lf.multi != 0 { 3 } else { 0 }],
+            lf_delta[if hdr.delta.lf.multi { 3 } else { 0 }],
             segd.map(|segd| segd.delta_lf_v).unwrap_or(0),
             mr_deltas,
         );
