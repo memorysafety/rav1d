@@ -917,28 +917,62 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 mod neon {
     use super::*;
 
-    macro_rules! decl_fgy_32x32xn_neon_fn {
-        (fn $name:ident) => {{
-            extern "C" {
-                // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
-                // to get the same layout of parameters on the stack across platforms.
-                fn $name(
-                    dst: *mut DynPixel,
-                    src: *const DynPixel,
-                    stride: ptrdiff_t,
-                    scaling: *const DynScaling,
-                    scaling_shift: c_int,
-                    grain_lut: *const GrainLut<DynEntry>,
-                    offsets: *const [[c_int; 2]; 2],
-                    h: c_int,
-                    clip: ptrdiff_t,
-                    type_0: ptrdiff_t,
-                    bitdepth_max: c_int,
-                );
-            }
+    wrap_fn_ptr!(unsafe extern "C" fn fgy_32x32xn_neon(
+        dst: *mut DynPixel,
+        src: *const DynPixel,
+        stride: ptrdiff_t,
+        scaling: *const DynScaling,
+        scaling_shift: c_int,
+        grain_lut: *const GrainLut<DynEntry>,
+        offsets: *const [[c_int; 2]; 2],
+        h: c_int,
+        clip: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    ) -> ());
 
-            $name
-        }};
+    impl fgy_32x32xn_neon::Fn {
+        /// Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
+        /// to get the same layout of parameters on the stack across platforms.
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            src: *const BD::Pixel,
+            stride: isize,
+            scaling: *const BD::Scaling,
+            scaling_shift: u8,
+            grain_lut: *const GrainLut<BD::Entry>,
+            offsets: &[[c_int; 2]; 2],
+            h: c_int,
+            clip: bool,
+            type_0: c_int,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let src = src.cast();
+            let scaling = scaling.cast();
+            let scaling_shift = scaling_shift as c_int;
+            let grain_lut = grain_lut.cast();
+            let clip = clip as ptrdiff_t;
+            let type_0 = type_0 as ptrdiff_t;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst,
+                    src,
+                    stride,
+                    scaling,
+                    scaling_shift,
+                    grain_lut,
+                    offsets,
+                    h,
+                    clip,
+                    type_0,
+                    bd,
+                )
+            }
+        }
     }
 
     /// # Safety
@@ -1011,50 +1045,89 @@ mod neon {
                 r#type |= 2; // overlap x
             }
 
-            // SAFETY: asm should be safe.
-            unsafe {
-                bd_fn!(decl_fgy_32x32xn_neon_fn, BD, fgy_32x32, neon)(
-                    dst_row.add(bx).cast(),
-                    src_row.add(bx).cast(),
-                    stride,
-                    scaling.cast(),
-                    data.scaling_shift.into(),
-                    grain_lut.cast(),
-                    &offsets,
-                    bh,
-                    data.clip_to_restricted_range as ptrdiff_t,
-                    r#type as ptrdiff_t,
-                    bd.into_c(),
-                )
-            };
+            bd_fn!(fgy_32x32xn_neon::decl_fn, BD, fgy_32x32, neon).call(
+                dst_row.wrapping_add(bx),
+                src_row.wrapping_add(bx),
+                stride,
+                scaling,
+                data.scaling_shift,
+                grain_lut,
+                &offsets,
+                bh,
+                data.clip_to_restricted_range,
+                r#type,
+                bd,
+            )
         }
     }
 
-    macro_rules! decl_fguv_32x32xn_neon_fn {
-        (fn $name:ident) => {{
-            extern "C" {
-                // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
-                // to get the parameters on the stack with the same layout across platforms.
-                fn $name(
-                    dst: *mut DynPixel,
-                    src: *const DynPixel,
-                    stride: ptrdiff_t,
-                    scaling: *const DynScaling,
-                    data: &Dav1dFilmGrainData,
-                    grain_lut: *const GrainLut<DynEntry>,
-                    luma_row: *const DynPixel,
-                    luma_stride: ptrdiff_t,
-                    offsets: *const [[c_int; 2]; 2],
-                    h: ptrdiff_t,
-                    uv: ptrdiff_t,
-                    is_id: ptrdiff_t,
-                    type_0: ptrdiff_t,
-                    bitdepth_max: c_int,
-                );
-            }
+    wrap_fn_ptr!(unsafe extern "C" fn fguv_32x32xn_neon(
+        dst: *mut DynPixel,
+        src: *const DynPixel,
+        stride: ptrdiff_t,
+        scaling: *const DynScaling,
+        data: &Dav1dFilmGrainData,
+        grain_lut: *const GrainLut<DynEntry>,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [[c_int; 2]; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    ) -> ());
 
-            $name
-        }};
+    impl fguv_32x32xn_neon::Fn {
+        /// Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
+        /// to get the parameters on the stack with the same layout across platforms.
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            src: *const BD::Pixel,
+            stride: ptrdiff_t,
+            scaling: *const BD::Scaling,
+            data: &Dav1dFilmGrainData,
+            grain_lut: *const GrainLut<BD::Entry>,
+            luma_row: *const BD::Pixel,
+            luma_stride: ptrdiff_t,
+            offsets: &[[c_int; 2]; 2],
+            h: c_int,
+            uv: c_int,
+            is_id: c_int,
+            type_0: c_int,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let src = src.cast();
+            let scaling = scaling.cast();
+            let grain_lut = grain_lut.cast();
+            let luma_row = luma_row.cast();
+            let h = h as ptrdiff_t;
+            let uv = uv as ptrdiff_t;
+            let is_id = is_id as ptrdiff_t;
+            let type_0 = type_0 as ptrdiff_t;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst,
+                    src,
+                    stride,
+                    scaling,
+                    data,
+                    grain_lut,
+                    luma_row,
+                    luma_stride,
+                    offsets,
+                    h,
+                    uv,
+                    is_id,
+                    type_0,
+                    bd,
+                )
+            }
+        }
     }
 
     /// # Safety
@@ -1162,30 +1235,28 @@ mod neon {
             if data.chroma_scaling_from_luma {
                 r#type |= 4;
             }
-            // SAFETY: asm should be safe.
-            unsafe {
-                (match NM {
-                    420 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_420, neon),
-                    422 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_422, neon),
-                    444 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_444, neon),
-                    _ => unreachable!(),
-                })(
-                    dst_row.add(bx).cast(),
-                    src_row.add(bx).cast(),
-                    stride,
-                    scaling.cast(),
-                    data_c,
-                    grain_lut.cast(),
-                    luma_row.add(bx << sx).cast(),
-                    luma_stride,
-                    &offsets,
-                    bh as ptrdiff_t,
-                    uv as ptrdiff_t,
-                    is_id as ptrdiff_t,
-                    r#type as ptrdiff_t,
-                    bd.into_c(),
-                )
-            };
+            (match NM {
+                420 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_420, neon),
+                422 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_422, neon),
+                444 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_444, neon),
+                _ => unreachable!(),
+            })
+            .call(
+                dst_row.wrapping_add(bx),
+                src_row.wrapping_add(bx),
+                stride,
+                scaling,
+                data_c,
+                grain_lut,
+                luma_row.wrapping_add(bx << sx),
+                luma_stride,
+                &offsets,
+                bh,
+                uv,
+                is_id,
+                r#type,
+                bd,
+            )
         }
     }
 }
