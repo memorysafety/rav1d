@@ -14,6 +14,7 @@ use crate::src::ffi_safe::FFISafe;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_sgr_x_by_x;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -35,11 +36,26 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type LrEdgeFlags = c_uint;
-pub const LR_HAVE_BOTTOM: LrEdgeFlags = 8;
-pub const LR_HAVE_TOP: LrEdgeFlags = 4;
-pub const LR_HAVE_RIGHT: LrEdgeFlags = 2;
-pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
+bitflags! {
+    #[derive(Clone, Copy)]
+    #[repr(transparent)]
+    pub struct LrEdgeFlags: u8 {
+        const LEFT = 1 << 0;
+        const RIGHT = 1 << 1;
+        const TOP = 1 << 2;
+        const BOTTOM = 1 << 3;
+    }
+}
+
+impl LrEdgeFlags {
+    pub const fn select(&self, select: bool) -> Self {
+        if select {
+            *self
+        } else {
+            Self::empty()
+        }
+    }
+}
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
@@ -176,9 +192,13 @@ fn padding<BD: BitDepth>(
     assert!(stripe_h > 0);
     let stride = p.pixel_stride::<BD>();
 
-    let [have_left, have_right, have_top, have_bottom] =
-        [LR_HAVE_LEFT, LR_HAVE_RIGHT, LR_HAVE_TOP, LR_HAVE_BOTTOM]
-            .map(|lr_have| edges & lr_have != 0);
+    let [have_left, have_right, have_top, have_bottom] = [
+        LrEdgeFlags::LEFT,
+        LrEdgeFlags::RIGHT,
+        LrEdgeFlags::TOP,
+        LrEdgeFlags::BOTTOM,
+    ]
+    .map(|lr_have| edges.contains(lr_have));
     let [have_left_3, have_right_3] = [have_left, have_right].map(|have| 3 * have as usize);
 
     // Copy more pixels if we don't have to pad them
@@ -1154,7 +1174,7 @@ mod neon {
             edges,
             bd,
         );
-        if edges & LR_HAVE_TOP != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[..],
                 core::ptr::null(),
@@ -1167,7 +1187,7 @@ mod neon {
                 bd,
             );
         }
-        if edges & LR_HAVE_BOTTOM != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[(2 + h as usize) * mid_stride as usize..],
                 core::ptr::null(),
@@ -1307,7 +1327,7 @@ mod neon {
             h,
             edges,
         );
-        if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box3_h_neon::<BD>(
                 &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
                 &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
@@ -1319,7 +1339,7 @@ mod neon {
                 edges,
             );
         }
-        if edges as c_uint & LR_HAVE_BOTTOM as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box3_h_neon::<BD>(
                 &mut *sumsq.offset((h * (384 + 16)) as isize),
                 &mut *sum.offset((h * (384 + 16)) as isize),
@@ -1450,7 +1470,7 @@ mod neon {
             h,
             edges,
         );
-        if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box5_h_neon::<BD>(
                 &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
                 &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
@@ -1462,7 +1482,7 @@ mod neon {
                 edges,
             );
         }
-        if edges as c_uint & LR_HAVE_BOTTOM as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box5_h_neon::<BD>(
                 &mut *sumsq.offset((h * (384 + 16)) as isize),
                 &mut *sum.offset((h * (384 + 16)) as isize),
@@ -2125,7 +2145,7 @@ mod neon {
 
         let sgr = params.sgr();
 
-        if (edges & LR_HAVE_TOP) != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             sumsq_ptrs = sumsq_rows;
             sum_ptrs = sum_rows;
 
@@ -2257,7 +2277,7 @@ mod neon {
             h -= 1;
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 
@@ -2395,7 +2415,7 @@ mod neon {
 
         let sgr = params.sgr();
 
-        if (edges & LR_HAVE_TOP) != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             for i in 0..5 {
                 sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
                 sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
@@ -2624,7 +2644,7 @@ mod neon {
             }
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 
@@ -2817,7 +2837,7 @@ mod neon {
         }
         let mut track = Track::main;
 
-        let lr_have_top = (edges & LR_HAVE_TOP) != 0;
+        let lr_have_top = edges.contains(LrEdgeFlags::TOP);
 
         let mut sumsq3_ptrs = [ptr::null_mut(); 3];
         let mut sum3_ptrs = [ptr::null_mut(); 3];
@@ -3188,7 +3208,7 @@ mod neon {
             }
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 
