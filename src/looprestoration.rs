@@ -59,7 +59,7 @@ pub struct LooprestorationParamsSgr {
 #[repr(C)]
 #[repr(align(16))]
 pub struct LooprestorationParams {
-    /// [`Align16`] moved to [`Self`] we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
+    /// [`Align16`] moved to [`Self`] because we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
     ///
     /// [`Align16`]: crate::src::align::Align16
     pub filter: [[i16; 8]; 2],
