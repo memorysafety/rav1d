@@ -645,7 +645,6 @@ fn boxsum5<BD: BitDepth>(
 fn selfguided_filter<BD: BitDepth>(
     dst: &mut [BD::Coef; 24576],
     src: &[BD::Pixel; 27300],
-    _src_stride: ptrdiff_t,
     w: usize,
     h: usize,
     n: c_int,
@@ -814,16 +813,7 @@ fn sgr_5x5_rust<BD: BitDepth>(
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        25,
-        sgr.s0,
-        bd,
-    );
+    selfguided_filter(&mut dst, &mut tmp, w, h, 25, sgr.s0, bd);
 
     let w0 = sgr.w0 as c_int;
     for j in 0..h {
@@ -884,16 +874,7 @@ fn sgr_3x3_rust<BD: BitDepth>(
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        9,
-        sgr.s1,
-        bd,
-    );
+    selfguided_filter(&mut dst, &mut tmp, w, h, 9, sgr.s1, bd);
 
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
@@ -955,26 +936,8 @@ fn sgr_mix_rust<BD: BitDepth>(
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst0,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        25,
-        sgr.s0,
-        bd,
-    );
-    selfguided_filter(
-        &mut dst1,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        9,
-        sgr.s1,
-        bd,
-    );
+    selfguided_filter(&mut dst0, &mut tmp, w, h, 25, sgr.s0, bd);
+    selfguided_filter(&mut dst1, &mut tmp, w, h, 9, sgr.s1, bd);
 
     let w0 = sgr.w0 as c_int;
     let w1 = sgr.w1 as c_int;
