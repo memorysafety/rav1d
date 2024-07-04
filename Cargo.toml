@@ -14,14 +14,21 @@ default-run = "dav1d"
 [lib]
 path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
+bench = false
 
 [[bin]]
 path = "tools/dav1d.rs"
 name = "dav1d"
+bench = false
 
 [[bin]]
 path = "tests/seek_stress.rs"
 name = "seek_stress"
+bench = false
+
+[[bench]]
+name = "case_set"
+harness = false
 
 [dependencies]
 assert_matches = "1.5.0"
@@ -39,6 +46,9 @@ zerocopy = { version = "0.7.32", features = ["derive"] }
 [build-dependencies]
 cc = "1.0.79"
 nasm-rs = "0.2.4"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["real_blackbox"] }
 
 [features]
 default = ["asm", "bitdepth_8", "bitdepth_16"]
