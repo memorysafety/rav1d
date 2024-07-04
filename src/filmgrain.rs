@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 #![warn(clippy::all)]
 #![allow(clippy::too_many_arguments)]
 
