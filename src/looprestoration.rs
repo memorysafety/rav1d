@@ -1256,6 +1256,7 @@ mod neon {
         )
     }
 
+    /// Filter with a 3x3 box (radius=1).
     unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         tmp: &mut [i16; 64 * 384],
         src: Rav1dPictureDataComponentOffset,
@@ -1399,6 +1400,7 @@ mod neon {
         )
     }
 
+    /// Filter with a 5x5 box (radius=2).
     unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
         tmp: &mut [i16; 64 * 384],
         src: Rav1dPictureDataComponentOffset,
