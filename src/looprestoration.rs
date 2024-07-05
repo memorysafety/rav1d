@@ -957,10 +957,46 @@ fn sgr_mix_rust<BD: BitDepth>(
 mod neon {
     use super::*;
 
+    use crate::include::common::bitdepth::bd_fn;
     use crate::src::align::Align16;
     use libc::intptr_t;
     use std::ffi::c_void;
     use std::ptr;
+
+    wrap_fn_ptr!(unsafe extern "C" fn wiener_filter_h(
+        dst: *mut i16,
+        left: *const LeftPixelRow<DynPixel>,
+        src: *const DynPixel,
+        stride: ptrdiff_t,
+        fh: *const i16,
+        w: intptr_t,
+        h: c_int,
+        edges: LrEdgeFlags,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl wiener_filter_h::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: &mut [i16],
+            left: *const LeftPixelRow<BD::Pixel>,
+            src: *const BD::Pixel,
+            stride: ptrdiff_t,
+            fh: &[i16; 8],
+            w: intptr_t,
+            h: c_int,
+            edges: LrEdgeFlags,
+            bd: BD,
+        ) {
+            let dst = dst.as_mut_ptr();
+            let left = left.cast();
+            let src = src.cast();
+            let fh = fh.as_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(dst, left, src, stride, fh, w, h, edges, bd) }
+        }
+    }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v(
         sumsq: *mut i32,
@@ -1005,51 +1041,6 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(a, b, w, h, strength, bd) }
         }
-    }
-
-    unsafe fn rav1d_wiener_filter_h_neon<BD: BitDepth>(
-        dst: &mut [i16],
-        left: *const LeftPixelRow<BD::Pixel>,
-        src: *const BD::Pixel,
-        stride: ptrdiff_t,
-        fh: &[i16; 8],
-        w: intptr_t,
-        h: c_int,
-        edges: LrEdgeFlags,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            ($name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut i16,
-                        left: *const c_void,
-                        src: *const c_void,
-                        stride: ptrdiff_t,
-                        fh: *const i16,
-                        w: intptr_t,
-                        h: c_int,
-                        edges: LrEdgeFlags,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
-        }
-        (match BD::BPC {
-            BPC::BPC8 => asm_fn!(dav1d_wiener_filter_h_8bpc_neon),
-            BPC::BPC16 => asm_fn!(dav1d_wiener_filter_h_16bpc_neon),
-        })(
-            dst.as_mut_ptr(),
-            left.cast(),
-            src.cast(),
-            stride,
-            fh.as_ptr(),
-            w,
-            h,
-            edges,
-            bd.into_c(),
-        )
     }
 
     unsafe fn rav1d_wiener_filter_v_neon<BD: BitDepth>(
@@ -1137,8 +1128,8 @@ mod neon {
         let filter = &params.filter;
         let mut mid = Align16([0; 68 * 384]);
         let mid_stride = w as usize + 7 & !7;
-        rav1d_wiener_filter_h_neon(
-            &mut mid.0[2 * mid_stride as usize..],
+        bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
+            &mut mid.0[2 * mid_stride..],
             left,
             dst,
             stride,
@@ -1149,7 +1140,7 @@ mod neon {
             bd,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            rav1d_wiener_filter_h_neon(
+            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
                 &mut mid.0[..],
                 ptr::null(),
                 lpf,
@@ -1162,7 +1153,7 @@ mod neon {
             );
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
-            rav1d_wiener_filter_h_neon(
+            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
                 &mut mid.0[(2 + h as usize) * mid_stride..],
                 ptr::null(),
                 lpf.offset(6 * BD::pxstride(stride)),
