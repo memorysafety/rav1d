@@ -962,7 +962,7 @@ mod neon {
     use std::ffi::c_void;
     use std::ptr;
 
-    wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v_neon(
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v(
         sumsq: *mut i32,
         sum: *mut i16,
         w: c_int,
@@ -970,7 +970,7 @@ mod neon {
         edges: LrEdgeFlags,
     ) -> ());
 
-    impl sgr_box_v_neon::Fn {
+    impl sgr_box_v::Fn {
         fn call(&self, sumsq: &mut [i32], sum: &mut [i16], w: c_int, h: c_int, edges: LrEdgeFlags) {
             let sumsq = sumsq.as_mut_ptr();
             let sum = sum.as_mut_ptr();
@@ -979,7 +979,7 @@ mod neon {
         }
     }
 
-    wrap_fn_ptr!(unsafe extern "C" fn sgr_calc_ab_neon(
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_calc_ab(
         a: *mut i32,
         b: *mut i16,
         w: c_int,
@@ -988,7 +988,7 @@ mod neon {
         bitdepth_max: c_int,
     ) -> ());
 
-    impl sgr_calc_ab_neon::Fn {
+    impl sgr_calc_ab::Fn {
         fn call<BD: BitDepth>(
             &self,
             a: &mut [i32],
@@ -1321,7 +1321,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v_neon::decl_fn!(fn dav1d_sgr_box3_v_neon).call(
+        sgr_box_v::decl_fn!(fn dav1d_sgr_box3_v_neon).call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1330,7 +1330,7 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab_neon::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
+        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
         rav1d_sgr_finish_filter1_neon::<BD>(tmp, src, a.as_mut_ptr(), b.as_mut_ptr(), w, h);
     }
 
@@ -1468,7 +1468,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v_neon::decl_fn!(fn dav1d_sgr_box5_v_neon).call(
+        sgr_box_v::decl_fn!(fn dav1d_sgr_box5_v_neon).call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1477,7 +1477,7 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab_neon::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
+        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
         rav1d_sgr_finish_filter2_neon::<BD>(tmp, src, a.as_mut_ptr(), b.as_mut_ptr(), w, h);
     }
 
