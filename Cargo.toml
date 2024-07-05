@@ -62,3 +62,9 @@ panic = "abort"
 [profile.release-with-debug]
 inherits = "release"
 debug = "line-tables-only"
+
+[profile.checked-release]
+# Close to a release build, but with all checks enabled.
+inherits = "dev"
+opt-level = 2
+codegen-units = 16
