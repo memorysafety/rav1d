@@ -962,15 +962,24 @@ mod neon {
     use std::ffi::c_void;
     use std::ptr;
 
-    extern "C" {
-        fn dav1d_sgr_box3_v_neon(
-            sumsq: *mut i32,
-            sum: *mut i16,
-            w: c_int,
-            h: c_int,
-            edges: LrEdgeFlags,
-        );
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v_neon(
+        sumsq: *mut i32,
+        sum: *mut i16,
+        w: c_int,
+        h: c_int,
+        edges: LrEdgeFlags,
+    ) -> ());
 
+    impl sgr_box_v_neon::Fn {
+        fn call(&self, sumsq: &mut [i32], sum: &mut [i16], w: c_int, h: c_int, edges: LrEdgeFlags) {
+            let sumsq = sumsq.as_mut_ptr();
+            let sum = sum.as_mut_ptr();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(sumsq, sum, w, h, edges) }
+        }
+    }
+
+    extern "C" {
         fn dav1d_sgr_calc_ab1_neon(
             a: *mut i32,
             b: *mut i16,
@@ -978,14 +987,6 @@ mod neon {
             h: c_int,
             strength: c_int,
             bitdepth_max: c_int,
-        );
-
-        fn dav1d_sgr_box5_v_neon(
-            sumsq: *mut i32,
-            sum: *mut i16,
-            w: c_int,
-            h: c_int,
-            edges: LrEdgeFlags,
         );
 
         fn dav1d_sgr_calc_ab2_neon(
@@ -1312,9 +1313,9 @@ mod neon {
                 edges,
             );
         }
-        dav1d_sgr_box3_v_neon(
-            sumsq[2 * STRIDE..].as_mut_ptr(),
-            sum[2 * STRIDE..].as_mut_ptr(),
+        sgr_box_v_neon::decl_fn!(fn dav1d_sgr_box3_v_neon).call(
+            &mut sumsq[2 * STRIDE..],
+            &mut sum[2 * STRIDE..],
             w,
             h,
             edges,
@@ -1459,9 +1460,9 @@ mod neon {
                 edges,
             );
         }
-        dav1d_sgr_box5_v_neon(
-            sumsq[2 * STRIDE..].as_mut_ptr(),
-            sum[2 * STRIDE..].as_mut_ptr(),
+        sgr_box_v_neon::decl_fn!(fn dav1d_sgr_box5_v_neon).call(
+            &mut sumsq[2 * STRIDE..],
+            &mut sum[2 * STRIDE..],
             w,
             h,
             edges,
