@@ -1032,6 +1032,95 @@ mod neon {
         }
     }
 
+    /// # Safety
+    ///
+    /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
+    pub unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
+        p: *mut DynPixel,
+        stride: ptrdiff_t,
+        left: *const LeftPixelRow<DynPixel>,
+        lpf: *const DynPixel,
+        w: c_int,
+        h: c_int,
+        params: &LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: c_int,
+        _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    ) {
+        let p = p.cast();
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let bd = BD::from_c(bitdepth_max);
+        wiener_filter_neon(p, stride, left, lpf, w, h, params, edges, bd)
+    }
+
+    fn wiener_filter_neon<BD: BitDepth>(
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        left: *const LeftPixelRow<BD::Pixel>,
+        lpf: *const BD::Pixel,
+        w: c_int,
+        h: c_int,
+        params: &LooprestorationParams,
+        edges: LrEdgeFlags,
+        bd: BD,
+    ) {
+        let filter = &params.filter;
+        let mut mid = Align16([0; 68 * 384]);
+        let mid_stride = w as usize + 7 & !7;
+        bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
+            &mut mid.0[2 * mid_stride..],
+            left,
+            dst,
+            stride,
+            &filter[0],
+            w,
+            h,
+            edges,
+            bd,
+        );
+        if edges.contains(LrEdgeFlags::TOP) {
+            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
+                &mut mid.0[..],
+                ptr::null(),
+                lpf,
+                stride,
+                &filter[0],
+                w,
+                2,
+                edges,
+                bd,
+            );
+        }
+        if edges.contains(LrEdgeFlags::BOTTOM) {
+            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
+                &mut mid.0[(2 + h as usize) * mid_stride..],
+                ptr::null(),
+                // `lpf` may be negatively out of bounds.
+                lpf.wrapping_offset(6 * BD::pxstride(stride)),
+                stride,
+                &filter[0],
+                w,
+                2,
+                edges,
+                bd,
+            );
+        }
+        bd_fn!(wiener_filter_v::decl_fn, BD, wiener_filter_v, neon).call(
+            dst,
+            stride,
+            &mut mid.0[2 * mid_stride..],
+            w,
+            h,
+            &filter[1],
+            edges,
+            mid_stride,
+            bd,
+        );
+    }
+
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box3_h(
         sumsq: *mut i32,
         sum: *mut i16,
@@ -1139,95 +1228,6 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(tmp, src_ptr, stride, a, b, w, h) }
         }
-    }
-
-    /// # Safety
-    ///
-    /// Must be called by [`loop_restoration_filter::Fn::call`].
-    #[deny(unsafe_op_in_unsafe_fn)]
-    pub unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
-        p: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow<DynPixel>,
-        lpf: *const DynPixel,
-        w: c_int,
-        h: c_int,
-        params: &LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: c_int,
-        _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
-        _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
-    ) {
-        let p = p.cast();
-        let left = left.cast();
-        let lpf = lpf.cast();
-        let bd = BD::from_c(bitdepth_max);
-        wiener_filter_neon(p, stride, left, lpf, w, h, params, edges, bd)
-    }
-
-    fn wiener_filter_neon<BD: BitDepth>(
-        dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
-        left: *const LeftPixelRow<BD::Pixel>,
-        lpf: *const BD::Pixel,
-        w: c_int,
-        h: c_int,
-        params: &LooprestorationParams,
-        edges: LrEdgeFlags,
-        bd: BD,
-    ) {
-        let filter = &params.filter;
-        let mut mid = Align16([0; 68 * 384]);
-        let mid_stride = w as usize + 7 & !7;
-        bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
-            &mut mid.0[2 * mid_stride..],
-            left,
-            dst,
-            stride,
-            &filter[0],
-            w,
-            h,
-            edges,
-            bd,
-        );
-        if edges.contains(LrEdgeFlags::TOP) {
-            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
-                &mut mid.0[..],
-                ptr::null(),
-                lpf,
-                stride,
-                &filter[0],
-                w,
-                2,
-                edges,
-                bd,
-            );
-        }
-        if edges.contains(LrEdgeFlags::BOTTOM) {
-            bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
-                &mut mid.0[(2 + h as usize) * mid_stride..],
-                ptr::null(),
-                // `lpf` may be negatively out of bounds.
-                lpf.wrapping_offset(6 * BD::pxstride(stride)),
-                stride,
-                &filter[0],
-                w,
-                2,
-                edges,
-                bd,
-            );
-        }
-        bd_fn!(wiener_filter_v::decl_fn, BD, wiener_filter_v, neon).call(
-            dst,
-            stride,
-            &mut mid.0[2 * mid_stride..],
-            w,
-            h,
-            &filter[1],
-            edges,
-            mid_stride,
-            bd,
-        );
     }
 
     /// Filter with a 3x3 box (radius=1).
