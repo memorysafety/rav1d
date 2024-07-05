@@ -1442,7 +1442,7 @@ mod neon {
         t2: &mut Align16<[i16; 64 * 384]>,
         w: c_int,
         h: c_int,
-        wt: *const i16,
+        wt: &[i16; 2],
         bitdepth_max: c_int,
     ) -> ());
 
@@ -1462,7 +1462,6 @@ mod neon {
             let dst_stride = dst.stride();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
-            let wt = wt.as_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe {
