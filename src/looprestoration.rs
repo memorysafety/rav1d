@@ -1145,7 +1145,7 @@ mod neon {
             bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
                 &mut mid.0[(2 + h as usize) * mid_stride..],
                 ptr::null(),
-                lpf.offset(6 * BD::pxstride(stride)),
+                lpf.wrapping_offset(6 * BD::pxstride(stride)),
                 stride,
                 &filter[0],
                 w,
