@@ -1430,47 +1430,39 @@ mod neon {
             .call::<BD>(tmp, src, a, b, w, h);
     }
 
-    unsafe fn rav1d_sgr_weighted1_neon<BD: BitDepth>(
-        dst: Rav1dPictureDataComponentOffset,
-        src: Rav1dPictureDataComponentOffset,
-        t1: &mut [i16; 64 * 384],
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_weighted1(
+        dst: *mut DynPixel,
+        dst_stride: ptrdiff_t,
+        src: *const DynPixel,
+        src_stride: ptrdiff_t,
+        t1: *const i16,
         w: c_int,
         h: c_int,
-        wt: i16,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            ($name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut DynPixel,
-                        dst_stride: ptrdiff_t,
-                        src: *const DynPixel,
-                        src_stride: ptrdiff_t,
-                        t1: *const i16,
-                        w: c_int,
-                        h: c_int,
-                        wt: c_int,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
+        wt: c_int,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl sgr_weighted1::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: Rav1dPictureDataComponentOffset,
+            src: Rav1dPictureDataComponentOffset,
+            t1: &mut [i16; 64 * 384],
+            w: c_int,
+            h: c_int,
+            wt: i16,
+            bd: BD,
+        ) {
+            let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+            let dst_stride = dst.stride();
+            let src_ptr = src.as_ptr::<BD>().cast();
+            let src_stride = src.stride();
+            let t1 = t1.as_mut_ptr();
+            let wt = wt.into();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, t1, w, h, wt, bd) }
         }
-        (match BD::BPC {
-            BPC::BPC8 => asm_fn!(dav1d_sgr_weighted1_8bpc_neon),
-            BPC::BPC16 => asm_fn!(dav1d_sgr_weighted1_16bpc_neon),
-        })(
-            dst.as_mut_ptr::<BD>().cast(),
-            dst.stride(),
-            src.as_ptr::<BD>().cast(),
-            src.stride(),
-            t1.as_mut_ptr(),
-            w,
-            h,
-            wt.into(),
-            bd.into_c(),
-        )
     }
 
     unsafe fn rav1d_sgr_weighted2_neon<BD: BitDepth>(
@@ -1534,7 +1526,8 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter2_neon(&mut tmp.0, dst, left, lpf, w, h, sgr.s0, edges, bd);
-        rav1d_sgr_weighted1_neon(dst, dst, &mut tmp.0, w, h, sgr.w0, bd);
+        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
+            .call(dst, dst, &mut tmp.0, w, h, sgr.w0, bd);
     }
 
     pub unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1552,7 +1545,8 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter1_neon(&mut tmp.0, dst, left, lpf, w, h, sgr.s1, edges, bd);
-        rav1d_sgr_weighted1_neon(dst, dst, &mut tmp.0, w, h, sgr.w1, bd);
+        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
+            .call(dst, dst, &mut tmp.0, w, h, sgr.w1, bd);
     }
 
     pub unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
