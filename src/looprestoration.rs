@@ -968,7 +968,7 @@ mod neon {
         left: *const LeftPixelRow<DynPixel>,
         src: *const DynPixel,
         stride: ptrdiff_t,
-        fh: *const i16,
+        fh: &[i16; 8],
         w: intptr_t,
         h: c_int,
         edges: LrEdgeFlags,
@@ -991,7 +991,6 @@ mod neon {
             let dst = dst.as_mut_ptr();
             let left = left.cast();
             let src = src.cast();
-            let fh = fh.as_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst, left, src, stride, fh, w, h, edges, bd) }
@@ -1004,7 +1003,7 @@ mod neon {
         mid: *const i16,
         w: c_int,
         h: c_int,
-        fv: *const i16,
+        fv: &[i16; 8],
         edges: LrEdgeFlags,
         mid_stride: ptrdiff_t,
         bitdepth_max: c_int,
@@ -1025,7 +1024,6 @@ mod neon {
         ) {
             let dst = dst.cast();
             let mid = mid.as_mut_ptr();
-            let fv = fv.as_ptr();
             let mid_stride = (mid_stride * mem::size_of::<i16>()) as ptrdiff_t;
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
