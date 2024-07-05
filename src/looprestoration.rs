@@ -1231,7 +1231,7 @@ mod neon {
     }
 
     /// Filter with a 3x3 box (radius=1).
-    unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
+    fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         tmp: &mut [i16; 64 * 384],
         src: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
