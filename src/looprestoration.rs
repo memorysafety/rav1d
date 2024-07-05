@@ -1020,12 +1020,13 @@ mod neon {
             h: c_int,
             fv: &[i16; 8],
             edges: LrEdgeFlags,
-            mid_stride: ptrdiff_t,
+            mid_stride: usize,
             bd: BD,
         ) {
             let dst = dst.cast();
             let mid = mid.as_mut_ptr();
             let fv = fv.as_ptr();
+            let mid_stride = mid_stride as ptrdiff_t;
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst, stride, mid, w, h, fv, edges, mid_stride, bd) }
@@ -1162,7 +1163,7 @@ mod neon {
             h,
             &filter[1],
             edges,
-            (mid_stride * mem::size_of::<i16>()) as ptrdiff_t,
+            mid_stride * mem::size_of::<i16>(),
             bd,
         );
     }
