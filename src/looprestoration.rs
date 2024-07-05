@@ -983,7 +983,7 @@ mod neon {
             src: *const BD::Pixel,
             stride: ptrdiff_t,
             fh: &[i16; 8],
-            w: intptr_t,
+            w: c_int,
             h: c_int,
             edges: LrEdgeFlags,
             bd: BD,
@@ -991,6 +991,7 @@ mod neon {
             let dst = dst.as_mut_ptr();
             let left = left.cast();
             let src = src.cast();
+            let w = w as intptr_t;
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst, left, src, stride, fh, w, h, edges, bd) }
@@ -1122,7 +1123,7 @@ mod neon {
             dst,
             stride,
             &filter[0],
-            w as intptr_t,
+            w,
             h,
             edges,
             bd,
@@ -1134,7 +1135,7 @@ mod neon {
                 lpf,
                 stride,
                 &filter[0],
-                w as intptr_t,
+                w,
                 2,
                 edges,
                 bd,
@@ -1147,7 +1148,7 @@ mod neon {
                 lpf.offset(6 * BD::pxstride(stride)),
                 stride,
                 &filter[0],
-                w as intptr_t,
+                w,
                 2,
                 edges,
                 bd,
