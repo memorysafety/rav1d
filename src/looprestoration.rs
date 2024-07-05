@@ -1127,7 +1127,7 @@ mod neon {
     ) {
         let filter = &params.filter;
         let mut mid = Align16([0; 68 * 384]);
-        let mid_stride = w + 7 & !7;
+        let mid_stride = w as usize + 7 & !7;
         rav1d_wiener_filter_h_neon(
             &mut mid.0[2 * mid_stride as usize..],
             left,
@@ -1154,7 +1154,7 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_wiener_filter_h_neon(
-                &mut mid.0[(2 + h as usize) * mid_stride as usize..],
+                &mut mid.0[(2 + h as usize) * mid_stride..],
                 ptr::null(),
                 lpf.offset(6 * BD::pxstride(stride)),
                 stride,
@@ -1168,12 +1168,12 @@ mod neon {
         rav1d_wiener_filter_v_neon(
             dst,
             stride,
-            &mut mid.0[2 * mid_stride as usize..],
+            &mut mid.0[2 * mid_stride..],
             w,
             h,
             &filter[1],
             edges,
-            (mid_stride as usize * mem::size_of::<i16>()) as ptrdiff_t,
+            (mid_stride * mem::size_of::<i16>()) as ptrdiff_t,
             bd,
         );
     }
