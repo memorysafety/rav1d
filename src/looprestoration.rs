@@ -1207,6 +1207,7 @@ mod neon {
             bd_fn!(wiener_filter_h::decl_fn, BD, wiener_filter_h, neon).call(
                 &mut mid.0[(2 + h as usize) * mid_stride..],
                 ptr::null(),
+                // `lpf` may be negatively out of bounds.
                 lpf.wrapping_offset(6 * BD::pxstride(stride)),
                 stride,
                 &filter[0],
@@ -1275,7 +1276,8 @@ mod neon {
                 &mut sumsq[(h + 2) * STRIDE..],
                 &mut sum[(h + 2) * STRIDE..],
                 None,
-                lpf.offset(6 * src.pixel_stride::<BD>()),
+                // `lpf` may be negatively out of bounds.
+                lpf.wrapping_offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
                 w,
                 2,
@@ -1423,7 +1425,8 @@ mod neon {
                 sumsq[(h + 2) * STRIDE..].as_mut_ptr(),
                 sum[(h + 2) * STRIDE..].as_mut_ptr(),
                 None,
-                lpf.offset(6 * src.pixel_stride::<BD>()),
+                // `lpf` may be negatively out of bounds.
+                lpf.wrapping_offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
                 w,
                 2,
