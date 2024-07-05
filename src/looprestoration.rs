@@ -1271,15 +1271,15 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
-        let a = sumsq;
-        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
-        let b = sum;
+        const STRIDE: usize = 384 + 16;
+
+        let mut sumsq_mem = Align16([0; STRIDE * 68 + 8]);
+        let sumsq = &mut sumsq_mem.0[8..];
+        let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
+        let sum = &mut sum_mem.0[16..];
         rav1d_sgr_box3_h_neon::<BD>(
-            sumsq,
-            sum,
+            sumsq[2 * STRIDE..].as_mut_ptr(),
+            sum[2 * STRIDE..].as_mut_ptr(),
             Some(left),
             src.as_ptr::<BD>(),
             src.stride(),
@@ -1289,8 +1289,8 @@ mod neon {
         );
         if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box3_h_neon::<BD>(
-                sumsq.offset(-2 * (384 + 16)),
-                sum.offset(-2 * (384 + 16)),
+                sumsq.as_mut_ptr(),
+                sum.as_mut_ptr(),
                 None,
                 lpf,
                 src.stride(),
@@ -1300,9 +1300,10 @@ mod neon {
             );
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
+            let h = h as usize;
             rav1d_sgr_box3_h_neon::<BD>(
-                sumsq.offset(h as isize * (384 + 16)),
-                sum.offset(h as isize * (384 + 16)),
+                sumsq[(h + 2) * STRIDE..].as_mut_ptr(),
+                sum[(h + 2) * STRIDE..].as_mut_ptr(),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
@@ -1311,7 +1312,15 @@ mod neon {
                 edges,
             );
         }
-        dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
+        dav1d_sgr_box3_v_neon(
+            sumsq[2 * STRIDE..].as_mut_ptr(),
+            sum[2 * STRIDE..].as_mut_ptr(),
+            w,
+            h,
+            edges,
+        );
+        let a = sumsq[2 * STRIDE..].as_mut_ptr();
+        let b = sum[2 * STRIDE..].as_mut_ptr();
         dav1d_sgr_calc_ab1_neon(a, b, w, h, strength as c_int, bd.into_c());
         rav1d_sgr_finish_filter1_neon::<BD>(tmp, src, a, b, w, h);
     }
@@ -1409,15 +1418,15 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
-        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
-        let a = sumsq;
-        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
-        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
-        let b = sum;
+        const STRIDE: usize = 384 + 16;
+
+        let mut sumsq_mem = Align16([0; STRIDE * 68 + 8]);
+        let sumsq = &mut sumsq_mem.0[8..];
+        let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
+        let sum = &mut sum_mem.0[16..];
         rav1d_sgr_box5_h_neon::<BD>(
-            sumsq,
-            sum,
+            sumsq[2 * STRIDE..].as_mut_ptr(),
+            sum[2 * STRIDE..].as_mut_ptr(),
             Some(left),
             src.as_ptr::<BD>(),
             src.stride(),
@@ -1427,8 +1436,8 @@ mod neon {
         );
         if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box5_h_neon::<BD>(
-                sumsq.offset(-2 * (384 + 16)),
-                sum.offset(-2 * (384 + 16)),
+                sumsq.as_mut_ptr(),
+                sum.as_mut_ptr(),
                 None,
                 lpf,
                 src.stride(),
@@ -1438,9 +1447,10 @@ mod neon {
             );
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
+            let h = h as usize;
             rav1d_sgr_box5_h_neon::<BD>(
-                sumsq.offset(h as isize * (384 + 16)),
-                sum.offset(h as isize * (384 + 16)),
+                sumsq[(h + 2) * STRIDE..].as_mut_ptr(),
+                sum[(h + 2) * STRIDE..].as_mut_ptr(),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
@@ -1449,9 +1459,24 @@ mod neon {
                 edges,
             );
         }
-        dav1d_sgr_box5_v_neon(sumsq, sum, w, h, edges);
-        dav1d_sgr_calc_ab2_neon(a, b, w, h, strength as c_int, bd.into_c());
-        rav1d_sgr_finish_filter2_neon::<BD>(tmp, src, a, b, w, h);
+        dav1d_sgr_box5_v_neon(
+            sumsq[2 * STRIDE..].as_mut_ptr(),
+            sum[2 * STRIDE..].as_mut_ptr(),
+            w,
+            h,
+            edges,
+        );
+        let a = &mut sumsq[2 * STRIDE..];
+        let b = &mut sum[2 * STRIDE..];
+        dav1d_sgr_calc_ab2_neon(
+            a.as_mut_ptr(),
+            b.as_mut_ptr(),
+            w,
+            h,
+            strength as c_int,
+            bd.into_c(),
+        );
+        rav1d_sgr_finish_filter2_neon::<BD>(tmp, src, a.as_mut_ptr(), b.as_mut_ptr(), w, h);
     }
 
     unsafe fn rav1d_sgr_weighted1_neon<BD: BitDepth>(
