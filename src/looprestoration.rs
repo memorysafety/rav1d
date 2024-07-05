@@ -953,6 +953,7 @@ fn sgr_mix_rust<BD: BitDepth>(
     }
 }
 
+#[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 mod neon {
     use super::*;
