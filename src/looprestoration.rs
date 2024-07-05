@@ -1111,7 +1111,7 @@ mod neon {
         }
     }
 
-    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_filter1(
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_filter(
         tmp: *mut i16,
         src: *const DynPixel,
         stride: ptrdiff_t,
@@ -1121,7 +1121,7 @@ mod neon {
         h: c_int,
     ) -> ());
 
-    impl sgr_finish_filter1::Fn {
+    impl sgr_finish_filter::Fn {
         fn call<BD: BitDepth>(
             &self,
             tmp: &mut [i16; 64 * 384],
@@ -1294,7 +1294,7 @@ mod neon {
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
         sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter1::decl_fn, BD, sgr_finish_filter1, neon)
+        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter1, neon)
             .call::<BD>(tmp, src, a, b, w, h);
     }
 
@@ -1329,36 +1329,6 @@ mod neon {
             let src = src.cast();
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
-        }
-    }
-
-    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_filter2(
-        tmp: *mut i16,
-        src: *const DynPixel,
-        stride: ptrdiff_t,
-        a: *const i32,
-        b: *const i16,
-        w: c_int,
-        h: c_int,
-    ) -> ());
-
-    impl sgr_finish_filter2::Fn {
-        fn call<BD: BitDepth>(
-            &self,
-            tmp: &mut [i16; 64 * 384],
-            src: Rav1dPictureDataComponentOffset,
-            a: &[i32],
-            b: &[i16],
-            w: c_int,
-            h: c_int,
-        ) {
-            let tmp = tmp.as_mut_ptr();
-            let src_ptr = src.as_ptr::<BD>().cast();
-            let stride = src.stride();
-            let a = a.as_ptr();
-            let b = b.as_ptr();
-            // SAFETY: asm should be safe.
-            unsafe { self.get()(tmp, src_ptr, stride, a, b, w, h) }
         }
     }
 
@@ -1426,7 +1396,7 @@ mod neon {
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
         sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter2::decl_fn, BD, sgr_finish_filter2, neon)
+        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter2, neon)
             .call::<BD>(tmp, src, a, b, w, h);
     }
 
