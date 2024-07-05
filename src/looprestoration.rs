@@ -1201,7 +1201,7 @@ mod neon {
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_filter(
-        tmp: *mut i16,
+        tmp: &mut Align16<[i16; 64 * 384]>,
         src: *const DynPixel,
         stride: ptrdiff_t,
         a: *const i32,
@@ -1213,14 +1213,13 @@ mod neon {
     impl sgr_finish_filter::Fn {
         fn call<BD: BitDepth>(
             &self,
-            tmp: &mut [i16; 64 * 384],
+            tmp: &mut Align16<[i16; 64 * 384]>,
             src: Rav1dPictureDataComponentOffset,
             a: &[i32],
             b: &[i16],
             w: c_int,
             h: c_int,
         ) {
-            let tmp = tmp.as_mut_ptr();
             let src_ptr = src.as_ptr::<BD>().cast();
             let stride = src.stride();
             let a = a.as_ptr();
@@ -1232,7 +1231,7 @@ mod neon {
 
     /// Filter with a 3x3 box (radius=1).
     fn rav1d_sgr_filter1_neon<BD: BitDepth>(
-        tmp: &mut [i16; 64 * 384],
+        tmp: &mut Align16<[i16; 64 * 384]>,
         src: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
@@ -1334,7 +1333,7 @@ mod neon {
 
     /// Filter with a 5x5 box (radius=2).
     fn rav1d_sgr_filter2_neon<BD: BitDepth>(
-        tmp: &mut [i16; 64 * 384],
+        tmp: &mut Align16<[i16; 64 * 384]>,
         src: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
@@ -1405,7 +1404,7 @@ mod neon {
         dst_stride: ptrdiff_t,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
-        t1: *const i16,
+        t1: &mut Align16<[i16; 64 * 384]>,
         w: c_int,
         h: c_int,
         wt: c_int,
@@ -1417,7 +1416,7 @@ mod neon {
             &self,
             dst: Rav1dPictureDataComponentOffset,
             src: Rav1dPictureDataComponentOffset,
-            t1: &mut [i16; 64 * 384],
+            t1: &mut Align16<[i16; 64 * 384]>,
             w: c_int,
             h: c_int,
             wt: i16,
@@ -1427,7 +1426,6 @@ mod neon {
             let dst_stride = dst.stride();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
-            let t1 = t1.as_mut_ptr();
             let wt = wt.into();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
@@ -1440,8 +1438,8 @@ mod neon {
         dst_stride: ptrdiff_t,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
-        t1: *const i16,
-        t2: *const i16,
+        t1: &mut Align16<[i16; 64 * 384]>,
+        t2: &mut Align16<[i16; 64 * 384]>,
         w: c_int,
         h: c_int,
         wt: *const i16,
@@ -1453,8 +1451,8 @@ mod neon {
             &self,
             dst: Rav1dPictureDataComponentOffset,
             src: Rav1dPictureDataComponentOffset,
-            t1: &mut [i16; 64 * 384],
-            t2: &mut [i16; 64 * 384],
+            t1: &mut Align16<[i16; 64 * 384]>,
+            t2: &mut Align16<[i16; 64 * 384]>,
             w: c_int,
             h: c_int,
             wt: &[i16; 2],
@@ -1464,8 +1462,6 @@ mod neon {
             let dst_stride = dst.stride();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
-            let t1 = t1.as_mut_ptr();
-            let t2 = t2.as_mut_ptr();
             let wt = wt.as_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
@@ -1491,9 +1487,9 @@ mod neon {
         let h = h as c_int;
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
-        rav1d_sgr_filter2_neon(&mut tmp.0, dst, left, lpf, w, h, sgr.s0, edges, bd);
+        rav1d_sgr_filter2_neon(&mut tmp, dst, left, lpf, w, h, sgr.s0, edges, bd);
         bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp.0, w, h, sgr.w0, bd);
+            .call(dst, dst, &mut tmp, w, h, sgr.w0, bd);
     }
 
     pub fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1510,9 +1506,9 @@ mod neon {
         let h = h as c_int;
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
-        rav1d_sgr_filter1_neon(&mut tmp.0, dst, left, lpf, w, h, sgr.s1, edges, bd);
+        rav1d_sgr_filter1_neon(&mut tmp, dst, left, lpf, w, h, sgr.s1, edges, bd);
         bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp.0, w, h, sgr.w1, bd);
+            .call(dst, dst, &mut tmp, w, h, sgr.w1, bd);
     }
 
     pub fn sgr_filter_mix_neon<BD: BitDepth>(
@@ -1530,19 +1526,11 @@ mod neon {
         let mut tmp1 = Align16([0; 64 * 384]);
         let mut tmp2 = Align16([0; 64 * 384]);
         let sgr = params.sgr();
-        rav1d_sgr_filter2_neon(&mut tmp1.0, dst, left, lpf, w, h, sgr.s0, edges, bd);
-        rav1d_sgr_filter1_neon(&mut tmp2.0, dst, left, lpf, w, h, sgr.s1, edges, bd);
+        rav1d_sgr_filter2_neon(&mut tmp1, dst, left, lpf, w, h, sgr.s0, edges, bd);
+        rav1d_sgr_filter1_neon(&mut tmp2, dst, left, lpf, w, h, sgr.s1, edges, bd);
         let wt = [sgr.w0, sgr.w1];
-        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon).call(
-            dst,
-            dst,
-            &mut tmp1.0,
-            &mut tmp2.0,
-            w,
-            h,
-            &wt,
-            bd,
-        );
+        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+            .call(dst, dst, &mut tmp1, &mut tmp2, w, h, &wt, bd);
     }
 }
 
