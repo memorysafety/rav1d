@@ -1298,47 +1298,38 @@ mod neon {
             .call::<BD>(tmp, src, a, b, w, h);
     }
 
-    unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_box5_h(
         sumsq: *mut i32,
         sum: *mut i16,
-        left: Option<&[LeftPixelRow<BD::Pixel>]>,
-        src: *const BD::Pixel,
+        left: *const LeftPixelRow<DynPixel>,
+        src: *const DynPixel,
         stride: ptrdiff_t,
         w: c_int,
         h: c_int,
         edges: LrEdgeFlags,
-    ) {
-        macro_rules! asm_fn {
-            ($name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        sumsq: *mut i32,
-                        sum: *mut i16,
-                        left: *const c_void,
-                        src: *const c_void,
-                        stride: ptrdiff_t,
-                        w: c_int,
-                        h: c_int,
-                        edges: LrEdgeFlags,
-                    );
-                }
-                $name
-            }};
+    ) -> ());
+
+    impl sgr_box5_h::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            sumsq: &mut [i32],
+            sum: &mut [i16],
+            left: Option<&[LeftPixelRow<BD::Pixel>]>,
+            src: *const BD::Pixel,
+            stride: ptrdiff_t,
+            w: c_int,
+            h: c_int,
+            edges: LrEdgeFlags,
+        ) {
+            let sumsq = sumsq.as_mut_ptr();
+            let sum = sum.as_mut_ptr();
+            let left = left
+                .map(|left| left.as_ptr().cast())
+                .unwrap_or_else(ptr::null);
+            let src = src.cast();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
         }
-        (match BD::BPC {
-            BPC::BPC8 => asm_fn!(dav1d_sgr_box5_h_8bpc_neon),
-            BPC::BPC16 => asm_fn!(dav1d_sgr_box5_h_16bpc_neon),
-        })(
-            sumsq,
-            sum,
-            left.map(|left| left.as_ptr().cast())
-                .unwrap_or_else(ptr::null),
-            src.cast(),
-            stride,
-            w,
-            h,
-            edges,
-        )
     }
 
     unsafe fn rav1d_sgr_finish_filter2_neon<BD: BitDepth>(
@@ -1397,9 +1388,9 @@ mod neon {
         let sumsq = &mut sumsq_mem.0[8..];
         let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
         let sum = &mut sum_mem.0[16..];
-        rav1d_sgr_box5_h_neon::<BD>(
-            sumsq[2 * STRIDE..].as_mut_ptr(),
-            sum[2 * STRIDE..].as_mut_ptr(),
+        bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+            &mut sumsq[2 * STRIDE..],
+            &mut sum[2 * STRIDE..],
             Some(left),
             src.as_ptr::<BD>(),
             src.stride(),
@@ -1408,9 +1399,9 @@ mod neon {
             edges,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            rav1d_sgr_box5_h_neon::<BD>(
-                sumsq.as_mut_ptr(),
-                sum.as_mut_ptr(),
+            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+                sumsq,
+                sum,
                 None,
                 lpf,
                 src.stride(),
@@ -1421,9 +1412,9 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             let h = h as usize;
-            rav1d_sgr_box5_h_neon::<BD>(
-                sumsq[(h + 2) * STRIDE..].as_mut_ptr(),
-                sum[(h + 2) * STRIDE..].as_mut_ptr(),
+            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+                &mut sumsq[(h + 2) * STRIDE..],
+                &mut sum[(h + 2) * STRIDE..],
                 None,
                 // `lpf` may be negatively out of bounds.
                 lpf.wrapping_offset(6 * src.pixel_stride::<BD>()),
