@@ -14,15 +14,21 @@ use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_sgr_params;
 use assert_matches::assert_matches;
+use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_uint;
 
-pub type LrRestorePlanes = c_uint;
-pub const LR_RESTORE_V: LrRestorePlanes = 4;
-pub const LR_RESTORE_U: LrRestorePlanes = 2;
-pub const LR_RESTORE_Y: LrRestorePlanes = 1;
+bitflags! {
+    #[derive(Clone, Copy, Default)]
+    pub struct LrRestorePlanes: u8 {
+        const Y = 1 << 0;
+        const U = 1 << 1;
+        const V = 1 << 2;
+
+        const UV = Self::U.bits() | Self::V.bits();
+    }
+}
 
 fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
@@ -249,7 +255,7 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
     let restore_planes = f.lf.restore_planes;
     let not_last = ((sby + 1) < f.sbh) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    if restore_planes & LR_RESTORE_Y as c_int != 0 {
+    if restore_planes.contains(LrRestorePlanes::Y) {
         let h = f.sr_cur.p.p.h;
         let w = f.sr_cur.p.p.w;
         let next_row_y = (sby + 1) << 6 + seq_hdr.sb128;
@@ -266,7 +272,7 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
             0,
         );
     }
-    if restore_planes & (LR_RESTORE_U | LR_RESTORE_V) as c_int != 0 {
+    if restore_planes.intersects(LrRestorePlanes::UV) {
         let ss_ver = (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
         let ss_hor = (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
         let h = f.sr_cur.p.p.h + ss_ver >> ss_ver;
@@ -275,7 +281,7 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
         let row_h = cmp::min(next_row_y - (8 >> ss_ver) * not_last, h);
         let offset_uv = offset_y >> ss_ver;
         let y_stripe = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
-        if restore_planes & LR_RESTORE_U as c_int != 0 {
+        if restore_planes.contains(LrRestorePlanes::U) {
             lr_sbrow::<BD>(
                 c,
                 f,
@@ -287,7 +293,7 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
                 1,
             );
         }
-        if restore_planes & LR_RESTORE_V as c_int != 0 {
+        if restore_planes.contains(LrRestorePlanes::V) {
             lr_sbrow::<BD>(
                 c,
                 f,

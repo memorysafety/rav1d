@@ -9,9 +9,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
-use crate::src::lr_apply::LR_RESTORE_U;
-use crate::src::lr_apply::LR_RESTORE_V;
-use crate::src::lr_apply::LR_RESTORE_Y;
+use crate::src::lr_apply::LrRestorePlanes;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::strided::Strided as _;
 use crate::src::strided::WithStride;
@@ -174,12 +172,12 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
 
-    if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_Y as c_int != 0 {
+    if seq_hdr.cdef != 0 || restore_planes.contains(LrRestorePlanes::Y) {
         let h = f.cur.p.h;
         let w = f.bw << 2;
         let row_h = cmp::min((sby + 1) << 6 + seq_hdr.sb128, h - 1);
         let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
-        if restore_planes & LR_RESTORE_Y as c_int != 0 || resize == 0 {
+        if restore_planes.contains(LrRestorePlanes::Y) || resize == 0 {
             backup_lpf::<BD>(
                 c,
                 WithOffset {
@@ -236,7 +234,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
             );
         }
     }
-    if (seq_hdr.cdef != 0 || restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0)
+    if (seq_hdr.cdef != 0 || restore_planes.intersects(LrRestorePlanes::UV))
         && f.cur.p.layout != Rav1dPixelLayout::I400
     {
         let ss_ver = (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -247,8 +245,8 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
         let offset_uv = offset_y >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
         let cdef_off_uv = sby as isize * 4 * src[1].pixel_stride::<BD>();
-        if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
-            if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
+        if seq_hdr.cdef != 0 || restore_planes.contains(LrRestorePlanes::U) {
+            if restore_planes.contains(LrRestorePlanes::U) || resize == 0 {
                 backup_lpf::<BD>(
                     c,
                     WithOffset {
@@ -305,8 +303,8 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                 );
             }
         }
-        if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_V as c_int != 0 {
-            if restore_planes & LR_RESTORE_V as c_int != 0 || resize == 0 {
+        if seq_hdr.cdef != 0 || restore_planes.contains(LrRestorePlanes::V) {
+            if restore_planes.contains(LrRestorePlanes::V) || resize == 0 {
                 backup_lpf::<BD>(
                     c,
                     WithOffset {

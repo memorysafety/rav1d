@@ -3681,7 +3681,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, p, mask_offset as usize, sby);
     }
-    if cdef != 0 || f.lf.restore_planes != 0 {
+    if cdef != 0 || !f.lf.restore_planes.is_empty() {
         // Store loop filtered pixels required by CDEF / LR.
         rav1d_copy_lpf::<BD>(c, f, p, sby);
     }
@@ -3791,7 +3791,7 @@ pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(c, f, t, sby);
     }
-    if f.lf.restore_planes != 0 {
+    if !f.lf.restore_planes.is_empty() {
         rav1d_filter_sbrow_lr::<BD>(c, f, t, sby);
     }
 }

@@ -399,7 +399,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
-    let has_lr = f.lf.restore_planes;
+    let has_lr = !f.lf.restore_planes.is_empty();
     if pass & 1 != 0 {
         fc.frame_thread_progress.entropy.store(0, Ordering::Relaxed);
     } else {
@@ -419,7 +419,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
         TaskType::EntropyProgress
     } else if has_deblock != 0 {
         TaskType::DeblockCols
-    } else if has_cdef != 0 || has_lr != 0 {
+    } else if has_cdef != 0 || has_lr {
         TaskType::DeblockRows
     } else if has_resize != 0 {
         TaskType::SuperResolution
@@ -1243,7 +1243,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
-                        } else if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
+                        } else if seq_hdr.cdef != 0 || !f.lf.restore_planes.is_empty() {
                             drop(f);
                             let copy_lpf = fc.frame_thread_progress.copy_lpf.try_read().unwrap();
                             copy_lpf[(sby >> 5) as usize]
@@ -1303,7 +1303,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
                     TaskType::LoopRestoration => {
                         let f = fc.data.try_read().unwrap();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0
-                            && f.lf.restore_planes != 0
+                            && !f.lf.restore_planes.is_empty()
                         {
                             (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
                         }
