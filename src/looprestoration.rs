@@ -1077,6 +1077,10 @@ mod neon {
         }
     }
 
+    /// # Safety
+    ///
+    /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
         p: *mut DynPixel,
         stride: ptrdiff_t,
@@ -1090,20 +1094,14 @@ mod neon {
         _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        wiener_filter_neon(
-            p.cast(),
-            stride,
-            left.cast(),
-            lpf.cast(),
-            w,
-            h,
-            params,
-            edges,
-            BD::from_c(bitdepth_max),
-        )
+        let p = p.cast();
+        let left = left.cast();
+        let lpf = lpf.cast();
+        let bd = BD::from_c(bitdepth_max);
+        wiener_filter_neon(p, stride, left, lpf, w, h, params, edges, bd)
     }
 
-    unsafe fn wiener_filter_neon<BD: BitDepth>(
+    fn wiener_filter_neon<BD: BitDepth>(
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         left: *const LeftPixelRow<BD::Pixel>,
