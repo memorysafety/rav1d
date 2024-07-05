@@ -1506,7 +1506,7 @@ mod neon {
         }
     }
 
-    pub unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
+    pub fn sgr_filter_5x5_neon<BD: BitDepth>(
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
@@ -1525,7 +1525,7 @@ mod neon {
             .call(dst, dst, &mut tmp.0, w, h, sgr.w0, bd);
     }
 
-    pub unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
+    pub fn sgr_filter_3x3_neon<BD: BitDepth>(
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
@@ -1544,7 +1544,7 @@ mod neon {
             .call(dst, dst, &mut tmp.0, w, h, sgr.w1, bd);
     }
 
-    pub unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
+    pub fn sgr_filter_mix_neon<BD: BitDepth>(
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow<BD::Pixel>],
         lpf: *const BD::Pixel,
