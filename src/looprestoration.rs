@@ -979,24 +979,32 @@ mod neon {
         }
     }
 
-    extern "C" {
-        fn dav1d_sgr_calc_ab1_neon(
-            a: *mut i32,
-            b: *mut i16,
-            w: c_int,
-            h: c_int,
-            strength: c_int,
-            bitdepth_max: c_int,
-        );
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_calc_ab_neon(
+        a: *mut i32,
+        b: *mut i16,
+        w: c_int,
+        h: c_int,
+        strength: c_int,
+        bitdepth_max: c_int,
+    ) -> ());
 
-        fn dav1d_sgr_calc_ab2_neon(
-            a: *mut i32,
-            b: *mut i16,
+    impl sgr_calc_ab_neon::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            a: &mut [i32],
+            b: &mut [i16],
             w: c_int,
             h: c_int,
-            strength: c_int,
-            bitdepth_max: c_int,
-        );
+            strength: u32,
+            bd: BD,
+        ) {
+            let a = a.as_mut_ptr();
+            let b = b.as_mut_ptr();
+            let strength = strength as c_int;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(a, b, w, h, strength, bd) }
+        }
     }
 
     unsafe fn rav1d_wiener_filter_h_neon<BD: BitDepth>(
@@ -1320,10 +1328,10 @@ mod neon {
             h,
             edges,
         );
-        let a = sumsq[2 * STRIDE..].as_mut_ptr();
-        let b = sum[2 * STRIDE..].as_mut_ptr();
-        dav1d_sgr_calc_ab1_neon(a, b, w, h, strength as c_int, bd.into_c());
-        rav1d_sgr_finish_filter1_neon::<BD>(tmp, src, a, b, w, h);
+        let a = &mut sumsq[2 * STRIDE..];
+        let b = &mut sum[2 * STRIDE..];
+        sgr_calc_ab_neon::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
+        rav1d_sgr_finish_filter1_neon::<BD>(tmp, src, a.as_mut_ptr(), b.as_mut_ptr(), w, h);
     }
 
     unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
@@ -1469,14 +1477,7 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        dav1d_sgr_calc_ab2_neon(
-            a.as_mut_ptr(),
-            b.as_mut_ptr(),
-            w,
-            h,
-            strength as c_int,
-            bd.into_c(),
-        );
+        sgr_calc_ab_neon::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
         rav1d_sgr_finish_filter2_neon::<BD>(tmp, src, a.as_mut_ptr(), b.as_mut_ptr(), w, h);
     }
 
