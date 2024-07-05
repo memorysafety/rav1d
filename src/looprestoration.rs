@@ -998,6 +998,40 @@ mod neon {
         }
     }
 
+    wrap_fn_ptr!(unsafe extern "C" fn wiener_filter_v(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mid: *const i16,
+        w: c_int,
+        h: c_int,
+        fv: *const i16,
+        edges: LrEdgeFlags,
+        mid_stride: ptrdiff_t,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl wiener_filter_v::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            stride: ptrdiff_t,
+            mid: &mut [i16],
+            w: c_int,
+            h: c_int,
+            fv: &[i16; 8],
+            edges: LrEdgeFlags,
+            mid_stride: ptrdiff_t,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let mid = mid.as_mut_ptr();
+            let fv = fv.as_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(dst, stride, mid, w, h, fv, edges, mid_stride, bd) }
+        }
+    }
+
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v(
         sumsq: *mut i32,
         sum: *mut i16,
@@ -1041,51 +1075,6 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(a, b, w, h, strength, bd) }
         }
-    }
-
-    unsafe fn rav1d_wiener_filter_v_neon<BD: BitDepth>(
-        dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
-        mid: &mut [i16],
-        w: c_int,
-        h: c_int,
-        fv: &[i16; 8],
-        edges: LrEdgeFlags,
-        mid_stride: ptrdiff_t,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            ($name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut c_void,
-                        stride: ptrdiff_t,
-                        mid: *const i16,
-                        w: c_int,
-                        h: c_int,
-                        fv: *const i16,
-                        edges: LrEdgeFlags,
-                        mid_stride: ptrdiff_t,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
-        }
-        (match BD::BPC {
-            BPC::BPC8 => asm_fn!(dav1d_wiener_filter_v_8bpc_neon),
-            BPC::BPC16 => asm_fn!(dav1d_wiener_filter_v_16bpc_neon),
-        })(
-            dst.cast(),
-            stride,
-            mid.as_mut_ptr(),
-            w,
-            h,
-            fv.as_ptr(),
-            edges,
-            mid_stride,
-            bd.into_c(),
-        )
     }
 
     pub unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
@@ -1165,7 +1154,7 @@ mod neon {
                 bd,
             );
         }
-        rav1d_wiener_filter_v_neon(
+        bd_fn!(wiener_filter_v::decl_fn, BD, wiener_filter_v, neon).call(
             dst,
             stride,
             &mut mid.0[2 * mid_stride..],
