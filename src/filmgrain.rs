@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 #![warn(clippy::all)]
 #![allow(clippy::too_many_arguments)]
 
@@ -246,59 +247,6 @@ pub struct Rav1dFilmGrainDSPContext {
     pub generate_grain_uv: enum_map_ty!(Rav1dPixelLayoutSubSampled, generate_grain_uv::Fn),
     pub fgy_32x32xn: fgy_32x32xn::Fn,
     pub fguv_32x32xn: enum_map_ty!(Rav1dPixelLayoutSubSampled, fguv_32x32xn::Fn),
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-macro_rules! decl_fgy_32x32xn_neon_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
-            // to get the same layout of parameters on the stack across platforms.
-            fn $name(
-                dst: *mut DynPixel,
-                src: *const DynPixel,
-                stride: ptrdiff_t,
-                scaling: *const DynScaling,
-                scaling_shift: c_int,
-                grain_lut: *const GrainLut<DynEntry>,
-                offsets: *const [[c_int; 2]; 2],
-                h: c_int,
-                clip: ptrdiff_t,
-                type_0: ptrdiff_t,
-                bitdepth_max: c_int,
-            );
-        }
-
-        $name
-    }};
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-macro_rules! decl_fguv_32x32xn_neon_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
-            // to get the parameters on the stack with the same layout across platforms.
-            fn $name(
-                dst: *mut DynPixel,
-                src: *const DynPixel,
-                stride: ptrdiff_t,
-                scaling: *const DynScaling,
-                data: &Dav1dFilmGrainData,
-                grain_lut: *const GrainLut<DynEntry>,
-                luma_row: *const DynPixel,
-                luma_stride: ptrdiff_t,
-                offsets: *const [[c_int; 2]; 2],
-                h: ptrdiff_t,
-                uv: ptrdiff_t,
-                is_id: ptrdiff_t,
-                type_0: ptrdiff_t,
-                bitdepth_max: c_int,
-            );
-        }
-
-        $name
-    }};
 }
 
 #[inline]
@@ -967,213 +915,350 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
-    dst_row_ptr: *mut DynPixel,
-    src_row_ptr: *const DynPixel,
-    stride: ptrdiff_t,
-    data: &Dav1dFilmGrainData,
-    pw: usize,
-    scaling: *const DynScaling,
-    grain_lut: *const GrainLut<DynEntry>,
-    bh: c_int,
-    row_num: c_int,
-    bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-) {
-    let dst_row = dst_row_ptr.cast();
-    let src_row = src_row_ptr.cast();
-    let data = &data.clone().into();
-    let scaling = scaling.cast();
-    let grain_lut = grain_lut.cast();
-    let row_num = row_num as usize;
-    let bd = BD::from_c(bitdepth_max);
-    fgy_32x32xn_neon(
-        dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
-    )
-}
+mod neon {
+    use super::*;
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
-    dst_row: *mut BD::Pixel,
-    src_row: *const BD::Pixel,
-    stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const BD::Scaling,
-    grain_lut: *const GrainLut<BD::Entry>,
-    bh: c_int,
-    row_num: usize,
-    bd: BD,
-) {
-    let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
+    wrap_fn_ptr!(unsafe extern "C" fn fgy_32x32xn_neon(
+        dst: *mut DynPixel,
+        src: *const DynPixel,
+        stride: ptrdiff_t,
+        scaling: *const DynScaling,
+        scaling_shift: c_int,
+        grain_lut: *const GrainLut<DynEntry>,
+        offsets: &[[c_int; 2]; 2],
+        h: c_int,
+        clip: ptrdiff_t,
+        r#type: ptrdiff_t,
+        bitdepth_max: c_int,
+    ) -> ());
 
-    let mut seed = row_seed(rows, row_num, data);
-
-    let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
-
-    // process this row in FG_BLOCK_SIZE^2 blocks
-    for bx in (0..pw).step_by(FG_BLOCK_SIZE) {
-        if data.overlap_flag && bx != 0 {
-            // shift previous offsets left
-            for i in 0..rows {
-                offsets[1][i] = offsets[0][i];
+    impl fgy_32x32xn_neon::Fn {
+        /// Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
+        /// to get the same layout of parameters on the stack across platforms.
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            src: *const BD::Pixel,
+            stride: isize,
+            scaling: *const BD::Scaling,
+            scaling_shift: u8,
+            grain_lut: *const GrainLut<BD::Entry>,
+            offsets: &[[c_int; 2]; 2],
+            h: c_int,
+            clip: bool,
+            r#type: c_int,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let src = src.cast();
+            let scaling = scaling.cast();
+            let scaling_shift = scaling_shift as c_int;
+            let grain_lut = grain_lut.cast();
+            let clip = clip as ptrdiff_t;
+            let r#type = r#type as ptrdiff_t;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst,
+                    src,
+                    stride,
+                    scaling,
+                    scaling_shift,
+                    grain_lut,
+                    offsets,
+                    h,
+                    clip,
+                    r#type,
+                    bd,
+                )
             }
         }
-
-        // update current offsets
-        for i in 0..rows {
-            offsets[0][i] = get_random_number(8, &mut seed[i]);
-        }
-
-        let mut r#type = 0;
-        if data.overlap_flag && row_num != 0 {
-            r#type |= 1; // overlap y
-        }
-        if data.overlap_flag && bx != 0 {
-            r#type |= 2; // overlap x
-        }
-
-        bd_fn!(decl_fgy_32x32xn_neon_fn, BD, fgy_32x32, neon)(
-            dst_row.add(bx).cast(),
-            src_row.add(bx).cast(),
-            stride,
-            scaling.cast(),
-            data.scaling_shift.into(),
-            grain_lut.cast(),
-            &offsets,
-            bh,
-            data.clip_to_restricted_range as ptrdiff_t,
-            r#type as ptrdiff_t,
-            bd.into_c(),
-        );
     }
-}
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn fguv_32x32xn_neon_erased<
-    BD: BitDepth,
-    const NM: usize,
-    const IS_SX: bool,
-    const IS_SY: bool,
->(
-    dst_row_ptr: *mut DynPixel,
-    src_row_ptr: *const DynPixel,
-    stride: ptrdiff_t,
-    data: &Dav1dFilmGrainData,
-    pw: usize,
-    scaling: *const DynScaling,
-    grain_lut: *const GrainLut<DynEntry>,
-    bh: c_int,
-    row_num: c_int,
-    luma_row_ptr: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv: c_int,
-    is_id: c_int,
-    bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-) {
-    let dst_row = dst_row_ptr.cast();
-    let src_row = src_row_ptr.cast();
-    let data_c = data;
-    let data = &data.clone().into();
-    let scaling = scaling.cast();
-    let grain_lut = grain_lut.cast();
-    let row_num = row_num as usize;
-    let luma_row = luma_row_ptr.cast();
-    let bd = BD::from_c(bitdepth_max);
-    fguv_32x32xn_neon::<_, NM, IS_SX, IS_SY>(
-        dst_row,
-        src_row,
-        stride,
-        data,
-        data_c,
-        pw,
-        scaling,
-        grain_lut,
-        bh,
-        row_num,
-        luma_row,
-        luma_stride,
-        uv,
-        is_id,
-        bd,
-    )
-}
+    /// # Safety
+    ///
+    /// Must be called by [`fgy_32x32xn::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
+    pub unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
+        dst_row_ptr: *mut DynPixel,
+        src_row_ptr: *const DynPixel,
+        stride: ptrdiff_t,
+        data: &Dav1dFilmGrainData,
+        pw: usize,
+        scaling: *const DynScaling,
+        grain_lut: *const GrainLut<DynEntry>,
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+        _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    ) {
+        let dst_row = dst_row_ptr.cast();
+        let src_row = src_row_ptr.cast();
+        let data = &data.clone().into();
+        let scaling = scaling.cast();
+        let grain_lut = grain_lut.cast();
+        let row_num = row_num as usize;
+        let bd = BD::from_c(bitdepth_max);
+        fgy_32x32xn_neon(
+            dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+        )
+    }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, const IS_SY: bool>(
-    dst_row: *mut BD::Pixel,
-    src_row: *const BD::Pixel,
-    stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
-    data_c: &Dav1dFilmGrainData,
-    pw: usize,
-    scaling: *const BD::Scaling,
-    grain_lut: *const GrainLut<BD::Entry>,
-    bh: c_int,
-    row_num: usize,
-    luma_row: *const BD::Pixel,
-    luma_stride: ptrdiff_t,
-    uv: c_int,
-    is_id: c_int,
-    bd: BD,
-) {
-    let [sx, _sy] = [IS_SX, IS_SY].map(|it| it as usize);
+    fn fgy_32x32xn_neon<BD: BitDepth>(
+        dst_row: *mut BD::Pixel,
+        src_row: *const BD::Pixel,
+        stride: ptrdiff_t,
+        data: &Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const BD::Scaling,
+        grain_lut: *const GrainLut<BD::Entry>,
+        bh: c_int,
+        row_num: usize,
+        bd: BD,
+    ) {
+        let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
 
-    let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
+        let mut seed = row_seed(rows, row_num, data);
 
-    let mut seed = row_seed(rows, row_num, data);
+        let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
-    let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
+        // process this row in FG_BLOCK_SIZE^2 blocks
+        for bx in (0..pw).step_by(FG_BLOCK_SIZE) {
+            if data.overlap_flag && bx != 0 {
+                // shift previous offsets left
+                for i in 0..rows {
+                    offsets[1][i] = offsets[0][i];
+                }
+            }
 
-    // process this row in FG_BLOCK_SIZE^2 blocks (subsampled)
-    for bx in (0..pw).step_by(FG_BLOCK_SIZE >> sx) {
-        if data.overlap_flag && bx != 0 {
-            // shift previous offsets left
+            // update current offsets
             for i in 0..rows {
-                offsets[1][i] = offsets[0][i];
+                offsets[0][i] = get_random_number(8, &mut seed[i]);
+            }
+
+            let mut r#type = 0;
+            if data.overlap_flag && row_num != 0 {
+                r#type |= 1; // overlap y
+            }
+            if data.overlap_flag && bx != 0 {
+                r#type |= 2; // overlap x
+            }
+
+            bd_fn!(fgy_32x32xn_neon::decl_fn, BD, fgy_32x32, neon).call(
+                dst_row.wrapping_add(bx),
+                src_row.wrapping_add(bx),
+                stride,
+                scaling,
+                data.scaling_shift,
+                grain_lut,
+                &offsets,
+                bh,
+                data.clip_to_restricted_range,
+                r#type,
+                bd,
+            )
+        }
+    }
+
+    wrap_fn_ptr!(unsafe extern "C" fn fguv_32x32xn_neon(
+        dst: *mut DynPixel,
+        src: *const DynPixel,
+        stride: ptrdiff_t,
+        scaling: *const DynScaling,
+        data: &Dav1dFilmGrainData,
+        grain_lut: *const GrainLut<DynEntry>,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        offsets: &[[c_int; 2]; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        r#type: ptrdiff_t,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl fguv_32x32xn_neon::Fn {
+        /// Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
+        /// to get the parameters on the stack with the same layout across platforms.
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            src: *const BD::Pixel,
+            stride: ptrdiff_t,
+            scaling: *const BD::Scaling,
+            data: &Dav1dFilmGrainData,
+            grain_lut: *const GrainLut<BD::Entry>,
+            luma_row: *const BD::Pixel,
+            luma_stride: ptrdiff_t,
+            offsets: &[[c_int; 2]; 2],
+            h: c_int,
+            uv: c_int,
+            is_id: c_int,
+            r#type: c_int,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let src = src.cast();
+            let scaling = scaling.cast();
+            let grain_lut = grain_lut.cast();
+            let luma_row = luma_row.cast();
+            let h = h as ptrdiff_t;
+            let uv = uv as ptrdiff_t;
+            let is_id = is_id as ptrdiff_t;
+            let r#type = r#type as ptrdiff_t;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst,
+                    src,
+                    stride,
+                    scaling,
+                    data,
+                    grain_lut,
+                    luma_row,
+                    luma_stride,
+                    offsets,
+                    h,
+                    uv,
+                    is_id,
+                    r#type,
+                    bd,
+                )
             }
         }
+    }
 
-        // update current offsets
-        for i in 0..rows {
-            offsets[0][i] = get_random_number(8, &mut seed[i]);
-        }
-
-        let mut r#type = 0;
-        if data.overlap_flag && row_num != 0 {
-            r#type |= 1; // overlap y
-        }
-        if data.overlap_flag && bx != 0 {
-            r#type |= 2; // overlap x
-        }
-        if data.chroma_scaling_from_luma {
-            r#type |= 4;
-        }
-        (match NM {
-            420 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_420, neon),
-            422 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_422, neon),
-            444 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_444, neon),
-            _ => unreachable!(),
-        })(
-            dst_row.add(bx).cast(),
-            src_row.add(bx).cast(),
+    /// # Safety
+    ///
+    /// Must be called by [`fguv_32x32xn::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
+    pub unsafe extern "C" fn fguv_32x32xn_neon_erased<
+        BD: BitDepth,
+        const NM: usize,
+        const IS_SX: bool,
+        const IS_SY: bool,
+    >(
+        dst_row_ptr: *mut DynPixel,
+        src_row_ptr: *const DynPixel,
+        stride: ptrdiff_t,
+        data: &Dav1dFilmGrainData,
+        pw: usize,
+        scaling: *const DynScaling,
+        grain_lut: *const GrainLut<DynEntry>,
+        bh: c_int,
+        row_num: c_int,
+        luma_row_ptr: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+        _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    ) {
+        let dst_row = dst_row_ptr.cast();
+        let src_row = src_row_ptr.cast();
+        let data_c = data;
+        let data = &data.clone().into();
+        let scaling = scaling.cast();
+        let grain_lut = grain_lut.cast();
+        let row_num = row_num as usize;
+        let luma_row = luma_row_ptr.cast();
+        let bd = BD::from_c(bitdepth_max);
+        fguv_32x32xn_neon::<_, NM, IS_SX, IS_SY>(
+            dst_row,
+            src_row,
             stride,
-            scaling.cast(),
+            data,
             data_c,
-            grain_lut.cast(),
-            luma_row.add(bx << sx).cast(),
+            pw,
+            scaling,
+            grain_lut,
+            bh,
+            row_num,
+            luma_row,
             luma_stride,
-            &offsets,
-            bh as ptrdiff_t,
-            uv as ptrdiff_t,
-            is_id as ptrdiff_t,
-            r#type as ptrdiff_t,
-            bd.into_c(),
-        );
+            uv,
+            is_id,
+            bd,
+        )
+    }
+
+    fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, const IS_SY: bool>(
+        dst_row: *mut BD::Pixel,
+        src_row: *const BD::Pixel,
+        stride: ptrdiff_t,
+        data: &Rav1dFilmGrainData,
+        data_c: &Dav1dFilmGrainData,
+        pw: usize,
+        scaling: *const BD::Scaling,
+        grain_lut: *const GrainLut<BD::Entry>,
+        bh: c_int,
+        row_num: usize,
+        luma_row: *const BD::Pixel,
+        luma_stride: ptrdiff_t,
+        uv: c_int,
+        is_id: c_int,
+        bd: BD,
+    ) {
+        let [sx, _sy] = [IS_SX, IS_SY].map(|it| it as usize);
+
+        let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
+
+        let mut seed = row_seed(rows, row_num, data);
+
+        let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
+
+        // process this row in FG_BLOCK_SIZE^2 blocks (subsampled)
+        for bx in (0..pw).step_by(FG_BLOCK_SIZE >> sx) {
+            if data.overlap_flag && bx != 0 {
+                // shift previous offsets left
+                for i in 0..rows {
+                    offsets[1][i] = offsets[0][i];
+                }
+            }
+
+            // update current offsets
+            for i in 0..rows {
+                offsets[0][i] = get_random_number(8, &mut seed[i]);
+            }
+
+            let mut r#type = 0;
+            if data.overlap_flag && row_num != 0 {
+                r#type |= 1; // overlap y
+            }
+            if data.overlap_flag && bx != 0 {
+                r#type |= 2; // overlap x
+            }
+            if data.chroma_scaling_from_luma {
+                r#type |= 4;
+            }
+            (match NM {
+                420 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_420, neon),
+                422 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_422, neon),
+                444 => bd_fn!(fguv_32x32xn_neon::decl_fn, BD, fguv_32x32_444, neon),
+                _ => unreachable!(),
+            })
+            .call(
+                dst_row.wrapping_add(bx),
+                src_row.wrapping_add(bx),
+                stride,
+                scaling,
+                data_c,
+                grain_lut,
+                luma_row.wrapping_add(bx << sx),
+                luma_stride,
+                &offsets,
+                bh,
+                uv,
+                is_id,
+                r#type,
+                bd,
+            )
+        }
     }
 }
 
@@ -1269,11 +1354,11 @@ impl Rav1dFilmGrainDSPContext {
             I444 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_444, neon),
         });
 
-        self.fgy_32x32xn = fgy_32x32xn::Fn::new(fgy_32x32xn_neon_erased::<BD>);
+        self.fgy_32x32xn = fgy_32x32xn::Fn::new(neon::fgy_32x32xn_neon_erased::<BD>);
         self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
-            I420 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>),
-            I422 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>),
-            I444 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>),
+            I420 => fguv_32x32xn::Fn::new(neon::fguv_32x32xn_neon_erased::<BD, 420, true, true>),
+            I422 => fguv_32x32xn::Fn::new(neon::fguv_32x32xn_neon_erased::<BD, 422, true, false>),
+            I444 => fguv_32x32xn::Fn::new(neon::fguv_32x32xn_neon_erased::<BD, 444, false, false>),
         });
 
         self
