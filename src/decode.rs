@@ -119,6 +119,7 @@ use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
+use crate::src::lr_apply::LrRestorePlanes;
 use crate::src::msac::rav1d_msac_decode_bool;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -3937,7 +3938,7 @@ fn setup_tile(
         )
     };
     for p in 0..3 {
-        if !((lf.restore_planes >> p) & 1 != 0) {
+        if !((lf.restore_planes.bits() >> p) & 1 != 0) {
             continue;
         }
 
@@ -4197,7 +4198,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter
         for p in 0..3 {
-            if (f.lf.restore_planes >> p) & 1 == 0 {
+            if (f.lf.restore_planes.bits() >> p) & 1 == 0 {
                 continue;
             }
 
@@ -4538,14 +4539,15 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     // TODO: Fallible allocation
     f.lf.lr_mask
         .resize_with(lr_mask_sz as usize, Default::default);
-    f.lf.restore_planes = frame_hdr
-        .restoration
-        .r#type
-        .iter()
-        .enumerate()
-        .map(|(i, &r#type)| ((r#type != Rav1dRestorationType::None) as u8) << i)
-        .sum::<u8>()
-        .into();
+    f.lf.restore_planes = LrRestorePlanes::from_bits_truncate(
+        frame_hdr
+            .restoration
+            .r#type
+            .iter()
+            .enumerate()
+            .map(|(i, &r#type)| ((r#type != Rav1dRestorationType::None) as u8) << i)
+            .sum::<u8>(),
+    );
     if frame_hdr.loopfilter.sharpness != f.lf.last_sharpness {
         rav1d_calc_eih(&mut f.lf.lim_lut.0, frame_hdr.loopfilter.sharpness);
         f.lf.last_sharpness = frame_hdr.loopfilter.sharpness;

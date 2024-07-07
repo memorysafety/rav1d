@@ -49,6 +49,7 @@ use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLogger;
 use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
+use crate::src::lr_apply::LrRestorePlanes;
 use crate::src::mc::Rav1dMCDSPContext;
 use crate::src::mem::MemPool;
 use crate::src::msac::MsacContext;
@@ -711,7 +712,7 @@ pub struct Rav1dFrameContext_lf {
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
-    pub restore_planes: c_int, // enum LrRestorePlanes
+    pub restore_planes: LrRestorePlanes,
 }
 
 #[derive(Default)]
