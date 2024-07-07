@@ -14,10 +14,12 @@ use crate::src::ffi_safe::FFISafe;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_sgr_x_by_x;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::iter;
 use std::mem;
 use std::ops::Add;
 use std::slice;
@@ -35,11 +37,26 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type LrEdgeFlags = c_uint;
-pub const LR_HAVE_BOTTOM: LrEdgeFlags = 8;
-pub const LR_HAVE_TOP: LrEdgeFlags = 4;
-pub const LR_HAVE_RIGHT: LrEdgeFlags = 2;
-pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
+bitflags! {
+    #[derive(Clone, Copy)]
+    #[repr(transparent)]
+    pub struct LrEdgeFlags: u8 {
+        const LEFT = 1 << 0;
+        const RIGHT = 1 << 1;
+        const TOP = 1 << 2;
+        const BOTTOM = 1 << 3;
+    }
+}
+
+impl LrEdgeFlags {
+    pub const fn select(&self, select: bool) -> Self {
+        if select {
+            *self
+        } else {
+            Self::empty()
+        }
+    }
+}
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
@@ -59,7 +76,7 @@ pub struct LooprestorationParamsSgr {
 #[repr(C)]
 #[repr(align(16))]
 pub struct LooprestorationParams {
-    /// [`Align16`] moved to [`Self`] we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
+    /// [`Align16`] moved to [`Self`] because we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
     ///
     /// [`Align16`]: crate::src::align::Align16
     pub filter: [[i16; 8]; 2],
@@ -156,14 +173,13 @@ pub struct Rav1dLoopRestorationDSPContext {
     pub sgr: [loop_restoration_filter::Fn; 3],
 }
 
-// 256 * 1.5 + 3 + 3 = 390
-const REST_UNIT_STRIDE: usize = 390;
+const REST_UNIT_STRIDE: usize = 256 * 3 / 2 + 3 + 3;
 
 // TODO Reuse p when no padding is needed (add and remove lpf pixels in p)
 // TODO Chroma only requires 2 rows of padding.
 #[inline(never)]
 fn padding<BD: BitDepth>(
-    dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    dst: &mut [BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     p: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow<BD::Pixel>],
     lpf: &DisjointMut<AlignedVec64<u8>>,
@@ -176,9 +192,13 @@ fn padding<BD: BitDepth>(
     assert!(stripe_h > 0);
     let stride = p.pixel_stride::<BD>();
 
-    let [have_left, have_right, have_top, have_bottom] =
-        [LR_HAVE_LEFT, LR_HAVE_RIGHT, LR_HAVE_TOP, LR_HAVE_BOTTOM]
-            .map(|lr_have| edges & lr_have != 0);
+    let [have_left, have_right, have_top, have_bottom] = [
+        LrEdgeFlags::LEFT,
+        LrEdgeFlags::RIGHT,
+        LrEdgeFlags::TOP,
+        LrEdgeFlags::BOTTOM,
+    ]
+    .map(|lr_have| edges.contains(lr_have));
     let [have_left_3, have_right_3] = [have_left, have_right].map(|have| 3 * have as usize);
 
     // Copy more pixels if we don't have to pad them
@@ -376,13 +396,13 @@ fn wiener_rust<BD: BitDepth>(
 ) {
     // Wiener filtering is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.into(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
 
     // Values stored between horizontal and vertical filtering don't
     // fit in a u8.
-    let mut hor = [0; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut hor = [0; (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     let filter = &params.filter;
     let bitdepth = bd.bitdepth().as_::<c_int>();
@@ -401,7 +421,7 @@ fn wiener_rust<BD: BitDepth>(
                 sum += tmp[i + 3].to::<i32>() * 128;
             }
 
-            for (&tmp, &filter) in std::iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
+            for (&tmp, &filter) in iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
                 sum += tmp.to::<i32>() * filter as c_int;
             }
 
@@ -455,9 +475,9 @@ fn wiener_rust<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum3<BD: BitDepth>(
-    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
 ) {
@@ -547,9 +567,9 @@ fn boxsum3<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum5<BD: BitDepth>(
-    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; (64 + 2 + 2) * REST_UNIT_STRIDE],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
 ) {
@@ -623,9 +643,8 @@ fn boxsum5<BD: BitDepth>(
 
 #[inline(never)]
 fn selfguided_filter<BD: BitDepth>(
-    dst: &mut [BD::Coef; 24576],
-    src: &[BD::Pixel; 27300],
-    _src_stride: ptrdiff_t,
+    dst: &mut [BD::Coef; 64 * 384],
+    src: &[BD::Pixel; (64 + 3 + 3) * REST_UNIT_STRIDE],
     w: usize,
     h: usize,
     n: c_int,
@@ -636,12 +655,12 @@ fn selfguided_filter<BD: BitDepth>(
 
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut sumsq = [0; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+    let mut sumsq = [0; (64 + 2 + 2) * REST_UNIT_STRIDE];
     // By inverting A and B after the boxsums, B can be of size coef instead
     // of i32
-    let mut sum = [0.as_::<BD::Coef>(); 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+    let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
 
-    let step = (n == 25) as c_int + 1;
+    let step = (n == 25) as usize + 1;
     if n == 25 {
         boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     } else {
@@ -654,7 +673,7 @@ fn selfguided_filter<BD: BitDepth>(
 
     let mut AA = A.clone() - REST_UNIT_STRIDE;
     let mut BB = B.clone() - REST_UNIT_STRIDE;
-    for _ in (-1..h as isize + 1).step_by(step as usize) {
+    for _ in (-1..h as isize + 1).step_by(step) {
         for i in -1..w as isize + 1 {
             let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
             let b = BB[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
@@ -693,6 +712,8 @@ fn selfguided_filter<BD: BitDepth>(
                 * 3
     }
 
+    const MAX_RESTORATION_WIDTH: usize = 256 * 3 / 2;
+
     let mut src = &src[3 * REST_UNIT_STRIDE + 3..];
     let mut dst = dst.as_mut_slice();
     if n == 25 {
@@ -703,7 +724,7 @@ fn selfguided_filter<BD: BitDepth>(
                 let b = six_neighbors(&A, i as isize);
                 dst[i] = ((b - a * src[i].as_::<c_int>() + (1 << 8)) >> 9).as_();
             }
-            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
@@ -712,7 +733,7 @@ fn selfguided_filter<BD: BitDepth>(
                 let b = A[i] * 6 + (A[i as isize - 1] + A[i + 1]) * 5;
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
-            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
@@ -786,7 +807,7 @@ fn sgr_5x5_rust<BD: BitDepth>(
 ) {
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     // Selfguided filter outputs to a maximum stripe height of 64 and a
     // maximum restoration width of 384 (256 * 1.5)
@@ -794,16 +815,7 @@ fn sgr_5x5_rust<BD: BitDepth>(
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        25,
-        sgr.s0,
-        bd,
-    );
+    selfguided_filter(&mut dst, &mut tmp, w, h, 25, sgr.s0, bd);
 
     let w0 = sgr.w0 as c_int;
     for j in 0..h {
@@ -859,21 +871,12 @@ fn sgr_3x3_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst = [0.as_(); 64 * 384];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        9,
-        sgr.s1,
-        bd,
-    );
+    selfguided_filter(&mut dst, &mut tmp, w, h, 9, sgr.s1, bd);
 
     let w1 = sgr.w1 as c_int;
     for j in 0..h {
@@ -929,32 +932,14 @@ fn sgr_mix_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst0 = [0.as_(); 64 * 384];
     let mut dst1 = [0.as_(); 64 * 384];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
     let sgr = params.sgr();
-    selfguided_filter(
-        &mut dst0,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        25,
-        sgr.s0,
-        bd,
-    );
-    selfguided_filter(
-        &mut dst1,
-        &mut tmp,
-        REST_UNIT_STRIDE as ptrdiff_t,
-        w,
-        h,
-        9,
-        sgr.s1,
-        bd,
-    );
+    selfguided_filter(&mut dst0, &mut tmp, w, h, 25, sgr.s0, bd);
+    selfguided_filter(&mut dst1, &mut tmp, w, h, 9, sgr.s1, bd);
 
     let w0 = sgr.w0 as c_int;
     let w1 = sgr.w1 as c_int;
@@ -1141,8 +1126,8 @@ mod neon {
         bd: BD,
     ) {
         let filter = &params.filter;
-        let mut mid: Align16<[i16; 68 * 384]> = Align16([0; 68 * 384]);
-        let mid_stride: c_int = w + 7 & !7;
+        let mut mid = Align16([0; 68 * 384]);
+        let mid_stride = w + 7 & !7;
         rav1d_wiener_filter_h_neon(
             &mut mid.0[2 * mid_stride as usize..],
             left,
@@ -1154,10 +1139,10 @@ mod neon {
             edges,
             bd,
         );
-        if edges & LR_HAVE_TOP != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[..],
-                core::ptr::null(),
+                ptr::null(),
                 lpf,
                 stride,
                 &filter[0],
@@ -1167,10 +1152,10 @@ mod neon {
                 bd,
             );
         }
-        if edges & LR_HAVE_BOTTOM != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_wiener_filter_h_neon(
                 &mut mid.0[(2 + h as usize) * mid_stride as usize..],
-                core::ptr::null(),
+                ptr::null(),
                 lpf.offset(6 * BD::pxstride(stride)),
                 stride,
                 &filter[0],
@@ -1188,7 +1173,7 @@ mod neon {
             h,
             &filter[1],
             edges,
-            (mid_stride as usize * ::core::mem::size_of::<i16>()) as ptrdiff_t,
+            (mid_stride as usize * mem::size_of::<i16>()) as ptrdiff_t,
             bd,
         );
     }
@@ -1274,6 +1259,7 @@ mod neon {
         )
     }
 
+    /// Filter with a 3x3 box (radius=1).
     unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
         tmp: &mut [i16; 64 * 384],
         src: Rav1dPictureDataComponentOffset,
@@ -1285,18 +1271,12 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
-        let sumsq: *mut i32 = &mut *sumsq_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
-        let a: *mut i32 = sumsq;
-        let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
-        let sum: *mut i16 = &mut *sum_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
-        let b: *mut i16 = sum;
+        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
+        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
+        let a = sumsq;
+        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
+        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
+        let b = sum;
         rav1d_sgr_box3_h_neon::<BD>(
             sumsq,
             sum,
@@ -1307,27 +1287,27 @@ mod neon {
             h,
             edges,
         );
-        if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box3_h_neon::<BD>(
-                &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
-                &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
+                sumsq.offset(-2 * (384 + 16)),
+                sum.offset(-2 * (384 + 16)),
                 None,
                 lpf,
                 src.stride(),
                 w,
-                2 as c_int,
+                2,
                 edges,
             );
         }
-        if edges as c_uint & LR_HAVE_BOTTOM as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box3_h_neon::<BD>(
-                &mut *sumsq.offset((h * (384 + 16)) as isize),
-                &mut *sum.offset((h * (384 + 16)) as isize),
+                sumsq.offset(h as isize * (384 + 16)),
+                sum.offset(h as isize * (384 + 16)),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
                 w,
-                2 as c_int,
+                2,
                 edges,
             );
         }
@@ -1417,6 +1397,7 @@ mod neon {
         )
     }
 
+    /// Filter with a 5x5 box (radius=2).
     unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
         tmp: &mut [i16; 64 * 384],
         src: Rav1dPictureDataComponentOffset,
@@ -1428,18 +1409,12 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
-        let sumsq: *mut i32 = &mut *sumsq_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
-        let a: *mut i32 = sumsq;
-        let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
-        let sum: *mut i16 = &mut *sum_mem
-            .0
-            .as_mut_ptr()
-            .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
-        let b: *mut i16 = sum;
+        let mut sumsq_mem = Align16([0; (384 + 16) * 68 + 8]);
+        let sumsq = sumsq_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 8);
+        let a = sumsq;
+        let mut sum_mem = Align16([0; (384 + 16) * 68 + 16]);
+        let sum = sum_mem.0.as_mut_ptr().offset((384 + 16) * 2 + 16);
+        let b = sum;
         rav1d_sgr_box5_h_neon::<BD>(
             sumsq,
             sum,
@@ -1450,10 +1425,10 @@ mod neon {
             h,
             edges,
         );
-        if edges as c_uint & LR_HAVE_TOP as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             rav1d_sgr_box5_h_neon::<BD>(
-                &mut *sumsq.offset((-(2 as c_int) * (384 + 16)) as isize),
-                &mut *sum.offset((-(2 as c_int) * (384 + 16)) as isize),
+                sumsq.offset(-2 * (384 + 16)),
+                sum.offset(-2 * (384 + 16)),
                 None,
                 lpf,
                 src.stride(),
@@ -1462,10 +1437,10 @@ mod neon {
                 edges,
             );
         }
-        if edges as c_uint & LR_HAVE_BOTTOM as c_int as c_uint != 0 {
+        if edges.contains(LrEdgeFlags::BOTTOM) {
             rav1d_sgr_box5_h_neon::<BD>(
-                &mut *sumsq.offset((h * (384 + 16)) as isize),
-                &mut *sum.offset((h * (384 + 16)) as isize),
+                sumsq.offset(h as isize * (384 + 16)),
+                sum.offset(h as isize * (384 + 16)),
                 None,
                 lpf.offset(6 * src.pixel_stride::<BD>()),
                 src.stride(),
@@ -2035,7 +2010,7 @@ mod neon {
         rav1d_sgr_finish_filter2_2rows_neon(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
         rav1d_sgr_finish_filter1_2rows_neon(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
 
-        let wt: [i16; 2] = [w0 as i16, w1 as i16];
+        let wt = [w0 as i16, w1 as i16];
         macro_rules! asm_fn {
             (fn $name:ident) => {{
                 extern "C" {
@@ -2125,7 +2100,7 @@ mod neon {
 
         let sgr = params.sgr();
 
-        if (edges & LR_HAVE_TOP) != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             sumsq_ptrs = sumsq_rows;
             sum_ptrs = sum_rows;
 
@@ -2257,7 +2232,7 @@ mod neon {
             h -= 1;
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 
@@ -2395,7 +2370,7 @@ mod neon {
 
         let sgr = params.sgr();
 
-        if (edges & LR_HAVE_TOP) != 0 {
+        if edges.contains(LrEdgeFlags::TOP) {
             for i in 0..5 {
                 sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
                 sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
@@ -2624,7 +2599,7 @@ mod neon {
             }
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 
@@ -2817,7 +2792,7 @@ mod neon {
         }
         let mut track = Track::main;
 
-        let lr_have_top = (edges & LR_HAVE_TOP) != 0;
+        let lr_have_top = edges.contains(LrEdgeFlags::TOP);
 
         let mut sumsq3_ptrs = [ptr::null_mut(); 3];
         let mut sum3_ptrs = [ptr::null_mut(); 3];
@@ -3188,7 +3163,7 @@ mod neon {
             }
         }
 
-        if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
             track = Track::vert2;
         }
 

@@ -9,10 +9,6 @@ use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LooprestorationParamsSgr;
 use crate::src::looprestoration::LrEdgeFlags;
-use crate::src::looprestoration::LR_HAVE_BOTTOM;
-use crate::src::looprestoration::LR_HAVE_LEFT;
-use crate::src::looprestoration::LR_HAVE_RIGHT;
-use crate::src::looprestoration::LR_HAVE_TOP;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_sgr_params;
 use assert_matches::assert_matches;
@@ -93,9 +89,10 @@ fn lr_stripe<BD: BitDepth>(
 
     let mut left = &left[..];
     while y + stripe_h <= row_h {
-        // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
-        edges ^= (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as LrEdgeFlags ^ edges)
-            & LR_HAVE_BOTTOM;
+        edges.set(
+            LrEdgeFlags::BOTTOM,
+            sby + 1 != f.sbh || y + stripe_h != row_h,
+        );
         lr_fn.call::<BD>(
             p,
             left,
@@ -110,7 +107,7 @@ fn lr_stripe<BD: BitDepth>(
         left = &left[stripe_h as usize..];
         y += stripe_h;
         p += stripe_h as isize * p.pixel_stride::<BD>();
-        edges |= LR_HAVE_TOP;
+        edges |= LrEdgeFlags::TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
             break;
@@ -171,7 +168,7 @@ fn lr_sbrow<BD: BitDepth>(
     let mut pre_lr_border: Align16<[[[BD::Pixel; 4]; 128 + 8]; 2]> =
         Align16([[[0.into(); 4]; 128 + 8]; 2]);
     let mut lr = [Av1RestorationUnit::default(); 2];
-    let mut edges: LrEdgeFlags = (if y > 0 { LR_HAVE_TOP } else { 0 }) | LR_HAVE_RIGHT;
+    let mut edges = LrEdgeFlags::TOP.select(y > 0) | LrEdgeFlags::RIGHT;
     let mut aligned_unit_pos = row_y & !(unit_size - 1);
     if aligned_unit_pos != 0 && aligned_unit_pos + half_unit_size > h {
         aligned_unit_pos -= unit_size;
@@ -218,11 +215,11 @@ fn lr_sbrow<BD: BitDepth>(
         x = next_x;
         restore = restore_next;
         p += unit_size as usize;
-        edges |= LR_HAVE_LEFT;
+        edges |= LrEdgeFlags::LEFT;
         bit = !bit;
     }
     if restore {
-        edges &= !LR_HAVE_RIGHT;
+        edges &= !LrEdgeFlags::RIGHT;
         let unit_w = w - x;
         lr_stripe::<BD>(
             c,
