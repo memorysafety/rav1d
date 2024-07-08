@@ -1821,7 +1821,51 @@ mod neon {
         rotate::<2, 1>(A_ptrs, B_ptrs);
     }
 
-    unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
+    const FILTER_OUT_STRIDE: usize = 384;
+
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_weighted2(
+        dst: *mut DynPixel,
+        dst_stride: ptrdiff_t,
+        src: *const DynPixel,
+        src_stride: ptrdiff_t,
+        t1: *const i16,
+        t2: *const i16,
+        w: c_int,
+        h: c_int,
+        wt: *const i16,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl sgr_weighted2::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: Rav1dPictureDataComponentOffset,
+            src: Rav1dPictureDataComponentOffset,
+            t1: &Align16<[i16; 2 * FILTER_OUT_STRIDE]>,
+            t2: &Align16<[i16; 2 * FILTER_OUT_STRIDE]>,
+            w: c_int,
+            h: c_int,
+            wt: &[i16; 2],
+            bd: BD,
+        ) {
+            let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+            let dst_stride = dst.stride();
+            let src_ptr = src.as_ptr::<BD>().cast();
+            let src_stride = src.stride();
+            let t1 = t1.0.as_ptr();
+            let t2 = t2.0.as_ptr();
+            let wt = wt.as_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst_ptr, dst_stride, src_ptr, src_stride, t1, t2, w, h, wt, bd,
+                )
+            }
+        }
+    }
+
+    fn sgr_finish_mix_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
         A5_ptrs: &mut [*mut i32; 2],
         B5_ptrs: &mut [*mut i16; 2],
@@ -1833,8 +1877,6 @@ mod neon {
         w1: c_int,
         bd: BD,
     ) {
-        const FILTER_OUT_STRIDE: usize = 384;
-
         let mut tmp5 = Align16([0; 2 * FILTER_OUT_STRIDE]);
         let mut tmp3 = Align16([0; 2 * FILTER_OUT_STRIDE]);
 
@@ -1854,37 +1896,8 @@ mod neon {
         .call(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
-        macro_rules! asm_fn {
-            (fn $name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut DynPixel,
-                        dst_stride: ptrdiff_t,
-                        src: *const DynPixel,
-                        src_stride: ptrdiff_t,
-                        t1: *const i16,
-                        t2: *const i16,
-                        w: c_int,
-                        h: c_int,
-                        wt: *const i16,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
-        }
-        bd_fn!(asm_fn, BD, sgr_weighted2, neon)(
-            dst.as_mut_ptr::<BD>().cast(),
-            dst.stride(),
-            dst.as_ptr::<BD>().cast(),
-            dst.stride(),
-            tmp5.0.as_mut_ptr(),
-            tmp3.0.as_mut_ptr(),
-            w,
-            h,
-            wt.as_ptr(),
-            bd.into_c(),
-        );
+        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+            .call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
 
         *dst += h as isize * dst.pixel_stride::<BD>();
         rotate::<2, 1>(A5_ptrs, B5_ptrs);
