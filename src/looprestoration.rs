@@ -1538,7 +1538,6 @@ mod neon {
     use super::*;
 
     use crate::src::align::Align16;
-    use std::ffi::c_void;
     use std::ptr;
 
     fn rotate<const LEN: usize, const MID: usize>(
@@ -1673,37 +1672,32 @@ mod neon {
         rotate::<5, 2>(sumsq, sum);
     }
 
-    unsafe fn rav1d_sgr_finish_weighted1_neon<BD: BitDepth>(
-        dst: Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 3],
-        B_ptrs: &mut [*mut i16; 3],
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted1(
+        dst: *mut DynPixel,
+        A_ptrs: *mut *mut i32,
+        B_ptrs: *mut *mut i16,
         w: c_int,
         w1: c_int,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            (fn $name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut c_void,
-                        A_ptrs: *mut *mut i32,
-                        B_ptrs: *mut *mut i16,
-                        w: c_int,
-                        w1: c_int,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl sgr_finish_weighted1::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: Rav1dPictureDataComponentOffset,
+            A_ptrs: &mut [*mut i32; 3],
+            B_ptrs: &mut [*mut i16; 3],
+            w: c_int,
+            w1: c_int,
+            bd: BD,
+        ) {
+            let dst = dst.as_mut_ptr::<BD>().cast();
+            let A_ptrs = A_ptrs.as_mut_ptr();
+            let B_ptrs = B_ptrs.as_mut_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(dst, A_ptrs, B_ptrs, w, w1, bd) }
         }
-        bd_fn!(asm_fn, BD, sgr_finish_weighted1, neon)(
-            dst.as_mut_ptr::<BD>().cast(),
-            A_ptrs.as_mut_ptr(),
-            B_ptrs.as_mut_ptr(),
-            w,
-            w1,
-            bd.into_c(),
-        )
     }
 
     unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
@@ -1837,7 +1831,7 @@ mod neon {
         sgr_box3_vert_neon(sumsq, sum, AA, BB, w, s, bd);
     }
 
-    unsafe fn sgr_finish1_neon<BD: BitDepth>(
+    fn sgr_finish1_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
         A_ptrs: &mut [*mut i32; 3],
         B_ptrs: &mut [*mut i16; 3],
@@ -1845,7 +1839,13 @@ mod neon {
         w1: c_int,
         bd: BD,
     ) {
-        rav1d_sgr_finish_weighted1_neon(*dst, A_ptrs, B_ptrs, w, w1, bd);
+        bd_fn!(
+            sgr_finish_weighted1::decl_fn,
+            BD,
+            sgr_finish_weighted1,
+            neon
+        )
+        .call(*dst, A_ptrs, B_ptrs, w, w1, bd);
         *dst += dst.pixel_stride::<BD>();
         rotate::<3, 1>(A_ptrs, B_ptrs);
     }
