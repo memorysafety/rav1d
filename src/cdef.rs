@@ -4,12 +4,13 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
+use crate::src::pic_or_buf::PicOrBuf;
+use crate::src::pixels::Pixels;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_cdef_directions;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -19,7 +20,6 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ptr;
-use crate::src::pixels::Pixels;
 
 #[cfg(all(
     feature = "asm",
@@ -29,7 +29,6 @@ use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::{bpc_fn, BPC};
-
 
 bitflags! {
     #[repr(transparent)]
@@ -59,11 +58,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     _bottom: *const FFISafe<CdefBottom<'_>>,
 ) -> ());
 
-#[derive(Clone, Copy)]
-pub enum CdefBottom<'a> {
-    Pic(&'a Rav1dPictureDataComponent),
-    LineBuf(&'a DisjointMut<AlignedVec64<u8>>),
-}
+pub type CdefBottom<'a> = PicOrBuf<'a, AlignedVec64<u8>>;
 
 impl cdef::Fn {
     /// CDEF operates entirely on pre-filter data.
@@ -91,8 +86,8 @@ impl cdef::Fn {
         let left = ptr::from_ref(left).cast();
         let top_ptr = (&*top.element_as(top_off) as *const BD::Pixel).cast();
         let bottom_ptr = match bottom {
-            CdefBottom::Pic(pic) => pic.as_ptr_at::<BD>(bottom_off).cast(),
-            CdefBottom::LineBuf(buf) => (&*buf.element_as(bottom_off) as *const BD::Pixel).cast(),
+            PicOrBuf::Pic(pic) => pic.as_ptr_at::<BD>(bottom_off).cast(),
+            PicOrBuf::Buf(buf) => (&*buf.element_as(bottom_off) as *const BD::Pixel).cast(),
         };
         let top = FFISafe::new(top);
         let bottom = FFISafe::new(&bottom);
@@ -237,8 +232,8 @@ fn padding<BD: BitDepth>(
         // This is a fallback `fn`, so perf is not as important here, so an extra branch
         // here should be okay.
         let bottom = match bottom {
-            CdefBottom::Pic(pic) => &*pic.slice::<BD, _>((bottom_off.., ..x_end)),
-            CdefBottom::LineBuf(buf) => &*buf.slice_as((bottom_off.., ..x_end)),
+            PicOrBuf::Pic(pic) => &*pic.slice::<BD, _>((bottom_off.., ..x_end)),
+            PicOrBuf::Buf(buf) => &*buf.slice_as((bottom_off.., ..x_end)),
         };
         for x in x_start..x_end {
             tmp[x] = bottom[x].as_::<i16>();
@@ -414,10 +409,7 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     let top_off = unsafe { top_ptr.cast::<BD::Pixel>().offset_from(top_base) } as usize;
     // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
     let bottom = *unsafe { FFISafe::get(bottom) };
-    let bottom_base = match bottom {
-        CdefBottom::Pic(pic) => pic.as_ptr::<BD>(),
-        CdefBottom::LineBuf(buf) => buf.as_mut_ptr().cast::<BD::Pixel>().cast_const(),
-    };
+    let bottom_base = bottom.as_ptr::<BD>();
     // SAFETY: Reverse of what was done in `cdef::Fn::call`. `bottom_ptr` is
     // derived from `bottom` and so is safe to calculate the offset from.
     let bottom_off = unsafe { bottom_ptr.cast::<BD::Pixel>().offset_from(bottom_base) } as usize;

@@ -7,13 +7,14 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
-use crate::src::cdef::CdefBottom;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
+use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
+use crate::src::strided::WithStride;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -284,7 +285,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 )
                             };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
+                            Some((top, PicOrBuf::Pic(bottom.data), bottom.offset))
                         } else if !sbrow_start && by + 2 >= by_end {
                             let top = (
                                 &f.lf.cdef_line_buf,
@@ -308,7 +309,14 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     ),
                                 )
                             };
-                            Some((top, CdefBottom::LineBuf(buf), offset))
+                            Some((
+                                top,
+                                PicOrBuf::Buf(WithStride {
+                                    buf,
+                                    stride: y_stride,
+                                }),
+                                offset,
+                            ))
                         } else {
                             None
                         };
@@ -322,7 +330,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 ),
                             );
                             let bottom = bptrs[0] + (8 * y_stride);
-                            (top, CdefBottom::Pic(bottom.data), bottom.offset)
+                            (top, PicOrBuf::Pic(bottom.data), bottom.offset)
                         });
 
                         if y_pri_lvl != 0 {
@@ -391,7 +399,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                         )
                                     };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    Some((top, CdefBottom::Pic(bottom.data), bottom.offset))
+                                    Some((top, PicOrBuf::Pic(bottom.data), bottom.offset))
                                 } else if !sbrow_start && by + 2 >= by_end {
                                     let top = (
                                         &f.lf.cdef_line_buf,
@@ -418,7 +426,14 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                             ),
                                         )
                                     };
-                                    Some((top, CdefBottom::LineBuf(buf), offset))
+                                    Some((
+                                        top,
+                                        PicOrBuf::Buf(WithStride {
+                                            buf,
+                                            stride: uv_stride,
+                                        }),
+                                        offset,
+                                    ))
                                 } else {
                                     None
                                 };
@@ -432,7 +447,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                         ),
                                     );
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    (top, CdefBottom::Pic(bottom.data), bottom.offset)
+                                    (top, PicOrBuf::Pic(bottom.data), bottom.offset)
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
