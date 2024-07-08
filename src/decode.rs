@@ -26,6 +26,7 @@ use crate::src::cdf::rav1d_cdf_thread_init_static;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::ctx::set_ctx;
 use crate::src::ctx::CaseSet;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::disjoint_mut::DisjointMut;
@@ -372,7 +373,8 @@ fn read_tx_tree(
             [(&t.l, txh), (&f.a[t.a], txw)],
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, val)| {
+            set_ctx!(||case, dir: (&BlockContext, u8), is_split: bool,|| {
+                let (dir, val) = dir;
                 let tx = if is_split {
                     TxfmSize::S4x4
                 } else {
@@ -380,7 +382,7 @@ fn read_tx_tree(
                     TxfmSize::from_repr(val as _).unwrap()
                 };
                 case.set_disjoint(&dir.tx, tx);
-            },
+            }),
         );
     };
 }
@@ -812,9 +814,9 @@ fn read_vartx_tree(
                 [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                |case, dir| {
+                set_ctx!(||case, dir: &BlockContext,|| {
                     case.set_disjoint(&dir.tx, TxfmSize::S4x4);
-                },
+                }),
             );
         }
     } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
@@ -823,11 +825,12 @@ fn read_vartx_tree(
                 [(&t.l, 1), (&f.a[t.a], 0)],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                |case, (dir, dir_index)| {
+                set_ctx!(||'a, case, dir: (&BlockContext, usize), b_dim: &'a [u8; 4],|| {
+                    let (dir, dir_index) = dir;
                     // TODO check unwrap is optimized out
                     let tx = TxfmSize::from_repr(b_dim[2 + dir_index] as _).unwrap();
                     case.set_disjoint(&dir.tx, tx);
-                },
+                }),
             );
         }
         uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
@@ -1207,10 +1210,10 @@ fn decode_b(
                     [&t.l, &f.a[t.a]],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
-                    |case, dir| {
+                    set_ctx!(||case, dir: &BlockContext, y_mode_nofilt: u8,|| {
                         case.set_disjoint(&dir.mode, y_mode_nofilt);
                         case.set_disjoint(&dir.intra, 1);
-                    },
+                    }),
                 );
                 if frame_type.is_inter_or_switch() {
                     let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
@@ -1232,9 +1235,9 @@ fn decode_b(
                         [&t.l, &f.a[t.a]],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
+                        set_ctx!(||'a, case, dir: &BlockContext, intra: &'a Av1BlockIntra,|| {
                             case.set_disjoint(&dir.uvmode, intra.uv_mode);
-                        },
+                        }),
                     );
                 }
             }
@@ -1282,11 +1285,11 @@ fn decode_b(
                     [&t.l, &f.a[t.a]],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
-                    |case, dir| {
+                    set_ctx!(||'a, case, dir: &BlockContext, filter: &'a [Rav1dFilterMode; 2],|| {
                         case.set_disjoint(&dir.filter[0], filter[0].into());
                         case.set_disjoint(&dir.filter[1], filter[1].into());
                         case.set_disjoint(&dir.intra, 0);
-                    },
+                    }),
                 );
 
                 if frame_type.is_inter_or_switch() {
@@ -1311,9 +1314,9 @@ fn decode_b(
                         [&t.l, &f.a[t.a]],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
+                        set_ctx!(||case, dir: &BlockContext,|| {
                             case.set_disjoint(&dir.uvmode, DC_PRED);
-                        },
+                        }),
                     );
                 }
             }
@@ -1974,7 +1977,17 @@ fn decode_b(
             [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, lw_lh, dir_index)| {
+            set_ctx!(||'a, case, dir: (&BlockContext, u8, usize),
+                y_mode_nofilt: u8,
+                pal_sz: [u8; 2],
+                seg_pred: bool,
+                b: &'a Av1Block,
+                // Only real closures can do partial borrows.
+                pal_sz_uv: &'a mut [[u8; 32]; 2] = &mut t.pal_sz_uv,
+                has_chroma: bool,
+                is_inter_or_switch: bool,
+            || {
+                let (dir, lw_lh, dir_index) = dir;
                 case.set_disjoint(&dir.tx_intra, lw_lh as i8);
                 // TODO check unwrap is optimized out
                 case.set_disjoint(&dir.tx, TxfmSize::from_repr(lw_lh as _).unwrap());
@@ -1986,7 +1999,7 @@ fn decode_b(
                 case.set_disjoint(&dir.skip, b.skip);
                 // see aomedia bug 2183 for why we use luma coordinates here
                 case.set(
-                    &mut t.pal_sz_uv[dir_index],
+                    &mut pal_sz_uv[dir_index],
                     if has_chroma { pal_sz[1] } else { 0 },
                 );
                 if is_inter_or_switch {
@@ -1996,7 +2009,7 @@ fn decode_b(
                     case.set_disjoint(&dir.filter[0], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
                     case.set_disjoint(&dir.filter[1], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
                 }
-            },
+            }),
         );
         if pal_sz[0] != 0 {
             (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
@@ -2006,9 +2019,9 @@ fn decode_b(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
-                |case, dir| {
+                set_ctx!(||case, dir: &BlockContext, uv_mode: u8,|| {
                     case.set_disjoint(&dir.uvmode, uv_mode);
-                },
+                }),
             );
             if pal_sz[1] != 0 {
                 (bd_fn.copy_pal_block_uv)(
@@ -2183,26 +2196,33 @@ fn decode_b(
             [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
+            set_ctx!(||'a, case, dir: (&BlockContext, usize),
+                b_dim: &'a [u8; 4],
+                seg_pred: bool,
+                // Only real closures can do partial borrows.
+                pal_sz_uv: &'a mut [[u8; 32]; 2] = &mut t.pal_sz_uv,
+                b: &'a Av1Block,
+            || {
+                let (dir, dir_index) = dir;
                 case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
                 case.set_disjoint(&dir.mode, DC_PRED);
                 case.set_disjoint(&dir.pal_sz, 0);
                 // see aomedia bug 2183 for why this is outside `if has_chroma {}`
-                case.set(&mut t.pal_sz_uv[dir_index], 0);
+                case.set(&mut pal_sz_uv[dir_index], 0);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, 0);
                 case.set_disjoint(&dir.intra, 0);
                 case.set_disjoint(&dir.skip, b.skip);
-            },
+            }),
         );
         if has_chroma {
             CaseSet::<32, false>::many(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
-                |case, dir| {
+                set_ctx!(||case, dir: &BlockContext,|| {
                     case.set_disjoint(&dir.uvmode, DC_PRED);
-                },
+                }),
             );
         }
     } else {
@@ -3136,14 +3156,25 @@ fn decode_b(
             [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
+            set_ctx!(||'a, case, dir: (&BlockContext, usize),
+                seg_pred: bool,
+                b: &'a Av1Block,
+                // Only real closures can do partial borrows.
+                pal_sz_uv: &'a mut [[u8; 32]; 2] = &mut t.pal_sz_uv,
+                b_dim: &'a [u8; 4],
+                comp_type: Option<CompInterType>,
+                filter: [Rav1dFilterMode; 2],
+                inter_mode: u8,
+                r#ref: [i8; 2],
+            || {
+                let (dir, dir_index) = dir;
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, b.skip_mode);
                 case.set_disjoint(&dir.intra, 0);
                 case.set_disjoint(&dir.skip, b.skip);
                 case.set_disjoint(&dir.pal_sz, 0);
                 // see aomedia bug 2183 for why this is outside if (has_chroma)
-                case.set(&mut t.pal_sz_uv[dir_index], 0);
+                case.set(&mut pal_sz_uv[dir_index], 0);
                 case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
                 case.set_disjoint(&dir.comp_type, comp_type);
                 case.set_disjoint(&dir.filter[0], filter[0]);
@@ -3151,7 +3182,7 @@ fn decode_b(
                 case.set_disjoint(&dir.mode, inter_mode);
                 case.set_disjoint(&dir.r#ref[0], r#ref[0]);
                 case.set_disjoint(&dir.r#ref[1], r#ref[1]);
-            },
+            }),
         );
 
         if has_chroma {
@@ -3159,9 +3190,9 @@ fn decode_b(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
-                |case, dir| {
+                set_ctx!(||case, dir: &BlockContext,|| {
                     case.set_disjoint(&dir.uvmode, DC_PRED);
-                },
+                }),
             );
         }
     }
@@ -3174,12 +3205,24 @@ fn decode_b(
         let b4_stride = usize::try_from(f.b4_stride).unwrap();
         let cur_segmap = &f.cur_segmap.as_ref().unwrap().inner;
         let offset = by * b4_stride + bx;
-        CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
-            for i in 0..bh4 {
-                let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id);
-            }
-        });
+        CaseSet::<32, false>::one(
+            (),
+            bw4,
+            0,
+            set_ctx!(||'a, case, _dir: (),
+                bw4: usize,
+                bh4: usize,
+                offset: usize,
+                b4_stride: usize,
+                cur_segmap: &'a DisjointMutSlice<SegmentId>,
+                b: &'a Av1Block,
+            || {
+                for i in 0..bh4 {
+                    let i = offset + i * b4_stride;
+                    case.set(&mut cur_segmap.index_mut((i.., ..bw4)), b.seg_id);
+                }
+            }),
+        );
     }
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
@@ -3796,12 +3839,16 @@ fn decode_sb(
             [(&f.a[t.a], 0), (&t.l, 1)],
             [hsz as usize; 2],
             [bx8 as usize, by8 as usize],
-            |case, (dir, dir_index)| {
+            set_ctx!(||case, dir: (&BlockContext, usize),
+                bl: BlockLevel,
+                bp: BlockPartition,
+            || {
+                let (dir, dir_index) = dir;
                 case.set_disjoint(
                     &dir.partition,
                     dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
                 );
-            },
+            }),
         );
     }
 
