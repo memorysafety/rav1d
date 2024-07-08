@@ -1700,42 +1700,36 @@ mod neon {
         }
     }
 
-    unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
-        dst: Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 2],
-        B_ptrs: &mut [*mut i16; 2],
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted2(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        A_ptrs: *mut *mut i32,
+        B_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
         w1: c_int,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            (fn $name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        dst: *mut DynPixel,
-                        stride: ptrdiff_t,
-                        A_ptrs: *mut *mut i32,
-                        B_ptrs: *mut *mut i16,
-                        w: c_int,
-                        h: c_int,
-                        w1: c_int,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl sgr_finish_weighted2::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: Rav1dPictureDataComponentOffset,
+            A_ptrs: &mut [*mut i32; 2],
+            B_ptrs: &mut [*mut i16; 2],
+            w: c_int,
+            h: c_int,
+            w1: c_int,
+            bd: BD,
+        ) {
+            let dst_ptr = dst.as_mut_ptr::<BD>().cast();
+            let dst_stride = dst.stride();
+            let A_ptrs = A_ptrs.as_mut_ptr();
+            let B_ptrs = B_ptrs.as_mut_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(dst_ptr, dst_stride, A_ptrs, B_ptrs, w, h, w1, bd) }
         }
-        bd_fn!(asm_fn, BD, sgr_finish_weighted2, neon)(
-            dst.as_mut_ptr::<BD>().cast(),
-            dst.stride(),
-            A_ptrs.as_mut_ptr(),
-            B_ptrs.as_mut_ptr(),
-            w,
-            h,
-            w1,
-            bd.into_c(),
-        )
     }
 
     unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
@@ -1850,7 +1844,7 @@ mod neon {
         rotate::<3, 1>(A_ptrs, B_ptrs);
     }
 
-    unsafe fn sgr_finish2_neon<BD: BitDepth>(
+    fn sgr_finish2_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
         A_ptrs: &mut [*mut i32; 2],
         B_ptrs: &mut [*mut i16; 2],
@@ -1859,7 +1853,13 @@ mod neon {
         w1: c_int,
         bd: BD,
     ) {
-        rav1d_sgr_finish_weighted2_neon(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
+        bd_fn!(
+            sgr_finish_weighted2::decl_fn,
+            BD,
+            sgr_finish_weighted2,
+            neon
+        )
+        .call(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
         *dst += 2 * dst.pixel_stride::<BD>();
         rotate::<2, 1>(A_ptrs, B_ptrs);
     }
