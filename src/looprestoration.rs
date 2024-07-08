@@ -1765,7 +1765,7 @@ mod neon {
         }
     }
 
-    unsafe fn sgr_box3_hv_neon<BD: BitDepth>(
+    fn sgr_box3_hv_neon<BD: BitDepth>(
         sumsq: &mut [*mut i32; 3],
         sum: &mut [*mut i16; 3],
         AA: *mut i32,
