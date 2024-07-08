@@ -24,7 +24,7 @@ pub trait Pixels {
     }
 
     /// Absolute ptr to [`BitDepth::Pixel`]s.
-    fn _as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+    fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
         self.as_mut_ptr::<BD>().cast_const()
     }
 
