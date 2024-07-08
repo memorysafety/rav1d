@@ -15,6 +15,7 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
 use crate::src::strided::WithStride;
+use crate::src::with_offset::WithOffset;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -269,30 +270,30 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             None
                         } else if sbrow_start && by == by_start {
                             let top = if resize {
-                                (
-                                    &f.lf.cdef_line_buf,
-                                    f.lf.cdef_lpf_line[0].wrapping_add_signed(
+                                WithOffset {
+                                    data: &f.lf.cdef_line_buf,
+                                    offset: f.lf.cdef_lpf_line[0].wrapping_add_signed(
                                         ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize,
                                     ),
-                                )
+                                }
                             } else {
-                                (
-                                    &f.lf.lr_line_buf,
-                                    f.lf.lr_lpf_line[0].wrapping_add_signed(
+                                WithOffset {
+                                    data: &f.lf.lr_line_buf,
+                                    offset: f.lf.lr_lpf_line[0].wrapping_add_signed(
                                         (sby * (4 << sb128) - 4) as isize * y_stride
                                             + (bx * 4) as isize,
                                     ),
-                                )
+                                }
                             };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            Some((top, PicOrBuf::Pic(bottom.data), bottom.offset))
+                            Some((top, WithOffset::pic(bottom)))
                         } else if !sbrow_start && by + 2 >= by_end {
-                            let top = (
-                                &f.lf.cdef_line_buf,
-                                f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
+                            let top = WithOffset {
+                                data: &f.lf.cdef_line_buf,
+                                offset: f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
                                     (sby * 4) as isize * y_stride + (bx * 4) as isize,
                                 ),
-                            );
+                            };
                             let (buf, offset) = if resize {
                                 (
                                     &f.lf.cdef_line_buf,
@@ -311,26 +312,28 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             };
                             Some((
                                 top,
-                                PicOrBuf::Buf(WithStride {
-                                    buf,
-                                    stride: y_stride,
-                                }),
-                                offset,
+                                WithOffset {
+                                    data: PicOrBuf::Buf(WithStride {
+                                        buf,
+                                        stride: y_stride,
+                                    }),
+                                    offset,
+                                },
                             ))
                         } else {
                             None
                         };
 
-                        let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
-                            let top = (
-                                &f.lf.cdef_line_buf,
-                                f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
+                        let (top, bot) = top_bot.unwrap_or_else(|| {
+                            let top = WithOffset {
+                                data: &f.lf.cdef_line_buf,
+                                offset: f.lf.cdef_line[tf as usize][0].wrapping_add_signed(
                                     have_tt as isize * (sby * 4) as isize * y_stride
                                         + (bx * 4) as isize,
                                 ),
-                            );
+                            };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            (top, PicOrBuf::Pic(bottom.data), bottom.offset)
+                            (top, WithOffset::pic(bottom))
                         });
 
                         if y_pri_lvl != 0 {
@@ -340,9 +343,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
-                                    top_off,
                                     bot,
-                                    bot_off,
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
@@ -356,9 +357,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
-                                top_off,
                                 bot,
-                                bot_off,
                                 0,
                                 y_sec_lvl,
                                 0,
@@ -381,33 +380,34 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     None
                                 } else if sbrow_start && by == by_start {
                                     let top = if resize {
-                                        (
-                                            &f.lf.cdef_line_buf,
-                                            f.lf.cdef_lpf_line[pl].wrapping_add_signed(
+                                        WithOffset {
+                                            data: &f.lf.cdef_line_buf,
+                                            offset: f.lf.cdef_lpf_line[pl].wrapping_add_signed(
                                                 ((sby - 1) * 4) as isize * uv_stride
                                                     + (bx * 4 >> ss_hor) as isize,
                                             ),
-                                        )
+                                        }
                                     } else {
                                         let line = sby * (4 << sb128) - 4;
-                                        (
-                                            &f.lf.lr_line_buf,
-                                            f.lf.lr_lpf_line[pl].wrapping_add_signed(
+                                        WithOffset {
+                                            data: &f.lf.lr_line_buf,
+                                            offset: f.lf.lr_lpf_line[pl].wrapping_add_signed(
                                                 line as isize * uv_stride
                                                     + (bx * 4 >> ss_hor) as isize,
                                             ),
-                                        )
+                                        }
                                     };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    Some((top, PicOrBuf::Pic(bottom.data), bottom.offset))
+                                    Some((top, WithOffset::pic(bottom)))
                                 } else if !sbrow_start && by + 2 >= by_end {
-                                    let top = (
-                                        &f.lf.cdef_line_buf,
-                                        f.lf.cdef_line[tf as usize][pl].wrapping_add_signed(
-                                            (sby * 8) as isize * uv_stride
-                                                + (bx * 4 >> ss_hor) as isize,
-                                        ),
-                                    );
+                                    let top = WithOffset {
+                                        data: &f.lf.cdef_line_buf,
+                                        offset: f.lf.cdef_line[tf as usize][pl]
+                                            .wrapping_add_signed(
+                                                (sby * 8) as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                    };
                                     let (buf, offset) = if resize {
                                         (
                                             &f.lf.cdef_line_buf,
@@ -428,35 +428,36 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     };
                                     Some((
                                         top,
-                                        PicOrBuf::Buf(WithStride {
-                                            buf,
-                                            stride: uv_stride,
-                                        }),
-                                        offset,
+                                        WithOffset {
+                                            data: PicOrBuf::Buf(WithStride {
+                                                buf,
+                                                stride: uv_stride,
+                                            }),
+                                            offset,
+                                        },
                                     ))
                                 } else {
                                     None
                                 };
 
-                                let ((top, top_off), bot, bot_off) = top_bot.unwrap_or_else(|| {
-                                    let top = (
-                                        &f.lf.cdef_line_buf,
-                                        f.lf.cdef_line[tf as usize][pl].wrapping_add_signed(
-                                            have_tt as isize * (sby * 8) as isize * uv_stride
-                                                + (bx * 4 >> ss_hor) as isize,
-                                        ),
-                                    );
+                                let (top, bot) = top_bot.unwrap_or_else(|| {
+                                    let top = WithOffset {
+                                        data: &f.lf.cdef_line_buf,
+                                        offset: f.lf.cdef_line[tf as usize][pl]
+                                            .wrapping_add_signed(
+                                                have_tt as isize * (sby * 8) as isize * uv_stride
+                                                    + (bx * 4 >> ss_hor) as isize,
+                                            ),
+                                    };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    (top, PicOrBuf::Pic(bottom.data), bottom.offset)
+                                    (top, WithOffset::pic(bottom))
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,
-                                    top_off,
                                     bot,
-                                    bot_off,
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl,
                                     uvdir,
