@@ -1732,80 +1732,37 @@ mod neon {
         }
     }
 
-    unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_filter_2rows(
         tmp: *mut i16,
-        src: Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 4],
-        B_ptrs: &mut [*mut i16; 4],
+        src: *const DynPixel,
+        src_stride: ptrdiff_t,
+        A_ptrs: *mut *mut i32,
+        B_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            (fn $name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        tmp: *mut i16,
-                        src: *const DynPixel,
-                        src_stride: ptrdiff_t,
-                        A_ptrs: *mut *mut i32,
-                        B_ptrs: *mut *mut i16,
-                        w: c_int,
-                        h: c_int,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
-        }
-        bd_fn!(asm_fn, BD, sgr_finish_filter1_2rows, neon)(
-            tmp,
-            src.as_ptr::<BD>().cast(),
-            src.stride(),
-            A_ptrs.as_mut_ptr(),
-            B_ptrs.as_mut_ptr(),
-            w,
-            h,
-            bd.into_c(),
-        )
-    }
+        bitdepth_max: c_int,
+    ) -> ());
 
-    unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
-        tmp: *mut i16,
-        src: Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 2],
-        B_ptrs: &mut [*mut i16; 2],
-        w: c_int,
-        h: c_int,
-        bd: BD,
-    ) {
-        macro_rules! asm_fn {
-            (fn $name:ident) => {{
-                extern "C" {
-                    fn $name(
-                        tmp: *mut i16,
-                        src: *const DynPixel,
-                        src_stride: ptrdiff_t,
-                        A_ptrs: *mut *mut i32,
-                        B_ptrs: *mut *mut i16,
-                        w: c_int,
-                        h: c_int,
-                        bitdepth_max: c_int,
-                    );
-                }
-                $name
-            }};
+    impl sgr_finish_filter_2rows::Fn {
+        fn call<BD: BitDepth, const N: usize>(
+            &self,
+            tmp: *mut i16,
+            src: Rav1dPictureDataComponentOffset,
+            A_ptrs: &mut [*mut i32; N],
+            B_ptrs: &mut [*mut i16; N],
+            w: c_int,
+            h: c_int,
+            bd: BD,
+        ) {
+            const { assert!(N == 2 || N == 4) };
+            let src_ptr = src.as_ptr::<BD>().cast();
+            let src_stride = src.stride();
+            let A_ptrs = A_ptrs.as_mut_ptr();
+            let B_ptrs = B_ptrs.as_mut_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(tmp, src_ptr, src_stride, A_ptrs, B_ptrs, w, h, bd) }
         }
-        bd_fn!(asm_fn, BD, sgr_finish_filter2_2rows, neon)(
-            tmp,
-            src.as_ptr::<BD>().cast(),
-            src.stride(),
-            A_ptrs.as_mut_ptr(),
-            B_ptrs.as_mut_ptr(),
-            w,
-            h,
-            bd.into_c(),
-        )
     }
 
     unsafe fn sgr_box3_hv_neon<BD: BitDepth>(
@@ -1881,8 +1838,20 @@ mod neon {
         let mut tmp5 = Align16([0; 2 * FILTER_OUT_STRIDE]);
         let mut tmp3 = Align16([0; 2 * FILTER_OUT_STRIDE]);
 
-        rav1d_sgr_finish_filter2_2rows_neon(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
-        rav1d_sgr_finish_filter1_2rows_neon(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
+        bd_fn!(
+            sgr_finish_filter_2rows::decl_fn,
+            BD,
+            sgr_finish_filter2_2rows,
+            neon
+        )
+        .call(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
+        bd_fn!(
+            sgr_finish_filter_2rows::decl_fn,
+            BD,
+            sgr_finish_filter1_2rows,
+            neon
+        )
+        .call(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
         macro_rules! asm_fn {
