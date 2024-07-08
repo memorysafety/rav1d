@@ -1615,29 +1615,37 @@ mod neon {
         }
     }
 
-    extern "C" {
-        fn dav1d_sgr_box3_vert_neon(
-            sumsq: *mut *mut i32,
-            sum: *mut *mut i16,
-            AA: *mut i32,
-            BB: *mut i16,
-            w: c_int,
-            s: c_int,
-            bitdepth_max: c_int,
-        );
+    wrap_fn_ptr!(unsafe extern "C" fn sgr_box_vert(
+        sumsq: *mut *mut i32,
+        sum: *mut *mut i16,
+        AA: *mut i32,
+        BB: *mut i16,
+        w: c_int,
+        s: c_int,
+        bitdepth_max: c_int,
+    ) -> ());
 
-        fn dav1d_sgr_box5_vert_neon(
-            sumsq: *mut *mut i32,
-            sum: *mut *mut i16,
-            AA: *mut i32,
-            BB: *mut i16,
+    impl sgr_box_vert::Fn {
+        fn call<BD: BitDepth, const N: usize>(
+            &self,
+            sumsq: &mut [*mut i32; N],
+            sum: &mut [*mut i16; N],
+            sumsq_out: *mut i32,
+            sum_out: *mut i16,
             w: c_int,
             s: c_int,
-            bitdepth_max: c_int,
-        );
+            bd: BD,
+        ) {
+            const { assert!(N == 3 || N == 5) };
+            let sumsq = sumsq.as_mut_ptr();
+            let sum = sum.as_mut_ptr();
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(sumsq, sum, sumsq_out, sum_out, w, s, bd) }
+        }
     }
 
-    unsafe fn sgr_box3_vert_neon<BD: BitDepth>(
+    fn sgr_box3_vert_neon<BD: BitDepth>(
         sumsq: &mut [*mut i32; 3],
         sum: &mut [*mut i16; 3],
         sumsq_out: *mut i32,
@@ -1646,19 +1654,12 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        dav1d_sgr_box3_vert_neon(
-            sumsq.as_mut_ptr(),
-            sum.as_mut_ptr(),
-            sumsq_out,
-            sum_out,
-            w,
-            s,
-            bd.into_c(),
-        );
+        sgr_box_vert::decl_fn!(fn dav1d_sgr_box3_vert_neon)
+            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<3, 1>(sumsq, sum);
     }
 
-    unsafe fn sgr_box5_vert_neon<BD: BitDepth>(
+    fn sgr_box5_vert_neon<BD: BitDepth>(
         sumsq: &mut [*mut i32; 5],
         sum: &mut [*mut i16; 5],
         sumsq_out: *mut i32,
@@ -1667,15 +1668,8 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        dav1d_sgr_box5_vert_neon(
-            sumsq.as_mut_ptr(),
-            sum.as_mut_ptr(),
-            sumsq_out,
-            sum_out,
-            w,
-            s,
-            bd.into_c(),
-        );
+        sgr_box_vert::decl_fn!(fn dav1d_sgr_box5_vert_neon)
+            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<5, 2>(sumsq, sum);
     }
 
