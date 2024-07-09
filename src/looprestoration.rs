@@ -3276,6 +3276,7 @@ mod neon {
     }
 }
 
+#[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 mod neon_erased {
     use super::*;
@@ -3283,6 +3284,7 @@ mod neon_erased {
     /// # Safety
     ///
     /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
         _p_ptr: *mut DynPixel,
         _stride: ptrdiff_t,
@@ -3311,6 +3313,7 @@ mod neon_erased {
     /// # Safety
     ///
     /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
         _p_ptr: *mut DynPixel,
         _stride: ptrdiff_t,
@@ -3339,6 +3342,7 @@ mod neon_erased {
     /// # Safety
     ///
     /// Must be called by [`loop_restoration_filter::Fn::call`].
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
         _p_ptr: *mut DynPixel,
         _stride: ptrdiff_t,
