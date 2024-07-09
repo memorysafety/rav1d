@@ -1171,6 +1171,7 @@ fn decode_b(
     };
 
     let ts = &f.ts[t.ts];
+    let ta = &f.a[t.a];
     let bd_fn = f.bd_fn();
     let b_dim = bs.dimensions();
     let bx4 = t.b.x & 31;
@@ -1204,7 +1205,7 @@ fn decode_b(
                     y_mode
                 };
                 CaseSet::<32, false>::many(
-                    [&t.l, &f.a[t.a]],
+                    [&t.l, ta],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
                     |case, dir| {
@@ -1229,7 +1230,7 @@ fn decode_b(
 
                 if has_chroma {
                     CaseSet::<32, false>::many(
-                        [&t.l, &f.a[t.a]],
+                        [&t.l, ta],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
                         |case, dir| {
@@ -1279,7 +1280,7 @@ fn decode_b(
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
-                    [&t.l, &f.a[t.a]],
+                    [&t.l, ta],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
                     |case, dir| {
@@ -1308,7 +1309,7 @@ fn decode_b(
 
                 if has_chroma {
                     CaseSet::<32, false>::many(
-                        [&t.l, &f.a[t.a]],
+                        [&t.l, ta],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
                         |case, dir| {
@@ -1348,8 +1349,7 @@ fn decode_b(
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
-                let index =
-                    *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
+                let index = *ta.seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
                 seg_pred = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.seg_pred.0[index as usize],
@@ -1411,7 +1411,7 @@ fn decode_b(
         && frame_hdr.skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
-        let smctx = *f.a[t.a].skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
+        let smctx = *ta.skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
         b.skip_mode = rav1d_msac_decode_bool_adapt(
             &mut ts_c.msac,
             &mut ts_c.cdf.mi.skip_mode.0[smctx as usize],
@@ -1427,7 +1427,7 @@ fn decode_b(
     if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
         b.skip = 1;
     } else {
-        let sctx = *f.a[t.a].skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
+        let sctx = *ta.skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
         b.skip =
             rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx as usize]) as u8;
         if debug_block_info!(f, t.b) {
@@ -1441,7 +1441,7 @@ fn decode_b(
         && frame_hdr.segmentation.seg_data.preskip == 0
     {
         if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
-            let index = *f.a[t.a].seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
+            let index = *ta.seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
                 &mut ts_c.cdf.mi.seg_pred.0[index as usize],
@@ -1630,7 +1630,7 @@ fn decode_b(
         if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
             seg.r#ref == 0
         } else {
-            let ictx = get_intra_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+            let ictx = get_intra_ctx(&ta, &t.l, by4, bx4, have_top, have_left);
             let intra =
                 !rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.intra[ictx.into()]);
             if debug_block_info!(f, t.b) {
@@ -1654,7 +1654,7 @@ fn decode_b(
             &mut ts_c.cdf.mi.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
         } else {
             &mut ts_c.cdf.kfym
-                [dav1d_intra_mode_context[*f.a[t.a].mode.index(bx4 as usize) as usize] as usize]
+                [dav1d_intra_mode_context[*ta.mode.index(bx4 as usize) as usize] as usize]
                 [dav1d_intra_mode_context[*t.l.mode.index(by4 as usize) as usize] as usize]
         };
         let y_mode = rav1d_msac_decode_symbol_adapt16(
@@ -1747,7 +1747,7 @@ fn decode_b(
         if frame_hdr.allow_screen_content_tools && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if y_mode == DC_PRED {
-                let pal_ctx = (*f.a[t.a].pal_sz.index(bx4 as usize) > 0) as usize
+                let pal_ctx = (*ta.pal_sz.index(bx4 as usize) > 0) as usize
                     + (*t.l.pal_sz.index(by4 as usize) > 0) as usize;
                 let use_y_pal = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
@@ -1892,7 +1892,7 @@ fn decode_b(
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[tx as usize];
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TxfmSize::S4x4 as _ {
-                let tctx = get_tx_ctx(&f.a[t.a], &t.l, t_dim, by4, bx4);
+                let tctx = get_tx_ctx(ta, &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts_c.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth =
                     rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, tx_cdf, cmp::min(t_dim.max, 2))
@@ -1947,14 +1947,10 @@ fn decode_b(
                 tx,
                 b.uvtx,
                 f.cur.p.layout,
-                &mut f.a[t.a]
-                    .tx_lpf_y
-                    .index_mut((bx4 as usize.., ..bw4 as usize)),
+                &mut ta.tx_lpf_y.index_mut((bx4 as usize.., ..bw4 as usize)),
                 &mut t.l.tx_lpf_y.index_mut((by4 as usize.., ..bh4 as usize)),
                 if has_chroma {
-                    a_uv_guard = f.a[t.a]
-                        .tx_lpf_uv
-                        .index_mut((cbx4 as usize.., ..cbw4 as usize));
+                    a_uv_guard = ta.tx_lpf_uv.index_mut((cbx4 as usize.., ..cbw4 as usize));
                     l_uv_guard = t.l.tx_lpf_uv.index_mut((cby4 as usize.., ..cbh4 as usize));
                     Some((&mut a_uv_guard, &mut l_uv_guard))
                 } else {
@@ -1971,7 +1967,7 @@ fn decode_b(
         };
         let is_inter_or_switch = f.frame_hdr().frame_type.is_inter_or_switch();
         CaseSet::<32, false>::many(
-            [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
+            [(&t.l, t_dim.lh, 1), (ta, t_dim.lw, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, lw_lh, dir_index)| {
@@ -2003,7 +1999,7 @@ fn decode_b(
         }
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
+                [&t.l, ta],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
@@ -2180,7 +2176,7 @@ fn decode_b(
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
 
         CaseSet::<32, false>::many(
-            [(&t.l, 1), (&f.a[t.a], 0)],
+            [(&t.l, 1), (ta, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, dir_index)| {
@@ -2197,7 +2193,7 @@ fn decode_b(
         );
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
+                [&t.l, ta],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
@@ -2219,7 +2215,7 @@ fn decode_b(
             && frame_hdr.switchable_comp_refs != 0
             && cmp::min(bw4, bh4) > 1
         {
-            let ctx = get_comp_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+            let ctx = get_comp_ctx(ta, &t.l, by4, bx4, have_top, have_left);
             let is_comp =
                 rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.comp[ctx as usize]);
             if debug_block_info!(f, t.b) {
@@ -2299,26 +2295,24 @@ fn decode_b(
                 interintra_type: None,
             }
         } else if is_comp {
-            let dir_ctx = get_comp_dir_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+            let dir_ctx = get_comp_dir_ctx(ta, &t.l, by4, bx4, have_top, have_left);
             let r#ref = if rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
                 &mut ts_c.cdf.mi.comp_dir[dir_ctx as usize],
             ) {
                 // bidir - first reference (fw)
-                let ctx1 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                let ctx1 = av1_get_fwd_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                 let ref0 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.comp_fwd_ref[0][ctx1 as usize],
                 ) {
-                    let ctx2 =
-                        av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let ctx2 = av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     2 + rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.comp_fwd_ref[2][ctx2 as usize],
                     ) as i8
                 } else {
-                    let ctx2 =
-                        av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let ctx2 = av1_get_fwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.comp_fwd_ref[1][ctx2 as usize],
@@ -2326,15 +2320,14 @@ fn decode_b(
                 };
 
                 // second reference (bw)
-                let ctx3 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                let ctx3 = av1_get_bwd_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                 let ref1 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.comp_bwd_ref[0][ctx3 as usize],
                 ) {
                     6
                 } else {
-                    let ctx4 =
-                        av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let ctx4 = av1_get_bwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     4 + rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.comp_bwd_ref[1][ctx4 as usize],
@@ -2344,15 +2337,14 @@ fn decode_b(
                 [ref0, ref1]
             } else {
                 // unidir
-                let uctx_p = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                let uctx_p = av1_get_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                 if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.comp_uni_ref[0][uctx_p as usize],
                 ) {
                     [4, 6]
                 } else {
-                    let uctx_p1 =
-                        av1_get_uni_p1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let uctx_p1 = av1_get_uni_p1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     let mut r#ref = [
                         0,
                         1 + rav1d_msac_decode_bool_adapt(
@@ -2363,7 +2355,7 @@ fn decode_b(
 
                     if r#ref[1] == 2 {
                         let uctx_p2 =
-                            av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                            av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                         r#ref[1] += rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.comp_uni_ref[2][uctx_p2 as usize],
@@ -2502,7 +2494,7 @@ fn decode_b(
             // jnt_comp vs. seg vs. wedge
             let is_segwedge;
             if seq_hdr.masked_compound != 0 {
-                let mask_ctx = get_mask_comp_ctx(&f.a[t.a], &t.l, by4, bx4);
+                let mask_ctx = get_mask_comp_ctx(ta, &t.l, by4, bx4);
                 is_segwedge = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.mask_comp[mask_ctx as usize],
@@ -2535,7 +2527,7 @@ fn decode_b(
                         f.cur.frame_hdr.as_ref().unwrap().frame_offset as c_uint,
                         ref0poc,
                         ref1poc,
-                        &f.a[t.a],
+                        ta,
                         &t.l,
                         by4,
                         bx4,
@@ -2549,7 +2541,7 @@ fn decode_b(
                         CompInterType::WeightedAvg
                     };
                     if debug_block_info!(f, t.b) {
-                        let a = &f.a[t.a];
+                        let a = ta;
                         let l = &t.l;
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{:?},ar:{},lc:{:?},lr:{}]]: r={}",
@@ -2624,40 +2616,37 @@ fn decode_b(
             } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
                 0
             } else {
-                let ctx1 = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                let ctx1 = av1_get_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                 let ref0 = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.r#ref[0][ctx1 as usize],
                 ) {
-                    let ctx2 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let ctx2 = av1_get_bwd_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.r#ref[1][ctx2 as usize],
                     ) {
                         6
                     } else {
-                        let ctx3 =
-                            av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                        let ctx3 = av1_get_bwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                         4 + rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.r#ref[5][ctx3 as usize],
                         ) as i8
                     }
                 } else {
-                    let ctx2 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                    let ctx2 = av1_get_fwd_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.r#ref[2][ctx2 as usize],
                     ) {
-                        let ctx3 =
-                            av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                        let ctx3 = av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                         2 + rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.r#ref[4][ctx3 as usize],
                         ) as i8
                     } else {
-                        let ctx3 =
-                            av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
+                        let ctx3 = av1_get_fwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                         rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.r#ref[3][ctx3 as usize],
@@ -2881,7 +2870,7 @@ fn decode_b(
                     && frame_hdr.gmv[r#ref[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.index(by4 as usize..(by4 + h4) as usize))
-                    || have_top && findoddzero(&f.a[t.a].intra.index(bx4 as usize..(bx4 + w4) as usize)))
+                    || have_top && findoddzero(&ta.intra.index(bx4 as usize..(bx4 + w4) as usize)))
             {
                 // reaching here means the block allows obmc - check warp by
                 // finding matching-ref blocks in top/left edges
@@ -2996,7 +2985,7 @@ fn decode_b(
         let filter = if frame_hdr.subpel_filter_mode == Rav1dFilterMode::Switchable {
             if has_subpel_filter {
                 let comp = comp_type.is_some();
-                let ctx1 = get_filter_ctx(&f.a[t.a], &t.l, comp, false, r#ref[0], by4, bx4);
+                let ctx1 = get_filter_ctx(ta, &t.l, comp, false, r#ref[0], by4, bx4);
                 let filter0 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.filter.0[0][ctx1 as usize],
@@ -3004,7 +2993,7 @@ fn decode_b(
                 ) as usize)
                 .unwrap();
                 if seq_hdr.dual_filter != 0 {
-                    let ctx2 = get_filter_ctx(&f.a[t.a], &t.l, comp, true, r#ref[0], by4, bx4);
+                    let ctx2 = get_filter_ctx(ta, &t.l, comp, true, r#ref[0], by4, bx4);
                     if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter1[{:?},ctx={}]: r={}",
@@ -3109,14 +3098,10 @@ fn decode_b(
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut f.a[t.a]
-                    .tx_lpf_y
-                    .index_mut((bx4 as usize.., ..bw4 as usize)),
+                &mut ta.tx_lpf_y.index_mut((bx4 as usize.., ..bw4 as usize)),
                 &mut t.l.tx_lpf_y.index_mut((by4 as usize.., ..bh4 as usize)),
                 if has_chroma {
-                    a_uv_guard = f.a[t.a]
-                        .tx_lpf_uv
-                        .index_mut((cbx4 as usize.., ..cbw4 as usize));
+                    a_uv_guard = ta.tx_lpf_uv.index_mut((cbx4 as usize.., ..cbw4 as usize));
                     l_uv_guard = t.l.tx_lpf_uv.index_mut((cby4 as usize.., ..cbh4 as usize));
                     Some((&mut *a_uv_guard, &mut *l_uv_guard))
                 } else {
@@ -3133,7 +3118,7 @@ fn decode_b(
         }
 
         CaseSet::<32, false>::many(
-            [(&t.l, 1), (&f.a[t.a], 0)],
+            [(&t.l, 1), (ta, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, dir_index)| {
@@ -3156,7 +3141,7 @@ fn decode_b(
 
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
+                [&t.l, ta],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
