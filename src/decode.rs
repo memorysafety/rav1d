@@ -4088,6 +4088,28 @@ fn read_restoration_info(
     }
 }
 
+// modeled after the equivalent function in aomdec:decodeframe.c
+fn check_trailing_bits_after_symbol_coder(msac: &MsacContext) -> Result<(), ()> {
+    // check marker bit (single 1), followed by zeroes
+    let n_bits = -(msac.cnt + 14);
+    assert!(n_bits <= 0); // this assumes we errored out when cnt <= -15 in caller
+    let n_bytes = (n_bits + 7) >> 3;
+    let trailing_bytes_offset = msac.buf_index().wrapping_add_signed(n_bytes as isize - 1);
+    let trailing_bytes = &msac.data()[trailing_bytes_offset..];
+    let pattern = 128 >> ((n_bits - 1) & 7);
+    // use x + (x - 1) instead of 2x - 1 to avoid overflow
+    if (trailing_bytes[0] & (pattern + (pattern - 1))) != pattern {
+        return Err(());
+    }
+
+    // check remainder zero bytes
+    if trailing_bytes[1..].iter().any(|&x| x != 0) {
+        return Err(());
+    }
+
+    return Ok(());
+}
+
 pub(crate) fn rav1d_decode_tile_sbrow(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
@@ -4156,11 +4178,6 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         }
         (f.bd_fn().backup_ipred_edge)(f, t);
         return Ok(());
-    }
-
-    // error out on symbol decoder overread
-    if ts.context.try_lock().unwrap().msac.cnt < -15 {
-        return Err(());
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
@@ -4316,6 +4333,17 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         &t.l.tx_lpf_uv.index(lpf_uv_start..lpf_uv_start + len_uv),
     );
 
+    // error out on symbol decoder overread
+    if ts.context.try_lock().unwrap().msac.cnt <= -15 {
+        return Err(());
+    }
+
+    if c.strict_std_compliance
+        && (t.b.y >> f.sb_shift) + 1
+            >= f.frame_hdr().tiling.row_start_sb[tile_row as usize + 1].into()
+    {
+        return check_trailing_bits_after_symbol_coder(&ts.context.try_lock().unwrap().msac);
+    }
     Ok(())
 }
 
