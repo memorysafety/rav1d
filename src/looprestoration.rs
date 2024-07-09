@@ -1904,7 +1904,7 @@ mod neon {
         rotate::<4, 1>(A3_ptrs, B3_ptrs);
     }
 
-    pub unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
+    pub fn sgr_filter_3x3_neon<BD: BitDepth>(
         mut dst: Rav1dPictureDataComponentOffset,
         mut left: &[LeftPixelRow<BD::Pixel>],
         mut lpf: *const BD::Pixel,
@@ -1944,7 +1944,8 @@ mod neon {
         }
 
         let mut src = dst;
-        let mut lpf_bottom = lpf.offset(6 * stride);
+        // `lpf` may be negatively out of bounds.
+        let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
         #[derive(PartialEq)]
         enum Track {
@@ -1969,7 +1970,8 @@ mod neon {
                 edges,
                 bd,
             );
-            lpf = lpf.offset(stride);
+            // `lpf` may be negatively out of bounds.
+            lpf = lpf.wrapping_offset(stride);
             bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
                 sumsq_rows[1],
                 sum_rows[1],
@@ -2122,7 +2124,8 @@ mod neon {
                     edges,
                     bd,
                 );
-                lpf_bottom = lpf_bottom.offset(stride);
+                // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
+                lpf_bottom = lpf_bottom.wrapping_offset(stride);
 
                 sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
 
@@ -2189,7 +2192,7 @@ mod neon {
         }
     }
 
-    pub unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
+    pub fn sgr_filter_5x5_neon<BD: BitDepth>(
         mut dst: Rav1dPictureDataComponentOffset,
         mut left: &[LeftPixelRow<BD::Pixel>],
         mut lpf: *const BD::Pixel,
@@ -2229,7 +2232,8 @@ mod neon {
         }
 
         let mut src = dst;
-        let mut lpf_bottom = lpf.offset(6 * stride);
+        // `lpf` may be negatively out of bounds.
+        let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
         #[derive(PartialEq)]
         enum Track {
@@ -2257,7 +2261,8 @@ mod neon {
                 edges,
                 bd,
             );
-            lpf = lpf.offset(stride);
+            // `lpf` may be negatively out of bounds.
+            lpf = lpf.wrapping_offset(stride);
             bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                 sumsq_rows[1],
                 sum_rows[1],
@@ -2502,7 +2507,8 @@ mod neon {
                     edges,
                     bd,
                 );
-                lpf_bottom = lpf_bottom.offset(stride);
+                // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
+                lpf_bottom = lpf_bottom.wrapping_offset(stride);
                 bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                     sumsq_ptrs[4],
                     sum_ptrs[4],
@@ -2611,7 +2617,7 @@ mod neon {
         }
     }
 
-    pub unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
+    pub fn sgr_filter_mix_neon<BD: BitDepth>(
         mut dst: Rav1dPictureDataComponentOffset,
         mut left: &[LeftPixelRow<BD::Pixel>],
         mut lpf: *const BD::Pixel,
@@ -2669,7 +2675,8 @@ mod neon {
         }
 
         let mut src = dst;
-        let mut lpf_bottom = lpf.offset(6 * stride);
+        // `lpf` may be negatively out of bounds.
+        let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
         #[derive(PartialEq)]
         enum Track {
@@ -2710,7 +2717,8 @@ mod neon {
                 edges,
                 bd,
             );
-            lpf = lpf.offset(stride);
+            // `lpf` may be negatively out of bounds.
+            lpf = lpf.wrapping_offset(stride);
             bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                 sumsq3_rows[1],
                 sum3_rows[1],
@@ -3068,7 +3076,8 @@ mod neon {
                     edges,
                     bd,
                 );
-                lpf_bottom = lpf_bottom.offset(stride);
+                // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
+                lpf_bottom = lpf_bottom.wrapping_offset(stride);
 
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
