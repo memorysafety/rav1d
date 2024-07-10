@@ -609,6 +609,7 @@ mod neon {
         }
     }
 
+    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn cdef_filter_neon_erased<
         BD: BitDepth,
         const W: usize,
