@@ -169,14 +169,14 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
 
     /// Extract a slice containing the entire vector.
     pub fn as_slice(&self) -> &[T] {
-        // Safety: The first `len` elements have been
+        // SAFETY: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
         unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
     }
 
     /// Extract a mutable slice of the entire vector.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        // Safety: The first `len` elements have been
+        // SAFETY: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
     }

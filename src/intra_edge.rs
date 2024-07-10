@@ -344,7 +344,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         if cfg!(debug_assertions) {
             &edges[edge.index as usize]
         } else {
-            // Safety: Already checked in `Self::check_indices`, and `EdgeIndex`'s fields are private.
+            // SAFETY: Already checked in `Self::check_indices`, and `EdgeIndex`'s fields are private.
             unsafe { edges.get_unchecked(edge.index as usize) }
         }
     }

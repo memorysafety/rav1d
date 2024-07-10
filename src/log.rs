@@ -48,7 +48,7 @@ impl fmt::Write for Dav1dLogger {
         // or the Rust API can be used instead.
         let fmt = c"%c";
         for &byte in s.as_bytes() {
-            // # Safety
+            // SAFETY:
             //
             // The first argument is `self.cookie`
             // and the rest are safe to call `printf` with,
@@ -120,7 +120,7 @@ mod marker {
     type Callback = extern "C" fn(cookie: *mut c_void, fmt: *const c_char);
 
     const fn cast(callback: Callback) -> Dav1dLoggerCallback {
-        // Safety: It should always be safe to ignore variadic args.
+        // SAFETY: It should always be safe to ignore variadic args.
         // Declaring a variadic `fn` is unstable, though, which is why we avoid that.
         unsafe { std::mem::transmute(callback) }
     }

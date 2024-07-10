@@ -70,7 +70,7 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 pub enum CBox<T: ?Sized> {
     Rust(Box<T>),
     C {
-        /// # Safety:
+        /// # SAFETY:
         ///
         /// * Never moved.
         /// * Valid to dereference.
@@ -103,12 +103,12 @@ impl<T: ?Sized> Drop for CBox<T> {
             Self::Rust(_) => {} // Drop normally.
             Self::C { data, free, .. } => {
                 let ptr = data.pointer.as_ptr();
-                // Safety: See below.
+                // SAFETY: See below.
                 // The [`FnFree`] won't run Rust's `fn drop`,
                 // so we have to do this ourselves first.
                 unsafe { drop_in_place(ptr) };
                 let ptr = ptr.cast();
-                // Safety: See safety docs on [`Self::data`] and [`Self::from_c`].
+                // SAFETY: See safety docs on [`Self::data`] and [`Self::from_c`].
                 unsafe { free.free(ptr) }
             }
         }
@@ -137,7 +137,7 @@ impl<T: ?Sized> CBox<T> {
     }
 
     pub fn into_pin(self) -> Pin<Self> {
-        // Safety:
+        // SAFETY:
         // If `self` is `Self::Rust`, `Box` can be pinned.
         // If `self` is `Self::C`, `data` is never moved until [`Self::drop`].
         unsafe { Pin::new_unchecked(self) }

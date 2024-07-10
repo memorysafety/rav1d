@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
     let raw = Arc::into_raw(arc).cast_mut();
-    // Safety: [`Arc::into_raw`] never returns null.
+    // SAFETY: [`Arc::into_raw`] never returns null.
     unsafe { NonNull::new_unchecked(raw) }
 }
 
@@ -106,7 +106,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
             }
         }
 
-        // Safety: [`Self::stable_ref`] is a ptr
+        // SAFETY: [`Self::stable_ref`] is a ptr
         // derived from [`Self::owner`]'s through [`CBox::as_ref`]
         // and is thus safe to dereference.
         // The [`CBox`] is [`Pin`]ned and
@@ -239,7 +239,7 @@ impl<T: ?Sized> CArc<T> {
     ///
     /// The [`RawCArc`] must be originally from [`Self::into_raw`].
     pub unsafe fn from_raw(raw: RawCArc<T>) -> Self {
-        // Safety: The [`RawCArc`] contains the output of [`Arc::into_raw`],
+        // SAFETY: The [`RawCArc`] contains the output of [`Arc::into_raw`],
         // so we can call [`Arc::from_raw`] on it.
         let owner = unsafe { raw.0.into_arc() };
         owner.into()

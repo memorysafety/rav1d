@@ -250,7 +250,7 @@ fn mask_edges_inter(
     }
 
     for y in 0..h4 {
-        // SAFETY y < h4 and w4 - 1 < w4 so txa[0][0][y][w4 - 1] is initialized.
+        // SAFETY: y < h4 and w4 - 1 < w4 so txa[0][0][y][w4 - 1] is initialized.
         l[y] = unsafe { txa[0][0][y][w4 - 1].assume_init() };
     }
     // SAFETY: h4 - 1 < h4 and ..w4 < w4 so txa[1][0][h4 - 1][..w4] is
