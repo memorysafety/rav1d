@@ -1,5 +1,4 @@
 #![allow(non_upper_case_globals)]
-#![feature(c_variadic)]
 #![allow(clippy::all)]
 
 mod compat {
