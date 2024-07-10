@@ -1,6 +1,4 @@
 #![deny(unsafe_op_in_unsafe_fn)]
-#![warn(clippy::all)]
-#![allow(clippy::too_many_arguments)]
 
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
