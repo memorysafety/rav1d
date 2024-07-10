@@ -3709,14 +3709,12 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
             let ss_ver = f.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
             p[i] - ((8 * p[i].pixel_stride::<BD>()) >> ss_ver as u8)
         });
-        // TODO make safe
-        unsafe { rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby) };
+        rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby);
     }
 
     let n_blks = sbsz - 2 * ((sby + 1) < f.sbh) as c_int;
     let end = cmp::min(start + n_blks, f.bh);
-    // TODO make safe
-    unsafe { rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby) };
+    rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby);
 }
 
 pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(

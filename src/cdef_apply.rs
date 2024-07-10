@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::ulog2;
@@ -10,7 +12,10 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
+use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
+use crate::src::strided::WithStride;
+use crate::src::with_offset::WithOffset;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -125,7 +130,7 @@ fn adjust_strength(strength: u8, var: c_uint) -> c_int {
     strength as c_int * (4 + i) + 8 >> 4
 }
 
-pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
+pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -261,66 +266,67 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             0
                         };
 
-                        let mut top = 0 as *const BD::Pixel;
-                        let mut bot = 0 as *const BD::Pixel;
-                        let mut offset: ptrdiff_t;
-                        let st_y: bool;
-
-                        if !have_tt {
-                            st_y = true;
+                        let top_bot = if !have_tt {
+                            None
                         } else if sbrow_start && by == by_start {
-                            if resize {
-                                offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
-                                top = &*f
-                                    .lf
-                                    .cdef_line_buf
-                                    .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
+                            let top = if resize {
+                                WithOffset {
+                                    data: &f.lf.cdef_line_buf,
+                                    offset: f.lf.cdef_lpf_line[0],
+                                } + ((sby - 1) * 4) as isize * y_stride
+                                    + (bx * 4) as isize
                             } else {
-                                offset = (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
-                                    + (bx * 4) as isize;
-                                top = &*f
-                                    .lf
-                                    .lr_line_buf
-                                    .element_as((f.lf.lr_lpf_line[0] as isize + offset) as usize);
-                            }
+                                WithOffset {
+                                    data: &f.lf.lr_line_buf,
+                                    offset: f.lf.lr_lpf_line[0],
+                                } + (sby * (4 << sb128) - 4) as isize * y_stride
+                                    + (bx * 4) as isize
+                            };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            bot = bottom.as_ptr::<BD>();
-                            st_y = false;
+                            Some((top, WithOffset::pic(bottom)))
                         } else if !sbrow_start && by + 2 >= by_end {
-                            offset = (sby * 4) as isize * y_stride + (bx * 4) as isize;
-                            top = &*f.lf.cdef_line_buf.element_as(
-                                (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
-                            );
-                            if resize {
-                                offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
-                                // FIXME incorrect; should be kept as an offset for later slices.
-                                bot = &*f
-                                    .lf
-                                    .cdef_line_buf
-                                    .element_as((f.lf.cdef_lpf_line[0] as isize + offset) as usize);
-                            } else {
-                                let line = sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                offset = line as isize * y_stride + (bx * 4) as isize;
-                                // FIXME incorrect; should be kept as an offset for later slices.
-                                bot = &*f
-                                    .lf
-                                    .lr_line_buf
-                                    .element_as((f.lf.lr_lpf_line[0] as isize + offset) as usize);
-                            }
-                            st_y = false;
-                        } else {
-                            st_y = true;
-                        }
-
-                        if st_y {
-                            offset = have_tt as isize * (sby * 4) as isize * y_stride
+                            let top = WithOffset {
+                                data: &f.lf.cdef_line_buf,
+                                offset: f.lf.cdef_line[tf as usize][0],
+                            } + (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
-                            top = &*f.lf.cdef_line_buf.element_as(
-                                (f.lf.cdef_line[tf as usize][0] as isize + offset) as usize,
-                            );
+                            let buf = if resize {
+                                WithOffset {
+                                    data: &f.lf.cdef_line_buf,
+                                    offset: f.lf.cdef_lpf_line[0],
+                                } + (sby * 4 + 2) as isize * y_stride
+                                    + (bx * 4) as isize
+                            } else {
+                                let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
+                                WithOffset {
+                                    data: &f.lf.lr_line_buf,
+                                    offset: f.lf.lr_lpf_line[0],
+                                } + line as isize * y_stride
+                                    + (bx * 4) as isize
+                            };
+                            Some((
+                                top,
+                                WithOffset {
+                                    data: PicOrBuf::Buf(WithStride {
+                                        buf: buf.data,
+                                        stride: y_stride,
+                                    }),
+                                    offset: buf.offset,
+                                },
+                            ))
+                        } else {
+                            None
+                        };
+
+                        let (top, bot) = top_bot.unwrap_or_else(|| {
+                            let top = WithOffset {
+                                data: &f.lf.cdef_line_buf,
+                                offset: f.lf.cdef_line[tf as usize][0],
+                            } + have_tt as isize * (sby * 4) as isize * y_stride
+                                + (bx * 4) as isize;
                             let bottom = bptrs[0] + (8 * y_stride);
-                            bot = bottom.as_ptr::<BD>();
-                        }
+                            (top, WithOffset::pic(bottom))
+                        });
 
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
@@ -362,66 +368,68 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 0
                             };
                             for pl in 1..=2 {
-                                let st_uv: bool;
-                                if !have_tt {
-                                    st_uv = true;
+                                let top_bot = if !have_tt {
+                                    None
                                 } else if sbrow_start && by == by_start {
-                                    if resize {
-                                        offset = ((sby - 1) * 4) as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        top = &*f.lf.cdef_line_buf.element_as(
-                                            (f.lf.cdef_lpf_line[pl] as isize + offset) as usize,
-                                        );
+                                    let top = if resize {
+                                        WithOffset {
+                                            data: &f.lf.cdef_line_buf,
+                                            offset: f.lf.cdef_lpf_line[pl],
+                                        } + ((sby - 1) * 4) as isize * uv_stride
+                                            + (bx * 4 >> ss_hor) as isize
                                     } else {
-                                        let line_0 = sby * ((4 as c_int) << sb128) - 4;
-                                        offset = line_0 as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        top = &*f.lf.lr_line_buf.element_as(
-                                            (f.lf.lr_lpf_line[pl] as isize + offset) as usize,
-                                        );
-                                    }
+                                        let line = sby * (4 << sb128) - 4;
+                                        WithOffset {
+                                            data: &f.lf.lr_line_buf,
+                                            offset: f.lf.lr_lpf_line[pl],
+                                        } + line as isize * uv_stride
+                                            + (bx * 4 >> ss_hor) as isize
+                                    };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    bot = bottom.as_ptr::<BD>();
-                                    st_uv = false;
+                                    Some((top, WithOffset::pic(bottom)))
                                 } else if !sbrow_start && by + 2 >= by_end {
-                                    let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
+                                    let top = WithOffset {
+                                        data: &f.lf.cdef_line_buf,
+                                        offset: f.lf.cdef_line[tf as usize][pl],
+                                    } + (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
-                                    top = &*f.lf.cdef_line_buf.element_as(
-                                        (f.lf.cdef_line[tf as usize][pl] as isize + top_offset)
-                                            as usize,
-                                    );
-                                    if resize {
-                                        offset = (sby * 4 + 2) as isize * uv_stride
-                                            + (bx * 4 >> ss_hor) as isize;
-                                        // FIXME incorrect; should be kept as an offset for later slices.
-                                        bot = &*f.lf.cdef_line_buf.element_as(
-                                            (f.lf.cdef_lpf_line[pl] as isize + offset) as usize,
-                                        );
+                                    let buf = if resize {
+                                        WithOffset {
+                                            data: &f.lf.cdef_line_buf,
+                                            offset: f.lf.cdef_lpf_line[pl],
+                                        } + (sby * 4 + 2) as isize * uv_stride
+                                            + (bx * 4 >> ss_hor) as isize
                                     } else {
-                                        let line =
-                                            sby * ((4 as c_int) << sb128) + 4 * sb128 as c_int + 2;
-                                        offset =
-                                            line as isize * uv_stride + (bx * 4 >> ss_hor) as isize;
-                                        // FIXME incorrect; should be kept as an offset for later slices.
-                                        bot = &*f.lf.lr_line_buf.element_as(
-                                            (f.lf.lr_lpf_line[pl] as isize + offset) as usize,
-                                        );
-                                    }
-                                    st_uv = false;
+                                        let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
+                                        WithOffset {
+                                            data: &f.lf.lr_line_buf,
+                                            offset: f.lf.lr_lpf_line[pl],
+                                        } + line as isize * uv_stride
+                                            + (bx * 4 >> ss_hor) as isize
+                                    };
+                                    Some((
+                                        top,
+                                        WithOffset {
+                                            data: PicOrBuf::Buf(WithStride {
+                                                buf: buf.data,
+                                                stride: uv_stride,
+                                            }),
+                                            offset: buf.offset,
+                                        },
+                                    ))
                                 } else {
-                                    st_uv = true;
-                                }
+                                    None
+                                };
 
-                                if st_uv {
-                                    let offset = have_tt as isize * (sby * 8) as isize * uv_stride
+                                let (top, bot) = top_bot.unwrap_or_else(|| {
+                                    let top = WithOffset {
+                                        data: &f.lf.cdef_line_buf,
+                                        offset: f.lf.cdef_line[tf as usize][pl],
+                                    } + have_tt as isize * (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
-                                    top = &*f.lf.cdef_line_buf.element_as(
-                                        (f.lf.cdef_line[tf as usize][pl] as isize + offset)
-                                            as usize,
-                                    );
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    bot = bottom.as_ptr::<BD>();
-                                }
+                                    (top, WithOffset::pic(bottom))
+                                });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
