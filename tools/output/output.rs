@@ -22,11 +22,15 @@ use std::ffi::c_void;
 use std::mem;
 
 extern "C" {
-    pub type MuxerPriv;
     static null_muxer: Muxer;
     static md5_muxer: Muxer;
     static yuv_muxer: Muxer;
     static y4m2_muxer: Muxer;
+}
+
+#[repr(C)]
+pub struct MuxerPriv {
+    _unused: (),
 }
 
 #[repr(C)]
