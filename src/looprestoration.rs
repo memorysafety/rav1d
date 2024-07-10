@@ -658,8 +658,7 @@ fn selfguided_filter<BD: BitDepth>(
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
     let mut sumsq = [0; (64 + 2 + 2) * REST_UNIT_STRIDE];
-    // By inverting A and B after the boxsums, B can be of size coef instead
-    // of i32
+    // By inverting `a` and `b` after the boxsums, `b` can be of `BD::Coef` instead of `i32`.
     let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
 
     let step = (n == 25) as usize + 1;
@@ -670,26 +669,26 @@ fn selfguided_filter<BD: BitDepth>(
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
-    let mut A = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
-    let mut B = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+    let mut a = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
+    let mut b = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
 
-    let mut AA = A.clone() - REST_UNIT_STRIDE;
-    let mut BB = B.clone() - REST_UNIT_STRIDE;
+    let mut aa = a.clone() - REST_UNIT_STRIDE;
+    let mut bb = b.clone() - REST_UNIT_STRIDE;
     for _ in (-1..h as isize + 1).step_by(step) {
         for i in -1..w as isize + 1 {
-            let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
-            let b = BB[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
+            let a = aa[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
+            let b = bb[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
 
             let p = cmp::max(a * n - b * b, 0) as c_uint;
             let z = (p * s + (1 << 19)) >> 20;
             let x = dav1d_sgr_x_by_x[cmp::min(z, 255) as usize] as c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
-            AA[i] = ((x * BB[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;
-            BB[i] = x.as_::<BD::Coef>();
+            aa[i] = ((x * bb[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;
+            bb[i] = x.as_::<BD::Coef>();
         }
-        AA += step as usize * REST_UNIT_STRIDE;
-        BB += step as usize * REST_UNIT_STRIDE;
+        aa += step as usize * REST_UNIT_STRIDE;
+        bb += step as usize * REST_UNIT_STRIDE;
     }
 
     fn six_neighbors<P>(p: &CursorMut<P>, i: isize) -> c_int
@@ -722,44 +721,46 @@ fn selfguided_filter<BD: BitDepth>(
         let mut j = 0;
         while j < h - 1 {
             for i in 0..w {
-                let a = six_neighbors(&B, i as isize);
-                let b = six_neighbors(&A, i as isize);
+                let (a, b) = (six_neighbors(&b, i as isize), six_neighbors(&a, i as isize));
                 dst[i] = ((b - a * src[i].as_::<c_int>() + (1 << 8)) >> 9).as_();
             }
             dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
             for i in 0..w {
-                let a = B[i].as_::<c_int>() * 6 + (B[i as isize - 1] + B[i + 1]).as_::<c_int>() * 5;
-                let b = A[i] * 6 + (A[i as isize - 1] + A[i + 1]) * 5;
+                let (a, b) = (
+                    b[i].as_::<c_int>() * 6 + (b[i as isize - 1] + b[i + 1]).as_::<c_int>() * 5,
+                    a[i] * 6 + (a[i as isize - 1] + a[i + 1]) * 5,
+                );
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
             dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
             j += 2;
         }
         // Last row, when number of rows is odd
         if j + 1 == h {
             for i in 0..w {
-                let a = six_neighbors(&B, i as isize);
-                let b = six_neighbors(&A, i as isize);
+                let (a, b) = (six_neighbors(&b, i as isize), six_neighbors(&a, i as isize));
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
         for _ in 0..h {
             for i in 0..w {
-                let a = eight_neighbors(&B, i as isize);
-                let b = eight_neighbors(&A, i as isize);
+                let (a, b) = (
+                    eight_neighbors(&b, i as isize),
+                    eight_neighbors(&a, i as isize),
+                );
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
             dst = &mut dst[384..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
         }
     };
 }
@@ -1155,6 +1156,10 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v(
@@ -1171,6 +1176,14 @@ mod neon {
             let sum = sum.as_mut_ptr();
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, w, h, edges) }
+        }
+
+        const fn neon3() -> Self {
+            sgr_box_v::decl_fn!(fn dav1d_sgr_box3_v_neon)
+        }
+
+        const fn neon5() -> Self {
+            sgr_box_v::decl_fn!(fn dav1d_sgr_box5_v_neon)
         }
     }
 
@@ -1199,6 +1212,14 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(a, b, w, h, strength, bd) }
+        }
+
+        const fn neon1() -> Self {
+            sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon)
+        }
+
+        const fn neon2() -> Self {
+            sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon)
         }
     }
 
@@ -1229,6 +1250,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(tmp, src_ptr, stride, a, b, w, h) }
         }
+
+        const fn neon1<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter1, neon)
+        }
+
+        const fn neon2<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter2, neon)
+        }
     }
 
     /// Filter with a 3x3 box (radius=1).
@@ -1249,7 +1278,7 @@ mod neon {
         let sumsq = &mut sumsq_mem.0[8..];
         let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
         let sum = &mut sum_mem.0[16..];
-        bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+        sgr_box3_h::Fn::neon::<BD>().call::<BD>(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             Some(left),
@@ -1260,7 +1289,7 @@ mod neon {
             edges,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+            sgr_box3_h::Fn::neon::<BD>().call::<BD>(
                 sumsq,
                 sum,
                 None,
@@ -1273,7 +1302,7 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             let h = h as usize;
-            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+            sgr_box3_h::Fn::neon::<BD>().call::<BD>(
                 &mut sumsq[(h + 2) * STRIDE..],
                 &mut sum[(h + 2) * STRIDE..],
                 None,
@@ -1285,7 +1314,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v::decl_fn!(fn dav1d_sgr_box3_v_neon).call(
+        sgr_box_v::Fn::neon3().call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1294,9 +1323,8 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter1, neon)
-            .call::<BD>(tmp, src, a, b, w, h);
+        sgr_calc_ab::Fn::neon1().call(a, b, w, h, strength, bd);
+        sgr_finish_filter::Fn::neon1::<BD>().call::<BD>(tmp, src, a, b, w, h);
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box5_h(
@@ -1331,6 +1359,10 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon)
+        }
     }
 
     /// Filter with a 5x5 box (radius=2).
@@ -1351,7 +1383,7 @@ mod neon {
         let sumsq = &mut sumsq_mem.0[8..];
         let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
         let sum = &mut sum_mem.0[16..];
-        bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+        sgr_box5_h::Fn::neon::<BD>().call::<BD>(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             Some(left),
@@ -1362,7 +1394,7 @@ mod neon {
             edges,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+            sgr_box5_h::Fn::neon::<BD>().call::<BD>(
                 sumsq,
                 sum,
                 None,
@@ -1375,7 +1407,7 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             let h = h as usize;
-            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+            sgr_box5_h::Fn::neon::<BD>().call::<BD>(
                 &mut sumsq[(h + 2) * STRIDE..],
                 &mut sum[(h + 2) * STRIDE..],
                 None,
@@ -1387,7 +1419,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v::decl_fn!(fn dav1d_sgr_box5_v_neon).call(
+        sgr_box_v::Fn::neon5().call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1396,9 +1428,8 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter2, neon)
-            .call::<BD>(tmp, src, a, b, w, h);
+        sgr_calc_ab::Fn::neon2().call(a, b, w, h, strength, bd);
+        sgr_finish_filter::Fn::neon2::<BD>().call::<BD>(tmp, src, a, b, w, h);
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_weighted1(
@@ -1432,6 +1463,10 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, t1, w, h, wt, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
         }
     }
 
@@ -1472,6 +1507,10 @@ mod neon {
                 )
             }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+        }
     }
 
     pub fn sgr_filter_5x5_neon<BD: BitDepth>(
@@ -1489,8 +1528,7 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter2_neon(&mut tmp, dst, left, lpf, w, h, sgr.s0, edges, bd);
-        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp, w, h, sgr.w0, bd);
+        sgr_weighted1::Fn::neon::<BD>().call(dst, dst, &mut tmp, w, h, sgr.w0, bd);
     }
 
     pub fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1508,8 +1546,7 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter1_neon(&mut tmp, dst, left, lpf, w, h, sgr.s1, edges, bd);
-        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp, w, h, sgr.w1, bd);
+        sgr_weighted1::Fn::neon::<BD>().call(dst, dst, &mut tmp, w, h, sgr.w1, bd);
     }
 
     pub fn sgr_filter_mix_neon<BD: BitDepth>(
@@ -1530,8 +1567,7 @@ mod neon {
         rav1d_sgr_filter2_neon(&mut tmp1, dst, left, lpf, w, h, sgr.s0, edges, bd);
         rav1d_sgr_filter1_neon(&mut tmp2, dst, left, lpf, w, h, sgr.s1, edges, bd);
         let wt = [sgr.w0, sgr.w1];
-        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
-            .call(dst, dst, &mut tmp1, &mut tmp2, w, h, &wt, bd);
+        sgr_weighted2::Fn::neon::<BD>().call(dst, dst, &mut tmp1, &mut tmp2, w, h, &wt, bd);
     }
 }
 
@@ -1541,6 +1577,7 @@ mod neon {
     use super::*;
 
     use crate::src::align::Align16;
+    use std::array;
     use std::ptr;
 
     fn rotate<const LEN: usize, const MID: usize>(
@@ -1580,6 +1617,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, w, edges, bd) }
         }
+
+        const fn neon3<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon)
+        }
+
+        const fn neon5<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box35_row_h(
@@ -1615,13 +1660,17 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq3, sum3, sumsq5, sum5, left, src, w, edges, bd) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_vert(
         sumsq: *mut *mut i32,
         sum: *mut *mut i16,
-        AA: *mut i32,
-        BB: *mut i16,
+        aa: *mut i32,
+        bb: *mut i16,
         w: c_int,
         s: c_int,
         bitdepth_max: c_int,
@@ -1645,6 +1694,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, sumsq_out, sum_out, w, s, bd) }
         }
+
+        const fn neon3() -> Self {
+            sgr_box_vert::decl_fn!(fn dav1d_sgr_box3_vert_neon)
+        }
+
+        const fn neon5() -> Self {
+            sgr_box_vert::decl_fn!(fn dav1d_sgr_box5_vert_neon)
+        }
     }
 
     fn sgr_box3_vert_neon<BD: BitDepth>(
@@ -1656,8 +1713,7 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        sgr_box_vert::decl_fn!(fn dav1d_sgr_box3_vert_neon)
-            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
+        sgr_box_vert::Fn::neon3().call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<3, 1>(sumsq, sum);
     }
 
@@ -1670,15 +1726,14 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        sgr_box_vert::decl_fn!(fn dav1d_sgr_box5_vert_neon)
-            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
+        sgr_box_vert::Fn::neon5().call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<5, 2>(sumsq, sum);
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted1(
         dst: *mut DynPixel,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         w1: c_int,
         bitdepth_max: c_int,
@@ -1688,26 +1743,35 @@ mod neon {
         fn call<BD: BitDepth>(
             &self,
             dst: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; 3],
-            B_ptrs: &mut [*mut i16; 3],
+            a_ptrs: &mut [*mut i32; 3],
+            b_ptrs: &mut [*mut i16; 3],
             w: c_int,
             w1: c_int,
             bd: BD,
         ) {
             let dst = dst.as_mut_ptr::<BD>().cast();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(dst, A_ptrs, B_ptrs, w, w1, bd) }
+            unsafe { self.get()(dst, a_ptrs, b_ptrs, w, w1, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_weighted1::decl_fn,
+                BD,
+                sgr_finish_weighted1,
+                neon
+            )
         }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
         w1: c_int,
@@ -1718,8 +1782,8 @@ mod neon {
         fn call<BD: BitDepth>(
             &self,
             dst: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; 2],
-            B_ptrs: &mut [*mut i16; 2],
+            a_ptrs: &mut [*mut i32; 2],
+            b_ptrs: &mut [*mut i16; 2],
             w: c_int,
             h: c_int,
             w1: c_int,
@@ -1727,11 +1791,20 @@ mod neon {
         ) {
             let dst_ptr = dst.as_mut_ptr::<BD>().cast();
             let dst_stride = dst.stride();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(dst_ptr, dst_stride, A_ptrs, B_ptrs, w, h, w1, bd) }
+            unsafe { self.get()(dst_ptr, dst_stride, a_ptrs, b_ptrs, w, h, w1, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_weighted2::decl_fn,
+                BD,
+                sgr_finish_weighted2,
+                neon
+            )
         }
     }
 
@@ -1739,8 +1812,8 @@ mod neon {
         tmp: *mut i16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
         bitdepth_max: c_int,
@@ -1749,30 +1822,49 @@ mod neon {
     impl sgr_finish_filter_2rows::Fn {
         fn call<BD: BitDepth, const N: usize>(
             &self,
-            tmp: *mut i16,
+            tmp: &mut Align16<[i16; 2 * FILTER_OUT_STRIDE]>,
             src: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; N],
-            B_ptrs: &mut [*mut i16; N],
+            a_ptrs: &mut [*mut i32; N],
+            b_ptrs: &mut [*mut i16; N],
             w: c_int,
             h: c_int,
             bd: BD,
         ) {
             const { assert!(N == 2 || N == 4) };
+            let tmp = tmp.0.as_mut_ptr();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(tmp, src_ptr, src_stride, A_ptrs, B_ptrs, w, h, bd) }
+            unsafe { self.get()(tmp, src_ptr, src_stride, a_ptrs, b_ptrs, w, h, bd) }
+        }
+
+        const fn neon1<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_filter_2rows::decl_fn,
+                BD,
+                sgr_finish_filter1_2rows,
+                neon
+            )
+        }
+
+        const fn neon2<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_filter_2rows::decl_fn,
+                BD,
+                sgr_finish_filter2_2rows,
+                neon
+            )
         }
     }
 
     fn sgr_box3_hv_neon<BD: BitDepth>(
         sumsq: &mut [*mut i32; 3],
         sum: &mut [*mut i16; 3],
-        AA: *mut i32,
-        BB: *mut i16,
+        aa: *mut i32,
+        bb: *mut i16,
         left: Option<&[LeftPixelRow<BD::Pixel>]>,
         src: *const BD::Pixel,
         w: c_int,
@@ -1780,48 +1872,35 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon)
-            .call(sumsq[2], sum[2], left, src, w, edges, bd);
-        sgr_box3_vert_neon(sumsq, sum, AA, BB, w, s, bd);
+        sgr_box_row_h::Fn::neon3::<BD>().call(sumsq[2], sum[2], left, src, w, edges, bd);
+        sgr_box3_vert_neon(sumsq, sum, aa, bb, w, s, bd);
     }
 
     fn sgr_finish1_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 3],
-        B_ptrs: &mut [*mut i16; 3],
+        a_ptrs: &mut [*mut i32; 3],
+        b_ptrs: &mut [*mut i16; 3],
         w: c_int,
         w1: c_int,
         bd: BD,
     ) {
-        bd_fn!(
-            sgr_finish_weighted1::decl_fn,
-            BD,
-            sgr_finish_weighted1,
-            neon
-        )
-        .call(*dst, A_ptrs, B_ptrs, w, w1, bd);
+        sgr_finish_weighted1::Fn::neon::<BD>().call(*dst, a_ptrs, b_ptrs, w, w1, bd);
         *dst += dst.pixel_stride::<BD>();
-        rotate::<3, 1>(A_ptrs, B_ptrs);
+        rotate::<3, 1>(a_ptrs, b_ptrs);
     }
 
     fn sgr_finish2_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 2],
-        B_ptrs: &mut [*mut i16; 2],
+        a_ptrs: &mut [*mut i32; 2],
+        b_ptrs: &mut [*mut i16; 2],
         w: c_int,
         h: c_int,
         w1: c_int,
         bd: BD,
     ) {
-        bd_fn!(
-            sgr_finish_weighted2::decl_fn,
-            BD,
-            sgr_finish_weighted2,
-            neon
-        )
-        .call(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
+        sgr_finish_weighted2::Fn::neon::<BD>().call(*dst, a_ptrs, b_ptrs, w, h, w1, bd);
         *dst += 2 * dst.pixel_stride::<BD>();
-        rotate::<2, 1>(A_ptrs, B_ptrs);
+        rotate::<2, 1>(a_ptrs, b_ptrs);
     }
 
     const FILTER_OUT_STRIDE: usize = 384;
@@ -1866,14 +1945,18 @@ mod neon {
                 )
             }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+        }
     }
 
     fn sgr_finish_mix_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A5_ptrs: &mut [*mut i32; 2],
-        B5_ptrs: &mut [*mut i16; 2],
-        A3_ptrs: &mut [*mut i32; 4],
-        B3_ptrs: &mut [*mut i16; 4],
+        a5_ptrs: &mut [*mut i32; 2],
+        b5_ptrs: &mut [*mut i16; 2],
+        a3_ptrs: &mut [*mut i32; 4],
+        b3_ptrs: &mut [*mut i16; 4],
         w: c_int,
         h: c_int,
         w0: c_int,
@@ -1883,28 +1966,17 @@ mod neon {
         let mut tmp5 = Align16([0; 2 * FILTER_OUT_STRIDE]);
         let mut tmp3 = Align16([0; 2 * FILTER_OUT_STRIDE]);
 
-        bd_fn!(
-            sgr_finish_filter_2rows::decl_fn,
-            BD,
-            sgr_finish_filter2_2rows,
-            neon
-        )
-        .call(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
-        bd_fn!(
-            sgr_finish_filter_2rows::decl_fn,
-            BD,
-            sgr_finish_filter1_2rows,
-            neon
-        )
-        .call(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
+        sgr_finish_filter_2rows::Fn::neon2::<BD>()
+            .call(&mut tmp5, *dst, a5_ptrs, b5_ptrs, w, h, bd);
+        sgr_finish_filter_2rows::Fn::neon1::<BD>()
+            .call(&mut tmp3, *dst, a3_ptrs, b3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
-        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
-            .call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
+        sgr_weighted2::Fn::neon::<BD>().call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
 
         *dst += h as isize * dst.pixel_stride::<BD>();
-        rotate::<2, 1>(A5_ptrs, B5_ptrs);
-        rotate::<4, 1>(A3_ptrs, B3_ptrs);
+        rotate::<2, 1>(a5_ptrs, b5_ptrs);
+        rotate::<4, 1>(a3_ptrs, b3_ptrs);
     }
 
     pub fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1929,34 +2001,27 @@ mod neon {
 
         let mut sumsq_ptrs;
         let mut sum_ptrs;
-        let mut sumsq_rows = [ptr::null_mut(); 3];
-        let mut sum_rows = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq_rows[i] = sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq_rows =
+            array::from_fn(|i| sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum_rows = array::from_fn(|i| sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
-        let mut A_buf = Align16([0; BUF_STRIDE * 3 + 16]);
-        let mut B_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+        let mut a_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+        let mut b_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-        let mut A_ptrs = [ptr::null_mut(); 3];
-        let mut B_ptrs = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            A_ptrs[i] = A_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B_ptrs[i] = B_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a_ptrs = array::from_fn(|i| a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b_ptrs = array::from_fn(|i| b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
+            Main,
+            Vert1,
+            Vert2,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let sgr = params.sgr();
 
@@ -1964,7 +2029,7 @@ mod neon {
             sumsq_ptrs = sumsq_rows;
             sum_ptrs = sum_rows;
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 None,
@@ -1975,7 +2040,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[1],
                 sum_rows[1],
                 None,
@@ -1988,8 +2053,8 @@ mod neon {
             sgr_box3_hv_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 Some(left),
                 src.as_ptr::<BD>(),
                 w,
@@ -2000,17 +2065,17 @@ mod neon {
 
             left = &left[1..];
             src += stride;
-            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     Some(left),
                     src.as_ptr::<BD>(),
                     w,
@@ -2020,18 +2085,18 @@ mod neon {
                 );
                 left = &left[1..];
                 src += stride;
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 }
             }
         } else {
             sumsq_ptrs = [sumsq_rows[0]; 3];
             sum_ptrs = [sum_rows[0]; 3];
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 Some(left),
@@ -2046,17 +2111,17 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq_ptrs[2] = sumsq_rows[1];
                 sum_ptrs[2] = sum_rows[1];
@@ -2064,8 +2129,8 @@ mod neon {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     Some(left),
                     src.as_ptr::<BD>(),
                     w,
@@ -2075,11 +2140,11 @@ mod neon {
                 );
                 left = &left[1..];
                 src += stride;
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq_ptrs[2] = sumsq_rows[2];
                     sum_ptrs[2] = sum_rows[2];
@@ -2087,14 +2152,14 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
             sgr_box3_hv_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 Some(left),
                 src.as_ptr::<BD>(),
                 w,
@@ -2105,21 +2170,21 @@ mod neon {
             left = &left[1..];
             src += stride;
 
-            sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+            sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             h -= 1;
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
+            Track::Main => {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     None,
                     lpf_bottom,
                     w,
@@ -2130,13 +2195,13 @@ mod neon {
                 // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
                 lpf_bottom = lpf_bottom.wrapping_offset(stride);
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
 
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     None,
                     lpf_bottom,
                     w,
@@ -2145,53 +2210,53 @@ mod neon {
                     bd,
                 );
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
                 sum_ptrs[2] = sum_ptrs[1];
                 sgr_box3_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
                 sum_ptrs[2] = sum_ptrs[1];
                 sgr_box3_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             }
         }
 
-        if track != Track::main {
+        if track != Track::Main {
             sumsq_ptrs[2] = sumsq_ptrs[1];
             sum_ptrs[2] = sum_ptrs[1];
             sgr_box3_vert_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
 
-            sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+            sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
         }
     }
 
@@ -2215,47 +2280,39 @@ mod neon {
         let mut sumsq_buf = Align16([0; BUF_STRIDE * 5 + 16]);
         let mut sum_buf = Align16([0; BUF_STRIDE * 5 + 16]);
 
-        let mut sumsq_ptrs = [ptr::null_mut(); 5];
-        let mut sum_ptrs = [ptr::null_mut(); 5];
-        let mut sumsq_rows = [ptr::null_mut(); 5];
-        let mut sum_rows = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq_rows[i] = sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut sumsq_ptrs;
+        let mut sum_ptrs;
+        let sumsq_rows: [_; 5] =
+            array::from_fn(|i| sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum_rows: [_; 5] =
+            array::from_fn(|i| sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
-        let mut A_buf = Align16([0; BUF_STRIDE * 2 + 16]);
-        let mut B_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut a_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut b_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut A_ptrs = [ptr::null_mut(); 2];
-        let mut B_ptrs = [ptr::null_mut(); 2];
-        for i in 0..2 {
-            A_ptrs[i] = A_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B_ptrs[i] = B_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a_ptrs = array::from_fn(|i| a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b_ptrs = array::from_fn(|i| b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
-            odd,
+            Main,
+            Vert1,
+            Vert2,
+            Odd,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let sgr = params.sgr();
 
         if edges.contains(LrEdgeFlags::TOP) {
-            for i in 0..5 {
-                sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
-                sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
-            }
+            sumsq_ptrs = array::from_fn(|i| sumsq_rows[if i > 0 { i - 1 } else { 0 }]);
+            sum_ptrs = array::from_fn(|i| sum_rows[if i > 0 { i - 1 } else { 0 }]);
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 None,
@@ -2266,7 +2323,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[1],
                 sum_rows[1],
                 None,
@@ -2276,7 +2333,7 @@ mod neon {
                 bd,
             );
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[2],
                 sum_rows[2],
                 Some(left),
@@ -2291,9 +2348,9 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_rows[3],
                     sum_rows[3],
                     Some(left),
@@ -2307,17 +2364,17 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                     // one of them to point at the previously unused rows[4].
@@ -2329,7 +2386,7 @@ mod neon {
             sumsq_ptrs = [sumsq_rows[0]; 5];
             sum_ptrs = [sum_rows[0]; 5];
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 Some(left),
@@ -2343,12 +2400,12 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq_ptrs[4] = sumsq_rows[1];
                 sum_ptrs[4] = sum_rows[1];
 
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_rows[1],
                     sum_rows[1],
                     Some(left),
@@ -2363,24 +2420,24 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq_ptrs[3] = sumsq_rows[2];
                     sumsq_ptrs[4] = sumsq_rows[3];
                     sum_ptrs[3] = sum_rows[2];
                     sum_ptrs[4] = sum_rows[3];
 
-                    bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                    sgr_box_row_h::Fn::neon5::<BD>().call(
                         sumsq_rows[2],
                         sum_rows[2],
                         Some(left),
@@ -2394,9 +2451,9 @@ mod neon {
 
                     h -= 1;
                     if h <= 0 {
-                        track = Track::odd;
+                        track = Track::Odd;
                     } else {
-                        bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                        sgr_box_row_h::Fn::neon5::<BD>().call(
                             sumsq_rows[3],
                             sum_rows[3],
                             Some(left),
@@ -2411,8 +2468,8 @@ mod neon {
                         sgr_box5_vert_neon(
                             &mut sumsq_ptrs,
                             &mut sum_ptrs,
-                            A_ptrs[1],
-                            B_ptrs[1],
+                            a_ptrs[1],
+                            b_ptrs[1],
                             w,
                             sgr.s0 as c_int,
                             bd,
@@ -2420,8 +2477,8 @@ mod neon {
 
                         sgr_finish2_neon(
                             &mut dst,
-                            &mut A_ptrs,
-                            &mut B_ptrs,
+                            &mut a_ptrs,
+                            &mut b_ptrs,
                             w,
                             2,
                             sgr.w0 as c_int,
@@ -2430,7 +2487,7 @@ mod neon {
 
                         h -= 1;
                         if h <= 0 {
-                            track = Track::vert2;
+                            track = Track::Vert2;
                         } else {
                             // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                             // one of them to point at the previously unused rows[4].
@@ -2442,10 +2499,10 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_ptrs[3],
                 sum_ptrs[3],
                 Some(left),
@@ -2459,9 +2516,9 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::odd;
+                track = Track::Odd;
             } else {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[4],
                     sum_ptrs[4],
                     Some(left),
@@ -2476,16 +2533,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -2495,13 +2552,13 @@ mod neon {
             }
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            Track::Main => {
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[3],
                     sum_ptrs[3],
                     None,
@@ -2512,7 +2569,7 @@ mod neon {
                 );
                 // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
                 lpf_bottom = lpf_bottom.wrapping_offset(stride);
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[4],
                     sum_ptrs[4],
                     None,
@@ -2522,29 +2579,29 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 // Copy the last row as padding once
                 sumsq_ptrs[4] = sumsq_ptrs[3];
                 sum_ptrs[4] = sum_ptrs[3];
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 // Duplicate the last row twice more
                 sumsq_ptrs[3] = sumsq_ptrs[2];
                 sumsq_ptrs[4] = sumsq_ptrs[2];
                 sum_ptrs[3] = sum_ptrs[2];
                 sum_ptrs[4] = sum_ptrs[2];
             }
-            Track::odd => {
+            Track::Odd => {
                 // Copy the last row as padding once
                 sumsq_ptrs[4] = sumsq_ptrs[3];
                 sum_ptrs[4] = sum_ptrs[3];
@@ -2552,16 +2609,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -2571,27 +2628,27 @@ mod neon {
         }
 
         match track {
-            Track::main | Track::vert2 => {
+            Track::Main | Track::Vert2 => {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
                     bd,
                 );
             }
-            Track::odd | Track::vert1 => {
+            Track::Odd | Track::Vert1 => {
                 // Duplicate the last row twice more
                 sumsq_ptrs[3] = sumsq_ptrs[2];
                 sumsq_ptrs[4] = sumsq_ptrs[2];
@@ -2601,16 +2658,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     1,
                     sgr.w0 as c_int,
@@ -2640,76 +2697,58 @@ mod neon {
         let mut sumsq5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
         let mut sum5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
 
-        let mut sumsq5_rows = [ptr::null_mut(); 5];
-        let mut sum5_rows = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq5_rows[i] = sumsq5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum5_rows[i] = sum5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq5_rows: [_; 5] =
+            array::from_fn(|i| sumsq5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum5_rows: [_; 5] =
+            array::from_fn(|i| sum5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut sumsq3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
         let mut sum3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-        let mut sumsq3_rows = [ptr::null_mut(); 3];
-        let mut sum3_rows = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq3_rows[i] = sumsq3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum3_rows[i] = sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq3_rows: [_; 3] =
+            array::from_fn(|i| sumsq3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum3_rows: [_; 3] =
+            array::from_fn(|i| sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
-        let mut A5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
-        let mut B5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut a5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut b5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut A5_ptrs = [ptr::null_mut(); 2];
-        let mut B5_ptrs = [ptr::null_mut(); 2];
-        for i in 0..2 {
-            A5_ptrs[i] = A5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B5_ptrs[i] = B5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a5_ptrs = array::from_fn(|i| a5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b5_ptrs = array::from_fn(|i| b5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
-        let mut A3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
-        let mut B3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
+        let mut a3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
+        let mut b3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
 
-        let mut A3_ptrs = [ptr::null_mut(); 4];
-        let mut B3_ptrs = [ptr::null_mut(); 4];
-        for i in 0..4 {
-            A3_ptrs[i] = A3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B3_ptrs[i] = B3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a3_ptrs = array::from_fn(|i| a3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b3_ptrs = array::from_fn(|i| b3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
-            odd,
+            Main,
+            Vert1,
+            Vert2,
+            Odd,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let lr_have_top = edges.contains(LrEdgeFlags::TOP);
 
-        let mut sumsq3_ptrs = [ptr::null_mut(); 3];
-        let mut sum3_ptrs = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq3_ptrs[i] = sumsq3_rows[if lr_have_top { i } else { 0 }];
-            sum3_ptrs[i] = sum3_rows[if lr_have_top { i } else { 0 }];
-        }
+        let mut sumsq3_ptrs = array::from_fn(|i| sumsq3_rows[if lr_have_top { i } else { 0 }]);
+        let mut sum3_ptrs = array::from_fn(|i| sum3_rows[if lr_have_top { i } else { 0 }]);
 
-        let mut sumsq5_ptrs = [ptr::null_mut(); 5];
-        let mut sum5_ptrs = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq5_ptrs[i] = sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
-            sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
-        }
+        let mut sumsq5_ptrs =
+            array::from_fn(|i| sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }]);
+        let mut sum5_ptrs =
+            array::from_fn(|i| sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }]);
 
         let sgr = params.sgr();
 
         if lr_have_top {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[0],
                 sum3_rows[0],
                 sumsq5_rows[0],
@@ -2722,7 +2761,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[1],
                 sum3_rows[1],
                 sumsq5_rows[1],
@@ -2734,7 +2773,7 @@ mod neon {
                 bd,
             );
 
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[2],
                 sum3_rows[2],
                 sumsq5_rows[2],
@@ -2752,19 +2791,19 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_rows[3],
@@ -2781,28 +2820,28 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
 
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                     // one of them to point at the previously unused rows[4].
@@ -2811,7 +2850,7 @@ mod neon {
                 }
             }
         } else {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[0],
                 sum3_rows[0],
                 sumsq5_rows[0],
@@ -2828,17 +2867,17 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as i32,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq5_ptrs[4] = sumsq5_rows[1];
                 sum5_ptrs[4] = sum5_rows[1];
@@ -2846,7 +2885,7 @@ mod neon {
                 sumsq3_ptrs[2] = sumsq3_rows[1];
                 sum3_ptrs[2] = sum3_rows[1];
 
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_rows[1],
                     sum3_rows[1],
                     sumsq5_rows[1],
@@ -2863,28 +2902,28 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
 
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq5_ptrs[3] = sumsq5_rows[2];
                     sumsq5_ptrs[4] = sumsq5_rows[3];
@@ -2894,7 +2933,7 @@ mod neon {
                     sumsq3_ptrs[2] = sumsq3_rows[2];
                     sum3_ptrs[2] = sum3_rows[2];
 
-                    bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                    sgr_box35_row_h::Fn::neon::<BD>().call(
                         sumsq3_rows[2],
                         sum3_rows[2],
                         sumsq5_rows[2],
@@ -2911,19 +2950,19 @@ mod neon {
                     sgr_box3_vert_neon(
                         &mut sumsq3_ptrs,
                         &mut sum3_ptrs,
-                        A3_ptrs[3],
-                        B3_ptrs[3],
+                        a3_ptrs[3],
+                        b3_ptrs[3],
                         w,
                         sgr.s1 as c_int,
                         bd,
                     );
-                    rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                    rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                     h -= 1;
                     if h <= 0 {
-                        track = Track::odd;
+                        track = Track::Odd;
                     } else {
-                        bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                        sgr_box35_row_h::Fn::neon::<BD>().call(
                             sumsq3_ptrs[2],
                             sum3_ptrs[2],
                             sumsq5_rows[3],
@@ -2940,8 +2979,8 @@ mod neon {
                         sgr_box5_vert_neon(
                             &mut sumsq5_ptrs,
                             &mut sum5_ptrs,
-                            A5_ptrs[1],
-                            B5_ptrs[1],
+                            a5_ptrs[1],
+                            b5_ptrs[1],
                             w,
                             sgr.s0 as c_int,
                             bd,
@@ -2949,18 +2988,18 @@ mod neon {
                         sgr_box3_vert_neon(
                             &mut sumsq3_ptrs,
                             &mut sum3_ptrs,
-                            A3_ptrs[3],
-                            B3_ptrs[3],
+                            a3_ptrs[3],
+                            b3_ptrs[3],
                             w,
                             sgr.s1 as c_int,
                             bd,
                         );
                         sgr_finish_mix_neon(
                             &mut dst,
-                            &mut A5_ptrs,
-                            &mut B5_ptrs,
-                            &mut A3_ptrs,
-                            &mut B3_ptrs,
+                            &mut a5_ptrs,
+                            &mut b5_ptrs,
+                            &mut a3_ptrs,
+                            &mut b3_ptrs,
                             w,
                             2,
                             sgr.w0 as c_int,
@@ -2970,7 +3009,7 @@ mod neon {
 
                         h -= 1;
                         if h <= 0 {
-                            track = Track::vert2;
+                            track = Track::Vert2;
                         } else {
                             // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                             // one of them to point at the previously unused rows[4].
@@ -2982,10 +3021,10 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_ptrs[2],
                 sum3_ptrs[2],
                 sumsq5_ptrs[3],
@@ -3002,19 +3041,19 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
-                track = Track::odd;
+                track = Track::Odd;
             } else {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[4],
@@ -3031,8 +3070,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3040,18 +3079,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3062,13 +3101,13 @@ mod neon {
             }
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            Track::Main => {
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[3],
@@ -3085,15 +3124,15 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[4],
@@ -3105,7 +3144,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 // Copy the last row as padding once
                 sumsq5_ptrs[4] = sumsq5_ptrs[3];
                 sum5_ptrs[4] = sum5_ptrs[3];
@@ -3116,25 +3155,25 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 // Duplicate the last row twice more
                 sumsq5_ptrs[3] = sumsq5_ptrs[2];
                 sumsq5_ptrs[4] = sumsq5_ptrs[2];
@@ -3146,18 +3185,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 sumsq3_ptrs[2] = sumsq3_ptrs[1];
                 sum3_ptrs[2] = sum3_ptrs[1];
             }
-            Track::odd => {
+            Track::Odd => {
                 // Copy the last row as padding once
                 sumsq5_ptrs[4] = sumsq5_ptrs[3];
                 sum5_ptrs[4] = sum5_ptrs[3];
@@ -3168,8 +3207,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3177,18 +3216,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3199,12 +3238,12 @@ mod neon {
         }
 
         match track {
-            Track::main | Track::vert2 => {
+            Track::Main | Track::Vert2 => {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3212,18 +3251,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3231,7 +3270,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 | Track::odd => {
+            Track::Vert1 | Track::Odd => {
                 // Duplicate the last row twice more
                 sumsq5_ptrs[3] = sumsq5_ptrs[2];
                 sumsq5_ptrs[4] = sumsq5_ptrs[2];
@@ -3244,8 +3283,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3253,20 +3292,20 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
                 // Output only one row
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     1,
                     sgr.w0 as c_int,
