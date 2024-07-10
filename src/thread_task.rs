@@ -20,11 +20,11 @@ use crate::src::internal::Grain;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameContext_task_thread;
+use crate::src::internal::Rav1dFrameContextTaskThread;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContext_task_thread;
+use crate::src::internal::Rav1dTaskContextTaskThread;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskType;
 use crate::src::iter::wrapping_iter;
@@ -340,7 +340,7 @@ impl Rav1dTasks {
     }
 }
 
-impl Rav1dFrameContext_task_thread {
+impl Rav1dFrameContextTaskThread {
     fn insert_task(&self, c: &Rav1dContext, task: Rav1dTask, cond_signal: c_int) -> Rav1dTaskIndex {
         let idx = self.tasks.push(task);
         self.tasks.insert_tasks(c, idx, idx, cond_signal);
@@ -542,7 +542,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
 #[inline]
 fn check_tile(
     f: &Rav1dFrameData,
-    task_thread: &Rav1dFrameContext_task_thread,
+    task_thread: &Rav1dFrameContextTaskThread,
     t: &Rav1dTask,
     frame_mt: c_int,
 ) -> c_int {
@@ -772,7 +772,7 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
     }
 }
 
-pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContext_task_thread>) {
+pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
     // The main thread will unpark us once `task_thread.c` is set.
     thread::park();
     let c = &*task_thread.c.lock().take().unwrap();

@@ -37,7 +37,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
-use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Av1BlockInter;
 use crate::src::levels::Av1BlockIntra;
@@ -49,6 +48,7 @@ use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
+use crate::src::levels::Mv;
 use crate::src::levels::TxClass;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
@@ -128,7 +128,7 @@ pub(crate) use debug_block_info;
 
 const DEBUG_B_PIXELS: bool = false;
 
-pub(crate) type recon_b_intra_fn = fn(
+pub(crate) type ReconBIntraFn = fn(
     &Rav1dFrameData,
     &mut Rav1dTaskContext,
     Option<&mut Rav1dTileStateContext>,
@@ -138,7 +138,7 @@ pub(crate) type recon_b_intra_fn = fn(
     &Av1BlockIntra,
 ) -> ();
 
-pub(crate) type recon_b_inter_fn = fn(
+pub(crate) type ReconBInterFn = fn(
     &Rav1dFrameData,
     &mut Rav1dTaskContext,
     Option<&mut Rav1dTileStateContext>,
@@ -147,12 +147,12 @@ pub(crate) type recon_b_inter_fn = fn(
     &Av1BlockInter,
 ) -> Result<(), ()>;
 
-pub(crate) type filter_sbrow_fn =
+pub(crate) type FilterSbrowFn =
     fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
-pub(crate) type backup_ipred_edge_fn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
+pub(crate) type BackupIpredEdgeFn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
-pub(crate) type read_coef_blocks_fn = fn(
+pub(crate) type ReadCoefBlocksFn = fn(
     &Rav1dFrameData,
     &mut Rav1dTaskContext,
     &mut Rav1dTileStateContext,
@@ -160,7 +160,7 @@ pub(crate) type read_coef_blocks_fn = fn(
     &Av1Block,
 ) -> ();
 
-pub(crate) type copy_pal_block_fn = fn(
+pub(crate) type CopyPalBlockFn = fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     bx4: usize,
@@ -169,7 +169,7 @@ pub(crate) type copy_pal_block_fn = fn(
     bh4: usize,
 ) -> ();
 
-pub(crate) type read_pal_plane_fn = fn(
+pub(crate) type ReadPalPlaneFn = fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
@@ -179,7 +179,7 @@ pub(crate) type read_pal_plane_fn = fn(
     by4: usize,
 ) -> u8; // `pal_sz`
 
-pub(crate) type read_pal_uv_fn = fn(
+pub(crate) type ReadPalUVFn = fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
@@ -1716,7 +1716,7 @@ fn mc<BD: BitDepth>(
     bx: c_int,
     by: c_int,
     pl: usize,
-    mv: mv,
+    mv: Mv,
     refp: &Rav1dThreadPicture,
     refidx: usize,
     filter_2d: Filter2d,

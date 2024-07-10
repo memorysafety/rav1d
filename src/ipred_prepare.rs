@@ -73,11 +73,11 @@ bitflags! {
 }
 
 #[derive(Clone, Copy)]
-struct av1_intra_prediction_edge {
+struct Av1IntraPredictionEdge {
     pub needs: Needs,
 }
 
-static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
+static av1_intra_prediction_edges: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MODES] = {
     const LEFT: Needs = Needs::LEFT;
     const TOP: Needs = Needs::TOP;
     const TOP_LEFT: Needs = Needs::TOP_LEFT;
@@ -108,7 +108,7 @@ static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED
     a[PAETH_PRED as usize] = all([LEFT, TOP, TOP_LEFT]);
     a[FILTER_PRED as usize] = all([LEFT, TOP, TOP_LEFT]);
 
-    let mut b = [av1_intra_prediction_edge {
+    let mut b = [Av1IntraPredictionEdge {
         needs: Needs::empty(),
     }; N_IMPL_INTRA_PRED_MODES];
     const_for!(i in 0..N_IMPL_INTRA_PRED_MODES => {

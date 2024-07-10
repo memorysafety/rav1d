@@ -65,8 +65,8 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameContext_frame_thread;
-use crate::src::internal::Rav1dFrameContext_lf;
+use crate::src::internal::Rav1dFrameContextFrameThread;
+use crate::src::internal::Rav1dFrameContextLf;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dState;
 use crate::src::internal::Rav1dTaskContext;
@@ -78,7 +78,6 @@ use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
-use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Av1BlockInter;
 use crate::src::levels::Av1BlockInter1d;
@@ -96,6 +95,7 @@ use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
+use crate::src::levels::Mv;
 use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
@@ -139,10 +139,10 @@ use crate::src::recon::debug_block_info;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
 use crate::src::refmvs::rav1d_refmvs_tile_sbrow_init;
-use crate::src::refmvs::refmvs_block;
-use crate::src::refmvs::refmvs_mvpair;
-use crate::src::refmvs::refmvs_refpair;
+use crate::src::refmvs::RefMvsBlock;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::refmvs::RefMvsMvPair;
+use crate::src::refmvs::RefMvsRefPair;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
@@ -260,7 +260,7 @@ fn read_mv_component_diff(
     }
 }
 
-fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut mv, mv_prec: i32) {
+fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut Mv, mv_prec: i32) {
     let mv_joint = MVJoint::from_bits_truncate(rav1d_msac_decode_symbol_adapt4(
         &mut ts_c.msac,
         &mut ts_c.cdf.mv.joint.0,
@@ -438,8 +438,8 @@ fn find_matching_ref(
         && t.b.x + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
-    let bs = |rp: refmvs_block| rp.bs.dimensions();
-    let matches = |rp: refmvs_block| rp.r#ref.r#ref[0] == r#ref + 1 && rp.r#ref.r#ref[1] == -1;
+    let bs = |rp: RefMvsBlock| rp.bs.dimensions();
+    let matches = |rp: RefMvsBlock| rp.r#ref.r#ref[0] == r#ref + 1 && rp.r#ref.r#ref[1] == -1;
 
     if have_top {
         let mut i = r[0] + t.b.x as usize;
@@ -525,12 +525,12 @@ fn find_matching_ref(
 }
 
 fn derive_warpmv(
-    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
     t: &Rav1dTaskContext,
     bw4: c_int,
     bh4: c_int,
     masks: &[u64; 2],
-    mv: mv,
+    mv: Mv,
     mut wmp: Rav1dWarpedMotionParams,
 ) -> Rav1dWarpedMotionParams {
     let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
@@ -543,9 +543,9 @@ fn derive_warpmv(
         *r.index(t.rt.r[(offset as isize + i as isize) as usize] + j as usize)
     };
 
-    let bs = |rp: refmvs_block| rp.bs.dimensions();
+    let bs = |rp: RefMvsBlock| rp.bs.dimensions();
 
-    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: refmvs_block| {
+    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: RefMvsBlock| {
         pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
         pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
         pts[np][1][0] = pts[np][0][0] + rp.mv.mv[0].x as i32;
@@ -905,11 +905,11 @@ fn splat_oneref_mv(
     bh4: usize,
 ) {
     let mode = inter.inter_mode;
-    let tmpl = Align16(refmvs_block {
-        mv: refmvs_mvpair {
-            mv: [inter.nd.one_d.mv[0], mv::ZERO],
+    let tmpl = Align16(RefMvsBlock {
+        mv: RefMvsMvPair {
+            mv: [inter.nd.one_d.mv[0], Mv::ZERO],
         },
-        r#ref: refmvs_refpair {
+        r#ref: RefMvsRefPair {
             r#ref: [
                 inter.r#ref[0] + 1,
                 inter.interintra_type.map(|_| 0).unwrap_or(-1),
@@ -928,15 +928,15 @@ fn splat_intrabc_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    r#ref: mv,
+    r#ref: Mv,
     bw4: usize,
     bh4: usize,
 ) {
-    let tmpl = Align16(refmvs_block {
-        mv: refmvs_mvpair {
-            mv: [r#ref, mv::ZERO],
+    let tmpl = Align16(RefMvsBlock {
+        mv: RefMvsMvPair {
+            mv: [r#ref, Mv::ZERO],
         },
-        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        r#ref: RefMvsRefPair { r#ref: [0, -1] },
         bs,
         mf: 0,
     });
@@ -955,11 +955,11 @@ fn splat_tworef_mv(
 ) {
     assert!(bw4 >= 2 && bh4 >= 2);
     let mode = inter.inter_mode;
-    let tmpl = Align16(refmvs_block {
-        mv: refmvs_mvpair {
+    let tmpl = Align16(RefMvsBlock {
+        mv: RefMvsMvPair {
             mv: inter.nd.one_d.mv,
         },
-        r#ref: refmvs_refpair {
+        r#ref: RefMvsRefPair {
             r#ref: [inter.r#ref[0] + 1, inter.r#ref[1] + 1],
         },
         bs,
@@ -977,11 +977,11 @@ fn splat_intraref(
     bw4: usize,
     bh4: usize,
 ) {
-    let tmpl = Align16(refmvs_block {
-        mv: refmvs_mvpair {
-            mv: [mv::INVALID, mv::ZERO],
+    let tmpl = Align16(RefMvsBlock {
+        mv: RefMvsMvPair {
+            mv: [Mv::INVALID, Mv::ZERO],
         },
-        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        r#ref: RefMvsRefPair { r#ref: [0, -1] },
         bs,
         mf: 0,
     });
@@ -1072,7 +1072,7 @@ fn affine_lowest_px_chroma(
 }
 
 fn obmc_lowest_px(
-    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
     t: &mut Rav1dTaskContext,
     ts: &Rav1dTileState,
     layout: Rav1dPixelLayout,
@@ -2044,17 +2044,17 @@ fn decode_b(
             frame_hdr,
         );
 
-        let mut r#ref = if mvstack[0].mv.mv[0] != mv::ZERO {
+        let mut r#ref = if mvstack[0].mv.mv[0] != Mv::ZERO {
             mvstack[0].mv.mv[0]
-        } else if mvstack[1].mv.mv[0] != mv::ZERO {
+        } else if mvstack[1].mv.mv[0] != Mv::ZERO {
             mvstack[1].mv.mv[0]
         } else if t.b.y - (16 << seq_hdr.sb128) < ts.tiling.row_start {
-            mv {
+            Mv {
                 y: 0,
                 x: (-(512 << seq_hdr.sb128) - 2048) as i16,
             }
         } else {
-            mv {
+            Mv {
                 y: -(512 << seq_hdr.sb128) as i16,
                 x: 0,
             }
@@ -2119,7 +2119,7 @@ fn decode_b(
         }
 
         let prev_ref = r#ref;
-        let r#ref = mv {
+        let r#ref = Mv {
             x: ((src_left - t.b.x * 4) * 8) as i16,
             y: ((src_top - t.b.y * 4) * 8) as i16,
         };
@@ -2680,7 +2680,7 @@ fn decode_b(
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
-                refmvs_refpair {
+                RefMvsRefPair {
                     r#ref: [r#ref[0] + 1, -1],
                 },
                 bs,
@@ -3869,10 +3869,10 @@ fn setup_tile(
     cur: &Rav1dPicture,
     bw: i32,
     bh: i32,
-    frame_thread: &Rav1dFrameContext_frame_thread,
+    frame_thread: &Rav1dFrameContextFrameThread,
     sr_sb128w: i32,
     sb128w: i32,
-    lf: &mut Rav1dFrameContext_lf,
+    lf: &mut Rav1dFrameContextLf,
     in_cdf: &CdfThreadContext,
     data: CArc<[u8]>,
     tile_row: usize,

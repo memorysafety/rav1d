@@ -19,8 +19,8 @@ use crate::src::error::Rav1dResult;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Bxy;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
+use crate::src::levels::Mv;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::marker::PhantomData;
@@ -32,44 +32,44 @@ use zerocopy::FromZeroes;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
-pub struct refmvs_temporal_block {
-    pub mv: mv,
+pub struct RefMvsTemporalBlock {
+    pub mv: Mv,
     pub r#ref: i8,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
 #[repr(C)]
-pub struct refmvs_refpair {
+pub struct RefMvsRefPair {
     pub r#ref: [i8; 2],
 }
 
-impl From<[i8; 2]> for refmvs_refpair {
+impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
-        refmvs_refpair { r#ref: from }
+        RefMvsRefPair { r#ref: from }
     }
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, FromZeroes)]
 #[repr(C)]
-pub struct refmvs_mvpair {
-    pub mv: [mv; 2],
+pub struct RefMvsMvPair {
+    pub mv: [Mv; 2],
 }
 
 #[derive(Clone, Copy, FromZeroes)]
 #[repr(C, align(4))]
-pub struct refmvs_block {
-    pub mv: refmvs_mvpair,
-    pub r#ref: refmvs_refpair,
+pub struct RefMvsBlock {
+    pub mv: RefMvsMvPair,
+    pub r#ref: RefMvsRefPair,
     pub bs: BlockSize,
     pub mf: u8,
 }
 
 // In C, this is packed and is 12 bytes.
 // In Rust, being packed and aligned is tricky
-const _: () = assert!(mem::size_of::<refmvs_block>() == 12);
+const _: () = assert!(mem::size_of::<RefMvsBlock>() == 12);
 
 #[repr(C)]
-pub(crate) struct refmvs_frame<'a> {
+pub(crate) struct AsmRefMvsFrame<'a> {
     /// This lifetime is for the pointers in this [`refmvs_frame`],
     /// which are borrowed from the parent [`RefMvsFrame`].
     /// Since this is a transient type for asm calls, a lifetime is fine,
@@ -92,11 +92,11 @@ pub(crate) struct refmvs_frame<'a> {
     pub mfmv_ref2cur: [i32; 3],
     pub mfmv_ref2ref: [[i32; 7]; 3],
     pub n_mfmvs: i32,
-    pub rp: *mut refmvs_temporal_block,
-    pub rp_ref: *const *mut refmvs_temporal_block,
-    pub rp_proj: *mut refmvs_temporal_block,
+    pub rp: *mut RefMvsTemporalBlock,
+    pub rp_ref: *const *mut RefMvsTemporalBlock,
+    pub rp_proj: *mut RefMvsTemporalBlock,
     pub rp_stride: isize,
-    pub r: *mut refmvs_block,
+    pub r: *mut RefMvsBlock,
     pub r_stride: isize,
     pub n_tile_rows: i32,
     pub n_tile_threads: i32,
@@ -120,9 +120,9 @@ pub struct RefMvsFrame {
     pub mfmv_ref2cur: [i32; 3],
     pub mfmv_ref2ref: [[i32; 7]; 3],
     pub n_mfmvs: i32,
-    pub rp_proj: DisjointMut<AlignedVec64<refmvs_temporal_block>>,
+    pub rp_proj: DisjointMut<AlignedVec64<RefMvsTemporalBlock>>,
     pub rp_stride: u32,
-    pub r: DisjointMut<AlignedVec64<refmvs_block>>,
+    pub r: DisjointMut<AlignedVec64<RefMvsBlock>>,
     pub r_stride: u32,
     pub n_tile_rows: u32,
     pub n_tile_threads: u32,
@@ -131,12 +131,12 @@ pub struct RefMvsFrame {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct refmvs_tile_range {
+pub struct RefmvsTileRange {
     pub start: i32,
     pub end: i32,
 }
 
-pub struct refmvs_tile {
+pub struct RefmvsTile {
     /// Unique indices into [`RefMvsFrame::r`].
     /// Out of bounds indices correspond to null pointers.
     ///
@@ -148,11 +148,11 @@ pub struct refmvs_tile {
     /// Index into [`RefMvsFrame::rp_proj`].
     pub rp_proj: usize,
 
-    pub tile_col: refmvs_tile_range,
-    pub tile_row: refmvs_tile_range,
+    pub tile_col: RefmvsTileRange,
+    pub tile_row: RefmvsTileRange,
 }
 
-impl Default for refmvs_tile {
+impl Default for RefmvsTile {
     fn default() -> Self {
         Self {
             r: [Default::default(); 37],
@@ -165,28 +165,28 @@ impl Default for refmvs_tile {
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct refmvs_candidate {
-    pub mv: refmvs_mvpair,
+pub struct RefMvsCandidate {
+    pub mv: RefMvsMvPair,
     pub weight: i32,
 }
 
 wrap_fn_ptr!(pub(crate) unsafe extern "C" fn load_tmvs(
-    rf: &refmvs_frame,
+    rf: &AsmRefMvsFrame,
     tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
     row_start8: i32,
     row_end8: i32,
-    _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
-    _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
+    _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<RefMvsTemporalBlock>>>,
+    _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7]>,
 ) -> ());
 
 impl load_tmvs::Fn {
     pub fn call(
         &self,
         rf: &RefMvsFrame,
-        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
-        rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
+        rp: &Option<DisjointMutArcSlice<RefMvsTemporalBlock>>,
+        rp_ref: &[Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7],
         tile_row_idx: i32,
         col_start8: i32,
         col_end8: i32,
@@ -216,14 +216,14 @@ impl load_tmvs::Fn {
             n_frame_threads,
         } = *rf;
         fn mvs_to_dav1d(
-            mvs: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
-        ) -> *mut refmvs_temporal_block {
+            mvs: &Option<DisjointMutArcSlice<RefMvsTemporalBlock>>,
+        ) -> *mut RefMvsTemporalBlock {
             mvs.as_ref()
                 .map(|rp| rp.inner.as_mut_ptr())
                 .unwrap_or_else(ptr::null_mut)
         }
         let rp_ref_dav1d = rp_ref.each_ref().map(mvs_to_dav1d);
-        let rf_dav1d = refmvs_frame {
+        let rf_dav1d = AsmRefMvsFrame {
             _lifetime: PhantomData,
             _frm_hdr: ptr::null(), // never used
             iw4,
@@ -272,17 +272,17 @@ impl load_tmvs::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn save_tmvs(
-    rp_ptr: *mut refmvs_temporal_block,
+    rp_ptr: *mut RefMvsTemporalBlock,
     stride: isize,
-    rr: &[*const refmvs_block; 31],
+    rr: &[*const RefMvsBlock; 31],
     ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
     col_start8: i32,
     row_start8: i32,
-    _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+    _r: *const FFISafe<DisjointMut<AlignedVec64<RefMvsBlock>>>,
     _ri: &[usize; 31],
-    _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
+    _rp: *const FFISafe<DisjointMutArcSlice<RefMvsTemporalBlock>>,
 ) -> ());
 
 impl save_tmvs::Fn {
@@ -290,9 +290,9 @@ impl save_tmvs::Fn {
     // into buffers for use in future frame's temporal MV prediction
     pub fn call(
         &self,
-        rt: &refmvs_tile,
+        rt: &RefmvsTile,
         rf: &RefMvsFrame,
-        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+        rp: &Option<DisjointMutArcSlice<RefMvsTemporalBlock>>,
         col_start8: i32,
         col_end8: i32,
         row_start8: i32,
@@ -326,7 +326,7 @@ impl save_tmvs::Fn {
             // Furthermore, this is provenance safe because
             // we derive the ptrs from `rf.r.as_mut_ptr()`,
             // as opposed to materializing intermediate references.
-            const _: () = assert!(mem::size_of::<refmvs_block>() * (1 + R_PAD) > 16);
+            const _: () = assert!(mem::size_of::<RefMvsBlock>() * (1 + R_PAD) > 16);
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 
@@ -353,8 +353,8 @@ impl save_tmvs::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn splat_mv(
-    rr: *mut *mut refmvs_block,
-    rmv: &Align16<refmvs_block>,
+    rr: *mut *mut RefMvsBlock,
+    rmv: &Align16<RefMvsBlock>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
@@ -364,8 +364,8 @@ impl splat_mv::Fn {
     pub fn call(
         &self,
         rf: &RefMvsFrame,
-        rt: &refmvs_tile,
-        rmv: &Align16<refmvs_block>,
+        rt: &RefmvsTile,
+        rmv: &Align16<RefMvsBlock>,
         b4: Bxy,
         bw4: usize,
         bh4: usize,
@@ -374,7 +374,7 @@ impl splat_mv::Fn {
         let len = bh4;
         let bx4 = b4.x as usize;
 
-        type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<refmvs_block>, [refmvs_block]>;
+        type Guard<'a> = DisjointMutGuard<'a, AlignedVec64<RefMvsBlock>, [RefMvsBlock]>;
 
         let mut r_guards = [const { MaybeUninit::uninit() }; 37];
         let mut r_ptrs = [MaybeUninit::uninit(); 37];
@@ -444,12 +444,12 @@ pub struct Rav1dRefmvsDSPContext {
 }
 
 fn add_spatial_candidate(
-    mvstack: &mut [refmvs_candidate],
+    mvstack: &mut [RefMvsCandidate],
     cnt: &mut usize,
     weight: i32,
-    b: refmvs_block,
-    r#ref: refmvs_refpair,
-    gmv: &[mv; 2],
+    b: RefMvsBlock,
+    r#ref: RefMvsRefPair,
+    gmv: &[Mv; 2],
     have_newmv_match: &mut i32,
     have_refmv_match: &mut i32,
 ) {
@@ -462,7 +462,7 @@ fn add_spatial_candidate(
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
             if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
-                let cand_mv = if mf_odd && gmv[0] != mv::INVALID {
+                let cand_mv = if mf_odd && gmv[0] != Mv::INVALID {
                     gmv[0]
                 } else {
                     b.mv.mv[n]
@@ -489,14 +489,14 @@ fn add_spatial_candidate(
             }
         }
     } else if b.r#ref == r#ref {
-        let cand_mv = refmvs_mvpair {
+        let cand_mv = RefMvsMvPair {
             mv: [
-                if mf_odd && gmv[0] != mv::INVALID {
+                if mf_odd && gmv[0] != Mv::INVALID {
                     gmv[0]
                 } else {
                     b.mv.mv[0]
                 },
-                if mf_odd && gmv[1] != mv::INVALID {
+                if mf_odd && gmv[1] != Mv::INVALID {
                     gmv[1]
                 } else {
                     b.mv.mv[1]
@@ -525,11 +525,11 @@ fn add_spatial_candidate(
 }
 
 fn scan_row(
-    mvstack: &mut [refmvs_candidate],
+    mvstack: &mut [RefMvsCandidate],
     cnt: &mut usize,
-    r#ref: refmvs_refpair,
-    gmv: &[mv; 2],
-    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    r#ref: RefMvsRefPair,
+    gmv: &[Mv; 2],
+    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
     b_offset: usize,
     bw4: i32,
     w4: i32,
@@ -594,11 +594,11 @@ fn scan_row(
 }
 
 fn scan_col(
-    mvstack: &mut [refmvs_candidate],
+    mvstack: &mut [RefMvsCandidate],
     cnt: &mut usize,
-    r#ref: refmvs_refpair,
-    gmv: &[mv; 2],
-    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    r#ref: RefMvsRefPair,
+    gmv: &[Mv; 2],
+    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
     b: &[usize],
     bh4: i32,
     h4: i32,
@@ -664,7 +664,7 @@ fn scan_col(
 }
 
 #[inline]
-fn mv_projection(mv: mv, num: i32, den: i32) -> mv {
+fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
     static div_mult: [u16; 32] = [
         0, 16384, 8192, 5461, 4096, 3276, 2730, 2340, 2048, 1820, 1638, 1489, 1365, 1260, 1170,
         1092, 1024, 963, 910, 862, 819, 780, 744, 712, 682, 655, 630, 606, 585, 564, 546, 528,
@@ -676,7 +676,7 @@ fn mv_projection(mv: mv, num: i32, den: i32) -> mv {
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
     let max = (1 << 14) - 1;
-    return mv {
+    return Mv {
         y: iclip(y + 8192 + (y >> 31) >> 14, -max, max) as i16,
         x: iclip(x + 8192 + (x >> 31) >> 14, -max, max) as i16,
     };
@@ -684,11 +684,11 @@ fn mv_projection(mv: mv, num: i32, den: i32) -> mv {
 
 fn add_temporal_candidate(
     rf: &RefMvsFrame,
-    mvstack: &mut [refmvs_candidate],
+    mvstack: &mut [RefMvsCandidate],
     cnt: &mut usize,
-    rb: refmvs_temporal_block,
-    r#ref: refmvs_refpair,
-    globalmv: Option<(&mut i32, &[mv; 2])>,
+    rb: RefMvsTemporalBlock,
+    r#ref: RefMvsRefPair,
+    globalmv: Option<(&mut i32, &[Mv; 2])>,
     frame_hdr: &Rav1dFrameHeader,
 ) {
     if rb.mv.is_invalid() {
@@ -721,7 +721,7 @@ fn add_temporal_candidate(
             *cnt = last + 1;
         }
     } else {
-        let mut mvp = refmvs_mvpair {
+        let mut mvp = RefMvsMvPair {
             mv: [
                 mv,
                 mv_projection(
@@ -749,12 +749,12 @@ fn add_temporal_candidate(
 }
 
 fn add_compound_extended_candidate(
-    same: &mut [refmvs_candidate],
+    same: &mut [RefMvsCandidate],
     same_count: &mut [usize; 4],
-    cand_b: refmvs_block,
+    cand_b: RefMvsBlock,
     sign0: u8,
     sign1: u8,
-    r#ref: refmvs_refpair,
+    r#ref: RefMvsRefPair,
     sign_bias: &[u8; 7],
 ) {
     let (same, diff) = same.split_at_mut(2);
@@ -818,9 +818,9 @@ fn add_compound_extended_candidate(
 }
 
 fn add_single_extended_candidate(
-    mvstack: &mut [refmvs_candidate; 8],
+    mvstack: &mut [RefMvsCandidate; 8],
     cnt: &mut usize,
-    cand_b: refmvs_block,
+    cand_b: RefMvsBlock,
     sign: u8,
     sign_bias: &[u8; 7],
 ) {
@@ -874,12 +874,12 @@ fn add_single_extended_candidate(
 /// threading is disabled), we call load_tmvs(), which will project the MVs to
 /// their respective position in the current frame.
 pub(crate) fn rav1d_refmvs_find(
-    rt: &refmvs_tile,
+    rt: &RefmvsTile,
     rf: &RefMvsFrame,
-    mvstack: &mut [refmvs_candidate; 8],
+    mvstack: &mut [RefMvsCandidate; 8],
     cnt: &mut usize,
     ctx: &mut i32,
-    r#ref: refmvs_refpair,
+    r#ref: RefMvsRefPair,
     bs: BlockSize,
     edge_flags: EdgeFlags,
     by4: i32,
@@ -891,8 +891,8 @@ pub(crate) fn rav1d_refmvs_find(
     let w4 = cmp::min(cmp::min(bw4, 16), rt.tile_col.end - bx4);
     let bh4 = b_dim[1] as i32;
     let h4 = cmp::min(cmp::min(bh4, 16), rt.tile_row.end - by4);
-    let mut gmv = [mv::default(); 2];
-    let mut tgmv = [mv::default(); 2];
+    let mut gmv = [Mv::default(); 2];
+    let mut tgmv = [Mv::default(); 2];
 
     *cnt = 0;
     assert!(
@@ -913,11 +913,11 @@ pub(crate) fn rav1d_refmvs_find(
         {
             tgmv[0]
         } else {
-            mv::INVALID
+            Mv::INVALID
         };
     } else {
-        tgmv[0] = mv::ZERO;
-        gmv[0] = mv::INVALID;
+        tgmv[0] = Mv::ZERO;
+        gmv[0] = Mv::INVALID;
     }
     if r#ref.r#ref[1] > 0 {
         tgmv[1] = get_gmv_2d(
@@ -933,7 +933,7 @@ pub(crate) fn rav1d_refmvs_find(
         {
             tgmv[1]
         } else {
-            mv::INVALID
+            Mv::INVALID
         };
     }
 
@@ -1323,7 +1323,7 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     sby: i32,
     mut tile_row_idx: i32,
     pass: i32,
-) -> refmvs_tile {
+) -> RefmvsTile {
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0;
     }
@@ -1360,14 +1360,14 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
         }
     }
 
-    refmvs_tile {
+    RefmvsTile {
         r: rr,
         rp_proj,
-        tile_col: refmvs_tile_range {
+        tile_col: RefmvsTileRange {
             start: tile_col_start4,
             end: cmp::min(tile_col_end4, rf.iw4),
         },
-        tile_row: refmvs_tile_range {
+        tile_row: RefmvsTileRange {
             start: tile_row_start4,
             end: cmp::min(tile_row_end4, rf.ih4),
         },
@@ -1379,14 +1379,14 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
 /// Must be called by [`load_tmvs::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn load_tmvs_c(
-    rf: &refmvs_frame,
+    rf: &AsmRefMvsFrame,
     tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
     row_start8: i32,
     row_end8: i32,
-    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
-    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
+    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<RefMvsTemporalBlock>>>,
+    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7]>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `load_tmvs::Fn::call`.
     let rp_proj = unsafe { FFISafe::get(rp_proj) };
@@ -1405,14 +1405,14 @@ unsafe extern "C" fn load_tmvs_c(
 }
 
 fn load_tmvs_rust(
-    rf: &refmvs_frame,
+    rf: &AsmRefMvsFrame,
     mut tile_row_idx: i32,
     col_start8: i32,
     col_end8: i32,
     row_start8: i32,
     mut row_end8: i32,
-    rp_proj: &DisjointMut<AlignedVec64<refmvs_temporal_block>>,
-    rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
+    rp_proj: &DisjointMut<AlignedVec64<RefMvsTemporalBlock>>,
+    rp_ref: &[Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7],
 ) {
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0;
@@ -1429,7 +1429,7 @@ fn load_tmvs_rust(
         for rp_proj in
             &mut *rp_proj.index_mut(offset + col_start8 as usize..offset + col_end8 as usize)
         {
-            rp_proj.mv = mv::INVALID;
+            rp_proj.mv = Mv::INVALID;
         }
     }
     for n in 0..rf.n_mfmvs {
@@ -1471,7 +1471,7 @@ fn load_tmvs_rust(
                         {
                             *rp_proj.index_mut(
                                 rp_proj_offset + (pos as isize + pos_x as isize) as usize,
-                            ) = refmvs_temporal_block {
+                            ) = RefMvsTemporalBlock {
                                 mv: rb.mv,
                                 r#ref: ref2ref as i8,
                             };
@@ -1512,17 +1512,17 @@ fn load_tmvs_rust(
 /// Must be called by [`save_tmvs::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn save_tmvs_c(
-    _rp: *mut refmvs_temporal_block,
+    _rp: *mut RefMvsTemporalBlock,
     stride: isize,
-    _rr: &[*const refmvs_block; 31],
+    _rr: &[*const RefMvsBlock; 31],
     ref_sign: &[u8; 7],
     col_end8: i32,
     row_end8: i32,
     col_start8: i32,
     row_start8: i32,
-    r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+    r: *const FFISafe<DisjointMut<AlignedVec64<RefMvsBlock>>>,
     ri: &[usize; 31],
-    rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
+    rp: *const FFISafe<DisjointMutArcSlice<RefMvsTemporalBlock>>,
 ) {
     let stride = stride as usize;
     let [col_end8, row_end8, col_start8, row_start8] =
@@ -1544,9 +1544,9 @@ fn save_tmvs_rust(
     row_end8: usize,
     col_start8: usize,
     row_start8: usize,
-    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
     ri: &[usize; 31],
-    rp: &DisjointMutSlice<refmvs_temporal_block>,
+    rp: &DisjointMutSlice<RefMvsTemporalBlock>,
 ) {
     for y in row_start8..row_end8 {
         let b = ri[(y & 15) * 2];
@@ -1559,7 +1559,7 @@ fn save_tmvs_rust(
                 let r#ref = cand_b.r#ref.r#ref[i];
                 if r#ref > 0 && ref_sign[r#ref as usize - 1] != 0 && mv.y.abs() | mv.x.abs() < 4096
                 {
-                    Some(refmvs_temporal_block { mv, r#ref })
+                    Some(RefMvsTemporalBlock { mv, r#ref })
                 } else {
                     None
                 }
@@ -1578,7 +1578,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
     frm_hdr: &Rav1dFrameHeader,
     ref_poc: &[u32; 7],
     ref_ref_poc: &[[u32; 7]; 7],
-    rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
+    rp_ref: &[Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7],
     n_tile_threads: u32,
     n_frame_threads: u32,
 ) -> Rav1dResult {
@@ -1703,8 +1703,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
 /// Must be called by [`splat_mv::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn splat_mv_c(
-    rr: *mut *mut refmvs_block,
-    rmv: &Align16<refmvs_block>,
+    rr: *mut *mut RefMvsBlock,
+    rmv: &Align16<RefMvsBlock>,
     bx4: i32,
     bw4: i32,
     bh4: i32,
@@ -1719,10 +1719,7 @@ unsafe extern "C" fn splat_mv_c(
     splat_mv_rust(rr, rmv)
 }
 
-fn splat_mv_rust<'a>(
-    rr: impl Iterator<Item = &'a mut [refmvs_block]>,
-    rmv: &Align16<refmvs_block>,
-) {
+fn splat_mv_rust<'a>(rr: impl Iterator<Item = &'a mut [RefMvsBlock]>, rmv: &Align16<RefMvsBlock>) {
     let rmv = rmv.0;
     for r in rr {
         r.fill_with(|| rmv)
