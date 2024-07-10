@@ -1762,7 +1762,7 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_film_grain {
+pub struct Dav1dFrameHeaderFilmGrain {
     pub data: Dav1dFilmGrainData,
     pub present: u8,
     pub update: u8,
@@ -1770,15 +1770,15 @@ pub struct Dav1dFrameHeader_film_grain {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_film_grain {
+pub struct Rav1dFrameHeaderFilmGrain {
     pub data: Rav1dFilmGrainData,
     pub present: u8,
     pub update: u8,
 }
 
-impl From<Dav1dFrameHeader_film_grain> for Rav1dFrameHeader_film_grain {
-    fn from(value: Dav1dFrameHeader_film_grain) -> Self {
-        let Dav1dFrameHeader_film_grain {
+impl From<Dav1dFrameHeaderFilmGrain> for Rav1dFrameHeaderFilmGrain {
+    fn from(value: Dav1dFrameHeaderFilmGrain) -> Self {
+        let Dav1dFrameHeaderFilmGrain {
             data,
             present,
             update,
@@ -1791,9 +1791,9 @@ impl From<Dav1dFrameHeader_film_grain> for Rav1dFrameHeader_film_grain {
     }
 }
 
-impl From<Rav1dFrameHeader_film_grain> for Dav1dFrameHeader_film_grain {
-    fn from(value: Rav1dFrameHeader_film_grain) -> Self {
-        let Rav1dFrameHeader_film_grain {
+impl From<Rav1dFrameHeaderFilmGrain> for Dav1dFrameHeaderFilmGrain {
+    fn from(value: Rav1dFrameHeaderFilmGrain) -> Self {
+        let Rav1dFrameHeaderFilmGrain {
             data,
             present,
             update,
@@ -1842,21 +1842,21 @@ impl From<Rav1dFrameHeaderOperatingPoint> for Dav1dFrameHeaderOperatingPoint {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_super_res {
+pub struct Dav1dFrameHeaderSuperRes {
     pub width_scale_denominator: u8,
     pub enabled: u8,
 }
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_super_res {
+pub struct Rav1dFrameHeaderSuperRes {
     pub width_scale_denominator: u8,
     pub enabled: bool,
 }
 
-impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
-    fn from(value: Dav1dFrameHeader_super_res) -> Self {
-        let Dav1dFrameHeader_super_res {
+impl From<Dav1dFrameHeaderSuperRes> for Rav1dFrameHeaderSuperRes {
+    fn from(value: Dav1dFrameHeaderSuperRes) -> Self {
+        let Dav1dFrameHeaderSuperRes {
             width_scale_denominator,
             enabled,
         } = value;
@@ -1867,9 +1867,9 @@ impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
     }
 }
 
-impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
-    fn from(value: Rav1dFrameHeader_super_res) -> Self {
-        let Rav1dFrameHeader_super_res {
+impl From<Rav1dFrameHeaderSuperRes> for Dav1dFrameHeaderSuperRes {
+    fn from(value: Rav1dFrameHeaderSuperRes) -> Self {
+        let Rav1dFrameHeaderSuperRes {
             width_scale_denominator,
             enabled,
         } = value;
@@ -1882,7 +1882,7 @@ impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_tiling {
+pub struct Dav1dFrameHeaderTiling {
     pub uniform: u8,
     pub n_bytes: u8,
     pub min_log2_cols: u8,
@@ -1900,7 +1900,7 @@ pub struct Dav1dFrameHeader_tiling {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_tiling {
+pub struct Rav1dFrameHeaderTiling {
     pub uniform: u8,
     pub n_bytes: u8,
     pub min_log2_cols: u8,
@@ -1916,7 +1916,7 @@ pub struct Rav1dFrameHeader_tiling {
     pub update: u16,
 }
 
-impl Default for Rav1dFrameHeader_tiling {
+impl Default for Rav1dFrameHeaderTiling {
     fn default() -> Self {
         Self {
             uniform: Default::default(),
@@ -1936,9 +1936,9 @@ impl Default for Rav1dFrameHeader_tiling {
     }
 }
 
-impl From<Dav1dFrameHeader_tiling> for Rav1dFrameHeader_tiling {
-    fn from(value: Dav1dFrameHeader_tiling) -> Self {
-        let Dav1dFrameHeader_tiling {
+impl From<Dav1dFrameHeaderTiling> for Rav1dFrameHeaderTiling {
+    fn from(value: Dav1dFrameHeaderTiling) -> Self {
+        let Dav1dFrameHeaderTiling {
             uniform,
             n_bytes,
             min_log2_cols,
@@ -1971,9 +1971,9 @@ impl From<Dav1dFrameHeader_tiling> for Rav1dFrameHeader_tiling {
     }
 }
 
-impl From<Rav1dFrameHeader_tiling> for Dav1dFrameHeader_tiling {
-    fn from(value: Rav1dFrameHeader_tiling) -> Self {
-        let Rav1dFrameHeader_tiling {
+impl From<Rav1dFrameHeaderTiling> for Dav1dFrameHeaderTiling {
+    fn from(value: Rav1dFrameHeaderTiling) -> Self {
+        let Rav1dFrameHeaderTiling {
             uniform,
             n_bytes,
             min_log2_cols,
@@ -2008,7 +2008,7 @@ impl From<Rav1dFrameHeader_tiling> for Dav1dFrameHeader_tiling {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_quant {
+pub struct Dav1dFrameHeaderQuant {
     pub yac: u8,
     pub ydc_delta: i8,
     pub udc_delta: i8,
@@ -2023,7 +2023,7 @@ pub struct Dav1dFrameHeader_quant {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_quant {
+pub struct Rav1dFrameHeaderQuant {
     pub yac: u8,
     pub ydc_delta: i8,
     pub udc_delta: i8,
@@ -2036,9 +2036,9 @@ pub struct Rav1dFrameHeader_quant {
     pub qm_v: u8,
 }
 
-impl From<Dav1dFrameHeader_quant> for Rav1dFrameHeader_quant {
-    fn from(value: Dav1dFrameHeader_quant) -> Self {
-        let Dav1dFrameHeader_quant {
+impl From<Dav1dFrameHeaderQuant> for Rav1dFrameHeaderQuant {
+    fn from(value: Dav1dFrameHeaderQuant) -> Self {
+        let Dav1dFrameHeaderQuant {
             yac,
             ydc_delta,
             udc_delta,
@@ -2065,9 +2065,9 @@ impl From<Dav1dFrameHeader_quant> for Rav1dFrameHeader_quant {
     }
 }
 
-impl From<Rav1dFrameHeader_quant> for Dav1dFrameHeader_quant {
-    fn from(value: Rav1dFrameHeader_quant) -> Self {
-        let Rav1dFrameHeader_quant {
+impl From<Rav1dFrameHeaderQuant> for Dav1dFrameHeaderQuant {
+    fn from(value: Rav1dFrameHeaderQuant) -> Self {
+        let Rav1dFrameHeaderQuant {
             yac,
             ydc_delta,
             udc_delta,
@@ -2096,7 +2096,7 @@ impl From<Rav1dFrameHeader_quant> for Dav1dFrameHeader_quant {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_segmentation {
+pub struct Dav1dFrameHeaderSegmentation {
     pub enabled: u8,
     pub update_map: u8,
     pub temporal: u8,
@@ -2108,7 +2108,7 @@ pub struct Dav1dFrameHeader_segmentation {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_segmentation {
+pub struct Rav1dFrameHeaderSegmentation {
     pub enabled: u8,
     pub update_map: u8,
     pub temporal: u8,
@@ -2119,9 +2119,9 @@ pub struct Rav1dFrameHeader_segmentation {
     pub qidx: [u8; SegmentId::COUNT],
 }
 
-impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
-    fn from(value: Dav1dFrameHeader_segmentation) -> Self {
-        let Dav1dFrameHeader_segmentation {
+impl From<Dav1dFrameHeaderSegmentation> for Rav1dFrameHeaderSegmentation {
+    fn from(value: Dav1dFrameHeaderSegmentation) -> Self {
+        let Dav1dFrameHeaderSegmentation {
             enabled,
             update_map,
             temporal,
@@ -2142,9 +2142,9 @@ impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
     }
 }
 
-impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
-    fn from(value: Rav1dFrameHeader_segmentation) -> Self {
-        let Rav1dFrameHeader_segmentation {
+impl From<Rav1dFrameHeaderSegmentation> for Dav1dFrameHeaderSegmentation {
+    fn from(value: Rav1dFrameHeaderSegmentation) -> Self {
+        let Rav1dFrameHeaderSegmentation {
             enabled,
             update_map,
             temporal,
@@ -2167,35 +2167,35 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_delta_q {
+pub struct Dav1dFrameHeaderDeltaQ {
     pub present: u8,
     pub res_log2: u8,
 }
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_delta_q {
+pub struct Rav1dFrameHeaderDeltaQ {
     pub present: u8,
     pub res_log2: u8,
 }
 
-impl From<Dav1dFrameHeader_delta_q> for Rav1dFrameHeader_delta_q {
-    fn from(value: Dav1dFrameHeader_delta_q) -> Self {
-        let Dav1dFrameHeader_delta_q { present, res_log2 } = value;
+impl From<Dav1dFrameHeaderDeltaQ> for Rav1dFrameHeaderDeltaQ {
+    fn from(value: Dav1dFrameHeaderDeltaQ) -> Self {
+        let Dav1dFrameHeaderDeltaQ { present, res_log2 } = value;
         Self { present, res_log2 }
     }
 }
 
-impl From<Rav1dFrameHeader_delta_q> for Dav1dFrameHeader_delta_q {
-    fn from(value: Rav1dFrameHeader_delta_q) -> Self {
-        let Rav1dFrameHeader_delta_q { present, res_log2 } = value;
+impl From<Rav1dFrameHeaderDeltaQ> for Dav1dFrameHeaderDeltaQ {
+    fn from(value: Rav1dFrameHeaderDeltaQ) -> Self {
+        let Rav1dFrameHeaderDeltaQ { present, res_log2 } = value;
         Self { present, res_log2 }
     }
 }
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_delta_lf {
+pub struct Dav1dFrameHeaderDeltaLF {
     pub present: u8,
     pub res_log2: u8,
     pub multi: u8,
@@ -2203,15 +2203,15 @@ pub struct Dav1dFrameHeader_delta_lf {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_delta_lf {
+pub struct Rav1dFrameHeaderDeltaLF {
     pub present: u8,
     pub res_log2: u8,
     pub multi: u8,
 }
 
-impl From<Dav1dFrameHeader_delta_lf> for Rav1dFrameHeader_delta_lf {
-    fn from(value: Dav1dFrameHeader_delta_lf) -> Self {
-        let Dav1dFrameHeader_delta_lf {
+impl From<Dav1dFrameHeaderDeltaLF> for Rav1dFrameHeaderDeltaLF {
+    fn from(value: Dav1dFrameHeaderDeltaLF) -> Self {
+        let Dav1dFrameHeaderDeltaLF {
             present,
             res_log2,
             multi,
@@ -2224,9 +2224,9 @@ impl From<Dav1dFrameHeader_delta_lf> for Rav1dFrameHeader_delta_lf {
     }
 }
 
-impl From<Rav1dFrameHeader_delta_lf> for Dav1dFrameHeader_delta_lf {
-    fn from(value: Rav1dFrameHeader_delta_lf) -> Self {
-        let Rav1dFrameHeader_delta_lf {
+impl From<Rav1dFrameHeaderDeltaLF> for Dav1dFrameHeaderDeltaLF {
+    fn from(value: Rav1dFrameHeaderDeltaLF) -> Self {
+        let Rav1dFrameHeaderDeltaLF {
             present,
             res_log2,
             multi,
@@ -2241,21 +2241,21 @@ impl From<Rav1dFrameHeader_delta_lf> for Dav1dFrameHeader_delta_lf {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_delta {
-    pub q: Dav1dFrameHeader_delta_q,
-    pub lf: Dav1dFrameHeader_delta_lf,
+pub struct Dav1dFrameHeaderDelta {
+    pub q: Dav1dFrameHeaderDeltaQ,
+    pub lf: Dav1dFrameHeaderDeltaLF,
 }
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_delta {
-    pub q: Rav1dFrameHeader_delta_q,
-    pub lf: Rav1dFrameHeader_delta_lf,
+pub struct Rav1dFrameHeaderDelta {
+    pub q: Rav1dFrameHeaderDeltaQ,
+    pub lf: Rav1dFrameHeaderDeltaLF,
 }
 
-impl From<Dav1dFrameHeader_delta> for Rav1dFrameHeader_delta {
-    fn from(value: Dav1dFrameHeader_delta) -> Self {
-        let Dav1dFrameHeader_delta { q, lf } = value;
+impl From<Dav1dFrameHeaderDelta> for Rav1dFrameHeaderDelta {
+    fn from(value: Dav1dFrameHeaderDelta) -> Self {
+        let Dav1dFrameHeaderDelta { q, lf } = value;
         Self {
             q: q.into(),
             lf: lf.into(),
@@ -2263,9 +2263,9 @@ impl From<Dav1dFrameHeader_delta> for Rav1dFrameHeader_delta {
     }
 }
 
-impl From<Rav1dFrameHeader_delta> for Dav1dFrameHeader_delta {
-    fn from(value: Rav1dFrameHeader_delta) -> Self {
-        let Rav1dFrameHeader_delta { q, lf } = value;
+impl From<Rav1dFrameHeaderDelta> for Dav1dFrameHeaderDelta {
+    fn from(value: Rav1dFrameHeaderDelta) -> Self {
+        let Rav1dFrameHeaderDelta { q, lf } = value;
         Self {
             q: q.into(),
             lf: lf.into(),
@@ -2275,7 +2275,7 @@ impl From<Rav1dFrameHeader_delta> for Dav1dFrameHeader_delta {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_loopfilter {
+pub struct Dav1dFrameHeaderLoopFilter {
     pub level_y: [u8; 2],
     pub level_u: u8,
     pub level_v: u8,
@@ -2287,7 +2287,7 @@ pub struct Dav1dFrameHeader_loopfilter {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_loopfilter {
+pub struct Rav1dFrameHeaderLoopFilter {
     pub level_y: [u8; 2],
     pub level_u: u8,
     pub level_v: u8,
@@ -2297,9 +2297,9 @@ pub struct Rav1dFrameHeader_loopfilter {
     pub sharpness: u8,
 }
 
-impl From<Dav1dFrameHeader_loopfilter> for Rav1dFrameHeader_loopfilter {
-    fn from(value: Dav1dFrameHeader_loopfilter) -> Self {
-        let Dav1dFrameHeader_loopfilter {
+impl From<Dav1dFrameHeaderLoopFilter> for Rav1dFrameHeaderLoopFilter {
+    fn from(value: Dav1dFrameHeaderLoopFilter) -> Self {
+        let Dav1dFrameHeaderLoopFilter {
             level_y,
             level_u,
             level_v,
@@ -2320,9 +2320,9 @@ impl From<Dav1dFrameHeader_loopfilter> for Rav1dFrameHeader_loopfilter {
     }
 }
 
-impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
-    fn from(value: Rav1dFrameHeader_loopfilter) -> Self {
-        let Rav1dFrameHeader_loopfilter {
+impl From<Rav1dFrameHeaderLoopFilter> for Dav1dFrameHeaderLoopFilter {
+    fn from(value: Rav1dFrameHeaderLoopFilter) -> Self {
+        let Rav1dFrameHeaderLoopFilter {
             level_y,
             level_u,
             level_v,
@@ -2345,7 +2345,7 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_cdef {
+pub struct Dav1dFrameHeaderCdef {
     pub damping: u8,
     pub n_bits: u8,
     pub y_strength: [u8; DAV1D_MAX_CDEF_STRENGTHS],
@@ -2354,16 +2354,16 @@ pub struct Dav1dFrameHeader_cdef {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_cdef {
+pub struct Rav1dFrameHeaderCdef {
     pub damping: u8,
     pub n_bits: u8,
     pub y_strength: [u8; RAV1D_MAX_CDEF_STRENGTHS],
     pub uv_strength: [u8; RAV1D_MAX_CDEF_STRENGTHS],
 }
 
-impl From<Dav1dFrameHeader_cdef> for Rav1dFrameHeader_cdef {
-    fn from(value: Dav1dFrameHeader_cdef) -> Self {
-        let Dav1dFrameHeader_cdef {
+impl From<Dav1dFrameHeaderCdef> for Rav1dFrameHeaderCdef {
+    fn from(value: Dav1dFrameHeaderCdef) -> Self {
+        let Dav1dFrameHeaderCdef {
             damping,
             n_bits,
             y_strength,
@@ -2378,9 +2378,9 @@ impl From<Dav1dFrameHeader_cdef> for Rav1dFrameHeader_cdef {
     }
 }
 
-impl From<Rav1dFrameHeader_cdef> for Dav1dFrameHeader_cdef {
-    fn from(value: Rav1dFrameHeader_cdef) -> Self {
-        let Rav1dFrameHeader_cdef {
+impl From<Rav1dFrameHeaderCdef> for Dav1dFrameHeaderCdef {
+    fn from(value: Rav1dFrameHeaderCdef) -> Self {
+        let Rav1dFrameHeaderCdef {
             damping,
             n_bits,
             y_strength,
@@ -2397,21 +2397,21 @@ impl From<Rav1dFrameHeader_cdef> for Dav1dFrameHeader_cdef {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFrameHeader_restoration {
+pub struct Dav1dFrameHeaderRestoration {
     pub r#type: [Dav1dRestorationType; 3],
     pub unit_size: [u8; 2],
 }
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dFrameHeader_restoration {
+pub struct Rav1dFrameHeaderRestoration {
     pub r#type: [Rav1dRestorationType; 3],
     pub unit_size: [u8; 2],
 }
 
-impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
-    fn from(value: Dav1dFrameHeader_restoration) -> Self {
-        let Dav1dFrameHeader_restoration { r#type, unit_size } = value;
+impl From<Dav1dFrameHeaderRestoration> for Rav1dFrameHeaderRestoration {
+    fn from(value: Dav1dFrameHeaderRestoration) -> Self {
+        let Dav1dFrameHeaderRestoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| Rav1dRestorationType::from_repr(e as usize).unwrap()),
             unit_size,
@@ -2419,9 +2419,9 @@ impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
     }
 }
 
-impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
-    fn from(value: Rav1dFrameHeader_restoration) -> Self {
-        let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
+impl From<Rav1dFrameHeaderRestoration> for Dav1dFrameHeaderRestoration {
+    fn from(value: Rav1dFrameHeaderRestoration) -> Self {
+        let Rav1dFrameHeaderRestoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| e.to_repr()),
             unit_size,
@@ -2432,7 +2432,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
-    pub film_grain: Dav1dFrameHeader_film_grain,
+    pub film_grain: Dav1dFrameHeaderFilmGrain,
     pub frame_type: Dav1dFrameType,
     pub width: [c_int; 2],
     pub height: c_int,
@@ -2456,7 +2456,7 @@ pub struct Dav1dFrameHeader {
     pub refresh_frame_flags: u8,
     pub render_width: c_int,
     pub render_height: c_int,
-    pub super_res: Dav1dFrameHeader_super_res,
+    pub super_res: Dav1dFrameHeaderSuperRes,
     pub have_render_size: u8,
     pub allow_intrabc: u8,
     pub frame_ref_short_signaling: u8,
@@ -2466,14 +2466,14 @@ pub struct Dav1dFrameHeader {
     pub switchable_motion_mode: u8,
     pub use_ref_frame_mvs: u8,
     pub refresh_context: u8,
-    pub tiling: Dav1dFrameHeader_tiling,
-    pub quant: Dav1dFrameHeader_quant,
-    pub segmentation: Dav1dFrameHeader_segmentation,
-    pub delta: Dav1dFrameHeader_delta,
+    pub tiling: Dav1dFrameHeaderTiling,
+    pub quant: Dav1dFrameHeaderQuant,
+    pub segmentation: Dav1dFrameHeaderSegmentation,
+    pub delta: Dav1dFrameHeaderDelta,
     pub all_lossless: u8,
-    pub loopfilter: Dav1dFrameHeader_loopfilter,
-    pub cdef: Dav1dFrameHeader_cdef,
-    pub restoration: Dav1dFrameHeader_restoration,
+    pub loopfilter: Dav1dFrameHeaderLoopFilter,
+    pub cdef: Dav1dFrameHeaderCdef,
+    pub restoration: Dav1dFrameHeaderRestoration,
     pub txfm_mode: Dav1dTxfmMode,
     pub switchable_comp_refs: u8,
     pub skip_mode_allowed: u8,
@@ -2491,7 +2491,7 @@ pub struct Rav1dFrameSize {
     pub height: c_int,
     pub render_width: c_int,
     pub render_height: c_int,
-    pub super_res: Rav1dFrameHeader_super_res,
+    pub super_res: Rav1dFrameHeaderSuperRes,
     pub have_render_size: u8,
 }
 
@@ -2507,7 +2507,7 @@ pub struct Rav1dFrameSkipMode {
 #[repr(C)]
 pub struct Rav1dFrameHeader {
     pub size: Rav1dFrameSize,
-    pub film_grain: Rav1dFrameHeader_film_grain,
+    pub film_grain: Rav1dFrameHeaderFilmGrain,
     pub frame_type: Rav1dFrameType,
     pub frame_offset: u8,
     pub temporal_id: u8,
@@ -2535,14 +2535,14 @@ pub struct Rav1dFrameHeader {
     pub switchable_motion_mode: u8,
     pub use_ref_frame_mvs: u8,
     pub refresh_context: u8,
-    pub tiling: Rav1dFrameHeader_tiling,
-    pub quant: Rav1dFrameHeader_quant,
-    pub segmentation: Rav1dFrameHeader_segmentation,
-    pub delta: Rav1dFrameHeader_delta,
+    pub tiling: Rav1dFrameHeaderTiling,
+    pub quant: Rav1dFrameHeaderQuant,
+    pub segmentation: Rav1dFrameHeaderSegmentation,
+    pub delta: Rav1dFrameHeaderDelta,
     pub all_lossless: bool,
-    pub loopfilter: Rav1dFrameHeader_loopfilter,
-    pub cdef: Rav1dFrameHeader_cdef,
-    pub restoration: Rav1dFrameHeader_restoration,
+    pub loopfilter: Rav1dFrameHeaderLoopFilter,
+    pub cdef: Rav1dFrameHeaderCdef,
+    pub restoration: Rav1dFrameHeaderRestoration,
     pub txfm_mode: Rav1dTxfmMode,
     pub switchable_comp_refs: u8,
     pub skip_mode: Rav1dFrameSkipMode,

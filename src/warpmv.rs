@@ -4,7 +4,7 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::u64log2;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::src::levels::mv;
+use crate::src::levels::Mv;
 use std::ffi::c_int;
 
 static div_lut: [u16; 257] = [
@@ -100,7 +100,7 @@ fn get_mult_shift_diag(px: i64, idet: c_int, shift: c_int) -> c_int {
 pub(crate) fn rav1d_set_affine_mv2d(
     bw4: c_int,
     bh4: c_int,
-    mv: mv,
+    mv: Mv,
     wm: &mut Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,
@@ -128,7 +128,7 @@ pub(crate) fn rav1d_find_affine_int(
     np: usize,
     bw4: c_int,
     bh4: c_int,
-    mv: mv,
+    mv: Mv,
     wm: &mut Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,

@@ -7,10 +7,10 @@ use crate::src::align::Align8;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutSlice;
 use crate::src::internal::Bxy;
-use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::CompInterType;
+use crate::src::levels::Mv;
 use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
@@ -20,7 +20,7 @@ use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
-use crate::src::refmvs::refmvs_candidate;
+use crate::src::refmvs::RefMvsCandidate;
 use crate::src::tables::TxfmInfo;
 use std::cmp;
 use std::cmp::Ordering;
@@ -607,7 +607,7 @@ pub fn av1_get_uni_p1_ctx(
 }
 
 #[inline]
-pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> c_int {
+pub fn get_drl_context(ref_mv_stack: &[RefMvsCandidate; 8], ref_idx: usize) -> c_int {
     if ref_mv_stack[ref_idx].weight >= 640 {
         (ref_mv_stack[ref_idx + 1].weight < 640) as c_int
     } else if ref_mv_stack[ref_idx + 1].weight < 640 {
@@ -648,13 +648,13 @@ pub fn get_cur_frame_segid(
 }
 
 #[inline]
-fn fix_int_mv_precision(mv: &mut mv) {
+fn fix_int_mv_precision(mv: &mut Mv) {
     mv.x = (mv.x - (mv.x >> 15) + 3) & !7;
     mv.y = (mv.y - (mv.y >> 15) + 3) & !7;
 }
 
 #[inline]
-pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut mv) {
+pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut Mv) {
     if hdr.force_integer_mv {
         fix_int_mv_precision(mv);
     } else if !(*hdr).hp {
@@ -671,14 +671,14 @@ pub(crate) fn get_gmv_2d(
     bw4: c_int,
     bh4: c_int,
     hdr: &Rav1dFrameHeader,
-) -> mv {
+) -> Mv {
     match gmv.r#type {
         Rav1dWarpedMotionType::RotZoom => {
             assert!(gmv.matrix[5] == gmv.matrix[2]);
             assert!(gmv.matrix[4] == -gmv.matrix[3]);
         }
         Rav1dWarpedMotionType::Translation => {
-            let mut res = mv {
+            let mut res = Mv {
                 y: (gmv.matrix[0] >> 13) as i16,
                 x: (gmv.matrix[1] >> 13) as i16,
             };
@@ -688,7 +688,7 @@ pub(crate) fn get_gmv_2d(
             return res;
         }
         Rav1dWarpedMotionType::Identity => {
-            return mv::ZERO;
+            return Mv::ZERO;
         }
         Rav1dWarpedMotionType::Affine => {}
     }
@@ -698,7 +698,7 @@ pub(crate) fn get_gmv_2d(
     let yc = (gmv.matrix[5] - (1 << 16)) * y + gmv.matrix[4] * x + gmv.matrix[1];
     let shift = 16 - (3 - !hdr.hp as c_int);
     let round = 1 << shift >> 1;
-    let mut res = mv {
+    let mut res = Mv {
         y: apply_sign(yc.abs() + round >> shift << !hdr.hp as c_int, yc) as i16,
         x: apply_sign(xc.abs() + round >> shift << !hdr.hp as c_int, xc) as i16,
     };

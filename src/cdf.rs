@@ -169,7 +169,7 @@ impl Default for CdfModeInterContext {
 #[derive(Clone)]
 pub enum CdfThreadContext {
     QCat(c_uint),
-    Cdf(Arc<CdfThreadContext_data>),
+    Cdf(Arc<CdfThreadContextData>),
 }
 
 impl CdfThreadContext {
@@ -195,7 +195,7 @@ impl Default for CdfThreadContext {
 }
 
 #[repr(C)]
-pub struct CdfThreadContext_data {
+pub struct CdfThreadContextData {
     /// This context should not be contended but needs interior mutability. It
     /// should always be accessible with `.try_*` methods.
     cdf: RwLock<CdfContext>,
@@ -5106,7 +5106,7 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
 pub fn rav1d_cdf_thread_alloc(have_frame_mt: bool) -> Rav1dResult<CdfThreadContext> {
     // TODO fallible allocation
     // Previously pooled.
-    Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
+    Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContextData {
         cdf: Default::default(),
         progress: have_frame_mt.then_some(AtomicU32::new(0)),
     })))

@@ -147,13 +147,13 @@ impl Default for Rav1dMsacDSPContext {
     }
 }
 
-pub type ec_win = usize;
+pub type EcWin = usize;
 
 #[repr(C)]
 pub struct MsacAsmContext {
     buf_pos: *const u8,
     buf_end: *const u8,
-    pub dif: ec_win,
+    pub dif: EcWin,
     pub rng: c_uint,
     pub cnt: c_int,
     allow_update_cdf: c_int,
@@ -257,7 +257,7 @@ const EC_PROB_SHIFT: c_uint = 6;
 const EC_MIN_PROB: c_uint = 4;
 const _: () = assert!(EC_MIN_PROB <= (1 << EC_PROB_SHIFT) / 16);
 
-const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
+const EC_WIN_SIZE: usize = mem::size_of::<EcWin>() << 3;
 
 #[inline]
 fn ctx_refill(s: &mut MsacContext) {
@@ -267,10 +267,10 @@ fn ctx_refill(s: &mut MsacContext) {
         loop {
             if buf.is_empty() {
                 // set remaining bits to 1;
-                dif |= !(!(0xff as ec_win) << c);
+                dif |= !(!(0xff as EcWin) << c);
                 break;
             }
-            dif |= ((buf[0] ^ 0xff) as ec_win) << c;
+            dif |= ((buf[0] ^ 0xff) as EcWin) << c;
             buf = &buf[1..];
             c -= 8;
             if c < 0 {
@@ -284,7 +284,7 @@ fn ctx_refill(s: &mut MsacContext) {
 }
 
 #[inline]
-fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: c_uint) {
+fn ctx_norm(s: &mut MsacContext, dif: EcWin, rng: c_uint) {
     let d = 15 ^ (31 ^ clz(rng));
     let cnt = s.cnt;
     assert!(rng <= 65535);
@@ -304,11 +304,11 @@ fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: c_uint) {
 fn rav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
     let r = s.rng;
     let mut dif = s.dif;
-    assert!(dif >> (EC_WIN_SIZE - 16) < r as ec_win);
+    assert!(dif >> (EC_WIN_SIZE - 16) < r as EcWin);
     let mut v = (r >> 8 << 7) + EC_MIN_PROB;
-    let vw = (v as ec_win) << (EC_WIN_SIZE - 16);
+    let vw = (v as EcWin) << (EC_WIN_SIZE - 16);
     let ret = dif >= vw;
-    dif -= (ret as ec_win) * vw;
+    dif -= (ret as EcWin) * vw;
     v = v.wrapping_add((ret as c_uint) * (r.wrapping_sub(2 * v)));
     ctx_norm(s, dif, v);
     !ret
@@ -321,11 +321,11 @@ fn rav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
 fn rav1d_msac_decode_bool_rust(s: &mut MsacContext, f: c_uint) -> bool {
     let r = s.rng;
     let mut dif = s.dif;
-    assert!(dif >> (EC_WIN_SIZE - 16) < r as ec_win);
+    assert!(dif >> (EC_WIN_SIZE - 16) < r as EcWin);
     let mut v = ((r >> 8) * (f >> EC_PROB_SHIFT) >> (7 - EC_PROB_SHIFT)) + EC_MIN_PROB;
-    let vw = (v as ec_win) << (EC_WIN_SIZE - 16);
+    let vw = (v as EcWin) << (EC_WIN_SIZE - 16);
     let ret = dif >= vw;
-    dif -= (ret as ec_win) * vw;
+    dif -= (ret as EcWin) * vw;
     v = v.wrapping_add((ret as c_uint) * (r.wrapping_sub(2 * v)));
     ctx_norm(s, dif, v);
     !ret
@@ -372,7 +372,7 @@ fn rav1d_msac_decode_symbol_adapt_rust(s: &mut MsacContext, cdf: &mut [u16], n_s
     assert!(u <= s.rng);
     ctx_norm(
         s,
-        s.dif.wrapping_sub((v as ec_win) << (EC_WIN_SIZE - 16)),
+        s.dif.wrapping_sub((v as EcWin) << (EC_WIN_SIZE - 16)),
         u - v,
     );
     if s.allow_update_cdf() {

@@ -356,12 +356,12 @@ pub enum InterIntraType {
 /// [`refmvs_block`]: crate::src::refmvs::refmvs_block
 #[derive(Clone, Copy, PartialEq, Eq, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
-pub struct mv {
+pub struct Mv {
     pub y: i16,
     pub x: i16,
 }
 
-impl mv {
+impl Mv {
     pub const ZERO: Self = Self { y: 0, x: 0 };
 
     pub const INVALID: Self = Self {
@@ -379,7 +379,7 @@ impl mv {
     }
 }
 
-impl Neg for mv {
+impl Neg for Mv {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
@@ -451,7 +451,7 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
 #[derive(Clone, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
-    pub mv: [mv; 2],
+    pub mv: [Mv; 2],
     pub wedge_idx: u8,
 
     /// Stored as a [`u8`] since [`bool`] is not [`FromBytes`].
@@ -472,7 +472,7 @@ impl Av1BlockInter1d {
 #[derive(Clone, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter2d {
-    pub mv2d: mv,
+    pub mv2d: Mv,
 
     /// These are `i14`s (except for an [`i16::MIN`] stored as a discriminant).
     /// Not sure how we could stably use that niche, though.

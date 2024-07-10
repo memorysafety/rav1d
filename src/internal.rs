@@ -57,9 +57,6 @@ use crate::src::msac::Rav1dMsacDSPContext;
 use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::recon::backup_ipred_edge_fn;
-use crate::src::recon::copy_pal_block_fn;
-use crate::src::recon::filter_sbrow_fn;
 use crate::src::recon::rav1d_backup_ipred_edge;
 use crate::src::recon::rav1d_copy_pal_block_uv;
 use crate::src::recon::rav1d_copy_pal_block_y;
@@ -74,15 +71,18 @@ use crate::src::recon::rav1d_read_pal_plane;
 use crate::src::recon::rav1d_read_pal_uv;
 use crate::src::recon::rav1d_recon_b_inter;
 use crate::src::recon::rav1d_recon_b_intra;
-use crate::src::recon::read_coef_blocks_fn;
-use crate::src::recon::read_pal_plane_fn;
-use crate::src::recon::read_pal_uv_fn;
-use crate::src::recon::recon_b_inter_fn;
-use crate::src::recon::recon_b_intra_fn;
-use crate::src::refmvs::refmvs_temporal_block;
-use crate::src::refmvs::refmvs_tile;
+use crate::src::recon::BackupIpredEdgeFn;
+use crate::src::recon::CopyPalBlockFn;
+use crate::src::recon::FilterSbrowFn;
+use crate::src::recon::ReadCoefBlocksFn;
+use crate::src::recon::ReadPalPlaneFn;
+use crate::src::recon::ReadPalUVFn;
+use crate::src::recon::ReconBInterFn;
+use crate::src::recon::ReconBIntraFn;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::refmvs::RefMvsTemporalBlock;
+use crate::src::refmvs::RefmvsTile;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::thread_task::Rav1dTaskIndex;
 use crate::src::thread_task::Rav1dTasks;
@@ -251,7 +251,7 @@ impl Default for TaskType {
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct Rav1dContext_frame_thread {
+pub(crate) struct Rav1dContextFrameThread {
     pub out_delayed: Box<[Rav1dThreadPicture]>,
     pub next: c_uint,
 }
@@ -297,17 +297,17 @@ impl Default for Grain {
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct TaskThreadData_delayed_fg {
+pub(crate) struct TaskThreadDataDelayedFg {
     pub in_0: Rav1dPicture,
     pub out: Rav1dPicture,
     pub type_0: TaskType,
     pub grain: Grain,
 }
 
-// TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
-unsafe impl Send for TaskThreadData_delayed_fg {}
-// TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
-unsafe impl Sync for TaskThreadData_delayed_fg {}
+// TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+unsafe impl Send for TaskThreadDataDelayedFg {}
+// TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+unsafe impl Sync for TaskThreadDataDelayedFg {}
 
 #[derive(Default)]
 #[repr(C)]
@@ -325,15 +325,15 @@ pub(crate) struct TaskThreadData {
     pub delayed_fg_exec: RelaxedAtomic<i32>,
     pub delayed_fg_cond: Condvar,
     pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
-    pub delayed_fg: RwLock<TaskThreadData_delayed_fg>,
+    pub delayed_fg: RwLock<TaskThreadDataDelayedFg>,
 }
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct Rav1dContext_refs {
+pub(crate) struct Rav1dContextRefs {
     pub p: Rav1dThreadPicture,
     pub segmap: Option<DisjointMutArcSlice<SegmentId>>,
-    pub refmvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+    pub refmvs: Option<DisjointMutArcSlice<RefMvsTemporalBlock>>,
     pub refpoc: [c_uint; 7],
 }
 
@@ -355,7 +355,7 @@ pub(crate) struct Rav1dContextTaskThread {
     /// worker threads or the single-threaded task context.
     pub task: Rav1dContextTaskType,
     /// Thread specific data shared between the main thread and a worker thread.
-    pub thread_data: Arc<Rav1dTaskContext_task_thread>,
+    pub thread_data: Arc<Rav1dTaskContextTaskThread>,
 }
 
 impl Rav1dContextTaskThread {
@@ -387,10 +387,10 @@ pub struct Rav1dState {
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
-    pub(crate) frame_thread: Rav1dContext_frame_thread,
+    pub(crate) frame_thread: Rav1dContextFrameThread,
 
     // reference/entropy state
-    pub(crate) refs: [Rav1dContext_refs; 8],
+    pub(crate) refs: [Rav1dContextRefs; 8],
     pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
 
     pub(crate) operating_point_idc: c_uint,
@@ -503,24 +503,24 @@ pub struct ScalableMotionParams {
     pub step: c_int,
 }
 
-pub(crate) struct Rav1dFrameContext_bd_fn {
-    pub recon_b_intra: recon_b_intra_fn,
-    pub recon_b_inter: recon_b_inter_fn,
-    pub filter_sbrow: filter_sbrow_fn,
-    pub filter_sbrow_deblock_cols: filter_sbrow_fn,
-    pub filter_sbrow_deblock_rows: filter_sbrow_fn,
+pub(crate) struct Rav1dFrameContextBdFn {
+    pub recon_b_intra: ReconBIntraFn,
+    pub recon_b_inter: ReconBInterFn,
+    pub filter_sbrow: FilterSbrowFn,
+    pub filter_sbrow_deblock_cols: FilterSbrowFn,
+    pub filter_sbrow_deblock_rows: FilterSbrowFn,
     pub filter_sbrow_cdef: fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
-    pub filter_sbrow_resize: filter_sbrow_fn,
-    pub filter_sbrow_lr: filter_sbrow_fn,
-    pub backup_ipred_edge: backup_ipred_edge_fn,
-    pub read_coef_blocks: read_coef_blocks_fn,
-    pub copy_pal_block_y: copy_pal_block_fn,
-    pub copy_pal_block_uv: copy_pal_block_fn,
-    pub read_pal_plane: read_pal_plane_fn,
-    pub read_pal_uv: read_pal_uv_fn,
+    pub filter_sbrow_resize: FilterSbrowFn,
+    pub filter_sbrow_lr: FilterSbrowFn,
+    pub backup_ipred_edge: BackupIpredEdgeFn,
+    pub read_coef_blocks: ReadCoefBlocksFn,
+    pub copy_pal_block_y: CopyPalBlockFn,
+    pub copy_pal_block_uv: CopyPalBlockFn,
+    pub read_pal_plane: ReadPalPlaneFn,
+    pub read_pal_uv: ReadPalUVFn,
 }
 
-impl Rav1dFrameContext_bd_fn {
+impl Rav1dFrameContextBdFn {
     pub const fn new<BD: BitDepth>() -> Self {
         Self {
             recon_b_inter: rav1d_recon_b_inter::<BD>,
@@ -541,8 +541,8 @@ impl Rav1dFrameContext_bd_fn {
     }
 
     pub const fn get(bpc: BPC) -> &'static Self {
-        const BPC8: Rav1dFrameContext_bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth8>();
-        const BPC16: Rav1dFrameContext_bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth16>();
+        const BPC8: Rav1dFrameContextBdFn = Rav1dFrameContextBdFn::new::<BitDepth8>();
+        const BPC16: Rav1dFrameContextBdFn = Rav1dFrameContextBdFn::new::<BitDepth16>();
         match bpc {
             BPC::BPC8 => &BPC8,
             BPC::BPC16 => &BPC16,
@@ -615,7 +615,7 @@ impl Pal {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dFrameContext_frame_thread {
+pub struct Rav1dFrameContextFrameThread {
     /// Indices: 0: reconstruction, 1: entropy.
     pub next_tile_row: [RelaxedAtomic<i32>; 2],
 
@@ -692,7 +692,7 @@ impl TxLpfRightEdge {
 /// loopfilter
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dFrameContext_lf {
+pub struct Rav1dFrameContextLf {
     pub level: DisjointMut<Vec<u8>>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
@@ -716,14 +716,14 @@ pub struct Rav1dFrameContext_lf {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dFrameContext_task_thread_pending_tasks {
+pub struct Rav1dFrameContextTaskThreadPendingTasks {
     pub head: Rav1dTaskIndex,
     pub tail: Rav1dTaskIndex,
 }
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct Rav1dFrameContext_task_thread {
+pub(crate) struct Rav1dFrameContextTaskThread {
     pub lock: Mutex<()>,
     pub cond: Condvar,
     pub ttd: Arc<TaskThreadData>,
@@ -738,7 +738,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
 }
 
 #[derive(Default)]
-pub(crate) struct Rav1dFrameContext_frame_thread_progress {
+pub(crate) struct Rav1dFrameContextFrameThreadProgress {
     pub entropy: AtomicI32,
     pub deblock: AtomicI32, // in sby units
     pub frame: RwLock<Vec<AtomicU32>>,
@@ -751,8 +751,8 @@ pub(crate) struct Rav1dFrameContext {
 
     pub data: RwLock<Rav1dFrameData>,
     pub in_cdf: RwLock<CdfThreadContext>,
-    pub task_thread: Rav1dFrameContext_task_thread,
-    pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
+    pub task_thread: Rav1dFrameContextTaskThread,
+    pub frame_thread_progress: Rav1dFrameContextFrameThreadProgress,
 }
 
 impl Rav1dFrameContext {
@@ -791,8 +791,8 @@ pub(crate) struct Rav1dFrameData {
     pub cur: Rav1dPicture,
     // after super-resolution upscaling
     pub sr_cur: Rav1dThreadPicture,
-    pub mvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>, // Previously pooled.
-    pub ref_mvs: [Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
+    pub mvs: Option<DisjointMutArcSlice<RefMvsTemporalBlock>>, // Previously pooled.
+    pub ref_mvs: [Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7],
     pub cur_segmap: Option<DisjointMutArcSlice<SegmentId>>, // Previously pooled.
     pub prev_segmap: Option<DisjointMutArcSlice<SegmentId>>,
     pub refpoc: [c_uint; 7],
@@ -834,15 +834,15 @@ pub(crate) struct Rav1dFrameData {
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
 
-    pub frame_thread: Rav1dFrameContext_frame_thread,
-    pub lf: Rav1dFrameContext_lf,
+    pub frame_thread: Rav1dFrameContextFrameThread,
+    pub lf: Rav1dFrameContextLf,
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
 impl Rav1dFrameData {
-    pub fn bd_fn(&self) -> &'static Rav1dFrameContext_bd_fn {
+    pub fn bd_fn(&self) -> &'static Rav1dFrameContextBdFn {
         let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
-        Rav1dFrameContext_bd_fn::get(bpc)
+        Rav1dFrameContextBdFn::get(bpc)
     }
 
     pub fn frame_hdr(&self) -> &Rav1dFrameHeader {
@@ -856,7 +856,7 @@ impl Rav1dFrameData {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dTileState_tiling {
+pub struct Rav1dTileStateTiling {
     // in 4px units
     pub col_start: i32,
     pub col_end: i32,
@@ -870,10 +870,15 @@ pub struct Rav1dTileState_tiling {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: RelaxedAtomic<u32>, // Offset into `f.frame_thread.pal_idx`
-    pub cbi_idx: RelaxedAtomic<u32>, // Offset into `f.frame_thread.cbi`
-    pub cf: RelaxedAtomic<u32>,      // Offset into `f.frame_thread.cf`
+pub struct Rav1dTileStateFrameThread {
+    /// Offset into [`Rav1dFrameContextFrameThread::pal_idx`].
+    pub pal_idx: RelaxedAtomic<u32>,
+
+    /// Offset into [`Rav1dFrameContextFrameThread::cbi`].
+    pub cbi_idx: RelaxedAtomic<u32>,
+
+    /// Offset into [`Rav1dFrameContextFrameThread::cf`].
+    pub cf: RelaxedAtomic<u32>,
 }
 
 #[derive(Default)]
@@ -888,11 +893,11 @@ pub struct Rav1dTileStateContext {
 pub struct Rav1dTileState {
     pub context: Mutex<Rav1dTileStateContext>,
 
-    pub tiling: Rav1dTileState_tiling,
+    pub tiling: Rav1dTileStateTiling,
 
     // in sby units, TILE_ERROR after a decoding error
     pub progress: [AtomicI32; 2], /* 0: reconstruction, 1: entropy */
-    pub frame_thread: [Rav1dTileState_frame_thread; 2], /* 0: reconstruction, 1: entropy */
+    pub frame_thread: [Rav1dTileStateFrameThread; 2], /* 0: reconstruction, 1: entropy */
 
     // in fullpel units, [0] = Y, [1] = UV, used for progress requirements
     // each entry is one tile-sbrow; middle index is refidx
@@ -1126,12 +1131,12 @@ impl TaskContextScratch {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dTaskContext_frame_thread {
+pub struct Rav1dTaskContextFrameThread {
     pub pass: c_int,
 }
 
 #[repr(C)]
-pub(crate) struct Rav1dTaskContext_task_thread {
+pub(crate) struct Rav1dTaskContextTaskThread {
     pub cond: Condvar,
     pub ttd: Arc<TaskThreadData>,
     pub flushed: RelaxedAtomic<bool>,
@@ -1139,7 +1144,7 @@ pub(crate) struct Rav1dTaskContext_task_thread {
     pub c: Mutex<Option<Arc<Rav1dContext>>>,
 }
 
-impl Rav1dTaskContext_task_thread {
+impl Rav1dTaskContextTaskThread {
     pub(crate) fn new(ttd: Arc<TaskThreadData>) -> Self {
         Self {
             cond: Condvar::new(),
@@ -1163,7 +1168,7 @@ pub(crate) struct Rav1dTaskContext {
     pub b: Bxy,
     pub l: BlockContext,
     pub a: usize, // Offset into `f.a`
-    pub rt: refmvs_tile,
+    pub rt: RefmvsTile,
     pub cf: Cf,
     pub al_pal: AlPal,
     pub pal_sz_uv: [[u8; 32]; 2], /* [2 a/l][32 bx4/by4] */
@@ -1178,12 +1183,12 @@ pub(crate) struct Rav1dTaskContext {
     // a 4x4 area, but the top/left one can go out of cache already, so this
     // keeps it accessible
     pub tl_4x4_filter: Filter2d,
-    pub frame_thread: Rav1dTaskContext_frame_thread,
-    pub task_thread: Arc<Rav1dTaskContext_task_thread>,
+    pub frame_thread: Rav1dTaskContextFrameThread,
+    pub task_thread: Arc<Rav1dTaskContextTaskThread>,
 }
 
 impl Rav1dTaskContext {
-    pub(crate) fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
+    pub(crate) fn new(task_thread: Arc<Rav1dTaskContextTaskThread>) -> Self {
         Self {
             ts: Default::default(),
             b: Default::default(),

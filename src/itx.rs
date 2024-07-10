@@ -60,7 +60,7 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
+pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
 
 #[inline(never)]
 fn inv_txfm_add<BD: BitDepth>(
@@ -70,8 +70,8 @@ fn inv_txfm_add<BD: BitDepth>(
     w: usize,
     h: usize,
     shift: u8,
-    first_1d_fn: itx_1d_fn,
-    second_1d_fn: itx_1d_fn,
+    first_1d_fn: Itx1dFn,
+    second_1d_fn: Itx1dFn,
     has_dc_only: bool,
     bd: BD,
 ) {
@@ -218,7 +218,7 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
         _ => unreachable!(),
     };
 
-    fn resolve_1d_fn(r#type: Type, n: usize) -> itx_1d_fn {
+    fn resolve_1d_fn(r#type: Type, n: usize) -> Itx1dFn {
         match (r#type, n) {
             (Identity, 4) => rav1d_inv_identity4_1d_c,
             (Identity, 8) => rav1d_inv_identity8_1d_c,

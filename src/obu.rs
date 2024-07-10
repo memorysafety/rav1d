@@ -14,18 +14,18 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeaderCdef;
+use crate::include::dav1d::headers::Rav1dFrameHeaderDelta;
+use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaLF;
+use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaQ;
+use crate::include::dav1d::headers::Rav1dFrameHeaderFilmGrain;
+use crate::include::dav1d::headers::Rav1dFrameHeaderLoopFilter;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
-use crate::include::dav1d::headers::Rav1dFrameHeader_cdef;
-use crate::include::dav1d::headers::Rav1dFrameHeader_delta;
-use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
-use crate::include::dav1d::headers::Rav1dFrameHeader_delta_q;
-use crate::include::dav1d::headers::Rav1dFrameHeader_film_grain;
-use crate::include::dav1d::headers::Rav1dFrameHeader_loopfilter;
-use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
-use crate::include::dav1d::headers::Rav1dFrameHeader_restoration;
-use crate::include::dav1d::headers::Rav1dFrameHeader_segmentation;
-use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
-use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dFrameHeaderQuant;
+use crate::include::dav1d::headers::Rav1dFrameHeaderRestoration;
+use crate::include::dav1d::headers::Rav1dFrameHeaderSegmentation;
+use crate::include::dav1d::headers::Rav1dFrameHeaderSuperRes;
+use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
 use crate::include::dav1d::headers::Rav1dFrameSize;
 use crate::include::dav1d::headers::Rav1dFrameSkipMode;
 use crate::include::dav1d::headers::Rav1dFrameType;
@@ -635,7 +635,7 @@ fn parse_frame_size(
                     height,
                     render_width,
                     render_height,
-                    super_res: Rav1dFrameHeader_super_res {
+                    super_res: Rav1dFrameHeaderSuperRes {
                         enabled,
                         width_scale_denominator,
                     },
@@ -681,7 +681,7 @@ fn parse_frame_size(
         height,
         render_width,
         render_height,
-        super_res: Rav1dFrameHeader_super_res {
+        super_res: Rav1dFrameHeaderSuperRes {
             enabled,
             width_scale_denominator,
         },
@@ -842,7 +842,7 @@ fn parse_tiling(
     size: &Rav1dFrameSize,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<Rav1dFrameHeader_tiling> {
+) -> Rav1dResult<Rav1dFrameHeaderTiling> {
     let uniform = gb.get_bit() as u8;
     let sbsz_min1 = ((64) << seqhdr.sb128) - 1;
     let sbsz_log2 = 6 + seqhdr.sb128;
@@ -940,7 +940,7 @@ fn parse_tiling(
         n_bytes = update as u8;
     }
     debug.post(gb, "tiling");
-    Ok(Rav1dFrameHeader_tiling {
+    Ok(Rav1dFrameHeaderTiling {
         uniform,
         n_bytes,
         min_log2_cols,
@@ -962,7 +962,7 @@ fn parse_quant(
     seqhdr: &Rav1dSequenceHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dFrameHeader_quant {
+) -> Rav1dFrameHeaderQuant {
     let yac = gb.get_bits(8) as u8;
     let ydc_delta = if gb.get_bit() {
         gb.get_sbits(7) as i8
@@ -1034,7 +1034,7 @@ fn parse_quant(
         qm_v = Default::default();
     }
     debug.post(gb, "qm");
-    Rav1dFrameHeader_quant {
+    Rav1dFrameHeaderQuant {
         yac,
         ydc_delta,
         udc_delta,
@@ -1128,10 +1128,10 @@ fn parse_segmentation(
     state: &Rav1dState,
     primary_ref_frame: u8,
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
-    quant: &Rav1dFrameHeader_quant,
+    quant: &Rav1dFrameHeaderQuant,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<Rav1dFrameHeader_segmentation> {
+) -> Rav1dResult<Rav1dFrameHeaderSegmentation> {
     let enabled = gb.get_bit() as u8;
     let update_map;
     let temporal;
@@ -1196,7 +1196,7 @@ fn parse_segmentation(
         }
     });
     let lossless = array::from_fn(|i| qidx[i] == 0 && delta_lossless);
-    Ok(Rav1dFrameHeader_segmentation {
+    Ok(Rav1dFrameHeaderSegmentation {
         enabled,
         update_map,
         temporal,
@@ -1208,11 +1208,11 @@ fn parse_segmentation(
 }
 
 fn parse_delta(
-    quant: &Rav1dFrameHeader_quant,
+    quant: &Rav1dFrameHeaderQuant,
     allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dFrameHeader_delta {
+) -> Rav1dFrameHeaderDelta {
     let q = {
         let present = if quant.yac != 0 {
             gb.get_bit() as u8
@@ -1224,7 +1224,7 @@ fn parse_delta(
         } else {
             0
         };
-        Rav1dFrameHeader_delta_q { present, res_log2 }
+        Rav1dFrameHeaderDeltaQ { present, res_log2 }
     };
     let lf = {
         let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as u8;
@@ -1234,14 +1234,14 @@ fn parse_delta(
             0
         };
         let multi = if present != 0 { gb.get_bit() as u8 } else { 0 };
-        Rav1dFrameHeader_delta_lf {
+        Rav1dFrameHeaderDeltaLF {
             present,
             res_log2,
             multi,
         }
     };
     debug.post(gb, "delta_q_lf_flags");
-    Rav1dFrameHeader_delta { q, lf }
+    Rav1dFrameHeaderDelta { q, lf }
 }
 
 fn parse_loopfilter(
@@ -1253,7 +1253,7 @@ fn parse_loopfilter(
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<Rav1dFrameHeader_loopfilter> {
+) -> Rav1dResult<Rav1dFrameHeaderLoopFilter> {
     let level_y;
     let level_u;
     let level_v;
@@ -1316,7 +1316,7 @@ fn parse_loopfilter(
         }
     }
     debug.post(gb, "lpf");
-    Ok(Rav1dFrameHeader_loopfilter {
+    Ok(Rav1dFrameHeaderLoopFilter {
         level_y,
         level_u,
         level_v,
@@ -1333,7 +1333,7 @@ fn parse_cdef(
     allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dFrameHeader_cdef {
+) -> Rav1dFrameHeaderCdef {
     let damping;
     let n_bits;
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
@@ -1356,7 +1356,7 @@ fn parse_cdef(
         uv_strength[0] = 0;
     }
     debug.post(gb, "cdef");
-    Rav1dFrameHeader_cdef {
+    Rav1dFrameHeaderCdef {
         damping,
         n_bits,
         y_strength,
@@ -1371,7 +1371,7 @@ fn parse_restoration(
     allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dFrameHeader_restoration {
+) -> Rav1dFrameHeaderRestoration {
     let r#type;
     let unit_size;
     if (!all_lossless || super_res_enabled) && seqhdr.restoration != 0 && !allow_intrabc {
@@ -1424,7 +1424,7 @@ fn parse_restoration(
         unit_size = Default::default();
     }
     debug.post(gb, "restoration");
-    Rav1dFrameHeader_restoration { r#type, unit_size }
+    Rav1dFrameHeaderRestoration { r#type, unit_size }
 }
 
 fn parse_skip_mode(
@@ -1718,7 +1718,7 @@ fn parse_film_grain(
     ref_indices: &[i8; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<Rav1dFrameHeader_film_grain> {
+) -> Rav1dResult<Rav1dFrameHeaderFilmGrain> {
     let present = (seqhdr.film_grain_present != 0
         && (show_frame != 0 || showable_frame != 0)
         && gb.get_bit()) as u8;
@@ -1760,7 +1760,7 @@ fn parse_film_grain(
         Default::default()
     };
     debug.post(gb, "filmgrain");
-    Ok(Rav1dFrameHeader_film_grain {
+    Ok(Rav1dFrameHeaderFilmGrain {
         data,
         present,
         update,
@@ -2122,7 +2122,7 @@ fn parse_frame_hdr(
     })
 }
 
-fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTileGroupHeader {
+fn parse_tile_hdr(tiling: &Rav1dFrameHeaderTiling, gb: &mut GetBits) -> Rav1dTileGroupHeader {
     let n_tiles = tiling.cols as c_int * tiling.rows as c_int;
     let have_tile_pos = if n_tiles > 1 {
         gb.get_bit() as c_int

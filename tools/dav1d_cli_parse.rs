@@ -51,12 +51,12 @@ extern "C" {
 
 // TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
 // but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
-pub type CLISettings_realtime = c_uint;
+pub type CLISettingsRealTime = c_uint;
 #[allow(dead_code)]
-pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
+pub const REALTIME_CUSTOM: CLISettingsRealTime = 2;
 #[allow(dead_code)]
-pub const REALTIME_INPUT: CLISettings_realtime = 1;
-pub const REALTIME_DISABLE: CLISettings_realtime = 0;
+pub const REALTIME_INPUT: CLISettingsRealTime = 1;
+pub const REALTIME_DISABLE: CLISettingsRealTime = 0;
 
 #[repr(C)]
 pub struct CLISettings {
@@ -69,7 +69,7 @@ pub struct CLISettings {
     pub limit: c_uint,
     pub skip: c_uint,
     pub quiet: c_int,
-    pub realtime: CLISettings_realtime,
+    pub realtime: CLISettingsRealTime,
     pub realtime_fps: c_double,
     pub realtime_cache: c_uint,
     pub neg_stride: c_int,
@@ -81,24 +81,24 @@ pub struct EnumParseTable {
     pub val: c_int,
 }
 
-pub const ARG_DECODE_FRAME_TYPE: arg = 273;
-pub const ARG_INLOOP_FILTERS: arg = 272;
-pub const ARG_OUTPUT_INVISIBLE: arg = 271;
-pub const ARG_NEG_STRIDE: arg = 270;
-pub const ARG_CPU_MASK: arg = 269;
-pub const ARG_STRICT_STD_COMPLIANCE: arg = 268;
-pub const ARG_SIZE_LIMIT: arg = 267;
-pub const ARG_ALL_LAYERS: arg = 266;
-pub const ARG_OPPOINT: arg = 265;
-pub const ARG_FILM_GRAIN: arg = 264;
-pub const ARG_VERIFY: arg = 263;
-pub const ARG_FRAME_DELAY: arg = 262;
-pub const ARG_THREADS: arg = 261;
-pub const ARG_REALTIME_CACHE: arg = 260;
-pub const ARG_REALTIME: arg = 259;
-pub const ARG_FRAME_TIMES: arg = 258;
-pub const ARG_MUXER: arg = 257;
-pub const ARG_DEMUXER: arg = 256;
+pub const ARG_DECODE_FRAME_TYPE: Arg = 273;
+pub const ARG_INLOOP_FILTERS: Arg = 272;
+pub const ARG_OUTPUT_INVISIBLE: Arg = 271;
+pub const ARG_NEG_STRIDE: Arg = 270;
+pub const ARG_CPU_MASK: Arg = 269;
+pub const ARG_STRICT_STD_COMPLIANCE: Arg = 268;
+pub const ARG_SIZE_LIMIT: Arg = 267;
+pub const ARG_ALL_LAYERS: Arg = 266;
+pub const ARG_OPPOINT: Arg = 265;
+pub const ARG_FILM_GRAIN: Arg = 264;
+pub const ARG_VERIFY: Arg = 263;
+pub const ARG_FRAME_DELAY: Arg = 262;
+pub const ARG_THREADS: Arg = 261;
+pub const ARG_REALTIME_CACHE: Arg = 260;
+pub const ARG_REALTIME: Arg = 259;
+pub const ARG_FRAME_TIMES: Arg = 258;
+pub const ARG_MUXER: Arg = 257;
+pub const ARG_DEMUXER: Arg = 256;
 cfg_if! {
     if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
         pub const X86_CPU_MASK_AVX512ICL: CpuMask = 31;
@@ -117,7 +117,7 @@ cfg_if! {
         const ALLOWED_CPU_MASKS: &[u8; 42] = b"not yet implemented for this architecture\0";
     }
 }
-pub type arg = c_uint;
+pub type Arg = c_uint;
 
 static short_opts: [c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"i:o:vql:s:\0") };
@@ -727,7 +727,7 @@ pub unsafe fn parse(
                         ARG_REALTIME as c_int,
                         *argv.offset(0),
                         &mut (*cli_settings).realtime_fps,
-                    )) as CLISettings_realtime;
+                    )) as CLISettingsRealTime;
             }
             260 => {
                 (*cli_settings).realtime_cache =

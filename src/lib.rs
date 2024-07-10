@@ -33,13 +33,13 @@ use crate::src::extensions::OptionError as _;
 use crate::src::fg_apply;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dContextFrameThread;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dContext_frame_thread;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dState;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContext_task_thread;
+use crate::src::internal::Rav1dTaskContextTaskThread;
 use crate::src::internal::TaskThreadData;
 use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
@@ -237,7 +237,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         .collect();
 
     let state = Mutex::new(Rav1dState {
-        frame_thread: Rav1dContext_frame_thread {
+        frame_thread: Rav1dContextFrameThread {
             out_delayed: if n_fc > 1 {
                 (0..n_fc).map(|_| Default::default()).collect()
             } else {
@@ -251,7 +251,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     let tc = (0..n_tc)
         .map(|n| {
             let task_thread = Arc::clone(&task_thread);
-            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(task_thread));
+            let thread_data = Arc::new(Rav1dTaskContextTaskThread::new(task_thread));
             let thread_data_copy = Arc::clone(&thread_data);
             let task = if n_tc > 1 {
                 let handle = thread::Builder::new()
