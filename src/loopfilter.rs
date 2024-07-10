@@ -89,19 +89,19 @@ pub struct Rav1dLoopFilterDSPContext {
 #[inline(never)]
 fn loop_filter<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
-    E: u8,
-    I: u8,
-    H: u8,
+    e: u8,
+    i: u8,
+    h: u8,
     stridea: ptrdiff_t,
     strideb: ptrdiff_t,
     wd: c_int,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let [F, E, I, H] = [1, E, I, H].map(|n| (n as i32) << bitdepth_min_8);
+    let [f, e, i, h] = [1, e, i, h].map(|n| (n as i32) << bitdepth_min_8);
 
-    for i in 0..4 {
-        let dst = dst + (i * stridea);
+    for idx in 0..4 {
+        let dst = dst + (idx * stridea);
         let dst = |stride_index: isize| (dst + (strideb * stride_index)).index_mut::<BD>();
 
         let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
@@ -129,21 +129,21 @@ fn loop_filter<BD: BitDepth>(
         let mut flat8out = false;
         let mut flat8in = false;
 
-        let mut fm = (p1 - p0).abs() <= I
-            && (q1 - q0).abs() <= I
-            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E;
+        let mut fm = (p1 - p0).abs() <= i
+            && (q1 - q0).abs() <= i
+            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= e;
 
         if wd > 4 {
             p2 = get_dst(-3);
             q2 = get_dst(2);
 
-            fm &= (p2 - p1).abs() <= I && (q2 - q1).abs() <= I;
+            fm &= (p2 - p1).abs() <= i && (q2 - q1).abs() <= i;
 
             if wd > 6 {
                 p3 = get_dst(-4);
                 q3 = get_dst(3);
 
-                fm &= (p3 - p2).abs() <= I && (q3 - q2).abs() <= I;
+                fm &= (p3 - p2).abs() <= i && (q3 - q2).abs() <= i;
             }
         }
         if !fm {
@@ -158,23 +158,23 @@ fn loop_filter<BD: BitDepth>(
             q5 = get_dst(5);
             q6 = get_dst(6);
 
-            flat8out = (p6 - p0).abs() <= F
-                && (p5 - p0).abs() <= F
-                && (p4 - p0).abs() <= F
-                && (q4 - q0).abs() <= F
-                && (q5 - q0).abs() <= F
-                && (q6 - q0).abs() <= F;
+            flat8out = (p6 - p0).abs() <= f
+                && (p5 - p0).abs() <= f
+                && (p4 - p0).abs() <= f
+                && (q4 - q0).abs() <= f
+                && (q5 - q0).abs() <= f
+                && (q6 - q0).abs() <= f;
         }
 
         if wd >= 6 {
-            flat8in = (p2 - p0).abs() <= F
-                && (p1 - p0).abs() <= F
-                && (q1 - q0).abs() <= F
-                && (q2 - q0).abs() <= F;
+            flat8in = (p2 - p0).abs() <= f
+                && (p1 - p0).abs() <= f
+                && (q1 - q0).abs() <= f
+                && (q2 - q0).abs() <= f;
         }
 
         if wd >= 8 {
-            flat8in &= (p3 - p0).abs() <= F && (q3 - q0).abs() <= F;
+            flat8in &= (p3 - p0).abs() <= f && (q3 - q0).abs() <= f;
         }
 
         if wd >= 16 && flat8out && flat8in {
@@ -239,7 +239,7 @@ fn loop_filter<BD: BitDepth>(
             set_dst(0, p1 + 2 * p0 + 2 * q0 + 2 * q1 + q2 + 4 >> 3);
             set_dst(1, p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3);
         } else {
-            let hev = (p1 - p0).abs() > H || (q1 - q0).abs() > H;
+            let hev = (p1 - p0).abs() > h || (q1 - q0).abs() > h;
 
             fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
                 iclip(
@@ -319,19 +319,19 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
             if vm & xy == 0 {
                 break 'block;
             }
-            let L = *lvl.data.index(lvl.offset);
-            let L = if L != 0 {
-                L
+            let l = *lvl.data.index(lvl.offset);
+            let l = if l != 0 {
+                l
             } else {
                 let lvl = lvl - 4 * b4_strideb;
                 *lvl.data.index(lvl.offset)
             };
-            if L == 0 {
+            if l == 0 {
                 break 'block;
             }
-            let H = L >> 4;
-            let E = lut.0.e[L as usize];
-            let I = lut.0.i[L as usize];
+            let h = l >> 4;
+            let e = lut.0.e[l as usize];
+            let i = lut.0.i[l as usize];
             let idx = match yuv {
                 YUV::Y => {
                     let idx = if vmask[2] & xy != 0 {
@@ -346,7 +346,7 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
                     4 + 2 * idx
                 }
             };
-            loop_filter(dst, E, I, H, stridea, strideb, idx, bd);
+            loop_filter(dst, e, i, h, stridea, strideb, idx, bd);
         }
         xy <<= 1;
         dst += 4 * stridea;

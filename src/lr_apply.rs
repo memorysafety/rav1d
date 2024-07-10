@@ -125,7 +125,7 @@ fn lr_stripe<BD: BitDepth>(
     }
 }
 
-fn backup4xU<BD: BitDepth>(
+fn backup_4xu<BD: BitDepth>(
     dst: &mut [[BD::Pixel; 4]; 128 + 8],
     src: Rav1dPictureDataComponentOffset,
     u: c_int,
@@ -199,7 +199,7 @@ fn lr_sbrow<BD: BitDepth>(
             .unwrap();
         let restore_next = lr[!bit as usize].r#type != Rav1dRestorationType::None;
         if restore_next {
-            backup4xU::<BD>(
+            backup_4xu::<BD>(
                 &mut pre_lr_border[bit as usize],
                 p + (unit_size as usize - 4),
                 row_h - y,

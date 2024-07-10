@@ -56,12 +56,12 @@ impl Default for CdfMvContext {
 pub struct CdfMvComponent {
     pub classes: Align32<[u16; 16]>,
     pub sign: Align4<[u16; 2]>,
-    pub class0: Align4<[u16; 2]>,
-    pub class0_fp: Align8<[[u16; 4]; 2]>,
-    pub class0_hp: Align4<[u16; 2]>,
-    pub classN_fp: Align8<[u16; 4]>,
-    pub classN_hp: Align4<[u16; 2]>,
-    pub classN: Align4<[[u16; 2]; 10]>,
+    pub class_0: Align4<[u16; 2]>,
+    pub class_0_fp: Align8<[[u16; 4]; 2]>,
+    pub class_0_hp: Align4<[u16; 2]>,
+    pub class_n_fp: Align8<[u16; 4]>,
+    pub class_n_hp: Align4<[u16; 2]>,
+    pub class_n: Align4<[[u16; 2]; 10]>,
 }
 
 impl Default for CdfMvComponent {
@@ -905,12 +905,12 @@ static default_mv_component_cdf: CdfMvComponent = CdfMvComponent {
     classes: Align32(cdf0d([
         28672, 30976, 31858, 32320, 32551, 32656, 32740, 32757, 32762, 32767,
     ])),
-    class0_fp: Align8(cdf1d([[16384, 24576, 26624], [12288, 21248, 24128]])),
-    classN_fp: Align8(cdf0d([8192, 17408, 21248])),
-    class0_hp: Align4(cdf0d([20480])),
-    classN_hp: Align4(cdf0d([16384])),
-    class0: Align4(cdf0d([27648])),
-    classN: Align4(cdf1d([
+    class_0_fp: Align8(cdf1d([[16384, 24576, 26624], [12288, 21248, 24128]])),
+    class_n_fp: Align8(cdf0d([8192, 17408, 21248])),
+    class_0_hp: Align4(cdf0d([20480])),
+    class_n_hp: Align4(cdf0d([16384])),
+    class_0: Align4(cdf0d([27648])),
+    class_n: Align4(cdf1d([
         [17408],
         [17920],
         [18944],
@@ -5075,12 +5075,12 @@ pub(crate) fn rav1d_cdf_thread_update(
     for k in 0..2 {
         update_cdf_1d!(10, mv.comp[k].classes.0);
         update_cdf_1d!(1, mv.comp[k].sign);
-        update_cdf_1d!(1, mv.comp[k].class0);
-        update_cdf_2d!(2, 3, mv.comp[k].class0_fp);
-        update_cdf_1d!(1, mv.comp[k].class0_hp);
-        update_cdf_2d!(10, 1, mv.comp[k].classN);
-        update_cdf_1d!(3, mv.comp[k].classN_fp.0);
-        update_cdf_1d!(1, mv.comp[k].classN_hp);
+        update_cdf_1d!(1, mv.comp[k].class_0);
+        update_cdf_2d!(2, 3, mv.comp[k].class_0_fp);
+        update_cdf_1d!(1, mv.comp[k].class_0_hp);
+        update_cdf_2d!(10, 1, mv.comp[k].class_n);
+        update_cdf_1d!(3, mv.comp[k].class_n_fp.0);
+        update_cdf_1d!(1, mv.comp[k].class_n_hp);
     }
     update_cdf_1d!(MVJoint::all().bits() as usize, mv.joint.0);
 }
