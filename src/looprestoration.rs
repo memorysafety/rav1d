@@ -658,8 +658,7 @@ fn selfguided_filter<BD: BitDepth>(
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
     let mut sumsq = [0; (64 + 2 + 2) * REST_UNIT_STRIDE];
-    // By inverting A and B after the boxsums, B can be of size coef instead
-    // of i32
+    // By inverting `a` and `b` after the boxsums, `b` can be of `BD::Coef` instead of `i32`.
     let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
 
     let step = (n == 25) as usize + 1;
@@ -670,26 +669,26 @@ fn selfguided_filter<BD: BitDepth>(
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
-    let mut A = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
-    let mut B = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+    let mut a = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
+    let mut b = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
 
-    let mut AA = A.clone() - REST_UNIT_STRIDE;
-    let mut BB = B.clone() - REST_UNIT_STRIDE;
+    let mut aa = a.clone() - REST_UNIT_STRIDE;
+    let mut bb = b.clone() - REST_UNIT_STRIDE;
     for _ in (-1..h as isize + 1).step_by(step) {
         for i in -1..w as isize + 1 {
-            let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
-            let b = BB[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
+            let a = aa[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
+            let b = bb[i].as_::<c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
 
             let p = cmp::max(a * n - b * b, 0) as c_uint;
             let z = (p * s + (1 << 19)) >> 20;
             let x = dav1d_sgr_x_by_x[cmp::min(z, 255) as usize] as c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
-            AA[i] = ((x * BB[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;
-            BB[i] = x.as_::<BD::Coef>();
+            aa[i] = ((x * bb[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;
+            bb[i] = x.as_::<BD::Coef>();
         }
-        AA += step as usize * REST_UNIT_STRIDE;
-        BB += step as usize * REST_UNIT_STRIDE;
+        aa += step as usize * REST_UNIT_STRIDE;
+        bb += step as usize * REST_UNIT_STRIDE;
     }
 
     fn six_neighbors<P>(p: &CursorMut<P>, i: isize) -> c_int
@@ -722,44 +721,46 @@ fn selfguided_filter<BD: BitDepth>(
         let mut j = 0;
         while j < h - 1 {
             for i in 0..w {
-                let a = six_neighbors(&B, i as isize);
-                let b = six_neighbors(&A, i as isize);
+                let (a, b) = (six_neighbors(&b, i as isize), six_neighbors(&a, i as isize));
                 dst[i] = ((b - a * src[i].as_::<c_int>() + (1 << 8)) >> 9).as_();
             }
             dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
             for i in 0..w {
-                let a = B[i].as_::<c_int>() * 6 + (B[i as isize - 1] + B[i + 1]).as_::<c_int>() * 5;
-                let b = A[i] * 6 + (A[i as isize - 1] + A[i + 1]) * 5;
+                let (a, b) = (
+                    b[i].as_::<c_int>() * 6 + (b[i as isize - 1] + b[i + 1]).as_::<c_int>() * 5,
+                    a[i] * 6 + (a[i as isize - 1] + a[i + 1]) * 5,
+                );
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 7) >> 8).as_();
             }
             dst = &mut dst[MAX_RESTORATION_WIDTH..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
             j += 2;
         }
         // Last row, when number of rows is odd
         if j + 1 == h {
             for i in 0..w {
-                let a = six_neighbors(&B, i as isize);
-                let b = six_neighbors(&A, i as isize);
+                let (a, b) = (six_neighbors(&b, i as isize), six_neighbors(&a, i as isize));
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
         for _ in 0..h {
             for i in 0..w {
-                let a = eight_neighbors(&B, i as isize);
-                let b = eight_neighbors(&A, i as isize);
+                let (a, b) = (
+                    eight_neighbors(&b, i as isize),
+                    eight_neighbors(&a, i as isize),
+                );
                 dst[i] = (b - a * src[i].as_::<c_int>() + (1 << 8) >> 9).as_();
             }
             dst = &mut dst[384..];
             src = &src[REST_UNIT_STRIDE..];
-            B += REST_UNIT_STRIDE;
-            A += REST_UNIT_STRIDE;
+            b += REST_UNIT_STRIDE;
+            a += REST_UNIT_STRIDE;
         }
     };
 }
@@ -1620,8 +1621,8 @@ mod neon {
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_vert(
         sumsq: *mut *mut i32,
         sum: *mut *mut i16,
-        AA: *mut i32,
-        BB: *mut i16,
+        aa: *mut i32,
+        bb: *mut i16,
         w: c_int,
         s: c_int,
         bitdepth_max: c_int,
@@ -1677,8 +1678,8 @@ mod neon {
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted1(
         dst: *mut DynPixel,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         w1: c_int,
         bitdepth_max: c_int,
@@ -1688,26 +1689,26 @@ mod neon {
         fn call<BD: BitDepth>(
             &self,
             dst: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; 3],
-            B_ptrs: &mut [*mut i16; 3],
+            a_ptrs: &mut [*mut i32; 3],
+            b_ptrs: &mut [*mut i16; 3],
             w: c_int,
             w1: c_int,
             bd: BD,
         ) {
             let dst = dst.as_mut_ptr::<BD>().cast();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(dst, A_ptrs, B_ptrs, w, w1, bd) }
+            unsafe { self.get()(dst, a_ptrs, b_ptrs, w, w1, bd) }
         }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_finish_weighted2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
         w1: c_int,
@@ -1718,8 +1719,8 @@ mod neon {
         fn call<BD: BitDepth>(
             &self,
             dst: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; 2],
-            B_ptrs: &mut [*mut i16; 2],
+            a_ptrs: &mut [*mut i32; 2],
+            b_ptrs: &mut [*mut i16; 2],
             w: c_int,
             h: c_int,
             w1: c_int,
@@ -1727,11 +1728,11 @@ mod neon {
         ) {
             let dst_ptr = dst.as_mut_ptr::<BD>().cast();
             let dst_stride = dst.stride();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(dst_ptr, dst_stride, A_ptrs, B_ptrs, w, h, w1, bd) }
+            unsafe { self.get()(dst_ptr, dst_stride, a_ptrs, b_ptrs, w, h, w1, bd) }
         }
     }
 
@@ -1739,8 +1740,8 @@ mod neon {
         tmp: *mut i16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
-        A_ptrs: *mut *mut i32,
-        B_ptrs: *mut *mut i16,
+        a_ptrs: *mut *mut i32,
+        b_ptrs: *mut *mut i16,
         w: c_int,
         h: c_int,
         bitdepth_max: c_int,
@@ -1751,8 +1752,8 @@ mod neon {
             &self,
             tmp: &mut Align16<[i16; 2 * FILTER_OUT_STRIDE]>,
             src: Rav1dPictureDataComponentOffset,
-            A_ptrs: &mut [*mut i32; N],
-            B_ptrs: &mut [*mut i16; N],
+            a_ptrs: &mut [*mut i32; N],
+            b_ptrs: &mut [*mut i16; N],
             w: c_int,
             h: c_int,
             bd: BD,
@@ -1761,19 +1762,19 @@ mod neon {
             let tmp = tmp.0.as_mut_ptr();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
-            let A_ptrs = A_ptrs.as_mut_ptr();
-            let B_ptrs = B_ptrs.as_mut_ptr();
+            let a_ptrs = a_ptrs.as_mut_ptr();
+            let b_ptrs = b_ptrs.as_mut_ptr();
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
-            unsafe { self.get()(tmp, src_ptr, src_stride, A_ptrs, B_ptrs, w, h, bd) }
+            unsafe { self.get()(tmp, src_ptr, src_stride, a_ptrs, b_ptrs, w, h, bd) }
         }
     }
 
     fn sgr_box3_hv_neon<BD: BitDepth>(
         sumsq: &mut [*mut i32; 3],
         sum: &mut [*mut i16; 3],
-        AA: *mut i32,
-        BB: *mut i16,
+        aa: *mut i32,
+        bb: *mut i16,
         left: Option<&[LeftPixelRow<BD::Pixel>]>,
         src: *const BD::Pixel,
         w: c_int,
@@ -1783,13 +1784,13 @@ mod neon {
     ) {
         bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon)
             .call(sumsq[2], sum[2], left, src, w, edges, bd);
-        sgr_box3_vert_neon(sumsq, sum, AA, BB, w, s, bd);
+        sgr_box3_vert_neon(sumsq, sum, aa, bb, w, s, bd);
     }
 
     fn sgr_finish1_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 3],
-        B_ptrs: &mut [*mut i16; 3],
+        a_ptrs: &mut [*mut i32; 3],
+        b_ptrs: &mut [*mut i16; 3],
         w: c_int,
         w1: c_int,
         bd: BD,
@@ -1800,15 +1801,15 @@ mod neon {
             sgr_finish_weighted1,
             neon
         )
-        .call(*dst, A_ptrs, B_ptrs, w, w1, bd);
+        .call(*dst, a_ptrs, b_ptrs, w, w1, bd);
         *dst += dst.pixel_stride::<BD>();
-        rotate::<3, 1>(A_ptrs, B_ptrs);
+        rotate::<3, 1>(a_ptrs, b_ptrs);
     }
 
     fn sgr_finish2_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A_ptrs: &mut [*mut i32; 2],
-        B_ptrs: &mut [*mut i16; 2],
+        a_ptrs: &mut [*mut i32; 2],
+        b_ptrs: &mut [*mut i16; 2],
         w: c_int,
         h: c_int,
         w1: c_int,
@@ -1820,9 +1821,9 @@ mod neon {
             sgr_finish_weighted2,
             neon
         )
-        .call(*dst, A_ptrs, B_ptrs, w, h, w1, bd);
+        .call(*dst, a_ptrs, b_ptrs, w, h, w1, bd);
         *dst += 2 * dst.pixel_stride::<BD>();
-        rotate::<2, 1>(A_ptrs, B_ptrs);
+        rotate::<2, 1>(a_ptrs, b_ptrs);
     }
 
     const FILTER_OUT_STRIDE: usize = 384;
@@ -1871,10 +1872,10 @@ mod neon {
 
     fn sgr_finish_mix_neon<BD: BitDepth>(
         dst: &mut Rav1dPictureDataComponentOffset,
-        A5_ptrs: &mut [*mut i32; 2],
-        B5_ptrs: &mut [*mut i16; 2],
-        A3_ptrs: &mut [*mut i32; 4],
-        B3_ptrs: &mut [*mut i16; 4],
+        a5_ptrs: &mut [*mut i32; 2],
+        b5_ptrs: &mut [*mut i16; 2],
+        a3_ptrs: &mut [*mut i32; 4],
+        b3_ptrs: &mut [*mut i16; 4],
         w: c_int,
         h: c_int,
         w0: c_int,
@@ -1890,22 +1891,22 @@ mod neon {
             sgr_finish_filter2_2rows,
             neon
         )
-        .call(&mut tmp5, *dst, A5_ptrs, B5_ptrs, w, h, bd);
+        .call(&mut tmp5, *dst, a5_ptrs, b5_ptrs, w, h, bd);
         bd_fn!(
             sgr_finish_filter_2rows::decl_fn,
             BD,
             sgr_finish_filter1_2rows,
             neon
         )
-        .call(&mut tmp3, *dst, A3_ptrs, B3_ptrs, w, h, bd);
+        .call(&mut tmp3, *dst, a3_ptrs, b3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
         bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
             .call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
 
         *dst += h as isize * dst.pixel_stride::<BD>();
-        rotate::<2, 1>(A5_ptrs, B5_ptrs);
-        rotate::<4, 1>(A3_ptrs, B3_ptrs);
+        rotate::<2, 1>(a5_ptrs, b5_ptrs);
+        rotate::<4, 1>(a3_ptrs, b3_ptrs);
     }
 
     pub fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1937,14 +1938,14 @@ mod neon {
             sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
-        let mut A_buf = Align16([0; BUF_STRIDE * 3 + 16]);
-        let mut B_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+        let mut a_buf = Align16([0; BUF_STRIDE * 3 + 16]);
+        let mut b_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-        let mut A_ptrs = [ptr::null_mut(); 3];
-        let mut B_ptrs = [ptr::null_mut(); 3];
+        let mut a_ptrs = [ptr::null_mut(); 3];
+        let mut b_ptrs = [ptr::null_mut(); 3];
         for i in 0..3 {
-            A_ptrs[i] = A_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B_ptrs[i] = B_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            a_ptrs[i] = a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            b_ptrs[i] = b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
         let mut src = dst;
@@ -1989,8 +1990,8 @@ mod neon {
             sgr_box3_hv_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 Some(left),
                 src.as_ptr::<BD>(),
                 w,
@@ -2001,7 +2002,7 @@ mod neon {
 
             left = &left[1..];
             src += stride;
-            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2010,8 +2011,8 @@ mod neon {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     Some(left),
                     src.as_ptr::<BD>(),
                     w,
@@ -2021,7 +2022,7 @@ mod neon {
                 );
                 left = &left[1..];
                 src += stride;
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2047,13 +2048,13 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+            rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2065,8 +2066,8 @@ mod neon {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     Some(left),
                     src.as_ptr::<BD>(),
                     w,
@@ -2076,7 +2077,7 @@ mod neon {
                 );
                 left = &left[1..];
                 src += stride;
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2094,8 +2095,8 @@ mod neon {
             sgr_box3_hv_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 Some(left),
                 src.as_ptr::<BD>(),
                 w,
@@ -2106,7 +2107,7 @@ mod neon {
             left = &left[1..];
             src += stride;
 
-            sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+            sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             h -= 1;
         }
 
@@ -2119,8 +2120,8 @@ mod neon {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     None,
                     lpf_bottom,
                     w,
@@ -2131,13 +2132,13 @@ mod neon {
                 // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
                 lpf_bottom = lpf_bottom.wrapping_offset(stride);
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
 
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     None,
                     lpf_bottom,
                     w,
@@ -2146,7 +2147,7 @@ mod neon {
                     bd,
                 );
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             }
             Track::vert1 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
@@ -2154,13 +2155,13 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<3, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
             }
             Track::vert2 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
@@ -2168,14 +2169,14 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[2],
-                    B_ptrs[2],
+                    a_ptrs[2],
+                    b_ptrs[2],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
 
-                sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+                sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             }
         }
 
@@ -2185,14 +2186,14 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq_ptrs,
                 &mut sum_ptrs,
-                A_ptrs[2],
-                B_ptrs[2],
+                a_ptrs[2],
+                b_ptrs[2],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
 
-            sgr_finish1_neon(&mut dst, &mut A_ptrs, &mut B_ptrs, w, sgr.w1 as c_int, bd);
+            sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
         }
     }
 
@@ -2225,14 +2226,14 @@ mod neon {
             sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
-        let mut A_buf = Align16([0; BUF_STRIDE * 2 + 16]);
-        let mut B_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut a_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut b_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut A_ptrs = [ptr::null_mut(); 2];
-        let mut B_ptrs = [ptr::null_mut(); 2];
+        let mut a_ptrs = [ptr::null_mut(); 2];
+        let mut b_ptrs = [ptr::null_mut(); 2];
         for i in 0..2 {
-            A_ptrs[i] = A_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B_ptrs[i] = B_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            a_ptrs[i] = a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            b_ptrs[i] = b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
         let mut src = dst;
@@ -2308,13 +2309,13 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2364,13 +2365,13 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2412,8 +2413,8 @@ mod neon {
                         sgr_box5_vert_neon(
                             &mut sumsq_ptrs,
                             &mut sum_ptrs,
-                            A_ptrs[1],
-                            B_ptrs[1],
+                            a_ptrs[1],
+                            b_ptrs[1],
                             w,
                             sgr.s0 as c_int,
                             bd,
@@ -2421,8 +2422,8 @@ mod neon {
 
                         sgr_finish2_neon(
                             &mut dst,
-                            &mut A_ptrs,
-                            &mut B_ptrs,
+                            &mut a_ptrs,
+                            &mut b_ptrs,
                             w,
                             2,
                             sgr.w0 as c_int,
@@ -2477,16 +2478,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -2530,13 +2531,13 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A_ptrs, &mut B_ptrs);
+                rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
             }
             Track::vert2 => {
                 // Duplicate the last row twice more
@@ -2553,16 +2554,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -2576,16 +2577,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -2602,16 +2603,16 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
-                    A_ptrs[1],
-                    B_ptrs[1],
+                    a_ptrs[1],
+                    b_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
                 sgr_finish2_neon(
                     &mut dst,
-                    &mut A_ptrs,
-                    &mut B_ptrs,
+                    &mut a_ptrs,
+                    &mut b_ptrs,
                     w,
                     1,
                     sgr.w0 as c_int,
@@ -2658,24 +2659,24 @@ mod neon {
             sum3_rows[i] = sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
-        let mut A5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
-        let mut B5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut a5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
+        let mut b5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut A5_ptrs = [ptr::null_mut(); 2];
-        let mut B5_ptrs = [ptr::null_mut(); 2];
+        let mut a5_ptrs = [ptr::null_mut(); 2];
+        let mut b5_ptrs = [ptr::null_mut(); 2];
         for i in 0..2 {
-            A5_ptrs[i] = A5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B5_ptrs[i] = B5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            a5_ptrs[i] = a5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            b5_ptrs[i] = b5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
-        let mut A3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
-        let mut B3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
+        let mut a3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
+        let mut b3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
 
-        let mut A3_ptrs = [ptr::null_mut(); 4];
-        let mut B3_ptrs = [ptr::null_mut(); 4];
+        let mut a3_ptrs = [ptr::null_mut(); 4];
+        let mut b3_ptrs = [ptr::null_mut(); 4];
         for i in 0..4 {
-            A3_ptrs[i] = A3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            B3_ptrs[i] = B3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            a3_ptrs[i] = a3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
+            b3_ptrs[i] = b3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
         }
 
         let mut src = dst;
@@ -2753,13 +2754,13 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2782,24 +2783,24 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
 
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2829,13 +2830,13 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as i32,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -2864,24 +2865,24 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
 
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 h -= 1;
                 if h <= 0 {
@@ -2912,13 +2913,13 @@ mod neon {
                     sgr_box3_vert_neon(
                         &mut sumsq3_ptrs,
                         &mut sum3_ptrs,
-                        A3_ptrs[3],
-                        B3_ptrs[3],
+                        a3_ptrs[3],
+                        b3_ptrs[3],
                         w,
                         sgr.s1 as c_int,
                         bd,
                     );
-                    rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                    rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                     h -= 1;
                     if h <= 0 {
@@ -2941,8 +2942,8 @@ mod neon {
                         sgr_box5_vert_neon(
                             &mut sumsq5_ptrs,
                             &mut sum5_ptrs,
-                            A5_ptrs[1],
-                            B5_ptrs[1],
+                            a5_ptrs[1],
+                            b5_ptrs[1],
                             w,
                             sgr.s0 as c_int,
                             bd,
@@ -2950,18 +2951,18 @@ mod neon {
                         sgr_box3_vert_neon(
                             &mut sumsq3_ptrs,
                             &mut sum3_ptrs,
-                            A3_ptrs[3],
-                            B3_ptrs[3],
+                            a3_ptrs[3],
+                            b3_ptrs[3],
                             w,
                             sgr.s1 as c_int,
                             bd,
                         );
                         sgr_finish_mix_neon(
                             &mut dst,
-                            &mut A5_ptrs,
-                            &mut B5_ptrs,
-                            &mut A3_ptrs,
-                            &mut B3_ptrs,
+                            &mut a5_ptrs,
+                            &mut b5_ptrs,
+                            &mut a3_ptrs,
+                            &mut b3_ptrs,
                             w,
                             2,
                             sgr.w0 as c_int,
@@ -3003,13 +3004,13 @@ mod neon {
             sgr_box3_vert_neon(
                 &mut sumsq3_ptrs,
                 &mut sum3_ptrs,
-                A3_ptrs[3],
-                B3_ptrs[3],
+                a3_ptrs[3],
+                b3_ptrs[3],
                 w,
                 sgr.s1 as c_int,
                 bd,
             );
-            rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+            rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
             h -= 1;
             if h <= 0 {
@@ -3032,8 +3033,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3041,18 +3042,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3086,13 +3087,13 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                     sumsq3_ptrs[2],
@@ -3117,23 +3118,23 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
                 );
-                rotate::<2, 1>(&mut A5_ptrs, &mut B5_ptrs);
+                rotate::<2, 1>(&mut a5_ptrs, &mut b5_ptrs);
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
             }
             Track::vert2 => {
                 // Duplicate the last row twice more
@@ -3147,13 +3148,13 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
                 sumsq3_ptrs[2] = sumsq3_ptrs[1];
                 sum3_ptrs[2] = sum3_ptrs[1];
@@ -3169,8 +3170,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3178,18 +3179,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3204,8 +3205,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3213,18 +3214,18 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     2,
                     sgr.w0 as c_int,
@@ -3245,8 +3246,8 @@ mod neon {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
-                    A5_ptrs[1],
-                    B5_ptrs[1],
+                    a5_ptrs[1],
+                    b5_ptrs[1],
                     w,
                     sgr.s0 as c_int,
                     bd,
@@ -3254,20 +3255,20 @@ mod neon {
                 sgr_box3_vert_neon(
                     &mut sumsq3_ptrs,
                     &mut sum3_ptrs,
-                    A3_ptrs[3],
-                    B3_ptrs[3],
+                    a3_ptrs[3],
+                    b3_ptrs[3],
                     w,
                     sgr.s1 as c_int,
                     bd,
                 );
-                rotate::<4, 1>(&mut A3_ptrs, &mut B3_ptrs);
+                rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
                 // Output only one row
                 sgr_finish_mix_neon(
                     &mut dst,
-                    &mut A5_ptrs,
-                    &mut B5_ptrs,
-                    &mut A3_ptrs,
-                    &mut B3_ptrs,
+                    &mut a5_ptrs,
+                    &mut b5_ptrs,
+                    &mut a3_ptrs,
+                    &mut b3_ptrs,
                     w,
                     1,
                     sgr.w0 as c_int,
