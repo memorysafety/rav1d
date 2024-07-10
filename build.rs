@@ -87,7 +87,7 @@ mod asm {
         define(Define::bool("CONFIG_ASM", true));
         define(Define::bool("CONFIG_LOG", true)); // TODO(kkysen) should be configurable
 
-        if vendor == "apple" || (os == "windows" && matches!(arch, Arch::X86(..))) {
+        if vendor == "apple" || (os == "windows" && matches!(arch, Arch::X86(ArchX86::X86_32))) {
             define(Define::bool("PREFIX", true));
         }
 
