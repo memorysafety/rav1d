@@ -2015,7 +2015,7 @@ mod neon {
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
             Main,
             Vert1,
@@ -2297,7 +2297,7 @@ mod neon {
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
             Main,
             Vert1,
@@ -2726,7 +2726,7 @@ mod neon {
         // `lpf` may be negatively out of bounds.
         let mut lpf_bottom = lpf.wrapping_offset(6 * stride);
 
-        #[derive(PartialEq)]
+        #[derive(PartialEq, Eq)]
         enum Track {
             Main,
             Vert1,
