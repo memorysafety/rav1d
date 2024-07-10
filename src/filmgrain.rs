@@ -881,9 +881,10 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
     luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
-    let [dst_row, src_row, luma_row] =
-        [dst_row, src_row, luma_row].map(|row| *unsafe { FFISafe::get(row) });
+    let [dst_row, src_row, luma_row] = [dst_row, src_row, luma_row].map(|row| {
+        // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
+        *unsafe { FFISafe::get(row) }
+    });
     let data = &data.clone().into();
     // SAFETY: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };

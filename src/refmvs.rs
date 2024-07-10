@@ -318,6 +318,8 @@ impl save_tmvs::Fn {
             if ri > rf.r.len() - R_PAD {
                 return ptr::null();
             }
+
+            const _: () = assert!(mem::size_of::<RefMvsBlock>() * (1 + R_PAD) > 16);
             // SAFETY: `.add` is in-bounds; checked above.
             // Also note that asm may read 12-byte `refmvs_block`s in 16-byte chunks.
             // This is safe because we allocate `rf.r` with an extra `R_PAD` (1) elements.
@@ -326,7 +328,6 @@ impl save_tmvs::Fn {
             // Furthermore, this is provenance safe because
             // we derive the ptrs from `rf.r.as_mut_ptr()`,
             // as opposed to materializing intermediate references.
-            const _: () = assert!(mem::size_of::<RefMvsBlock>() * (1 + R_PAD) > 16);
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 

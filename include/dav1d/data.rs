@@ -30,8 +30,10 @@ impl From<Dav1dData> for Rav1dData {
             m,
         } = value;
         Self {
-            // SAFETY: `r#ref` is a [`RawCArc`] originally from [`CArc`].
-            data: r#ref.map(|r#ref| unsafe { CArc::from_raw(r#ref) }),
+            data: r#ref.map(|r#ref| {
+                // SAFETY: `r#ref` is a [`RawCArc`] originally from [`CArc`].
+                unsafe { CArc::from_raw(r#ref) }
+            }),
             m: m.into(),
         }
     }

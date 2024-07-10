@@ -449,24 +449,36 @@ impl From<Dav1dPicture> for Rav1dPicture {
         } = value;
         Self {
             // We don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
-            seq_hdr: seq_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
+            seq_hdr: seq_hdr_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
-            frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
-            data: data_ref.map(|raw| unsafe { raw.into_arc() }),
+            frame_hdr: frame_hdr_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
+            data: data_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             stride,
             p: p.into(),
             m: m.into(),
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
-            content_light: content_light_ref.map(|raw| unsafe { raw.into_arc() }),
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
-            mastering_display: mastering_display_ref.map(|raw| unsafe { raw.into_arc() }),
+            content_light: content_light_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
+            mastering_display: mastering_display_ref.map(|raw| {
+                // Safety: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             // We don't `.update_rav1d` [`Rav1dITUTT35`] because never read it.
-            // SAFETY: `raw` came from [`RawArc::from_arc`].
             itut_t35: itut_t35_ref
-                .map(|raw| unsafe { raw.into_arc() })
+                .map(|raw| {
+                    // SAFETY: `raw` came from [`RawArc::from_arc`].
+                    unsafe { raw.into_arc() }
+                })
                 .unwrap_or_default(),
         }
     }
