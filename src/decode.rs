@@ -7,7 +7,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
@@ -4790,7 +4790,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
 
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
-    let Rav1dFrameHeader_tiling { rows, cols, .. } = frame_hdr.tiling;
+    let Rav1dFrameHeaderTiling { rows, cols, .. } = frame_hdr.tiling;
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
     // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
     let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
