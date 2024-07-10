@@ -506,155 +506,155 @@ fn cdef_find_dir_rust<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn padding(
-    tmp: *mut u16,
-    src: *const DynPixel,
-    src_stride: ptrdiff_t,
-    left: *const [LeftPixelRow2px<DynPixel>; 8],
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    h: c_int,
-    edges: CdefEdgeFlags,
-) -> ());
+mod neon {
+    use super::*;
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-impl padding::Fn {
-    fn call<BD: BitDepth>(
-        &self,
-        tmp: &mut [u16],
-        src: *const BD::Pixel,
+    wrap_fn_ptr!(unsafe extern "C" fn padding(
+        tmp: *mut u16,
+        src: *const DynPixel,
         src_stride: ptrdiff_t,
-        left: *const [LeftPixelRow2px<BD::Pixel>; 8],
-        top: *const BD::Pixel,
-        bottom: *const BD::Pixel,
-        h: usize,
+        left: *const [LeftPixelRow2px<DynPixel>; 8],
+        top: *const DynPixel,
+        bottom: *const DynPixel,
+        h: c_int,
         edges: CdefEdgeFlags,
-    ) {
-        let tmp = tmp.as_mut_ptr();
-        let src = src.cast();
-        let left = left.cast();
-        let top = top.cast();
-        let bottom = bottom.cast();
-        let h = h as c_int;
-        // SAFETY: asm should be safe.
-        unsafe { self.get()(tmp, src, src_stride, left, top, bottom, h, edges) }
-    }
+    ) -> ());
 
-    const fn neon<BD: BitDepth, const W: usize>() -> Self {
-        match W {
-            4 => bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
-            8 => bd_fn!(padding::decl_fn, BD, cdef_padding8, neon),
-            _ => unreachable!(),
+    impl padding::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            tmp: &mut [u16],
+            src: *const BD::Pixel,
+            src_stride: ptrdiff_t,
+            left: *const [LeftPixelRow2px<BD::Pixel>; 8],
+            top: *const BD::Pixel,
+            bottom: *const BD::Pixel,
+            h: usize,
+            edges: CdefEdgeFlags,
+        ) {
+            let tmp = tmp.as_mut_ptr();
+            let src = src.cast();
+            let left = left.cast();
+            let top = top.cast();
+            let bottom = bottom.cast();
+            let h = h as c_int;
+            // SAFETY: asm should be safe.
+            unsafe { self.get()(tmp, src, src_stride, left, top, bottom, h, edges) }
+        }
+
+        const fn neon<BD: BitDepth, const W: usize>() -> Self {
+            match W {
+                4 => bd_fn!(padding::decl_fn, BD, cdef_padding4, neon),
+                8 => bd_fn!(padding::decl_fn, BD, cdef_padding8, neon),
+                _ => unreachable!(),
+            }
         }
     }
-}
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn filter(
-    dst: *mut DynPixel,
-    dst_stride: ptrdiff_t,
-    tmp: *const u16,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    h: c_int,
-    edges: usize,
-    bitdepth_max: c_int,
-) -> ());
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-impl filter::Fn {
-    fn call<BD: BitDepth>(
-        &self,
-        dst: *mut BD::Pixel,
+    wrap_fn_ptr!(unsafe extern "C" fn filter(
+        dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: &[u16],
+        tmp: *const u16,
         pri_strength: c_int,
         sec_strength: c_int,
         dir: c_int,
         damping: c_int,
-        h: usize,
+        h: c_int,
+        edges: usize,
+        bitdepth_max: c_int,
+    ) -> ());
+
+    impl filter::Fn {
+        fn call<BD: BitDepth>(
+            &self,
+            dst: *mut BD::Pixel,
+            dst_stride: ptrdiff_t,
+            tmp: &[u16],
+            pri_strength: c_int,
+            sec_strength: c_int,
+            dir: c_int,
+            damping: c_int,
+            h: usize,
+            edges: CdefEdgeFlags,
+            bd: BD,
+        ) {
+            let dst = dst.cast();
+            let tmp = tmp.as_ptr();
+            let h = h as c_int;
+            let edges = edges.bits() as usize;
+            let bd = bd.into_c();
+            // SAFETY: asm should be safe.
+            unsafe {
+                self.get()(
+                    dst,
+                    dst_stride,
+                    tmp,
+                    pri_strength,
+                    sec_strength,
+                    dir,
+                    damping,
+                    h,
+                    edges,
+                    bd,
+                )
+            }
+        }
+
+        const fn neon<BD: BitDepth, const W: usize>() -> Self {
+            match W {
+                4 => bd_fn!(filter::decl_fn, BD, cdef_filter4, neon),
+                8 => bd_fn!(filter::decl_fn, BD, cdef_filter8, neon),
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    pub unsafe extern "C" fn cdef_filter_neon_erased<
+        BD: BitDepth,
+        const W: usize,
+        const H: usize,
+        const TMP_STRIDE: usize,
+        const TMP_LEN: usize,
+    >(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        left: *const [LeftPixelRow2px<DynPixel>; 8],
+        top: *const DynPixel,
+        bottom: *const DynPixel,
+        pri_strength: c_int,
+        sec_strength: c_int,
+        dir: c_int,
+        damping: c_int,
         edges: CdefEdgeFlags,
-        bd: BD,
+        bitdepth_max: c_int,
+        _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _top: *const FFISafe<CdefTop>,
+        _bottom: *const FFISafe<CdefBottom>,
     ) {
+        use crate::src::align::Align16;
+
         let dst = dst.cast();
-        let tmp = tmp.as_ptr();
-        let h = h as c_int;
-        let edges = edges.bits() as usize;
-        let bd = bd.into_c();
-        // SAFETY: asm should be safe.
-        unsafe {
-            self.get()(
-                dst,
-                dst_stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                h,
-                edges,
-                bd,
-            )
-        }
+        let left = left.cast();
+        let top = top.cast();
+        let bottom = bottom.cast();
+        let bd = BD::from_c(bitdepth_max);
+
+        let mut tmp_buf = Align16([0; TMP_LEN]);
+        let tmp = &mut tmp_buf.0[2 * TMP_STRIDE + 8..];
+        padding::Fn::neon::<BD, W>().call::<BD>(tmp, dst, stride, left, top, bottom, H, edges);
+        filter::Fn::neon::<BD, W>().call(
+            dst,
+            stride,
+            tmp,
+            pri_strength,
+            sec_strength,
+            dir,
+            damping,
+            H,
+            edges,
+            bd,
+        );
     }
-
-    const fn neon<BD: BitDepth, const W: usize>() -> Self {
-        match W {
-            4 => bd_fn!(filter::decl_fn, BD, cdef_filter4, neon),
-            8 => bd_fn!(filter::decl_fn, BD, cdef_filter8, neon),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn cdef_filter_neon_erased<
-    BD: BitDepth,
-    const W: usize,
-    const H: usize,
-    const TMP_STRIDE: usize,
-    const TMP_LEN: usize,
->(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const [LeftPixelRow2px<DynPixel>; 8],
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _top: *const FFISafe<CdefTop>,
-    _bottom: *const FFISafe<CdefBottom>,
-) {
-    use crate::src::align::Align16;
-
-    let dst = dst.cast();
-    let left = left.cast();
-    let top = top.cast();
-    let bottom = bottom.cast();
-    let bd = BD::from_c(bitdepth_max);
-
-    let mut tmp_buf = Align16([0; TMP_LEN]);
-    let tmp = &mut tmp_buf.0[2 * TMP_STRIDE + 8..];
-    padding::Fn::neon::<BD, W>().call::<BD>(tmp, dst, stride, left, top, bottom, H, edges);
-    filter::Fn::neon::<BD, W>().call(
-        dst,
-        stride,
-        tmp,
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        H,
-        edges,
-        bd,
-    );
 }
 
 impl Rav1dCdefDSPContext {
@@ -728,6 +728,8 @@ impl Rav1dCdefDSPContext {
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
+        use self::neon::cdef_filter_neon_erased;
+
         if !flags.contains(CpuFlags::NEON) {
             return self;
         }
