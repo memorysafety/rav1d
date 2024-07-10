@@ -4,6 +4,7 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
+#![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::all)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
