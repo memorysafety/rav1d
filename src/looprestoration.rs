@@ -1156,6 +1156,10 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_v(
@@ -1172,6 +1176,14 @@ mod neon {
             let sum = sum.as_mut_ptr();
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, w, h, edges) }
+        }
+
+        const fn neon3() -> Self {
+            sgr_box_v::decl_fn!(fn dav1d_sgr_box3_v_neon)
+        }
+
+        const fn neon5() -> Self {
+            sgr_box_v::decl_fn!(fn dav1d_sgr_box5_v_neon)
         }
     }
 
@@ -1200,6 +1212,14 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(a, b, w, h, strength, bd) }
+        }
+
+        const fn neon1() -> Self {
+            sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon)
+        }
+
+        const fn neon2() -> Self {
+            sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon)
         }
     }
 
@@ -1230,6 +1250,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(tmp, src_ptr, stride, a, b, w, h) }
         }
+
+        const fn neon1<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter1, neon)
+        }
+
+        const fn neon2<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter2, neon)
+        }
     }
 
     /// Filter with a 3x3 box (radius=1).
@@ -1250,7 +1278,7 @@ mod neon {
         let sumsq = &mut sumsq_mem.0[8..];
         let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
         let sum = &mut sum_mem.0[16..];
-        bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+        sgr_box3_h::Fn::neon::<BD>().call::<BD>(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             Some(left),
@@ -1261,7 +1289,7 @@ mod neon {
             edges,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+            sgr_box3_h::Fn::neon::<BD>().call::<BD>(
                 sumsq,
                 sum,
                 None,
@@ -1274,7 +1302,7 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             let h = h as usize;
-            bd_fn!(sgr_box3_h::decl_fn, BD, sgr_box3_h, neon).call::<BD>(
+            sgr_box3_h::Fn::neon::<BD>().call::<BD>(
                 &mut sumsq[(h + 2) * STRIDE..],
                 &mut sum[(h + 2) * STRIDE..],
                 None,
@@ -1286,7 +1314,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v::decl_fn!(fn dav1d_sgr_box3_v_neon).call(
+        sgr_box_v::Fn::neon3().call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1295,9 +1323,8 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab1_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter1, neon)
-            .call::<BD>(tmp, src, a, b, w, h);
+        sgr_calc_ab::Fn::neon1().call(a, b, w, h, strength, bd);
+        sgr_finish_filter::Fn::neon1::<BD>().call::<BD>(tmp, src, a, b, w, h);
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box5_h(
@@ -1332,6 +1359,10 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, stride, w, h, edges) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon)
+        }
     }
 
     /// Filter with a 5x5 box (radius=2).
@@ -1352,7 +1383,7 @@ mod neon {
         let sumsq = &mut sumsq_mem.0[8..];
         let mut sum_mem = Align16([0; STRIDE * 68 + 16]);
         let sum = &mut sum_mem.0[16..];
-        bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+        sgr_box5_h::Fn::neon::<BD>().call::<BD>(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             Some(left),
@@ -1363,7 +1394,7 @@ mod neon {
             edges,
         );
         if edges.contains(LrEdgeFlags::TOP) {
-            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+            sgr_box5_h::Fn::neon::<BD>().call::<BD>(
                 sumsq,
                 sum,
                 None,
@@ -1376,7 +1407,7 @@ mod neon {
         }
         if edges.contains(LrEdgeFlags::BOTTOM) {
             let h = h as usize;
-            bd_fn!(sgr_box5_h::decl_fn, BD, sgr_box5_h, neon).call::<BD>(
+            sgr_box5_h::Fn::neon::<BD>().call::<BD>(
                 &mut sumsq[(h + 2) * STRIDE..],
                 &mut sum[(h + 2) * STRIDE..],
                 None,
@@ -1388,7 +1419,7 @@ mod neon {
                 edges,
             );
         }
-        sgr_box_v::decl_fn!(fn dav1d_sgr_box5_v_neon).call(
+        sgr_box_v::Fn::neon5().call(
             &mut sumsq[2 * STRIDE..],
             &mut sum[2 * STRIDE..],
             w,
@@ -1397,9 +1428,8 @@ mod neon {
         );
         let a = &mut sumsq[2 * STRIDE..];
         let b = &mut sum[2 * STRIDE..];
-        sgr_calc_ab::decl_fn!(fn dav1d_sgr_calc_ab2_neon).call(a, b, w, h, strength, bd);
-        bd_fn!(sgr_finish_filter::decl_fn, BD, sgr_finish_filter2, neon)
-            .call::<BD>(tmp, src, a, b, w, h);
+        sgr_calc_ab::Fn::neon2().call(a, b, w, h, strength, bd);
+        sgr_finish_filter::Fn::neon2::<BD>().call::<BD>(tmp, src, a, b, w, h);
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_weighted1(
@@ -1433,6 +1463,10 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst_ptr, dst_stride, src_ptr, src_stride, t1, w, h, wt, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
         }
     }
 
@@ -1473,6 +1507,10 @@ mod neon {
                 )
             }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+        }
     }
 
     pub fn sgr_filter_5x5_neon<BD: BitDepth>(
@@ -1490,8 +1528,7 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter2_neon(&mut tmp, dst, left, lpf, w, h, sgr.s0, edges, bd);
-        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp, w, h, sgr.w0, bd);
+        sgr_weighted1::Fn::neon::<BD>().call(dst, dst, &mut tmp, w, h, sgr.w0, bd);
     }
 
     pub fn sgr_filter_3x3_neon<BD: BitDepth>(
@@ -1509,8 +1546,7 @@ mod neon {
         let mut tmp = Align16([0; 64 * 384]);
         let sgr = params.sgr();
         rav1d_sgr_filter1_neon(&mut tmp, dst, left, lpf, w, h, sgr.s1, edges, bd);
-        bd_fn!(sgr_weighted1::decl_fn, BD, sgr_weighted1, neon)
-            .call(dst, dst, &mut tmp, w, h, sgr.w1, bd);
+        sgr_weighted1::Fn::neon::<BD>().call(dst, dst, &mut tmp, w, h, sgr.w1, bd);
     }
 
     pub fn sgr_filter_mix_neon<BD: BitDepth>(
@@ -1531,8 +1567,7 @@ mod neon {
         rav1d_sgr_filter2_neon(&mut tmp1, dst, left, lpf, w, h, sgr.s0, edges, bd);
         rav1d_sgr_filter1_neon(&mut tmp2, dst, left, lpf, w, h, sgr.s1, edges, bd);
         let wt = [sgr.w0, sgr.w1];
-        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
-            .call(dst, dst, &mut tmp1, &mut tmp2, w, h, &wt, bd);
+        sgr_weighted2::Fn::neon::<BD>().call(dst, dst, &mut tmp1, &mut tmp2, w, h, &wt, bd);
     }
 }
 
@@ -1582,6 +1617,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, left, src, w, edges, bd) }
         }
+
+        const fn neon3<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon)
+        }
+
+        const fn neon5<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box35_row_h(
@@ -1617,6 +1660,10 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq3, sum3, sumsq5, sum5, left, src, w, edges, bd) }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon)
+        }
     }
 
     wrap_fn_ptr!(unsafe extern "C" fn sgr_box_vert(
@@ -1647,6 +1694,14 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(sumsq, sum, sumsq_out, sum_out, w, s, bd) }
         }
+
+        const fn neon3() -> Self {
+            sgr_box_vert::decl_fn!(fn dav1d_sgr_box3_vert_neon)
+        }
+
+        const fn neon5() -> Self {
+            sgr_box_vert::decl_fn!(fn dav1d_sgr_box5_vert_neon)
+        }
     }
 
     fn sgr_box3_vert_neon<BD: BitDepth>(
@@ -1658,8 +1713,7 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        sgr_box_vert::decl_fn!(fn dav1d_sgr_box3_vert_neon)
-            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
+        sgr_box_vert::Fn::neon3().call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<3, 1>(sumsq, sum);
     }
 
@@ -1672,8 +1726,7 @@ mod neon {
         s: c_int,
         bd: BD,
     ) {
-        sgr_box_vert::decl_fn!(fn dav1d_sgr_box5_vert_neon)
-            .call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
+        sgr_box_vert::Fn::neon5().call(sumsq, sum, sumsq_out, sum_out, w, s, bd);
         rotate::<5, 2>(sumsq, sum);
     }
 
@@ -1702,6 +1755,15 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst, a_ptrs, b_ptrs, w, w1, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_weighted1::decl_fn,
+                BD,
+                sgr_finish_weighted1,
+                neon
+            )
         }
     }
 
@@ -1734,6 +1796,15 @@ mod neon {
             let bd = bd.into_c();
             // SAFETY: asm should be safe.
             unsafe { self.get()(dst_ptr, dst_stride, a_ptrs, b_ptrs, w, h, w1, bd) }
+        }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_weighted2::decl_fn,
+                BD,
+                sgr_finish_weighted2,
+                neon
+            )
         }
     }
 
@@ -1769,6 +1840,24 @@ mod neon {
             // SAFETY: asm should be safe.
             unsafe { self.get()(tmp, src_ptr, src_stride, a_ptrs, b_ptrs, w, h, bd) }
         }
+
+        const fn neon1<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_filter_2rows::decl_fn,
+                BD,
+                sgr_finish_filter1_2rows,
+                neon
+            )
+        }
+
+        const fn neon2<BD: BitDepth>() -> Self {
+            bd_fn!(
+                sgr_finish_filter_2rows::decl_fn,
+                BD,
+                sgr_finish_filter2_2rows,
+                neon
+            )
+        }
     }
 
     fn sgr_box3_hv_neon<BD: BitDepth>(
@@ -1783,8 +1872,7 @@ mod neon {
         edges: LrEdgeFlags,
         bd: BD,
     ) {
-        bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon)
-            .call(sumsq[2], sum[2], left, src, w, edges, bd);
+        sgr_box_row_h::Fn::neon3::<BD>().call(sumsq[2], sum[2], left, src, w, edges, bd);
         sgr_box3_vert_neon(sumsq, sum, aa, bb, w, s, bd);
     }
 
@@ -1796,13 +1884,7 @@ mod neon {
         w1: c_int,
         bd: BD,
     ) {
-        bd_fn!(
-            sgr_finish_weighted1::decl_fn,
-            BD,
-            sgr_finish_weighted1,
-            neon
-        )
-        .call(*dst, a_ptrs, b_ptrs, w, w1, bd);
+        sgr_finish_weighted1::Fn::neon::<BD>().call(*dst, a_ptrs, b_ptrs, w, w1, bd);
         *dst += dst.pixel_stride::<BD>();
         rotate::<3, 1>(a_ptrs, b_ptrs);
     }
@@ -1816,13 +1898,7 @@ mod neon {
         w1: c_int,
         bd: BD,
     ) {
-        bd_fn!(
-            sgr_finish_weighted2::decl_fn,
-            BD,
-            sgr_finish_weighted2,
-            neon
-        )
-        .call(*dst, a_ptrs, b_ptrs, w, h, w1, bd);
+        sgr_finish_weighted2::Fn::neon::<BD>().call(*dst, a_ptrs, b_ptrs, w, h, w1, bd);
         *dst += 2 * dst.pixel_stride::<BD>();
         rotate::<2, 1>(a_ptrs, b_ptrs);
     }
@@ -1869,6 +1945,10 @@ mod neon {
                 )
             }
         }
+
+        const fn neon<BD: BitDepth>() -> Self {
+            bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
+        }
     }
 
     fn sgr_finish_mix_neon<BD: BitDepth>(
@@ -1886,24 +1966,13 @@ mod neon {
         let mut tmp5 = Align16([0; 2 * FILTER_OUT_STRIDE]);
         let mut tmp3 = Align16([0; 2 * FILTER_OUT_STRIDE]);
 
-        bd_fn!(
-            sgr_finish_filter_2rows::decl_fn,
-            BD,
-            sgr_finish_filter2_2rows,
-            neon
-        )
-        .call(&mut tmp5, *dst, a5_ptrs, b5_ptrs, w, h, bd);
-        bd_fn!(
-            sgr_finish_filter_2rows::decl_fn,
-            BD,
-            sgr_finish_filter1_2rows,
-            neon
-        )
-        .call(&mut tmp3, *dst, a3_ptrs, b3_ptrs, w, h, bd);
+        sgr_finish_filter_2rows::Fn::neon2::<BD>()
+            .call(&mut tmp5, *dst, a5_ptrs, b5_ptrs, w, h, bd);
+        sgr_finish_filter_2rows::Fn::neon1::<BD>()
+            .call(&mut tmp3, *dst, a3_ptrs, b3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
-        bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
-            .call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
+        sgr_weighted2::Fn::neon::<BD>().call(*dst, *dst, &tmp5, &tmp3, w, h, &wt, bd);
 
         *dst += h as isize * dst.pixel_stride::<BD>();
         rotate::<2, 1>(a5_ptrs, b5_ptrs);
@@ -1960,7 +2029,7 @@ mod neon {
             sumsq_ptrs = sumsq_rows;
             sum_ptrs = sum_rows;
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 None,
@@ -1971,7 +2040,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[1],
                 sum_rows[1],
                 None,
@@ -2027,7 +2096,7 @@ mod neon {
             sumsq_ptrs = [sumsq_rows[0]; 3];
             sum_ptrs = [sum_rows[0]; 3];
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box3_row_h, neon).call(
+            sgr_box_row_h::Fn::neon3::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 Some(left),
@@ -2243,7 +2312,7 @@ mod neon {
             sumsq_ptrs = array::from_fn(|i| sumsq_rows[if i > 0 { i - 1 } else { 0 }]);
             sum_ptrs = array::from_fn(|i| sum_rows[if i > 0 { i - 1 } else { 0 }]);
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 None,
@@ -2254,7 +2323,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[1],
                 sum_rows[1],
                 None,
@@ -2264,7 +2333,7 @@ mod neon {
                 bd,
             );
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[2],
                 sum_rows[2],
                 Some(left),
@@ -2281,7 +2350,7 @@ mod neon {
             if h <= 0 {
                 track = Track::Vert1;
             } else {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_rows[3],
                     sum_rows[3],
                     Some(left),
@@ -2317,7 +2386,7 @@ mod neon {
             sumsq_ptrs = [sumsq_rows[0]; 5];
             sum_ptrs = [sum_rows[0]; 5];
 
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_rows[0],
                 sum_rows[0],
                 Some(left),
@@ -2336,7 +2405,7 @@ mod neon {
                 sumsq_ptrs[4] = sumsq_rows[1];
                 sum_ptrs[4] = sum_rows[1];
 
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_rows[1],
                     sum_rows[1],
                     Some(left),
@@ -2368,7 +2437,7 @@ mod neon {
                     sum_ptrs[3] = sum_rows[2];
                     sum_ptrs[4] = sum_rows[3];
 
-                    bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                    sgr_box_row_h::Fn::neon5::<BD>().call(
                         sumsq_rows[2],
                         sum_rows[2],
                         Some(left),
@@ -2384,7 +2453,7 @@ mod neon {
                     if h <= 0 {
                         track = Track::Odd;
                     } else {
-                        bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                        sgr_box_row_h::Fn::neon5::<BD>().call(
                             sumsq_rows[3],
                             sum_rows[3],
                             Some(left),
@@ -2433,7 +2502,7 @@ mod neon {
         // `h > 0` can be true only if `track == Track::Main`.
         // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
-            bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+            sgr_box_row_h::Fn::neon5::<BD>().call(
                 sumsq_ptrs[3],
                 sum_ptrs[3],
                 Some(left),
@@ -2449,7 +2518,7 @@ mod neon {
             if h <= 0 {
                 track = Track::Odd;
             } else {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[4],
                     sum_ptrs[4],
                     Some(left),
@@ -2489,7 +2558,7 @@ mod neon {
 
         match track {
             Track::Main => {
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[3],
                     sum_ptrs[3],
                     None,
@@ -2500,7 +2569,7 @@ mod neon {
                 );
                 // `lpf` and thus `lpf_bottom` may be negatively out of bounds.
                 lpf_bottom = lpf_bottom.wrapping_offset(stride);
-                bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
+                sgr_box_row_h::Fn::neon5::<BD>().call(
                     sumsq_ptrs[4],
                     sum_ptrs[4],
                     None,
@@ -2679,7 +2748,7 @@ mod neon {
         let sgr = params.sgr();
 
         if lr_have_top {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[0],
                 sum3_rows[0],
                 sumsq5_rows[0],
@@ -2692,7 +2761,7 @@ mod neon {
             );
             // `lpf` may be negatively out of bounds.
             lpf = lpf.wrapping_offset(stride);
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[1],
                 sum3_rows[1],
                 sumsq5_rows[1],
@@ -2704,7 +2773,7 @@ mod neon {
                 bd,
             );
 
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[2],
                 sum3_rows[2],
                 sumsq5_rows[2],
@@ -2734,7 +2803,7 @@ mod neon {
             if h <= 0 {
                 track = Track::Vert1;
             } else {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_rows[3],
@@ -2781,7 +2850,7 @@ mod neon {
                 }
             }
         } else {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_rows[0],
                 sum3_rows[0],
                 sumsq5_rows[0],
@@ -2816,7 +2885,7 @@ mod neon {
                 sumsq3_ptrs[2] = sumsq3_rows[1];
                 sum3_ptrs[2] = sum3_rows[1];
 
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_rows[1],
                     sum3_rows[1],
                     sumsq5_rows[1],
@@ -2864,7 +2933,7 @@ mod neon {
                     sumsq3_ptrs[2] = sumsq3_rows[2];
                     sum3_ptrs[2] = sum3_rows[2];
 
-                    bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                    sgr_box35_row_h::Fn::neon::<BD>().call(
                         sumsq3_rows[2],
                         sum3_rows[2],
                         sumsq5_rows[2],
@@ -2893,7 +2962,7 @@ mod neon {
                     if h <= 0 {
                         track = Track::Odd;
                     } else {
-                        bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                        sgr_box35_row_h::Fn::neon::<BD>().call(
                             sumsq3_ptrs[2],
                             sum3_ptrs[2],
                             sumsq5_rows[3],
@@ -2955,7 +3024,7 @@ mod neon {
         // `h > 0` can be true only if `track == Track::Main`.
         // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
-            bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+            sgr_box35_row_h::Fn::neon::<BD>().call(
                 sumsq3_ptrs[2],
                 sum3_ptrs[2],
                 sumsq5_ptrs[3],
@@ -2984,7 +3053,7 @@ mod neon {
             if h <= 0 {
                 track = Track::Odd;
             } else {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[4],
@@ -3038,7 +3107,7 @@ mod neon {
 
         match track {
             Track::Main => {
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[3],
@@ -3063,7 +3132,7 @@ mod neon {
                 );
                 rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
 
-                bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
+                sgr_box35_row_h::Fn::neon::<BD>().call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
                     sumsq5_ptrs[4],
