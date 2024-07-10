@@ -128,3 +128,24 @@ jobs:
           name: meson-test-logs-x86_64-apple-darwin
           path: |
               ${{ github.workspace }}/build/meson-logs/testlog-*.txt
+  test-on-windows-2022:
+    runs-on: windows-2022
+    steps:
+      - name: install prerequisites
+        run: |
+          choco install nasm
+        shell: pwsh
+      - name: add nasm to path
+        run: |
+          $nasmPath = "$($env:SystemDrive)\Program Files\NASM"
+          echo $nasmPath
+          dir $nasmPath
+          echo "$nasmPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: check nasm installation
+        run: nasm -v
+      - name: git checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: cargo build
+        run: cargo build --release
