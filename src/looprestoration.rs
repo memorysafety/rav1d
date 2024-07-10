@@ -1749,7 +1749,7 @@ mod neon {
     impl sgr_finish_filter_2rows::Fn {
         fn call<BD: BitDepth, const N: usize>(
             &self,
-            tmp: *mut i16,
+            tmp: &mut Align16<[i16; 2 * FILTER_OUT_STRIDE]>,
             src: Rav1dPictureDataComponentOffset,
             A_ptrs: &mut [*mut i32; N],
             B_ptrs: &mut [*mut i16; N],
@@ -1758,6 +1758,7 @@ mod neon {
             bd: BD,
         ) {
             const { assert!(N == 2 || N == 4) };
+            let tmp = tmp.0.as_mut_ptr();
             let src_ptr = src.as_ptr::<BD>().cast();
             let src_stride = src.stride();
             let A_ptrs = A_ptrs.as_mut_ptr();
@@ -1889,14 +1890,14 @@ mod neon {
             sgr_finish_filter2_2rows,
             neon
         )
-        .call(tmp5.0.as_mut_ptr(), *dst, A5_ptrs, B5_ptrs, w, h, bd);
+        .call(&mut tmp5, *dst, A5_ptrs, B5_ptrs, w, h, bd);
         bd_fn!(
             sgr_finish_filter_2rows::decl_fn,
             BD,
             sgr_finish_filter1_2rows,
             neon
         )
-        .call(tmp3.0.as_mut_ptr(), *dst, A3_ptrs, B3_ptrs, w, h, bd);
+        .call(&mut tmp3, *dst, A3_ptrs, B3_ptrs, w, h, bd);
 
         let wt = [w0 as i16, w1 as i16];
         bd_fn!(sgr_weighted2::decl_fn, BD, sgr_weighted2, neon)
