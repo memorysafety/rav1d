@@ -225,27 +225,27 @@ fn read_mv_component_diff(
     let mut hp = true;
 
     if cl == 0 {
-        up = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0.0) as u16;
+        up = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class_0.0) as u16;
         if mv_prec >= 0 {
             // !force_integer_mv
-            fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.class0_fp[up as usize], 3);
+            fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.class_0_fp[up as usize], 3);
             if mv_prec > 0 {
                 // allow_high_precision_mv
-                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0_hp.0);
+                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class_0_hp.0);
             }
         }
     } else {
         // `cl` is in the range `0..=10`, so `up` is a `u10`.
         up = 1 << cl;
         for n in 0..cl as usize {
-            up |= (rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN[n]) as u16) << n;
+            up |= (rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class_n[n]) as u16) << n;
         }
         if mv_prec >= 0 {
             // !force_integer_mv
-            fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.classN_fp.0, 3);
+            fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.class_n_fp.0, 3);
             if mv_prec > 0 {
                 // allow_high_precision_mv
-                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN_hp.0);
+                hp = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class_n_hp.0);
             }
         }
     }

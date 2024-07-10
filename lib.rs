@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![cfg_attr(
