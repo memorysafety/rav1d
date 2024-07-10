@@ -1954,11 +1954,11 @@ mod neon {
 
         #[derive(PartialEq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
+            Main,
+            Vert1,
+            Vert2,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let sgr = params.sgr();
 
@@ -2006,7 +2006,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
@@ -2026,7 +2026,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 }
             }
         } else {
@@ -2058,7 +2058,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq_ptrs[2] = sumsq_rows[1];
                 sum_ptrs[2] = sum_rows[1];
@@ -2081,7 +2081,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq_ptrs[2] = sumsq_rows[2];
                     sum_ptrs[2] = sum_rows[2];
@@ -2089,8 +2089,8 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
             sgr_box3_hv_neon(
                 &mut sumsq_ptrs,
@@ -2111,12 +2111,12 @@ mod neon {
             h -= 1;
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
+            Track::Main => {
                 sgr_box3_hv_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
@@ -2149,7 +2149,7 @@ mod neon {
 
                 sgr_finish1_neon(&mut dst, &mut a_ptrs, &mut b_ptrs, w, sgr.w1 as c_int, bd);
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
                 sum_ptrs[2] = sum_ptrs[1];
                 sgr_box3_vert_neon(
@@ -2163,7 +2163,7 @@ mod neon {
                 );
                 rotate::<3, 1>(&mut a_ptrs, &mut b_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 sumsq_ptrs[2] = sumsq_ptrs[1];
                 sum_ptrs[2] = sum_ptrs[1];
                 sgr_box3_vert_neon(
@@ -2180,7 +2180,7 @@ mod neon {
             }
         }
 
-        if track != Track::main {
+        if track != Track::Main {
             sumsq_ptrs[2] = sumsq_ptrs[1];
             sum_ptrs[2] = sum_ptrs[1];
             sgr_box3_vert_neon(
@@ -2242,12 +2242,12 @@ mod neon {
 
         #[derive(PartialEq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
-            odd,
+            Main,
+            Vert1,
+            Vert2,
+            Odd,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let sgr = params.sgr();
 
@@ -2293,7 +2293,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                     sumsq_rows[3],
@@ -2319,7 +2319,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                     // one of them to point at the previously unused rows[4].
@@ -2345,7 +2345,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq_ptrs[4] = sumsq_rows[1];
                 sum_ptrs[4] = sum_rows[1];
@@ -2375,7 +2375,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq_ptrs[3] = sumsq_rows[2];
                     sumsq_ptrs[4] = sumsq_rows[3];
@@ -2396,7 +2396,7 @@ mod neon {
 
                     h -= 1;
                     if h <= 0 {
-                        track = Track::odd;
+                        track = Track::Odd;
                     } else {
                         bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                             sumsq_rows[3],
@@ -2432,7 +2432,7 @@ mod neon {
 
                         h -= 1;
                         if h <= 0 {
-                            track = Track::vert2;
+                            track = Track::Vert2;
                         } else {
                             // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                             // one of them to point at the previously unused rows[4].
@@ -2444,8 +2444,8 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
             bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                 sumsq_ptrs[3],
@@ -2461,7 +2461,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::odd;
+                track = Track::Odd;
             } else {
                 bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                     sumsq_ptrs[4],
@@ -2497,12 +2497,12 @@ mod neon {
             }
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
+            Track::Main => {
                 bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                     sumsq_ptrs[3],
                     sum_ptrs[3],
@@ -2524,7 +2524,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 // Copy the last row as padding once
                 sumsq_ptrs[4] = sumsq_ptrs[3];
                 sum_ptrs[4] = sum_ptrs[3];
@@ -2539,14 +2539,14 @@ mod neon {
                 );
                 rotate::<2, 1>(&mut a_ptrs, &mut b_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 // Duplicate the last row twice more
                 sumsq_ptrs[3] = sumsq_ptrs[2];
                 sumsq_ptrs[4] = sumsq_ptrs[2];
                 sum_ptrs[3] = sum_ptrs[2];
                 sum_ptrs[4] = sum_ptrs[2];
             }
-            Track::odd => {
+            Track::Odd => {
                 // Copy the last row as padding once
                 sumsq_ptrs[4] = sumsq_ptrs[3];
                 sum_ptrs[4] = sum_ptrs[3];
@@ -2573,7 +2573,7 @@ mod neon {
         }
 
         match track {
-            Track::main | Track::vert2 => {
+            Track::Main | Track::Vert2 => {
                 sgr_box5_vert_neon(
                     &mut sumsq_ptrs,
                     &mut sum_ptrs,
@@ -2593,7 +2593,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::odd | Track::vert1 => {
+            Track::Odd | Track::Vert1 => {
                 // Duplicate the last row twice more
                 sumsq_ptrs[3] = sumsq_ptrs[2];
                 sumsq_ptrs[4] = sumsq_ptrs[2];
@@ -2685,12 +2685,12 @@ mod neon {
 
         #[derive(PartialEq)]
         enum Track {
-            main,
-            vert1,
-            vert2,
-            odd,
+            Main,
+            Vert1,
+            Vert2,
+            Odd,
         }
-        let mut track = Track::main;
+        let mut track = Track::Main;
 
         let lr_have_top = edges.contains(LrEdgeFlags::TOP);
 
@@ -2764,7 +2764,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                     sumsq3_ptrs[2],
@@ -2804,7 +2804,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                     // one of them to point at the previously unused rows[4].
@@ -2840,7 +2840,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::vert1;
+                track = Track::Vert1;
             } else {
                 sumsq5_ptrs[4] = sumsq5_rows[1];
                 sum5_ptrs[4] = sum5_rows[1];
@@ -2886,7 +2886,7 @@ mod neon {
 
                 h -= 1;
                 if h <= 0 {
-                    track = Track::vert2;
+                    track = Track::Vert2;
                 } else {
                     sumsq5_ptrs[3] = sumsq5_rows[2];
                     sumsq5_ptrs[4] = sumsq5_rows[3];
@@ -2923,7 +2923,7 @@ mod neon {
 
                     h -= 1;
                     if h <= 0 {
-                        track = Track::odd;
+                        track = Track::Odd;
                     } else {
                         bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                             sumsq3_ptrs[2],
@@ -2972,7 +2972,7 @@ mod neon {
 
                         h -= 1;
                         if h <= 0 {
-                            track = Track::vert2;
+                            track = Track::Vert2;
                         } else {
                             // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
                             // one of them to point at the previously unused rows[4].
@@ -2984,8 +2984,8 @@ mod neon {
             }
         }
 
-        // h > 0 can be true only if track == Track::main
-        // The original C code uses goto statements and skips over this loop when h <= 0
+        // `h > 0` can be true only if `track == Track::Main`.
+        // The original C code uses `goto`s and skips over this loop when `h <= 0`.
         while h > 0 {
             bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                 sumsq3_ptrs[2],
@@ -3014,7 +3014,7 @@ mod neon {
 
             h -= 1;
             if h <= 0 {
-                track = Track::odd;
+                track = Track::Odd;
             } else {
                 bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                     sumsq3_ptrs[2],
@@ -3064,12 +3064,12 @@ mod neon {
             }
         }
 
-        if track == Track::main && !edges.contains(LrEdgeFlags::BOTTOM) {
-            track = Track::vert2;
+        if track == Track::Main && !edges.contains(LrEdgeFlags::BOTTOM) {
+            track = Track::Vert2;
         }
 
         match track {
-            Track::main => {
+            Track::Main => {
                 bd_fn!(sgr_box35_row_h::decl_fn, BD, sgr_box35_row_h, neon).call(
                     sumsq3_ptrs[2],
                     sum3_ptrs[2],
@@ -3107,7 +3107,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 => {
+            Track::Vert1 => {
                 // Copy the last row as padding once
                 sumsq5_ptrs[4] = sumsq5_ptrs[3];
                 sum5_ptrs[4] = sum5_ptrs[3];
@@ -3136,7 +3136,7 @@ mod neon {
                 );
                 rotate::<4, 1>(&mut a3_ptrs, &mut b3_ptrs);
             }
-            Track::vert2 => {
+            Track::Vert2 => {
                 // Duplicate the last row twice more
                 sumsq5_ptrs[3] = sumsq5_ptrs[2];
                 sumsq5_ptrs[4] = sumsq5_ptrs[2];
@@ -3159,7 +3159,7 @@ mod neon {
                 sumsq3_ptrs[2] = sumsq3_ptrs[1];
                 sum3_ptrs[2] = sum3_ptrs[1];
             }
-            Track::odd => {
+            Track::Odd => {
                 // Copy the last row as padding once
                 sumsq5_ptrs[4] = sumsq5_ptrs[3];
                 sum5_ptrs[4] = sum5_ptrs[3];
@@ -3201,7 +3201,7 @@ mod neon {
         }
 
         match track {
-            Track::main | Track::vert2 => {
+            Track::Main | Track::Vert2 => {
                 sgr_box5_vert_neon(
                     &mut sumsq5_ptrs,
                     &mut sum5_ptrs,
@@ -3233,7 +3233,7 @@ mod neon {
                     bd,
                 );
             }
-            Track::vert1 | Track::odd => {
+            Track::Vert1 | Track::Odd => {
                 // Duplicate the last row twice more
                 sumsq5_ptrs[3] = sumsq5_ptrs[2];
                 sumsq5_ptrs[4] = sumsq5_ptrs[2];
