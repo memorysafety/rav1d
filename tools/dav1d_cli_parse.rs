@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 use crate::compat::stdio::stderr;
 use libc::fprintf;
 use libc::getopt_long;
