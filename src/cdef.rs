@@ -54,8 +54,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _top: *const FFISafe<CdefTop<'_>>,
-    _bottom: *const FFISafe<CdefBottom<'_>>,
+    _top: *const FFISafe<CdefTop>,
+    _bottom: *const FFISafe<CdefBottom>,
 ) -> ());
 
 pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
@@ -71,8 +71,8 @@ impl cdef::Fn {
         &self,
         dst: Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
-        top: CdefTop<'_>,
-        bottom: CdefBottom<'_>,
+        top: CdefTop,
+        bottom: CdefBottom,
         pri_strength: c_int,
         sec_strength: u8,
         dir: c_int,
@@ -168,8 +168,8 @@ fn padding<BD: BitDepth>(
     tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
     src: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: CdefTop<'_>,
-    bottom: CdefBottom<'_>,
+    top: CdefTop,
+    bottom: CdefBottom,
     w: usize,
     h: usize,
     edges: CdefEdgeFlags,
@@ -239,8 +239,8 @@ fn padding<BD: BitDepth>(
 fn cdef_filter_block_rust<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: CdefTop<'_>,
-    bottom: CdefBottom<'_>,
+    top: CdefTop,
+    bottom: CdefBottom,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
@@ -384,8 +384,8 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    top: *const FFISafe<CdefTop<'_>>,
-    bottom: *const FFISafe<CdefBottom<'_>>,
+    top: *const FFISafe<CdefTop>,
+    bottom: *const FFISafe<CdefBottom>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `cdef_dir::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };
@@ -551,8 +551,8 @@ unsafe extern "C" fn cdef_filter_neon_erased<
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _top: *const FFISafe<CdefTop<'_>>,
-    _bottom: *const FFISafe<CdefBottom<'_>>,
+    _top: *const FFISafe<CdefTop>,
+    _bottom: *const FFISafe<CdefBottom>,
 ) {
     use crate::src::align::Align16;
 
