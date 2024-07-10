@@ -1542,6 +1542,7 @@ mod neon {
     use super::*;
 
     use crate::src::align::Align16;
+    use std::array;
     use std::ptr;
 
     fn rotate<const LEN: usize, const MID: usize>(
@@ -1931,22 +1932,15 @@ mod neon {
 
         let mut sumsq_ptrs;
         let mut sum_ptrs;
-        let mut sumsq_rows = [ptr::null_mut(); 3];
-        let mut sum_rows = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq_rows[i] = sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq_rows =
+            array::from_fn(|i| sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum_rows = array::from_fn(|i| sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut a_buf = Align16([0; BUF_STRIDE * 3 + 16]);
         let mut b_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-        let mut a_ptrs = [ptr::null_mut(); 3];
-        let mut b_ptrs = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            a_ptrs[i] = a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            b_ptrs[i] = b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a_ptrs = array::from_fn(|i| a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b_ptrs = array::from_fn(|i| b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
@@ -2217,24 +2211,18 @@ mod neon {
         let mut sumsq_buf = Align16([0; BUF_STRIDE * 5 + 16]);
         let mut sum_buf = Align16([0; BUF_STRIDE * 5 + 16]);
 
-        let mut sumsq_ptrs = [ptr::null_mut(); 5];
-        let mut sum_ptrs = [ptr::null_mut(); 5];
-        let mut sumsq_rows = [ptr::null_mut(); 5];
-        let mut sum_rows = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq_rows[i] = sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum_rows[i] = sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut sumsq_ptrs;
+        let mut sum_ptrs;
+        let sumsq_rows: [_; 5] =
+            array::from_fn(|i| sumsq_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum_rows: [_; 5] =
+            array::from_fn(|i| sum_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut a_buf = Align16([0; BUF_STRIDE * 2 + 16]);
         let mut b_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut a_ptrs = [ptr::null_mut(); 2];
-        let mut b_ptrs = [ptr::null_mut(); 2];
-        for i in 0..2 {
-            a_ptrs[i] = a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            b_ptrs[i] = b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a_ptrs = array::from_fn(|i| a_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b_ptrs = array::from_fn(|i| b_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
@@ -2252,10 +2240,8 @@ mod neon {
         let sgr = params.sgr();
 
         if edges.contains(LrEdgeFlags::TOP) {
-            for i in 0..5 {
-                sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
-                sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
-            }
+            sumsq_ptrs = array::from_fn(|i| sumsq_rows[if i > 0 { i - 1 } else { 0 }]);
+            sum_ptrs = array::from_fn(|i| sum_rows[if i > 0 { i - 1 } else { 0 }]);
 
             bd_fn!(sgr_box_row_h::decl_fn, BD, sgr_box5_row_h, neon).call(
                 sumsq_rows[0],
@@ -2642,42 +2628,30 @@ mod neon {
         let mut sumsq5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
         let mut sum5_buf = Align16([0; BUF_STRIDE * 5 + 16]);
 
-        let mut sumsq5_rows = [ptr::null_mut(); 5];
-        let mut sum5_rows = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq5_rows[i] = sumsq5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum5_rows[i] = sum5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq5_rows: [_; 5] =
+            array::from_fn(|i| sumsq5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum5_rows: [_; 5] =
+            array::from_fn(|i| sum5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut sumsq3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
         let mut sum3_buf = Align16([0; BUF_STRIDE * 3 + 16]);
 
-        let mut sumsq3_rows = [ptr::null_mut(); 3];
-        let mut sum3_rows = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq3_rows[i] = sumsq3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            sum3_rows[i] = sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let sumsq3_rows: [_; 3] =
+            array::from_fn(|i| sumsq3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let sum3_rows: [_; 3] =
+            array::from_fn(|i| sum3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut a5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
         let mut b5_buf = Align16([0; BUF_STRIDE * 2 + 16]);
 
-        let mut a5_ptrs = [ptr::null_mut(); 2];
-        let mut b5_ptrs = [ptr::null_mut(); 2];
-        for i in 0..2 {
-            a5_ptrs[i] = a5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            b5_ptrs[i] = b5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a5_ptrs = array::from_fn(|i| a5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b5_ptrs = array::from_fn(|i| b5_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut a3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
         let mut b3_buf = Align16([0; BUF_STRIDE * 4 + 16]);
 
-        let mut a3_ptrs = [ptr::null_mut(); 4];
-        let mut b3_ptrs = [ptr::null_mut(); 4];
-        for i in 0..4 {
-            a3_ptrs[i] = a3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-            b3_ptrs[i] = b3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr();
-        }
+        let mut a3_ptrs = array::from_fn(|i| a3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
+        let mut b3_ptrs = array::from_fn(|i| b3_buf.0[i * BUF_STRIDE..][..BUF_STRIDE].as_mut_ptr());
 
         let mut src = dst;
         // `lpf` may be negatively out of bounds.
@@ -2694,19 +2668,13 @@ mod neon {
 
         let lr_have_top = edges.contains(LrEdgeFlags::TOP);
 
-        let mut sumsq3_ptrs = [ptr::null_mut(); 3];
-        let mut sum3_ptrs = [ptr::null_mut(); 3];
-        for i in 0..3 {
-            sumsq3_ptrs[i] = sumsq3_rows[if lr_have_top { i } else { 0 }];
-            sum3_ptrs[i] = sum3_rows[if lr_have_top { i } else { 0 }];
-        }
+        let mut sumsq3_ptrs = array::from_fn(|i| sumsq3_rows[if lr_have_top { i } else { 0 }]);
+        let mut sum3_ptrs = array::from_fn(|i| sum3_rows[if lr_have_top { i } else { 0 }]);
 
-        let mut sumsq5_ptrs = [ptr::null_mut(); 5];
-        let mut sum5_ptrs = [ptr::null_mut(); 5];
-        for i in 0..5 {
-            sumsq5_ptrs[i] = sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
-            sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
-        }
+        let mut sumsq5_ptrs =
+            array::from_fn(|i| sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }]);
+        let mut sum5_ptrs =
+            array::from_fn(|i| sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }]);
 
         let sgr = params.sgr();
 
