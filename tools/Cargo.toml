@@ -11,7 +11,7 @@ path = "dav1d.rs"
 name = "dav1d"
 
 [[bin]]
-path = "../tests/seek_stress.rs"
+path = "seek_stress.rs"
 name = "seek_stress"
 
 [dependencies]

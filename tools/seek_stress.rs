@@ -1,19 +1,16 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::all)]
 
-#[path = "../tools/compat"]
 mod compat {
     pub mod errno;
     pub mod stdio;
 } // mod compat
-#[path = "../tools/input"]
 mod input {
     mod annexb;
     pub mod input;
     mod ivf;
     mod section5;
 } // mod input
-#[path = "../tools/output"]
 mod output {
     mod md5;
     mod null;
@@ -21,7 +18,6 @@ mod output {
     mod y4m2;
     mod yuv;
 } // mod output
-#[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
 
 use crate::compat::stdio::stderr;
