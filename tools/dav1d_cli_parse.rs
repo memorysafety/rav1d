@@ -3,7 +3,6 @@ use libc::fprintf;
 use libc::getopt_long;
 use libc::memset;
 use libc::option;
-use libc::sprintf;
 use libc::strcat;
 use libc::strcmp;
 use libc::strcpy;
@@ -38,6 +37,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ffi::CStr;
 use std::process::exit;
 use std::ptr::NonNull;
 
@@ -46,7 +46,6 @@ use cfg_if::cfg_if;
 extern "C" {
     static mut optarg: *mut c_char;
     static mut optind: c_int;
-    fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
 }
 
 // TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
@@ -108,13 +107,13 @@ cfg_if! {
         pub const X86_CPU_MASK_SSE2: CpuMask = 1;
         pub type CpuMask = c_uint;
 
-        const ALLOWED_CPU_MASKS: &[u8; 50] = b", 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'\0";
+        const ALLOWED_CPU_MASKS: &str = ", 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'";
     } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-        const ALLOWED_CPU_MASKS: &[u8; 11] = b" or 'neon'\0";
+        const ALLOWED_CPU_MASKS: &str = " or 'neon'";
     } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-        const ALLOWED_CPU_MASKS: &[u8; 10] = b" or 'rvv'\0";
+        const ALLOWED_CPU_MASKS: &str = " or 'rvv'";
     } else {
-        const ALLOWED_CPU_MASKS: &[u8; 42] = b"not yet implemented for this architecture\0";
+        const ALLOWED_CPU_MASKS: &str = "not yet implemented for this architecture";
     }
 }
 pub type Arg = c_uint;
@@ -325,24 +324,41 @@ static mut long_opts: [option; 25] = [
     },
 ];
 
-unsafe extern "C" fn usage(app: *const c_char, reason: *const c_char, args: ...) {
-    if !reason.is_null() {
-        let mut args_0: ::core::ffi::VaListImpl;
-        args_0 = args.clone();
-        vfprintf(stderr, reason, args_0.as_va_list());
-        fprintf(stderr, b"\n\n\0" as *const u8 as *const c_char);
+fn usage(app: &str, reason: Option<&str>) {
+    if let Some(reason) = reason {
+        eprintln!("{reason}\n");
     }
-    fprintf(
-        stderr,
-        b"Usage: %s [options]\n\n\0" as *const u8 as *const c_char,
-        app,
-    );
-    fprintf(
-        stderr,
-        b"Supported options:\n --input/-i $file:     input file\n --output/-o $file:    output file (%%n, %%w or %%h will be filled in for per-frame files)\n --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)\n --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)\n                       use 'frame' as prefix to write per-frame files; if filename contains %%n, will default to writing per-frame files\n --quiet/-q:           disable status messages\n --frametimes $file:   dump frame times to file\n --limit/-l $num:      stop decoding after $num frames\n --skip/-s $num:       skip decoding of the first $num frames\n --realtime [$fract]:  limit framerate, optional argument to override input framerate\n --realtimecache $num: set the size of the cache in realtime mode (default: 0)\n --version/-v:         print version and exit\n --threads $num:       number of threads (default: 0)\n --framedelay $num:    maximum frame delay, capped at $threads (default: 0);\n                       set to 1 for low-latency decoding\n --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)\n --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)\n --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)\n --sizelimit $num:     stop decoding if the frame size exceeds the specified limit\n --strict $num:        whether to abort decoding on standard compliance violations\n                       that don't affect bitstream decoding (default: 1)\n --verify $md5:        verify decoded md5. implies --muxer md5, no output\n --cpumask $mask:      restrict permitted CPU instruction sets (0, %s; default: -1)\n --negstride:          use negative picture strides\n                       this is mostly meant as a developer option\n --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)\n --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)\n --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)\n\0"
-            as *const u8 as *const c_char, ALLOWED_CPU_MASKS.as_ptr()
-    );
-    exit(1 as c_int);
+    eprintln!("Usage: {app} [options]\n");
+    eprintln!("Supported options:
+ --input/-i $file:     input file
+ --output/-o $file:    output file (%n, %w or %h will be filled in for per-frame files)
+ --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)
+ --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)
+                       use 'frame' as prefix to write per-frame files; if filename contains %n, will default to writing per-frame files
+ --quiet/-q:           disable status messages
+ --frametimes $file:   dump frame times to file
+ --limit/-l $num:      stop decoding after $num frames
+ --skip/-s $num:       skip decoding of the first $num frames
+ --realtime [$fract]:  limit framerate, optional argument to override input framerate
+ --realtimecache $num: set the size of the cache in realtime mode (default: 0)
+ --version/-v:         print version and exit
+ --threads $num:       number of threads (default: 0)
+ --framedelay $num:    maximum frame delay, capped at $threads (default: 0);
+                       set to 1 for low-latency decoding
+ --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)
+ --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)
+ --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)
+ --sizelimit $num:     stop decoding if the frame size exceeds the specified limit
+ --strict $num:        whether to abort decoding on standard compliance violations
+                       that don't affect bitstream decoding (default: 1)
+ --verify $md5:        verify decoded md5. implies --muxer md5, no output
+ --cpumask $mask:      restrict permitted CPU instruction sets (0, {}; default: -1)
+ --negstride:          use negative picture strides
+                       this is mostly meant as a developer option
+ --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)
+ --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)
+ --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)", ALLOWED_CPU_MASKS);
+    exit(1);
 }
 
 unsafe fn error(
@@ -351,7 +367,6 @@ unsafe fn error(
     option: c_int,
     shouldbe: *const c_char,
 ) {
-    let mut optname: [c_char; 256] = [0; 256];
     let mut n;
     n = 0 as c_int;
     while !(long_opts[n as usize].name).is_null() {
@@ -363,26 +378,27 @@ unsafe fn error(
     if (long_opts[n as usize].name).is_null() {
         unreachable!();
     }
-    if long_opts[n as usize].val < 256 {
-        sprintf(
-            optname.as_mut_ptr(),
-            b"-%c/--%s\0" as *const u8 as *const c_char,
-            long_opts[n as usize].val,
-            long_opts[n as usize].name,
-        );
+    let long_name = CStr::from_ptr(long_opts[n as usize].name).to_str().unwrap();
+    let optname = if long_opts[n as usize].val < 256 {
+        format!("-{}/--{}", long_opts[n as usize].val, long_name)
     } else {
-        sprintf(
-            optname.as_mut_ptr(),
-            b"--%s\0" as *const u8 as *const c_char,
-            long_opts[n as usize].name,
-        );
-    }
+        format!("--{}", long_name)
+    };
+    assert!(!app.is_null());
+    let app = CStr::from_ptr(app)
+        .to_str()
+        .expect("App is not valid UTF-8");
+    assert!(!optarg_0.is_null());
+    let arg = CStr::from_ptr(optarg_0)
+        .to_str()
+        .expect("Arg is not valid UTF-8");
+    assert!(!shouldbe.is_null());
+    let shouldbe = CStr::from_ptr(shouldbe).to_str().unwrap();
     usage(
         app,
-        b"Invalid argument \"%s\" for option %s; should be %s\0" as *const u8 as *const c_char,
-        optarg_0,
-        optname.as_mut_ptr(),
-        shouldbe,
+        Some(&format!(
+            "Invalid argument \"{arg}\" for option {optname}; should be {shouldbe}"
+        )),
     );
 }
 
@@ -667,6 +683,10 @@ pub unsafe fn parse(
     cli_settings: *mut CLISettings,
     lib_settings: *mut Dav1dSettings,
 ) {
+    let app = *argv.offset(0);
+    assert!(!app.is_null(), "argv[0] should never be null");
+    let app = CStr::from_ptr(app).to_str().unwrap();
+
     let mut o;
     memset(
         cli_settings as *mut c_void,
@@ -832,23 +852,31 @@ pub unsafe fn parse(
                 ) as Dav1dDecodeFrameType;
             }
             _ => {
-                usage(*argv.offset(0), 0 as *const c_char);
+                usage(app, None);
             }
         }
     }
     if optind < argc {
+        let optind_arg = *argv.offset(optind as isize);
+        assert!(
+            !optind_arg.is_null(),
+            "argv[optind] should never be null when optind < argc"
+        );
         usage(
-            *argv.offset(0),
-            b"Extra/unused arguments found, e.g. '%s'\n\0" as *const u8 as *const c_char,
-            *argv.offset(optind as isize),
+            app,
+            Some(&format!(
+                "Extra/unused arguments found, e.g. '{}'",
+                CStr::from_ptr(optind_arg)
+                    .to_str()
+                    .unwrap_or_else(|_| panic!("argv[{}] is not valid UTF-8", optind)),
+            )),
         );
     }
     if !((*cli_settings).verify).is_null() {
         if !((*cli_settings).outputfile).is_null() {
             usage(
-                *argv.offset(0),
-                b"Verification (--verify) requires output file (-o/--output) to not set\0"
-                    as *const u8 as *const c_char,
+                app,
+                Some(&"Verification (--verify) requires output file (-o/--output) to not set"),
             );
         }
         if !((*cli_settings).muxer).is_null()
@@ -862,9 +890,8 @@ pub unsafe fn parse(
             ) != 0
         {
             usage(
-                *argv.offset(0),
-                b"Verification (--verify) requires a checksum muxer (md5 or xxh3)\0" as *const u8
-                    as *const c_char,
+                app,
+                Some(&"Verification (--verify) requires a checksum muxer (md5 or xxh3)"),
             );
         }
         (*cli_settings).outputfile = b"-\0" as *const u8 as *const c_char;
@@ -886,10 +913,7 @@ pub unsafe fn parse(
         (*lib_settings).apply_grain = 0 as c_int;
     }
     if ((*cli_settings).inputfile).is_null() {
-        usage(
-            *argv.offset(0),
-            b"Input file (-i/--input) is required\0" as *const u8 as *const c_char,
-        );
+        usage(app, Some(&"Input file (-i/--input) is required"));
     }
     if (((*cli_settings).muxer).is_null()
         || strcmp(
@@ -898,9 +922,6 @@ pub unsafe fn parse(
         ) != 0)
         && ((*cli_settings).outputfile).is_null()
     {
-        usage(
-            *argv.offset(0),
-            b"Output file (-o/--output) is required\0" as *const u8 as *const c_char,
-        );
+        usage(app, Some(&"Output file (-o/--output) is required"));
     }
 }

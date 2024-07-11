@@ -20,10 +20,14 @@ use std::ffi::c_void;
 use std::mem;
 
 extern "C" {
-    pub type DemuxerPriv;
     static ivf_demuxer: Demuxer;
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
+}
+
+#[repr(C)]
+pub struct DemuxerPriv {
+    _unused: (),
 }
 
 #[repr(C)]
