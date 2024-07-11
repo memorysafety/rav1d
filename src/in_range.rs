@@ -71,11 +71,13 @@ macro_rules! impl_const_new {
         }
 
         impl<const MIN: u128, const MAX: u128> InRange<$T, MIN, MAX> {
+            #[allow(unused)]
             pub const fn const_new(value: $T) -> Self {
                 assert!(value as u128 >= MIN && value as u128 <= MAX);
                 Self(value)
             }
 
+            #[allow(unused)]
             pub const fn new_array<const N: usize>(a: [$T; N]) -> [Self; N] {
                 let mut b = [DefaultValue::DEFAULT; N];
                 const_for!(i in 0..N => {

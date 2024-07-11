@@ -55,7 +55,7 @@ pub enum TxfmSize {
 
 impl TxfmSize {
     pub const NUM_SQUARE: usize = Self::S64x64 as usize + 1;
-    pub const NUM_RECT: usize = Self::COUNT;
+    pub const _NUM_RECT: usize = Self::COUNT;
 }
 
 impl DefaultValue for TxfmSize {
