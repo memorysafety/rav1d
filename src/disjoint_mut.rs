@@ -1002,6 +1002,7 @@ impl<V: Copy, C: AlignedByteChunk> DisjointMut<AlignedVec<V, C>> {
     }
 }
 
+#[allow(clippy::undocumented_unsafe_blocks)]
 #[test]
 fn test_overlapping_immut() {
     let mut v: DisjointMut<Vec<u8>> = Default::default();
@@ -1013,6 +1014,7 @@ fn test_overlapping_immut() {
     assert_eq!(guard1[2], guard2[0]);
 }
 
+#[allow(clippy::undocumented_unsafe_blocks)]
 #[test]
 #[cfg_attr(debug_assertions, should_panic)]
 fn test_overlapping_mut() {
@@ -1026,6 +1028,7 @@ fn test_overlapping_mut() {
     assert_eq!(guard1[2], 42);
 }
 
+#[allow(clippy::undocumented_unsafe_blocks)]
 #[cfg(debug_assertions)]
 #[test]
 fn test_pointer_write_debug() {
@@ -1052,6 +1055,7 @@ fn test_pointer_write_debug() {
 
 // Run with miri using the following command:
 // RUSTFLAGS="-C debug-assertions=off" cargo miri test
+#[allow(clippy::undocumented_unsafe_blocks)]
 #[cfg(not(debug_assertions))]
 #[test]
 fn test_pointer_write_release() {

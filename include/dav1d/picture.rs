@@ -449,24 +449,36 @@ impl From<Dav1dPicture> for Rav1dPicture {
         } = value;
         Self {
             // We don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
-            // Safety: `raw` came from [`RawArc::from_arc`].
-            seq_hdr: seq_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
+            seq_hdr: seq_hdr_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
-            // Safety: `raw` came from [`RawArc::from_arc`].
-            frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
-            // Safety: `raw` came from [`RawArc::from_arc`].
-            data: data_ref.map(|raw| unsafe { raw.into_arc() }),
+            frame_hdr: frame_hdr_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
+            data: data_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             stride,
             p: p.into(),
             m: m.into(),
-            // Safety: `raw` came from [`RawArc::from_arc`].
-            content_light: content_light_ref.map(|raw| unsafe { raw.into_arc() }),
-            // Safety: `raw` came from [`RawArc::from_arc`].
-            mastering_display: mastering_display_ref.map(|raw| unsafe { raw.into_arc() }),
+            content_light: content_light_ref.map(|raw| {
+                // SAFETY: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
+            mastering_display: mastering_display_ref.map(|raw| {
+                // Safety: `raw` came from [`RawArc::from_arc`].
+                unsafe { raw.into_arc() }
+            }),
             // We don't `.update_rav1d` [`Rav1dITUTT35`] because never read it.
-            // Safety: `raw` came from [`RawArc::from_arc`].
             itut_t35: itut_t35_ref
-                .map(|raw| unsafe { raw.into_arc() })
+                .map(|raw| {
+                    // SAFETY: `raw` came from [`RawArc::from_arc`].
+                    unsafe { raw.into_arc() }
+                })
                 .unwrap_or_default(),
         }
     }
@@ -740,7 +752,7 @@ impl Rav1dPicAllocator {
             ..Default::default()
         };
         let mut pic_c = pic.to::<Dav1dPicture>();
-        // Safety: `pic_c` is a valid `Dav1dPicture` with `data`, `stride`, `allocator_data` unset.
+        // SAFETY: `pic_c` is a valid `Dav1dPicture` with `data`, `stride`, `allocator_data` unset.
         let result = unsafe { (self.alloc_picture_callback)(&mut pic_c, self.cookie) };
         result.try_to::<Rav1dResult>().unwrap()?;
         // `data`, `stride`, and `allocator_data` are the only fields set by the allocator.
@@ -777,7 +789,7 @@ impl Rav1dPicAllocator {
             allocator_data,
             ..Default::default()
         };
-        // Safety: `pic_c` contains the same `data` and `allocator_data`
+        // SAFETY: `pic_c` contains the same `data` and `allocator_data`
         // that `Self::alloc_picture_data` set, which now get deallocated here.
         unsafe {
             (self.release_picture_callback)(&mut pic_c, self.cookie);

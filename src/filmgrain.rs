@@ -1,6 +1,4 @@
 #![deny(unsafe_op_in_unsafe_fn)]
-#![warn(clippy::all)]
-#![allow(clippy::too_many_arguments)]
 
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
@@ -288,7 +286,7 @@ unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `generate_grain_y::Fn::call`.
+    // SAFETY: Casting back to the original type from the `generate_grain_y::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
     let data = &data.clone().into();
     let bd = BD::from_c(bitdepth_max);
@@ -448,7 +446,7 @@ fn generate_grain_uv_rust<BD: BitDepth>(
                         let (luma_y, luma_x) = is_sub.luma((y, x));
                         const _: () = IsSub::check_buf_index_all(&None::<GrainLut<()>>);
                         // The optimizer is not smart enough to deduce this on its own.
-                        // Safety: The above static check checks all maximum index possibilities.
+                        // SAFETY: The above static check checks all maximum index possibilities.
                         unsafe {
                             assume(luma_y < GRAIN_HEIGHT + 1 - 1);
                             assume(luma_x < GRAIN_WIDTH - 1);
@@ -492,9 +490,9 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
+    // SAFETY: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
-    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
+    // SAFETY: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf_y = unsafe { &*buf_y.cast() };
     let data = &data.clone().into();
     let is_uv = uv != 0;
@@ -546,9 +544,9 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     // SAFETY: Was passed as `FFISafe::new(_)` in `fgy_32x32xn::Fn::call`.
     let [dst_row, src_row] = [dst_row, src_row].map(|it| *unsafe { FFISafe::get(it) });
     let data = &data.clone().into();
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // SAFETY: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // SAFETY: Casting back to the original type from the `fn` ptr call.
     let grain_lut = unsafe { &*grain_lut.cast() };
     let bh = bh as usize;
     let row_num = row_num as usize;
@@ -883,13 +881,14 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
     luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
-    let [dst_row, src_row, luma_row] =
-        [dst_row, src_row, luma_row].map(|row| *unsafe { FFISafe::get(row) });
+    let [dst_row, src_row, luma_row] = [dst_row, src_row, luma_row].map(|row| {
+        // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
+        *unsafe { FFISafe::get(row) }
+    });
     let data = &data.clone().into();
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // SAFETY: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // SAFETY: Casting back to the original type from the `fn` ptr call.
     let grain_lut = unsafe { &*grain_lut.cast() };
     let bh = bh as usize;
     let row_num = row_num as usize;
