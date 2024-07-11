@@ -1,0 +1,20 @@
+[package]
+name = "rav1d_cli"
+authors = ["C2Rust"]
+version = "0.2.0"
+publish = false
+edition = "2021"
+default-run = "dav1d"
+
+[[bin]]
+path = "dav1d.rs"
+name = "dav1d"
+
+[[bin]]
+path = "../tests/seek_stress.rs"
+name = "seek_stress"
+
+[dependencies]
+cfg-if = "1.0.0"
+libc = "0.2"
+rav1d = { path = "../", version = "0.2.0" }
