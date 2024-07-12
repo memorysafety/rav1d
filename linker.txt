@@ -1,0 +1,10 @@
+{
+  local:
+    dav1d_gaussian_sequence;
+    dav1d_sgr_x_by_x;
+    dav1d_mc_subpel_filters;
+    dav1d_resize_filter;
+    dav1d_dr_intra_derivative;
+    dav1d_filter_intra_taps;
+    dav1d_mc_warp_filter;
+};

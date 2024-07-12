@@ -300,6 +300,7 @@ mod asm {
         }
 
         println!("cargo:rustc-link-lib=static={rav1dasm}");
+        println!("cargo:rustc-cdylib-link-arg=-Wl,--version-script=linker.txt");
     }
 }
 
