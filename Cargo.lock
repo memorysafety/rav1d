@@ -156,6 +156,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rav1d_cli"
+version = "0.2.0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "rav1d",
+]
+
+[[package]]
 name = "raw-cpuid"
 version = "11.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

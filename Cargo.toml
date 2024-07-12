@@ -1,5 +1,6 @@
 [workspace]
-members = []
+members = [".", "tools"]
+default-members = [".", "tools"]
 
 [package]
 name = "rav1d"
@@ -7,21 +8,10 @@ authors = ["C2Rust"]
 version = "0.2.0"
 publish = false
 edition = "2021"
-autobins = false
-autotests = false
-default-run = "dav1d"
 
 [lib]
 path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
-
-[[bin]]
-path = "tools/dav1d.rs"
-name = "dav1d"
-
-[[bin]]
-path = "tests/seek_stress.rs"
-name = "seek_stress"
 
 [dependencies]
 assert_matches = "1.5.0"
