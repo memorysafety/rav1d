@@ -864,7 +864,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     ptr: Option<NonNull<u8>>,
     sz: usize,
     free_callback: Option<FnFree>,
-    user_data: *mut c_void,
+    user_data: Option<NonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
         let buf = validate_input!(buf.ok_or(EINVAL))?;
@@ -891,7 +891,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: Option<NonNull<Dav1dData>>,
     user_data: Option<NonNull<u8>>,
     free_callback: Option<FnFree>,
-    cookie: *mut c_void,
+    cookie: Option<NonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
         let buf = validate_input!(buf.ok_or(EINVAL))?;
