@@ -57,8 +57,8 @@ jobs:
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           cargo clean
-          rustup target add ${{ matrix.target }}
-          cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+          rustup target add --toolchain stable ${{ matrix.target }}
+          cargo +stable build --target ${{ matrix.target }} ${{ matrix.build.flags }}
       - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           .github/workflows/test.sh \
@@ -110,7 +110,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo build for x86_64-apple-darwin
         run: |
-          cargo build --release
+          cargo +stable build --release
       - name: meson test for x86_64-apple-darwin
         run: |
           .github/workflows/test.sh \

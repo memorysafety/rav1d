@@ -941,6 +941,7 @@ pub const CF_LEN: usize = 32 * 32;
 pub struct Cf([i32; CF_LEN]);
 
 impl Cf {
+    #[allow(unused)]
     pub fn select<BD: BitDepth>(&self) -> &[BD::Coef; CF_LEN] {
         FromBytes::ref_from_prefix(AsBytes::as_bytes(&self.0)).unwrap()
     }

@@ -60,8 +60,8 @@ jobs:
             argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          rustup target add ${{ matrix.target }}
-          cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+          rustup target add --toolchain stable ${{ matrix.target }}
+          cargo +stable build --target ${{ matrix.target }} ${{ matrix.build.flags }}
         env:
           RUSTFLAGS: "-C overflow-checks=on"
       - name: download, check, and unpack argon test vectors
