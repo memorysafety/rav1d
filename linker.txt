@@ -7,4 +7,6 @@
     dav1d_dr_intra_derivative;
     dav1d_filter_intra_taps;
     dav1d_mc_warp_filter;
+    dav1d_sm_weights;
+    dav1d_obmc_masks;
 };

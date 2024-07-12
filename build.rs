@@ -300,8 +300,19 @@ mod asm {
         }
 
         println!("cargo:rustc-link-lib=static={rav1dasm}");
+
+        // `cdylib` support. Use `lld` as the linker and provide a custom linker script
+        // that marks certain symbols as private. This is necessary because
+        // `#[no_mangle]` symbols in Rust are always exported globally, which breaks
+        // linking with the assembly routines.
         println!("cargo:rustc-cdylib-link-arg=-fuse-ld=lld");
         println!("cargo:rustc-cdylib-link-arg=-Wl,--version-script=linker.txt");
+
+        // HACK: When building for aarch64 the compiler can't seem to find `lld` by
+        // default, so we manually tell the gcc toolchain to look in `/usr/bin` which is
+        // the default installation location on Ubuntu. This is not portable and will
+        // likely cause problems on other systems.
+        println!("cargo:rustc-cdylib-link-arg=-B/usr/bin");
     }
 }
 
