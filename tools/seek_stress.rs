@@ -302,7 +302,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         all_layers: 0,
         frame_size_limit: 0,
         allocator: Dav1dPicAllocator {
-            cookie: 0 as *mut c_void,
+            cookie: None,
             alloc_picture_callback: None,
             release_picture_callback: None,
         },

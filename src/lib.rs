@@ -192,7 +192,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point <= 31, EINVAL))?;
     validate_input!((
-        !s.allocator.is_default() || s.allocator.cookie.is_null(),
+        !s.allocator.is_default() || s.allocator.cookie.is_none(),
         EINVAL
     ))?;
 
@@ -297,7 +297,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
         // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
         // Note also that we must do this after we created the `Arc` so that `c` has a stable address.
-        c.allocator.cookie = ptr::from_ref(&c.picture_pool).cast::<c_void>().cast_mut();
+        c.allocator.cookie = Some(NonNull::from(&c.picture_pool).cast::<c_void>());
     }
     let c = c;
 
