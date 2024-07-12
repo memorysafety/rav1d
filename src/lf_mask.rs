@@ -6,7 +6,8 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
 use crate::src::align::ArrayDefault;
-use crate::src::ctx::CaseSet;
+use crate::src::ctx::case_set;
+use crate::src::ctx::case_set_with_default;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
 use crate::src::levels::BlockSize;
@@ -136,15 +137,15 @@ fn decomp_tx(
         let lh = cmp::min(2, t_dim.lh);
 
         debug_assert!(t_dim.w == 1 << t_dim.lw && t_dim.w <= 16);
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
+        case_set!(up_to = 16, len = t_dim.w as usize, offset = x0, {
             for y in 0..t_dim.h as usize {
-                case.set(&mut txa[0][0][y0 + y], MaybeUninit::new(lw));
-                case.set(&mut txa[1][0][y0 + y], MaybeUninit::new(lh));
+                set!(&mut txa[0][0][y0 + y], MaybeUninit::new(lw));
+                set!(&mut txa[1][0][y0 + y], MaybeUninit::new(lh));
                 txa[0][1][y0 + y][x0].write(t_dim.w);
             }
         });
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
-            case.set(&mut txa[1][1][y0], MaybeUninit::new(t_dim.h));
+        case_set!(up_to = 16, len = t_dim.w as usize, offset = x0, {
+            set!(&mut txa[1][1][y0], MaybeUninit::new(t_dim.h));
         });
     };
 }
@@ -328,13 +329,15 @@ fn mask_edges_intra(
         }
     }
 
-    CaseSet::<32, true>::many(
-        [(a, thl4c), (l, twl4c)],
-        [w4 as usize, h4 as usize],
-        [0, 0],
-        |case, (dir, tl4c)| {
-            case.set(dir, tl4c);
-        },
+    case_set_with_default!(
+        up_to = 32,
+        ctx = [(a, thl4c), (l, twl4c)],
+        len = [w4 as usize, h4 as usize],
+        offset = [0, 0],
+        {
+            let (ref mut dir, tl4c) = ctx;
+            set!(dir, tl4c);
+        }
     );
 }
 
@@ -411,13 +414,15 @@ fn mask_edges_chroma(
         }
     }
 
-    CaseSet::<32, true>::many(
-        [(a, thl4c), (l, twl4c)],
-        [cw4 as usize, ch4 as usize],
-        [0, 0],
-        |case, (dir, tl4c)| {
-            case.set(dir, tl4c);
-        },
+    case_set_with_default!(
+        up_to = 32,
+        ctx = [(a, thl4c), (l, twl4c)],
+        len = [cw4 as usize, ch4 as usize],
+        offset = [0, 0],
+        {
+            let (ref mut dir, tl4c) = ctx;
+            set!(dir, tl4c);
+        }
     );
 }
 

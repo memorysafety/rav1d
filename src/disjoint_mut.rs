@@ -303,6 +303,47 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         DisjointMutGuard::new(self, slice, bounds)
     }
 
+    /// Mutably borrow a slice or element without bounds checking.
+    ///
+    /// This mutable borrow may be unchecked and callers must ensure that no
+    /// other borrows from this collection overlap with the mutably borrowed
+    /// region for the lifetime of that mutable borrow.
+    ///
+    /// # Safety
+    ///
+    /// This method requires correct usage alongside other calls to [`index`]
+    /// and [`index_mut`]. Caller must ensure that no elements of the resulting
+    /// borrowed slice or element are concurrently borrowed (immutably or
+    /// mutably) at all during the lifetime of the returned mutable borrow. This
+    /// is checked in debug builds, but checks are disabled in release builds
+    /// for performance. We also require that the referenced data must be plain
+    /// data and not contain any pointers or references to avoid other potential
+    /// memory safety issues due to racy access.
+    ///
+    /// The index provided must be within the bounds of the collection.
+    ///
+    /// [`index`]: DisjointMut::index
+    /// [`index_mut`]: DisjointMut::index_mut
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub unsafe fn index_mut_unchecked<'a, I>(
+        &'a self,
+        index: I,
+    ) -> DisjointMutGuard<'a, T, I::Output>
+    where
+        I: Into<Bounds> + Clone,
+        I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
+    {
+        let bounds = index.clone().into();
+        // SAFETY: The safety preconditions of `index` and `index_mut` imply
+        // that the indexed region we are mutably borrowing is not concurrently
+        // borrowed and will not be borrowed during the lifetime of the returned
+        // reference. The index is assumed to be within the bounds of the slice
+        // by the safety preconditions of this method.
+        let slice = unsafe { &mut *index.get_mut_unchecked(self.as_mut_slice()) };
+        DisjointMutGuard::new(self, slice, bounds)
+    }
+
     /// Immutably borrow a slice or element.
     ///
     /// This immutable borrow may be unchecked and callers must ensure that no
@@ -503,6 +544,22 @@ pub trait DisjointMutIndex<T: ?Sized> {
     /// `slice` must be a valid, dereferencable pointer that this function may
     /// dereference immutably.
     unsafe fn get_mut(self, slice: *mut T) -> *mut Self::Output;
+
+    /// Returns a mutable pointer to the output at this indexed location without
+    /// bounds checking. The `T` pointer must be valid to dereference to obtain
+    /// the slice length.
+    ///
+    /// To implement, `T` should be a slice type that `Self` is a valid index
+    /// into.
+    ///
+    /// This is a stable equivalent to
+    /// [`std::slice::SliceIndex::get_unchecked_mut`].
+    ///
+    /// # Safety
+    ///
+    /// `slice` must be a valid, dereferencable pointer that this function may
+    /// dereference immutably. The index must be within the bounds of the slice.
+    unsafe fn get_mut_unchecked(self, slice: *mut T) -> *mut Self::Output;
 }
 
 pub trait TranslateRange {
@@ -687,6 +744,15 @@ impl<T> DisjointMutIndex<[T]> for usize {
             out_of_bounds(index, len);
         }
     }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    unsafe fn get_mut_unchecked(self, slice: *mut [T]) -> *mut Self::Output {
+        let index = self;
+        // SAFETY: Method preconditions require an in-bounds index and that
+        // `slice` is a valid pointer into an allocation of sufficient length.
+        unsafe { (slice as *mut T).add(index) }
+    }
 }
 
 impl<T, I> DisjointMutIndex<[T]> for I
@@ -720,6 +786,17 @@ where
             }
             out_of_bounds(start, end, len);
         }
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    unsafe fn get_mut_unchecked(self, slice: *mut [T]) -> *mut Self::Output {
+        let len = slice.len();
+        let Range { start, end } = self.to_range(len);
+        // SAFETY: Method preconditions require an in-bounds index and that
+        // `slice` is a valid pointer into an allocation of sufficient length.
+        let data = unsafe { (slice as *mut T).add(start) };
+        ptr::slice_from_raw_parts_mut(data, end - start)
     }
 }
 

@@ -38,12 +38,12 @@ pub mod src {
     mod cdf;
     mod const_fn;
     pub mod cpu;
-    mod ctx;
+    pub mod ctx;
     mod cursor;
     mod data;
     mod decode;
     mod dequant_tables;
-    pub(crate) mod disjoint_mut;
+    pub mod disjoint_mut;
     pub(crate) mod enum_map;
     mod env;
     pub(crate) mod error;
