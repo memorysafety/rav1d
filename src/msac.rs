@@ -149,11 +149,32 @@ impl Default for Rav1dMsacDSPContext {
 
 pub type EcWin = usize;
 
+/// # Safety
+///
+/// [`Self`] must be the first field of [`MsacAsmContext`] for asm layout purposes,
+/// and that [`MsacAsmContext`] must be a field of [`MsacContext`].
+/// And [`Self::pos`] and [`Self::end`] must be either [`ptr::null`],
+/// or [`Self::pos`] must point into (or the end of) [`MsacContext::data`],
+/// and [`Self::end`] must point to the end of [`MsacContext::data`],
+/// where [`MsacContext::data`] is part of the [`MsacContext`]
+/// containing [`MsacAsmContext`] and thus also [`Self`].
 #[repr(C)]
 struct MsacAsmContextBuf {
     pos: *const u8,
     end: *const u8,
 }
+
+/// SAFETY: [`MsacAsmContextBuf`] is always contained in [`MsacAsmContext::buf`],
+/// which is always contained in [`MsacContext::asm`], whose [`MsacContext::data`] field
+/// is what is stored in [`MsacAsmContextBuf::pos`] and [`MsacAsmContextBuf::end`].
+/// Since [`MsacContext::data`] is [`Send`], [`MsacAsmContextBuf`] is also [`Send`].
+unsafe impl Send for MsacAsmContextBuf {}
+
+/// SAFETY: [`MsacAsmContextBuf`] is always contained in [`MsacAsmContext::buf`],
+/// which is always contained in [`MsacContext::asm`], whose [`MsacContext::data`] field
+/// is what is stored in [`MsacAsmContextBuf::pos`] and [`MsacAsmContextBuf::end`].
+/// Since [`MsacContext::data`] is [`Sync`], [`MsacAsmContextBuf`] is also [`Sync`].
+unsafe impl Sync for MsacAsmContextBuf {}
 
 impl Default for MsacAsmContextBuf {
     fn default() -> Self {
