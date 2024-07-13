@@ -1,6 +1,10 @@
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
     if #[cfg(any(target_os = "linux", target_os = "android"))] {
+        pub use libc::snprintf;
+        pub use libc::fseeko;
+        pub use libc::ftello;
+
         extern "C" {
             #[link_name = "stdout"]
             pub static mut __stdoutp: *mut libc::FILE;
@@ -17,6 +21,10 @@ cfg_if::cfg_if! {
             __stderrp
         }
     } else if #[cfg(target_os = "macos")] {
+        pub use libc::snprintf;
+        pub use libc::fseeko;
+        pub use libc::ftello;
+
         extern "C" {
             pub static mut __stdoutp: *mut libc::FILE;
 
@@ -39,11 +47,6 @@ cfg_if::cfg_if! {
             pub fn snprintf(
                 s: *mut libc::c_char,
                 n: libc::size_t,
-                format: *const libc::c_char,
-                ...
-            ) -> libc::c_int;
-            pub fn sprintf(
-                s: *mut libc::c_char,
                 format: *const libc::c_char,
                 ...
             ) -> libc::c_int;

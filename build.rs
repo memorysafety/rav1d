@@ -311,6 +311,8 @@ fn main() {
         asm::main();
     }
 
+    // NOTE: we rely on libraries that are only distributed for Windows so
+    // targeting Windows/MSVC is not supported when cross compiling.
     #[cfg(all(target_os = "windows", target_env = "msvc"))]
     {
         use cc::windows_registry;
@@ -329,7 +331,7 @@ fn main() {
                 .find(|(key, _val)| key == "LIB")
                 .expect("LIB path not found")
                 .1;
-            for path in lib_paths.to_str().map(|s| s.split(';')).unwrap() {
+            for path in lib_paths.to_str().unwrap().split(';') {
                 if path != "" {
                     println!("cargo:rustc-link-search={path}");
                 }

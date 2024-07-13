@@ -1,12 +1,9 @@
-#[cfg(target_os = "windows")]
 use crate::compat::stdio::snprintf;
 use crate::compat::stdio::stderr;
 use libc::fprintf;
 use libc::free;
 use libc::malloc;
 use libc::memcpy;
-#[cfg(not(target_os = "windows"))]
-use libc::snprintf;
 use libc::strchr;
 use libc::strcmp;
 use libc::strlen;

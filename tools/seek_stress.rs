@@ -1,12 +1,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::all)]
 
-mod compat {
-    pub mod errno;
-    #[cfg(target_os = "windows")]
-    pub mod getopt;
-    pub mod stdio;
-} // mod compat
+mod compat; // mod compat
 mod input {
     mod annexb;
     pub mod input;
@@ -67,25 +62,22 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "windows")] {
-        unsafe fn get_seed() -> c_uint {
-            windows_sys::Win32::System::SystemInformation::GetTickCount()
-        }
-    } else {
-        use std::ffi::c_ulonglong;
+#[cfg(target_os = "windows")]
+unsafe fn get_seed() -> c_uint {
+    windows_sys::Win32::System::SystemInformation::GetTickCount()
+}
 
-        unsafe fn get_seed() -> c_uint {
-            let mut ts: libc::timespec = libc::timespec {
-                tv_sec: 0,
-                tv_nsec: 0,
-            };
-            libc::clock_gettime(1, &mut ts);
-            return (1000000000 as c_ulonglong)
-                .wrapping_mul(ts.tv_sec as c_ulonglong)
-                .wrapping_add(ts.tv_nsec as c_ulonglong) as c_uint;
-        }
-    }
+#[cfg(not(target_os = "windows"))]
+unsafe fn get_seed() -> c_uint {
+    use std::ffi::c_ulonglong;
+    let mut ts: libc::timespec = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    libc::clock_gettime(1, &mut ts);
+    return (1000000000 as c_ulonglong)
+        .wrapping_mul(ts.tv_sec as c_ulonglong)
+        .wrapping_add(ts.tv_nsec as c_ulonglong) as c_uint;
 }
 
 static mut xs_state: [u32; 4] = [0; 4];

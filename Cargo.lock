@@ -183,7 +183,6 @@ dependencies = [
  "raw-cpuid",
  "strum",
  "to_method",
- "windows-sys",
  "zerocopy",
 ]
 
@@ -194,6 +193,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "rav1d",
+ "windows-sys",
 ]
 
 [[package]]
