@@ -150,9 +150,30 @@ impl Default for Rav1dMsacDSPContext {
 pub type EcWin = usize;
 
 #[repr(C)]
+struct MsacAsmContextBuf {
+    pos: *const u8,
+    end: *const u8,
+}
+
+impl Default for MsacAsmContextBuf {
+    fn default() -> Self {
+        Self {
+            pos: ptr::null(),
+            end: ptr::null(),
+        }
+    }
+}
+
+impl From<&[u8]> for MsacAsmContextBuf {
+    fn from(value: &[u8]) -> Self {
+        let Range { start, end } = value.as_ptr_range();
+        Self { pos: start, end }
+    }
+}
+
+#[repr(C)]
 pub struct MsacAsmContext {
-    buf_pos: *const u8,
-    buf_end: *const u8,
+    buf: MsacAsmContextBuf,
     pub dif: EcWin,
     pub rng: c_uint,
     pub cnt: c_int,
@@ -169,8 +190,7 @@ pub struct MsacAsmContext {
 impl Default for MsacAsmContext {
     fn default() -> Self {
         Self {
-            buf_pos: ptr::null(),
-            buf_end: ptr::null(),
+            buf: Default::default(),
             dif: Default::default(),
             rng: Default::default(),
             cnt: Default::default(),
@@ -217,14 +237,14 @@ impl MsacContext {
         // We safely subtract instead of unsafely use `ptr::offset_from`
         // as asm sets `buf_pos`, so we don't need to rely on its safety,
         // and because codegen is no less optimal this way.
-        self.buf_pos as usize - self.data().as_ptr() as usize
+        self.buf.pos as usize - self.data().as_ptr() as usize
     }
 
     fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
         let data = &**self.data.as_ref().unwrap();
         let buf = &data[self.buf_index()..];
         let buf = f(buf);
-        self.buf_pos = buf.as_ptr();
+        self.buf.pos = buf.as_ptr();
         // We don't actually need to set `self.buf_end` since it has not changed.
     }
 }
@@ -463,13 +483,8 @@ fn rav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> u8 
 
 impl MsacContext {
     pub fn new(data: CArc<[u8]>, disable_cdf_update_flag: bool, dsp: &Rav1dMsacDSPContext) -> Self {
-        let Range {
-            start: buf_pos,
-            end: buf_end,
-        } = data.as_ptr_range();
         let asm = MsacAsmContext {
-            buf_pos,
-            buf_end,
+            buf: data.as_ref().into(),
             dif: 0,
             rng: 0x8000,
             cnt: -15,
