@@ -1,13 +1,10 @@
 use crate::compat::errno::errno_location;
+use crate::compat::stdio::fseeko;
 use crate::compat::stdio::stderr;
 use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
 use libc::fread;
-#[cfg(target_os = "windows")]
-use libc::fseek;
-#[cfg(not(target_os = "windows"))]
-use libc::fseeko;
 use libc::strerror;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::headers::Dav1dObuType;
@@ -257,15 +254,9 @@ unsafe extern "C" fn annexb_open(
         if res < 0 {
             break;
         }
-        #[cfg(target_os = "windows")]
-        fseek((*c).f, len as libc::c_long, 1 as c_int);
-        #[cfg(not(target_os = "windows"))]
         fseeko((*c).f, len as libc::off_t, 1 as c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
-    #[cfg(target_os = "windows")]
-    fseek((*c).f, 0, 0 as c_int);
-    #[cfg(not(target_os = "windows"))]
     fseeko((*c).f, 0, 0 as c_int);
     return 0 as c_int;
 }

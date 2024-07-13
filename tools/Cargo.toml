@@ -24,3 +24,10 @@ default = ["asm", "bitdepth_8", "bitdepth_16"]
 asm = ["rav1d/asm"]
 bitdepth_8 = ["rav1d/bitdepth_8"]
 bitdepth_16 = ["rav1d/bitdepth_16"]
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Performance",
+    "Win32_System_SystemInformation",
+] }

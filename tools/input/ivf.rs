@@ -1,17 +1,11 @@
 use crate::compat::errno::errno_location;
-#[cfg(target_os = "windows")]
 use crate::compat::stdio::fseeko;
-#[cfg(target_os = "windows")]
 use crate::compat::stdio::ftello;
 use crate::compat::stdio::stderr;
 use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
 use libc::fread;
-#[cfg(not(target_os = "windows"))]
-use libc::fseeko;
-#[cfg(not(target_os = "windows"))]
-use libc::ftello;
 use libc::ptrdiff_t;
 use libc::strerror;
 use libc::ENOMEM;

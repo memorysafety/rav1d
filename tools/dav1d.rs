@@ -1,12 +1,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::all)]
 
-mod compat {
-    pub mod errno;
-    #[cfg(target_os = "windows")]
-    pub mod getopt;
-    pub mod stdio;
-} // mod compat
+mod compat;
 mod input {
     mod annexb;
     pub mod input;
@@ -22,6 +17,7 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
+use crate::compat::stdio::snprintf;
 use crate::compat::stdio::stderr;
 use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
@@ -95,36 +91,29 @@ use std::ptr::NonNull;
 use std::time::Duration;
 
 #[cfg(target_os = "windows")]
-use crate::compat::stdio::snprintf;
+unsafe fn get_time_nanos() -> u64 {
+    use windows_sys::Win32::System::Performance::QueryPerformanceCounter;
+    use windows_sys::Win32::System::Performance::QueryPerformanceFrequency;
+
+    let mut frequency = 0i64;
+    QueryPerformanceFrequency(&mut frequency);
+    let mut t = 0i64;
+    QueryPerformanceCounter(&mut t);
+    let seconds: u64 = (t / frequency).try_into().unwrap();
+    let fractions: u64 = (t % frequency).try_into().unwrap();
+    return 1000000000 * seconds + 1000000000 * fractions / frequency as u64;
+}
+
 #[cfg(not(target_os = "windows"))]
-use libc::snprintf;
-
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "windows")] {
-        use windows_sys::Win32::System::Performance::QueryPerformanceCounter;
-        use windows_sys::Win32::System::Performance::QueryPerformanceFrequency;
-
-        unsafe fn get_time_nanos() -> u64 {
-            let mut frequency = 0i64;
-            QueryPerformanceFrequency(&mut frequency);
-            let mut t = 0i64;
-            QueryPerformanceCounter(&mut t);
-            let seconds: u64 = (t / frequency).try_into().unwrap();
-            let fractions: u64 = (t % frequency).try_into().unwrap();
-            return 1000000000 * seconds + 1000000000 * fractions / frequency as u64;
-        }
-    } else {
-        unsafe fn get_time_nanos() -> u64 {
-            let mut ts: libc::timespec = libc::timespec {
-                tv_sec: 0,
-                tv_nsec: 0,
-            };
-            libc::clock_gettime(1, &mut ts);
-            return (1000000000 as c_ulonglong)
-                .wrapping_mul(ts.tv_sec as c_ulonglong)
-                .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
-        }
-    }
+unsafe fn get_time_nanos() -> u64 {
+    let mut ts: libc::timespec = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    libc::clock_gettime(1, &mut ts);
+    return (1000000000 as c_ulonglong)
+        .wrapping_mul(ts.tv_sec as c_ulonglong)
+        .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
 }
 
 unsafe fn sleep_nanos(d: u64) {
