@@ -2,14 +2,10 @@
 //! structure.
 
 #![deny(unsafe_op_in_unsafe_fn)]
-// TODO(SJC): Remove when we use the whole module.
-#![allow(unused)]
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
-use crate::src::assume::assume;
 use std::cell::UnsafeCell;
-use std::convert::Infallible;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -17,13 +13,10 @@ use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::mem;
 use std::mem::ManuallyDrop;
-use std::ops::Bound;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::ops::Index;
-use std::ops::IndexMut;
 use std::ops::Range;
-use std::ops::RangeBounds;
 use std::ops::RangeFrom;
 use std::ops::RangeFull;
 use std::ops::RangeInclusive;
@@ -31,7 +24,6 @@ use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
 use std::ptr::addr_of_mut;
-use std::slice::SliceIndex;
 use std::sync::Arc;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
@@ -566,7 +558,7 @@ pub struct Bounds {
 
 impl Display for Bounds {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let Range { start, mut end } = self.range;
+        let Range { start, end } = self.range;
         if start != 0 {
             write!(f, "{start}")?;
         }
@@ -613,7 +605,7 @@ pub trait SliceBounds: TranslateRange + Into<Bounds> + Clone + Debug {
 }
 
 impl SliceBounds for Range<usize> {
-    fn to_range(&self, len: usize) -> Range<usize> {
+    fn to_range(&self, _len: usize) -> Range<usize> {
         let Self { start, end } = *self;
         start..end
     }
@@ -627,20 +619,20 @@ impl SliceBounds for RangeFrom<usize> {
 }
 
 impl SliceBounds for RangeInclusive<usize> {
-    fn to_range(&self, len: usize) -> Range<usize> {
+    fn to_range(&self, _len: usize) -> Range<usize> {
         *self.start()..*self.end() + 1
     }
 }
 
 impl SliceBounds for RangeTo<usize> {
-    fn to_range(&self, len: usize) -> Range<usize> {
+    fn to_range(&self, _len: usize) -> Range<usize> {
         let Self { end } = *self;
         0..end
     }
 }
 
 impl SliceBounds for RangeToInclusive<usize> {
-    fn to_range(&self, len: usize) -> Range<usize> {
+    fn to_range(&self, _len: usize) -> Range<usize> {
         let Self { end } = *self;
         0..end + 1
     }
@@ -659,7 +651,7 @@ impl SliceBounds for RangeFull {
 /// It's not as clear what it means initially, but we use this idiom so much
 /// I think it might be worth it for clarity through brevity.
 impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {
-    fn to_range(&self, len: usize) -> Range<usize> {
+    fn to_range(&self, _len: usize) -> Range<usize> {
         let (RangeFrom { start }, RangeTo { end: range_len }) = *self;
         start..start + range_len
     }
@@ -753,7 +745,6 @@ mod debug {
     use std::backtrace::Backtrace;
     use std::backtrace::BacktraceStatus;
     use std::fmt::Debug;
-    use std::ops::Bound;
     use std::panic::Location;
     use std::thread;
     use std::thread::ThreadId;
@@ -1002,27 +993,25 @@ impl<V: Copy, C: AlignedByteChunk> DisjointMut<AlignedVec<V, C>> {
     }
 }
 
-#[allow(clippy::undocumented_unsafe_blocks)]
 #[test]
 fn test_overlapping_immut() {
     let mut v: DisjointMut<Vec<u8>> = Default::default();
     v.resize(10, 0u8);
 
-    let guard1 = unsafe { v.index(0..5) };
-    let guard2 = unsafe { v.index(2..) };
+    let guard1 = v.index(0..5);
+    let guard2 = v.index(2..);
 
     assert_eq!(guard1[2], guard2[0]);
 }
 
-#[allow(clippy::undocumented_unsafe_blocks)]
 #[test]
 #[cfg_attr(debug_assertions, should_panic)]
 fn test_overlapping_mut() {
     let mut v: DisjointMut<Vec<u8>> = Default::default();
     v.resize(10, 0u8);
 
-    let guard1 = unsafe { v.index(0..5) };
-    let mut guard2 = unsafe { v.index_mut(2..) };
+    let guard1 = v.index(0..5);
+    let mut guard2 = v.index_mut(2..);
 
     guard2[0] = 42;
     assert_eq!(guard1[2], 42);
@@ -1035,7 +1024,7 @@ fn test_pointer_write_debug() {
     let mut v: DisjointMut<Vec<[u8; 4]>> = Default::default();
     v.resize(10, [0u8; 4]);
 
-    let guard = unsafe { v.index(0..) };
+    let guard = v.index(0..);
     let borrow = &guard[..];
     let ptr = v.as_mut_ptr().wrapping_offset(3) as *mut u8;
     unsafe {
