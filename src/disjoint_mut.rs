@@ -48,6 +48,40 @@ pub struct DisjointMut<T: ?Sized + AsMutPtr> {
     inner: UnsafeCell<T>,
 }
 
+/// SAFETY: If `T: `[`Send`], then sending [`DisjointMut`]`<T>` across threads is safe.
+/// There is no non-[`Sync`] state that is left on another thread
+/// when [`DisjointMut`] gets sent to another thread.
+unsafe impl<T: ?Sized + AsMutPtr + Send> Send for DisjointMut<T> {}
+
+/// SAFETY: [`DisjointMut`] only provides disjoint mutable access
+/// to `T`'s elements through a shared `&`[`DisjointMut`]`<T>` reference.
+/// Thus, sharing/[`Send`]ing a `&`[`DisjointMut`]`<T>` across threads is safe.
+/// This disjointness is unchecked in release mode and relies on the `pub(crate)`
+/// [`Self::index`] and [`Self::index_mut`] being used correctly (disjointly).
+///
+/// More precisely, `&`[`Self`] has the two core methods of
+/// [`Self::index`] and [`Self::index_mut`]
+/// that provide disjoint immutable and mutable access to `T`'s elements.
+/// This disjointness guarantees that we do not create overlapping `&`s and `&mut`s,
+/// which would be unsound and otherwise possible from multiple threads.
+/// Furthermore, the safety guarantees of [`AsMutPtr::as_mut_ptr`]
+/// ensure that no intermediary `&` or `&mut` references to `T`'s elements are created.
+///
+/// The disjointness guarantee is checked at runtime in debug mode
+/// (i.e. [`#[cfg(debug_assertions)]`]), while in release mode,
+/// disjointness must be manually guaranteed.
+/// This is less than ideal, but crucial for performance.
+/// Since [`DisjointMut`] and [`disjoint_mut`](module@self) are only `pub(crate)`,
+/// we can ensure all uses are disjoint and thus sound.
+///
+/// Furthermore, all `T`s used have [`AsMutPtr::Target`]s
+/// that are provenanceless, i.e. they have no internal references or pointers
+/// or integers that hold pointer provenance.
+/// Thus, a data race due the lack of runtime disjointness checking in release mode
+/// would only result in wrong results, and cannot result in memory safety.
+/// This is checked manually for now.
+unsafe impl<T: ?Sized + AsMutPtr + Sync> Sync for DisjointMut<T> {}
+
 impl<T: AsMutPtr> DisjointMut<T> {
     pub const fn new(value: T) -> Self {
         Self {
