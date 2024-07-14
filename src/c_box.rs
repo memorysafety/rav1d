@@ -1,5 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -7,13 +8,21 @@ use std::pin::Pin;
 use std::ptr::drop_in_place;
 use std::ptr::NonNull;
 
-pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<NonNull<c_void>>);
+pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<SendSyncNonNull<c_void>>);
 
 /// A `free` "closure", i.e. a [`FnFree`] and an enclosed context [`Self::cookie`].
 #[derive(Debug)]
 pub struct Free {
     pub free: FnFree,
-    pub cookie: Option<NonNull<c_void>>,
+
+    /// # Safety
+    ///
+    /// All accesses to [`Self::cookie`] must be thread-safe
+    /// (i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`]).
+    ///
+    /// If used from Rust, [`Self::cookie`] is a [`SendSyncNonNull`],
+    /// whose constructors ensure this [`Send`]` + `[`Sync`] safety.
+    pub cookie: Option<SendSyncNonNull<c_void>>,
 }
 
 impl Free {

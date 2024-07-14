@@ -47,6 +47,7 @@ use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
@@ -297,7 +298,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
         // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
         // Note also that we must do this after we created the `Arc` so that `c` has a stable address.
-        c.allocator.cookie = Some(NonNull::from(&c.picture_pool).cast::<c_void>());
+        c.allocator.cookie = Some(SendSyncNonNull::from_ref(&c.picture_pool).cast::<c_void>());
     }
     let c = c;
 
@@ -864,7 +865,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     ptr: Option<NonNull<u8>>,
     sz: usize,
     free_callback: Option<FnFree>,
-    user_data: Option<NonNull<c_void>>,
+    user_data: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
         let buf = validate_input!(buf.ok_or(EINVAL))?;
@@ -891,7 +892,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: Option<NonNull<Dav1dData>>,
     user_data: Option<NonNull<u8>>,
     free_callback: Option<FnFree>,
-    cookie: Option<NonNull<c_void>>,
+    cookie: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
         let buf = validate_input!(buf.ok_or(EINVAL))?;

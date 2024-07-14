@@ -25,6 +25,7 @@ use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::MemPool;
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use parking_lot::Mutex;
@@ -100,7 +101,7 @@ impl Rav1dPictureParameters {
 /// * `cookie` must be from a `&Arc<MemPool<u8>>`.
 unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
-    cookie: Option<NonNull<c_void>>,
+    cookie: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     // SAFETY: Guaranteed by safety preconditions.
     let p = unsafe { p_c.read() }.to::<Rav1dPicture>();
@@ -120,8 +121,9 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     let [y_sz, uv_sz] = p.p.pic_len(stride);
     let pic_size = y_sz + 2 * uv_sz;
 
+    let pool = cookie.unwrap().cast::<Arc<MemPool<u8>>>();
     // SAFETY: Guaranteed by safety preconditions.
-    let pool = unsafe { cookie.unwrap().cast::<Arc<MemPool<u8>>>().as_ref() };
+    let pool = unsafe { pool.as_ref() };
     let pool = pool.clone();
     let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
     // TODO fallible allocation
@@ -150,7 +152,7 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     let p_c = unsafe { &mut *p_c };
     p_c.stride = stride;
     p_c.data = data.map(NonNull::new);
-    p_c.allocator_data = NonNull::new(Box::into_raw(buf).cast::<c_void>());
+    p_c.allocator_data = Some(SendSyncNonNull::from_box(buf).cast::<c_void>());
     // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
     // so we don't want to drop the `Rav1dPicture` we created for convenience here.
     mem::forget(p);
@@ -163,14 +165,14 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
 /// * `p` is from a `&mut Dav1dPicture` initialized by [`dav1d_default_picture_alloc`].
 unsafe extern "C" fn dav1d_default_picture_release(
     p: *mut Dav1dPicture,
-    _cookie: Option<NonNull<c_void>>,
+    _cookie: Option<SendSyncNonNull<c_void>>,
 ) {
     // SAFETY: Guaranteed by safety preconditions.
     let p = unsafe { &mut *p };
-    let buf = p.allocator_data.unwrap().as_ptr();
-    // SAFETY: `dav1d_default_picture_alloc` stores `Box::into_raw` of a `MemPoolBuf<u8>` in `Dav1dPicture::allocator_data`,
+    let buf = p.allocator_data.unwrap().cast::<MemPoolBuf<u8>>();
+    // SAFETY: `dav1d_default_picture_alloc` stores `SendSyncNonNull::from_box` of a `Box<MemPoolBuf<u8>>` in `Dav1dPicture::allocator_data`,
     // and `(Rav1dPicAllocator::release_picture_callback == dav1d_default_picture_release) == (Rav1dPicAllocator::alloc_picture_callback == dav1d_default_picture_alloc)`.
-    let buf = unsafe { Box::from_raw(buf.cast::<MemPoolBuf<u8>>()) };
+    let buf = unsafe { buf.into_box() };
     let MemPoolBuf { pool, buf } = *buf;
     pool.push(buf);
 }
