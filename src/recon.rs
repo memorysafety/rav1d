@@ -1696,12 +1696,12 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     }
 }
 
-enum MaybeTempPixels<'a, TmpStride> {
+enum MaybeTempPixels<'a, 'buf, TmpStride> {
     NonTemp {
-        dst: Rav1dPictureDataComponentOffset<'a>,
+        dst: Rav1dPictureDataComponentOffset<'a, 'buf>,
     },
     Temp {
-        tmp: &'a mut [i16],
+        tmp: &'buf mut [i16],
         tmp_stride: TmpStride,
     },
 }
@@ -1987,9 +1987,9 @@ fn obmc<BD: BitDepth>(
     Ok(())
 }
 
-fn warp_affine<BD: BitDepth>(
+fn warp_affine<'buf, BD: BitDepth>(
     f: &Rav1dFrameData,
-    emu_edge: &mut ScratchEmuEdge,
+    emu_edge: &'buf mut ScratchEmuEdge,
     b: Bxy,
     mut dst: MaybeTempPixels<usize>,
     b_dim: &[u8; 4],
@@ -2028,7 +2028,7 @@ fn warp_affine<BD: BitDepth>(
             let my =
                 (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
 
-            let r#ref = if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
+            let r#ref: WithOffset<&Rav1dPictureDataComponent<'buf>> = if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf = emu_edge.buf_mut::<BD>();
                 f.dsp.mc.emu_edge.call::<BD>(
                     15,
@@ -2042,7 +2042,7 @@ fn warp_affine<BD: BitDepth>(
                     &ref_data[pl],
                 );
                 let stride = 32;
-                Rav1dPictureDataComponentOffset {
+                Rav1dPictureDataComponentOffset::<'_, 'buf> {
                     data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
                     offset: stride * 3 + 3,
                 }

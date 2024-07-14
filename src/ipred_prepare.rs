@@ -161,7 +161,7 @@ static av1_intra_prediction_edges: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MO
 /// If edges are not available (because the edge position
 /// is outside the tile dimensions or because edge_flags indicates lack of edge availability),
 /// they will be extended from nearby edges as defined by the AV1 spec.
-pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
+pub fn rav1d_prepare_intra_edges<'a, 'buf, BD: BitDepth>(
     x: c_int,
     have_left: bool,
     y: c_int,
@@ -169,7 +169,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     w: c_int,
     h: c_int,
     edge_flags: EdgeFlags,
-    dst: Rav1dPictureDataComponentOffset,
+    dst: Rav1dPictureDataComponentOffset<'a, 'buf>,
     // Buffer and offset pair. `isize` value is the base offset that should be used
     // when indexing into the buffer.
     prefilter_toplevel_sb_edge: Option<(&DisjointMut<AlignedVec64<u8>>, isize)>,

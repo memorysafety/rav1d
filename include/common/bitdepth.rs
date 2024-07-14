@@ -135,7 +135,8 @@ pub trait BitDepth: Clone + Copy {
     const BPC: BPC;
     const BITDEPTH: u8 = Self::BPC.bitdepth();
 
-    type Pixel: Copy
+    type Pixel: 'static
+        + Copy
         + Ord
         + Add<Output = Self::Pixel>
         + Mul<Output = Self::Pixel>

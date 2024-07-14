@@ -6,21 +6,21 @@ use crate::src::strided::Strided;
 use crate::src::strided::WithStride;
 use crate::src::with_offset::WithOffset;
 
-pub enum PicOrBuf<'a, T: AsMutPtr<Target = u8>> {
-    Pic(&'a Rav1dPictureDataComponent),
+pub enum PicOrBuf<'a, 'buf, T: AsMutPtr<Target = u8>> {
+    Pic(&'a Rav1dPictureDataComponent<'buf>),
     Buf(WithStride<&'a DisjointMut<T>>),
 }
 
 /// Manual `impl` since `T: Clone` is not required.
-impl<'a, T: AsMutPtr<Target = u8>> Clone for PicOrBuf<'a, T> {
+impl<T: AsMutPtr<Target = u8>> Clone for PicOrBuf<'_, '_, T> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, T: AsMutPtr<Target = u8>> Copy for PicOrBuf<'a, T> {}
+impl<T: AsMutPtr<Target = u8>> Copy for PicOrBuf<'_, '_, T> {}
 
-impl<'a, T: AsMutPtr<Target = u8>> Pixels for PicOrBuf<'a, T> {
+impl<T: AsMutPtr<Target = u8>> Pixels for PicOrBuf<'_, '_, T> {
     fn byte_len(&self) -> usize {
         match self {
             Self::Pic(pic) => pic.byte_len(),
@@ -36,7 +36,7 @@ impl<'a, T: AsMutPtr<Target = u8>> Pixels for PicOrBuf<'a, T> {
     }
 }
 
-impl<'a, T: AsMutPtr<Target = u8>> Strided for PicOrBuf<'a, T> {
+impl<T: AsMutPtr<Target = u8>> Strided for PicOrBuf<'_, '_, T> {
     fn stride(&self) -> isize {
         match self {
             Self::Pic(pic) => pic.stride(),
@@ -45,8 +45,8 @@ impl<'a, T: AsMutPtr<Target = u8>> Strided for PicOrBuf<'a, T> {
     }
 }
 
-impl<'a, T: AsMutPtr<Target = u8>> WithOffset<PicOrBuf<'a, T>> {
-    pub fn pic(pic: WithOffset<&'a Rav1dPictureDataComponent>) -> Self {
+impl<'a, 'buf, T: AsMutPtr<Target = u8>> WithOffset<PicOrBuf<'a, 'buf, T>> {
+    pub fn pic(pic: WithOffset<&'a Rav1dPictureDataComponent<'buf>>) -> Self {
         Self {
             data: PicOrBuf::Pic(pic.data),
             offset: pic.offset,
