@@ -66,7 +66,6 @@ pub fn small_memset<T: Clone + Copy, const UP_TO: usize, const WITH_DEFAULT: boo
         08 if UP_TO >= 08 => *as_array(buf) = [val; 08],
         16 if UP_TO >= 16 => *as_array(buf) = [val; 16],
         32 if UP_TO >= 32 => *as_array(buf) = [val; 32],
-        64 if UP_TO >= 64 => *as_array(buf) = [val; 64],
         _ => {
             if WITH_DEFAULT {
                 buf.fill(val)
