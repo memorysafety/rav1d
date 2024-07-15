@@ -14,7 +14,7 @@ use crate::src::cursor::CursorMut;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_sgr_x_by_x;
+use crate::src::tables::rav1d_sgr_x_by_x;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
@@ -681,7 +681,7 @@ fn selfguided_filter<BD: BitDepth>(
 
             let p = cmp::max(a * n - b * b, 0) as c_uint;
             let z = (p * s + (1 << 19)) >> 20;
-            let x = dav1d_sgr_x_by_x[cmp::min(z, 255) as usize] as c_uint;
+            let x = rav1d_sgr_x_by_x()[cmp::min(z, 255) as usize] as c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
             aa[i] = ((x * bb[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;

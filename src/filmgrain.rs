@@ -19,7 +19,7 @@ use crate::src::enum_map::DefaultValue;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::GrainLut;
 use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_gaussian_sequence;
+use crate::src::tables::rav1d_gaussian_sequence;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::intptr_t;
 use libc::ptrdiff_t;
@@ -310,7 +310,7 @@ fn generate_grain_y_rust<BD: BitDepth>(
     for row in &mut buf[..GRAIN_HEIGHT] {
         row[..GRAIN_WIDTH].fill_with(|| {
             let value = get_random_number(11, &mut seed);
-            round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>()
+            round2(rav1d_gaussian_sequence()[value as usize], shift).as_::<BD::Entry>()
         });
     }
 
@@ -424,7 +424,7 @@ fn generate_grain_uv_rust<BD: BitDepth>(
     for row in &mut buf[..is_sub.chroma().0] {
         row[..is_sub.chroma().1].fill_with(|| {
             let value = get_random_number(11, &mut seed);
-            round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>()
+            round2(rav1d_gaussian_sequence()[value as usize], shift).as_::<BD::Entry>()
         });
     }
 
