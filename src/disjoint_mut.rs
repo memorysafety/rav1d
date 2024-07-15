@@ -443,7 +443,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
         I: SliceBounds,
-        V: FromBytes + Sized,
+        V: FromBytes,
     {
         let slice = self.index(index.mul(mem::size_of::<V>())).cast_slice();
         self.check_cast_slice_len(index, &slice);
@@ -477,7 +477,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn element_as<'a, V>(&'a self, index: usize) -> DisjointImmutGuard<'a, T, V>
     where
-        V: FromBytes + Sized,
+        V: FromBytes,
     {
         self.index((index..index + 1).mul(mem::size_of::<V>()))
             .cast()
@@ -557,7 +557,7 @@ impl TranslateRange for (RangeFrom<usize>, RangeTo<usize>) {
     }
 }
 
-#[derive(Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Bounds {
     /// A [`Range::end`]` == `[`usize::MAX`] is considered unbounded,
     /// as lengths need to be less than [`isize::MAX`] already.
@@ -608,7 +608,7 @@ impl<T: SliceBounds> From<T> for Bounds {
     }
 }
 
-pub trait SliceBounds: TranslateRange + Into<Bounds> + Clone + Debug {
+pub trait SliceBounds: TranslateRange + Clone {
     fn to_range(&self, len: usize) -> Range<usize>;
 }
 
