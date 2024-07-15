@@ -1,4 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(elided_lifetimes_in_paths)]
 
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
@@ -273,7 +274,10 @@ impl<'buf> Rav1dPictureDataComponent<'buf> {
         BD::pxstride(self.byte_len() - (-stride) as usize)
     }
 
-    pub fn with_offset<'a, BD: BitDepth>(&'a self) -> Rav1dPictureDataComponentOffset<'a, 'buf> where 'buf: 'a {
+    pub fn with_offset<'a, BD: BitDepth>(&'a self) -> Rav1dPictureDataComponentOffset<'a, 'buf>
+    where
+        'buf: 'a,
+    {
         Rav1dPictureDataComponentOffset {
             data: self,
             offset: self.pixel_offset::<BD>(),
@@ -325,7 +329,7 @@ impl<'buf> Rav1dPictureDataComponent<'buf> {
     pub fn index<'a, BD: BitDepth>(
         &'a self,
         index: usize,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel>
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel>
     where
         'buf: 'a,
     {
@@ -337,7 +341,7 @@ impl<'buf> Rav1dPictureDataComponent<'buf> {
     pub fn index_mut<'a, BD: BitDepth>(
         &'a self,
         index: usize,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel>
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel>
     where
         'buf: 'a,
     {
@@ -349,7 +353,7 @@ impl<'buf> Rav1dPictureDataComponent<'buf> {
     pub fn slice<'a, BD, I>(
         &'a self,
         index: I,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]>
     where
         'buf: 'a,
         BD: BitDepth,
@@ -363,7 +367,7 @@ impl<'buf> Rav1dPictureDataComponent<'buf> {
     pub fn slice_mut<'a, BD, I>(
         &'a self,
         index: I,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]>
     where
         'buf: 'a,
         BD: BitDepth,
@@ -381,7 +385,7 @@ impl<'a, 'buf> Rav1dPictureDataComponentOffset<'a, 'buf> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<BD: BitDepth>(
         &self,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel> {
         self.data.index::<BD>(self.offset)
     }
 
@@ -389,7 +393,7 @@ impl<'a, 'buf> Rav1dPictureDataComponentOffset<'a, 'buf> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index_mut<BD: BitDepth>(
         &self,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel> {
         self.data.index_mut::<BD>(self.offset)
     }
 
@@ -398,7 +402,7 @@ impl<'a, 'buf> Rav1dPictureDataComponentOffset<'a, 'buf> {
     pub fn slice<BD: BitDepth>(
         &self,
         len: usize,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]> {
         self.data.slice::<BD, _>((self.offset.., ..len))
     }
 
@@ -407,7 +411,7 @@ impl<'a, 'buf> Rav1dPictureDataComponentOffset<'a, 'buf> {
     pub fn slice_mut<BD: BitDepth>(
         &self,
         len: usize,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]> {
         self.data.slice_mut::<BD, _>((self.offset.., ..len))
     }
 }
@@ -553,7 +557,10 @@ impl From<Rav1dPicture> for Dav1dPicture {
 }
 
 impl Rav1dPicture {
-    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset; 3] {
+    pub fn lf_offsets<'a, BD: BitDepth>(
+        &'a self,
+        y: c_int,
+    ) -> [Rav1dPictureDataComponentOffset<'a, 'static>; 3] {
         // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
         // plane here to avoid having additional in-loop branches in various places.
         // We never use those values, so it doesn't really matter what they point
@@ -804,7 +811,7 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: &mut [Rav1dPictureDataComponent; 3],
+        data: &mut [Rav1dPictureDataComponent<'static>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
         let data = data.each_mut().map(|data| data.as_dav1d());
