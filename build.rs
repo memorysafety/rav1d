@@ -1,77 +1,79 @@
 #![deny(clippy::all)]
 
+use std::env;
+use std::fmt::Display;
+use std::fs;
+use std::path::PathBuf;
+use std::str::FromStr;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Arch {
+    X86(ArchX86),
+    Arm(ArchArm),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ArchX86 {
+    X86_32,
+    X86_64,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ArchArm {
+    Arm32,
+    Arm64,
+}
+
+impl FromStr for Arch {
+    type Err = String;
+
+    fn from_str(arch: &str) -> Result<Self, Self::Err> {
+        Ok(match arch {
+            "x86" => Self::X86(ArchX86::X86_32),
+            "x86_64" => Self::X86(ArchX86::X86_64),
+            "arm" => Self::Arm(ArchArm::Arm32),
+            "aarch64" => Self::Arm(ArchArm::Arm64),
+            _ => return Err(format!("unexpected arch: {arch}")),
+        })
+    }
+}
+
+struct Define {
+    name: &'static str,
+    value: String,
+}
+
+impl Define {
+    pub fn new(name: &'static str, value: impl Display) -> Self {
+        Self {
+            name,
+            value: value.to_string(),
+        }
+    }
+
+    pub fn bool(name: &'static str, value: bool) -> Self {
+        Self::new(name, value as u8)
+    }
+}
+
 #[cfg(feature = "asm")]
 mod asm {
+    use super::Arch;
+    use super::ArchArm;
+    use super::ArchX86;
+    use super::Define;
     use std::collections::HashSet;
     use std::env;
-    use std::fmt::Display;
     use std::fs;
+    use std::path::Path;
     use std::path::PathBuf;
-    use std::str::FromStr;
 
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    enum Arch {
-        X86(ArchX86),
-        Arm(ArchArm),
-    }
-
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    enum ArchX86 {
-        X86_32,
-        X86_64,
-    }
-
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    enum ArchArm {
-        Arm32,
-        Arm64,
-    }
-
-    impl FromStr for Arch {
-        type Err = String;
-
-        fn from_str(arch: &str) -> Result<Self, Self::Err> {
-            Ok(match arch {
-                "x86" => Self::X86(ArchX86::X86_32),
-                "x86_64" => Self::X86(ArchX86::X86_64),
-                "arm" => Self::Arm(ArchArm::Arm32),
-                "aarch64" => Self::Arm(ArchArm::Arm64),
-                _ => return Err(format!("unexpected arch: {arch}")),
-            })
-        }
-    }
-
-    struct Define {
-        name: &'static str,
-        value: String,
-    }
-
-    impl Define {
-        pub fn new(name: &'static str, value: impl Display) -> Self {
-            Self {
-                name,
-                value: value.to_string(),
-            }
-        }
-
-        pub fn bool(name: &'static str, value: bool) -> Self {
-            Self::new(name, value as u8)
-        }
-    }
-
-    pub fn main() {
-        let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-
-        let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    pub fn main(out_dir: &Path, arch: Arch) {
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
         let vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap();
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
         let features = env::var("CARGO_CFG_TARGET_FEATURE").unwrap();
 
-        // Nothing to do on unknown architectures
-        let Ok(arch) = arch.parse::<Arch>() else {
-            return;
-        };
         let os = os.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
@@ -306,9 +308,50 @@ mod asm {
 }
 
 fn main() {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+
+    // Nothing to do on unknown architectures
+    let Ok(arch) = arch.parse::<Arch>() else {
+        return;
+    };
+
+    let mut defines = Vec::new();
+
+    if let Arch::X86(arch) = arch {
+        defines.push(Define::bool("ARCH_X86", true));
+        defines.push(Define::bool("ARCH_X86_32", arch == ArchX86::X86_32));
+        defines.push(Define::bool("ARCH_X86_64", arch == ArchX86::X86_64));
+    }
+    if let Arch::Arm(arch) = arch {
+        defines.push(Define::bool("ARCH_ARM", arch == ArchArm::Arm32));
+        defines.push(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
+    }
+
+    // TODO: Deduplicate logic for generating the config file from the `asm` module.
+    let config_lines = defines
+        .iter()
+        .map(|Define { name, value }| format!("#define {name} {value}"))
+        .collect::<Vec<_>>();
+
+    let config_contents = config_lines.join("\n");
+    let config_path = out_dir.join("config.h");
+    fs::write(&config_path, &config_contents).unwrap();
+
+    let rav1dtables = "rav1dtables";
+
+    cc::Build::new()
+        .file("src/tables.c")
+        .include("include")
+        .include(&out_dir)
+        .include(".")
+        .compile(rav1dtables);
+
+    println!("cargo:rustc-link-lib=static={rav1dtables}");
+
     #[cfg(feature = "asm")]
     {
-        asm::main();
+        asm::main(&out_dir, arch);
     }
 
     // NOTE: we rely on libraries that are only distributed for Windows so
