@@ -149,10 +149,52 @@ impl Default for Rav1dMsacDSPContext {
 
 pub type EcWin = usize;
 
+/// # Safety
+///
+/// [`Self`] must be the first field of [`MsacAsmContext`] for asm layout purposes,
+/// and that [`MsacAsmContext`] must be a field of [`MsacContext`].
+/// And [`Self::pos`] and [`Self::end`] must be either [`ptr::null`],
+/// or [`Self::pos`] must point into (or the end of) [`MsacContext::data`],
+/// and [`Self::end`] must point to the end of [`MsacContext::data`],
+/// where [`MsacContext::data`] is part of the [`MsacContext`]
+/// containing [`MsacAsmContext`] and thus also [`Self`].
+#[repr(C)]
+struct MsacAsmContextBuf {
+    pos: *const u8,
+    end: *const u8,
+}
+
+/// SAFETY: [`MsacAsmContextBuf`] is always contained in [`MsacAsmContext::buf`],
+/// which is always contained in [`MsacContext::asm`], whose [`MsacContext::data`] field
+/// is what is stored in [`MsacAsmContextBuf::pos`] and [`MsacAsmContextBuf::end`].
+/// Since [`MsacContext::data`] is [`Send`], [`MsacAsmContextBuf`] is also [`Send`].
+unsafe impl Send for MsacAsmContextBuf {}
+
+/// SAFETY: [`MsacAsmContextBuf`] is always contained in [`MsacAsmContext::buf`],
+/// which is always contained in [`MsacContext::asm`], whose [`MsacContext::data`] field
+/// is what is stored in [`MsacAsmContextBuf::pos`] and [`MsacAsmContextBuf::end`].
+/// Since [`MsacContext::data`] is [`Sync`], [`MsacAsmContextBuf`] is also [`Sync`].
+unsafe impl Sync for MsacAsmContextBuf {}
+
+impl Default for MsacAsmContextBuf {
+    fn default() -> Self {
+        Self {
+            pos: ptr::null(),
+            end: ptr::null(),
+        }
+    }
+}
+
+impl From<&[u8]> for MsacAsmContextBuf {
+    fn from(value: &[u8]) -> Self {
+        let Range { start, end } = value.as_ptr_range();
+        Self { pos: start, end }
+    }
+}
+
 #[repr(C)]
 pub struct MsacAsmContext {
-    buf_pos: *const u8,
-    buf_end: *const u8,
+    buf: MsacAsmContextBuf,
     pub dif: EcWin,
     pub rng: c_uint,
     pub cnt: c_int,
@@ -169,8 +211,7 @@ pub struct MsacAsmContext {
 impl Default for MsacAsmContext {
     fn default() -> Self {
         Self {
-            buf_pos: ptr::null(),
-            buf_end: ptr::null(),
+            buf: Default::default(),
             dif: Default::default(),
             rng: Default::default(),
             cnt: Default::default(),
@@ -217,14 +258,14 @@ impl MsacContext {
         // We safely subtract instead of unsafely use `ptr::offset_from`
         // as asm sets `buf_pos`, so we don't need to rely on its safety,
         // and because codegen is no less optimal this way.
-        self.buf_pos as usize - self.data().as_ptr() as usize
+        self.buf.pos as usize - self.data().as_ptr() as usize
     }
 
     fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
         let data = &**self.data.as_ref().unwrap();
         let buf = &data[self.buf_index()..];
         let buf = f(buf);
-        self.buf_pos = buf.as_ptr();
+        self.buf.pos = buf.as_ptr();
         // We don't actually need to set `self.buf_end` since it has not changed.
     }
 }
@@ -463,13 +504,8 @@ fn rav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> u8 
 
 impl MsacContext {
     pub fn new(data: CArc<[u8]>, disable_cdf_update_flag: bool, dsp: &Rav1dMsacDSPContext) -> Self {
-        let Range {
-            start: buf_pos,
-            end: buf_end,
-        } = data.as_ptr_range();
         let asm = MsacAsmContext {
-            buf_pos,
-            buf_end,
+            buf: data.as_ref().into(),
             dif: 0,
             rng: 0x8000,
             cnt: -15,
