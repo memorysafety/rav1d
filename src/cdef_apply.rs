@@ -80,9 +80,10 @@ fn backup2lines<BD: BitDepth>(
     }
 }
 
+#[inline(always)]
 fn backup2x8<BD: BitDepth>(
     dst: &mut [[[BD::Pixel; 2]; 8]; 3],
-    src: [Rav1dPictureDataComponentOffset; 3],
+    src: &[Rav1dPictureDataComponentOffset; 3],
     x_off: c_int,
     layout: Rav1dPixelLayout,
     flag: Backup2x8Flags,
@@ -252,11 +253,11 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         if !do_left.is_empty() && edges.contains(CdefEdgeFlags::HAVE_LEFT) {
                             // we didn't backup the prefilter data because it wasn't
                             // there, so do it here instead
-                            backup2x8::<BD>(&mut lr_bak[bit as usize], bptrs, 0, layout, do_left);
+                            backup2x8::<BD>(&mut lr_bak[bit as usize], &bptrs, 0, layout, do_left);
                         }
                         if edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
                             // backup pre-filter data for next iteration
-                            backup2x8::<BD>(&mut lr_bak[!bit as usize], bptrs, 8, layout, flag);
+                            backup2x8::<BD>(&mut lr_bak[!bit as usize], &bptrs, 8, layout, flag);
                         }
 
                         let mut variance = 0;
