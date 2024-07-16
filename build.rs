@@ -11,6 +11,7 @@ use std::str::FromStr;
 enum Arch {
     X86(ArchX86),
     Arm(ArchArm),
+    RiscV(ArchRiscV),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -25,6 +26,12 @@ enum ArchArm {
     Arm64,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ArchRiscV {
+    RiscV32,
+    RiscV64,
+}
+
 impl FromStr for Arch {
     type Err = String;
 
@@ -34,6 +41,8 @@ impl FromStr for Arch {
             "x86_64" => Self::X86(ArchX86::X86_64),
             "arm" => Self::Arm(ArchArm::Arm32),
             "aarch64" => Self::Arm(ArchArm::Arm64),
+            "riscv32" => Self::RiscV(ArchRiscV::RiscV32),
+            "riscv64" => Self::RiscV(ArchRiscV::RiscV64),
             _ => return Err(format!("unexpected arch: {arch}")),
         })
     }
@@ -76,8 +85,7 @@ fn generate_config(
 
 #[cfg(feature = "asm")]
 mod asm {
-    use crate::generate_config;
-
+    use super::generate_config;
     use super::Arch;
     use super::ArchArm;
     use super::ArchX86;
@@ -88,6 +96,11 @@ mod asm {
     use std::path::PathBuf;
 
     pub fn main(out_dir: &Path, arch: Arch) {
+        // TODO: Add support for assembly on riscv architectures.
+        if matches!(arch, Arch::RiscV(..)) {
+            return;
+        }
+
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
         let vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap();
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
@@ -147,6 +160,7 @@ mod asm {
         let use_nasm = match arch {
             Arch::X86(..) => true,
             Arch::Arm(..) => false,
+            Arch::RiscV(..) => unreachable!(),
         };
 
         let define_prefix = if use_nasm { "%" } else { " #" };
@@ -262,11 +276,13 @@ mod asm {
             Arch::X86(ArchX86::X86_32) => x86_all,
             Arch::X86(ArchX86::X86_64) => x86_64_all,
             Arch::Arm(..) => arm_all,
+            Arch::RiscV(..) => unreachable!(),
         };
 
         let asm_file_dir = match arch {
             Arch::X86(..) => ["x86", "."],
             Arch::Arm(..) => ["arm", pointer_width],
+            Arch::RiscV(..) => unreachable!(),
         };
         let asm_extension = if use_nasm { "asm" } else { "S" };
 
@@ -323,21 +339,30 @@ fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
 
-    // Nothing to do on unknown architectures
+    // Nothing to do on unknown architectures.
     let Ok(arch) = arch.parse::<Arch>() else {
         return;
     };
 
     let mut defines = Vec::new();
 
-    if let Arch::X86(arch) = arch {
-        defines.push(Define::bool("ARCH_X86", true));
-        defines.push(Define::bool("ARCH_X86_32", arch == ArchX86::X86_32));
-        defines.push(Define::bool("ARCH_X86_64", arch == ArchX86::X86_64));
-    }
-    if let Arch::Arm(arch) = arch {
-        defines.push(Define::bool("ARCH_ARM", arch == ArchArm::Arm32));
-        defines.push(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
+    match arch {
+        Arch::X86(arch) => {
+            defines.push(Define::bool("ARCH_X86", true));
+            defines.push(Define::bool("ARCH_X86_32", arch == ArchX86::X86_32));
+            defines.push(Define::bool("ARCH_X86_64", arch == ArchX86::X86_64));
+        }
+
+        Arch::Arm(arch) => {
+            defines.push(Define::bool("ARCH_ARM", arch == ArchArm::Arm32));
+            defines.push(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
+        }
+
+        Arch::RiscV(arch) => {
+            defines.push(Define::bool("ARCH_RISCV", true));
+            defines.push(Define::bool("ARCH_RV32", arch == ArchRiscV::RiscV32));
+            defines.push(Define::bool("ARCH_RV64", arch == ArchRiscV::RiscV64));
+        }
     }
 
     let config_dir = out_dir.join("include");
