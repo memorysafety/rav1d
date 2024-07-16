@@ -3,6 +3,7 @@
 use std::env;
 use std::fmt::Display;
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -56,15 +57,33 @@ impl Define {
     }
 }
 
+fn generate_config(
+    defines: &[Define],
+    define_prefix: &str,
+    config_dir: &Path,
+    config_file_name: &str,
+) {
+    let config_lines = defines
+        .iter()
+        .map(|Define { name, value }| format!("{define_prefix}define {name} {value}"))
+        .collect::<Vec<_>>();
+    let config_contents = config_lines.join("\n");
+
+    let config_path = config_dir.join(config_file_name);
+    fs::create_dir_all(&config_dir).unwrap();
+    fs::write(&config_path, &config_contents).unwrap();
+}
+
 #[cfg(feature = "asm")]
 mod asm {
+    use crate::generate_config;
+
     use super::Arch;
     use super::ArchArm;
     use super::ArchX86;
     use super::Define;
     use std::collections::HashSet;
     use std::env;
-    use std::fs;
     use std::path::Path;
     use std::path::PathBuf;
 
@@ -131,18 +150,9 @@ mod asm {
         };
 
         let define_prefix = if use_nasm { "%" } else { " #" };
-
-        let config_lines = defines
-            .iter()
-            .map(|Define { name, value }| format!("{define_prefix}define {name} {value}"))
-            .collect::<Vec<_>>();
-
-        let config_contents = config_lines.join("\n");
         let config_file_name = if use_nasm { "config.asm" } else { "config.h" };
         let config_dir = out_dir.join("asm");
-        let config_path = config_dir.join(config_file_name);
-        fs::create_dir_all(&config_dir).unwrap();
-        fs::write(&config_path, &config_contents).unwrap();
+        generate_config(&defines, define_prefix, &config_dir, config_file_name);
 
         // Note that avx* is never (at runtime) supported on x86.
         let x86_generic = &["cdef_sse", "itx_sse", "msac", "pal", "refmvs"][..];
@@ -330,17 +340,8 @@ fn main() {
         defines.push(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
     }
 
-    // TODO: Deduplicate logic for generating the config file from the `asm` module.
-    let config_lines = defines
-        .iter()
-        .map(|Define { name, value }| format!("#define {name} {value}"))
-        .collect::<Vec<_>>();
-
-    let config_contents = config_lines.join("\n");
     let config_dir = out_dir.join("include");
-    let config_path = config_dir.join("config.h");
-    fs::create_dir_all(&config_dir).unwrap();
-    fs::write(&config_path, &config_contents).unwrap();
+    generate_config(&defines, "#", &config_dir, "config.h");
 
     let rav1dtables = "rav1dtables";
 
