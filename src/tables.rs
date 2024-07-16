@@ -706,59 +706,43 @@ pub fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> i32 {
     sum
 }
 
-extern "C" {
-    static dav1d_sgr_x_by_x: Align64<[u8; 256]>;
-    static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]>;
-    static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]>;
-    static dav1d_resize_filter: Align8<[[i8; 8]; 64]>;
-    static dav1d_sm_weights: Align16<[u8; 128]>;
-    static dav1d_dr_intra_derivative: [u16; 44];
-    static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5];
-    static dav1d_obmc_masks: Align16<[u8; 64]>;
-    static dav1d_gaussian_sequence: [i16; 2048];
+/// Imports an `extern static` item from C and exposes it as a Rust fn.
+///
+/// Doing `extern_table! { pub static foo: T; }` imports an item named
+/// `dav1d_foo` and generates a Rust function named `rav1d_foo` that returns a
+/// reference to the item. The declared type `T` must match the type and layout
+/// of the corresponding C definition.
+///
+/// This is necessary for items declared as `extern
+/// __attribute__((visibility("hidden")))` in C, as we have no way of
+/// replicating that visibility in Rust. See
+/// https://github.com/rust-lang/rust/issues/73958 for more information on why
+/// `#[no_mangle]` doesn't work for us.
+macro_rules! extern_table {
+    (pub static $name:ident: $type:ty;) => {
+        paste::paste! {
+            #[inline]
+            pub fn [<rav1d_ $name>]() -> &'static $type {
+                extern "C" {
+                    static [<dav1d_ $name>]: $type;
+                }
+
+                // SAFETY: Table is defined in `tables.c` and has the same type as the Rust
+                // definition.
+                unsafe {
+                    &[<dav1d_ $name>]
+                }
+            }
+        }
+    };
 }
 
-#[inline]
-pub fn rav1d_sgr_x_by_x() -> &'static Align64<[u8; 256]> {
-    unsafe { &dav1d_sgr_x_by_x }
-}
-
-#[inline]
-pub fn rav1d_mc_subpel_filters() -> &'static Align8<[[[i8; 8]; 15]; 6]> {
-    unsafe { &dav1d_mc_subpel_filters }
-}
-
-#[inline]
-pub fn rav1d_mc_warp_filter() -> &'static Align8<[[i8; 8]; 193]> {
-    unsafe { &dav1d_mc_warp_filter }
-}
-
-#[inline]
-pub fn rav1d_resize_filter() -> &'static Align8<[[i8; 8]; 64]> {
-    unsafe { &dav1d_resize_filter }
-}
-
-#[inline]
-pub fn rav1d_sm_weights() -> &'static Align16<[u8; 128]> {
-    unsafe { &dav1d_sm_weights }
-}
-
-#[inline]
-pub fn rav1d_dr_intra_derivative() -> &'static [u16; 44] {
-    unsafe { &dav1d_dr_intra_derivative }
-}
-
-#[inline]
-pub fn rav1d_filter_intra_taps() -> &'static [Align64<[i8; 64]>; 5] {
-    unsafe { &dav1d_filter_intra_taps }
-}
-
-#[inline]
-pub fn rav1d_obmc_masks() -> &'static Align16<[u8; 64]> {
-    unsafe { &dav1d_obmc_masks }
-}
-
-#[inline]
-pub fn rav1d_gaussian_sequence() -> &'static [i16; 2048] {
-    unsafe { &dav1d_gaussian_sequence }
-}
+extern_table! { pub static sgr_x_by_x: Align64<[u8; 256]>; }
+extern_table! { pub static mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]>; }
+extern_table! { pub static mc_warp_filter: Align8<[[i8; 8]; 193]>; }
+extern_table! { pub static resize_filter: Align8<[[i8; 8]; 64]>; }
+extern_table! { pub static sm_weights: Align16<[u8; 128]>; }
+extern_table! { pub static dr_intra_derivative: [u16; 44]; }
+extern_table! { pub static filter_intra_taps: [Align64<[i8; 64]>; 5]; }
+extern_table! { pub static obmc_masks: Align16<[u8; 64]>; }
+extern_table! { pub static gaussian_sequence: [i16; 2048]; }
