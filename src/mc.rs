@@ -1829,6 +1829,7 @@ unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `blend_dir::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of cast in `blend_dir::Fn::call`.
     let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
     let h = h as usize;
@@ -1849,6 +1850,7 @@ unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `blend_dir::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of cast in `blend_dir::Fn::call`.
     let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
     let h = h as usize;
