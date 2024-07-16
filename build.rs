@@ -139,7 +139,9 @@ mod asm {
 
         let config_contents = config_lines.join("\n");
         let config_file_name = if use_nasm { "config.asm" } else { "config.h" };
-        let config_path = out_dir.join(config_file_name);
+        let config_dir = out_dir.join("asm");
+        let config_path = config_dir.join(config_file_name);
+        fs::create_dir_all(&config_dir).unwrap();
         fs::write(&config_path, &config_contents).unwrap();
 
         // Note that avx* is never (at runtime) supported on x86.
@@ -280,7 +282,7 @@ mod asm {
             nasm.flag("-Fdwarf");
             #[cfg(all(debug_assertions, windows))]
             nasm.flag("-fwin64");
-            nasm.flag(&format!("-I{}/", out_dir.to_str().unwrap()));
+            nasm.flag(&format!("-I{}/", config_dir.to_str().unwrap()));
             nasm.flag("-Isrc/");
             let obj = nasm.compile_objects().unwrap_or_else(|e| {
                 println!("cargo:warning={e}");
@@ -335,7 +337,9 @@ fn main() {
         .collect::<Vec<_>>();
 
     let config_contents = config_lines.join("\n");
-    let config_path = out_dir.join("config.h");
+    let config_dir = out_dir.join("include");
+    let config_path = config_dir.join("config.h");
+    fs::create_dir_all(&config_dir).unwrap();
     fs::write(&config_path, &config_contents).unwrap();
 
     let rav1dtables = "rav1dtables";
@@ -343,7 +347,7 @@ fn main() {
     cc::Build::new()
         .file("src/tables.c")
         .include("include")
-        .include(&out_dir)
+        .include(&config_dir)
         .include(".")
         .compile(rav1dtables);
 
