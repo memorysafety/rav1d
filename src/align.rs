@@ -101,6 +101,7 @@ macro_rules! def_align {
 
         impl AlignedByteChunk for $name<[u8; $align]> {}
 
+        /// SAFETY: We never materialize a `&mut [V]` since we do a direct cast.
         unsafe impl<V, const N: usize> AsMutPtr for $name<[V; N]> {
             type Target = V;
 
@@ -243,6 +244,9 @@ impl<T: Copy, C: AlignedByteChunk> Default for AlignedVec<T, C> {
 pub type AlignedVec32<T> = AlignedVec<T, Align32<[u8; 32]>>;
 pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;
 
+/// SAFETY: We never materialize a `&mut [T]` since we
+/// only materialize a `&mut AlignedVec<T, _>` and call [`AlignedVec::as_mut_ptr`] on it,
+/// which calls [`Vec::as_mut_ptr`] and never materializes a `&mut [V]`.
 unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
     type Target = T;
 
