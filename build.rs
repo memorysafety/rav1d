@@ -310,7 +310,7 @@ mod asm {
             cc::Build::new()
                 .files(asm_file_paths)
                 .include(".")
-                .include(&out_dir)
+                .include(&config_dir)
                 .debug(cfg!(debug_assertions))
                 .compile(rav1dasm);
         }
