@@ -208,7 +208,10 @@ unsafe fn print_stats(istty: c_int, n: c_uint, num: c_uint, elapsed: u64, i_fps:
     fputs(buf.as_mut_ptr(), stderr);
 }
 
-unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1dResult {
+unsafe extern "C" fn picture_alloc(
+    p: *mut Dav1dPicture,
+    _: Option<NonNull<c_void>>,
+) -> Dav1dResult {
     let hbd = ((*p).p.bpc > 8) as c_int;
     let aligned_w = (*p).p.w + 127 & !(127 as c_int);
     let aligned_h = (*p).p.h + 127 & !(127 as c_int);
@@ -266,7 +269,7 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
     Dav1dResult(0)
 }
 
-unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut c_void) {
+unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: Option<NonNull<c_void>>) {
     if let Some(data) = (*p).allocator_data {
         free(data.as_ptr());
     }
@@ -298,11 +301,11 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         all_layers: 0,
         frame_size_limit: 0,
         allocator: Dav1dPicAllocator {
-            cookie: 0 as *mut c_void,
+            cookie: None,
             alloc_picture_callback: None,
             release_picture_callback: None,
         },
-        logger: Dav1dLogger::new(0 as *mut c_void, None),
+        logger: Dav1dLogger::new(None, None),
         strict_std_compliance: 0,
         output_invisible_frames: 0,
         inloop_filters: DAV1D_INLOOPFILTER_NONE,

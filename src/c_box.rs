@@ -7,13 +7,13 @@ use std::pin::Pin;
 use std::ptr::drop_in_place;
 use std::ptr::NonNull;
 
-pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: *mut c_void);
+pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<NonNull<c_void>>);
 
 /// A `free` "closure", i.e. a [`FnFree`] and an enclosed context [`Self::cookie`].
 #[derive(Debug)]
 pub struct Free {
     pub free: FnFree,
-    pub cookie: *mut c_void,
+    pub cookie: Option<NonNull<c_void>>,
 }
 
 impl Free {

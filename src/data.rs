@@ -37,7 +37,7 @@ impl Rav1dData {
     pub unsafe fn wrap(
         data: NonNull<[u8]>,
         free_callback: Option<FnFree>,
-        cookie: *mut c_void,
+        cookie: Option<NonNull<c_void>>,
     ) -> Rav1dResult<Self> {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };
@@ -54,7 +54,7 @@ impl Rav1dData {
         &mut self,
         user_data: NonNull<u8>,
         free_callback: Option<FnFree>,
-        cookie: *mut c_void,
+        cookie: Option<NonNull<c_void>>,
     ) -> Rav1dResult {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };

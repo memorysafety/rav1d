@@ -6,11 +6,11 @@ use std::fmt::Write as _;
 use std::io::stderr;
 use std::io::stdout;
 use std::io::Write as _;
-use std::ptr;
+use std::ptr::NonNull;
 
 pub type Dav1dLoggerCallback = unsafe extern "C" fn(
     // The above `cookie` field.
-    cookie: *mut c_void,
+    cookie: Option<NonNull<c_void>>,
     // A `printf`-style format specifier.
     fmt: *const c_char,
     // `printf`-style variadic args.
@@ -21,7 +21,7 @@ pub type Dav1dLoggerCallback = unsafe extern "C" fn(
 #[repr(C)]
 pub struct Dav1dLogger {
     /// A cookie that's passed as the first argument to the callback below.
-    cookie: *mut c_void,
+    cookie: Option<NonNull<c_void>>,
     /// A `printf`-style function except for an extra first argument that will always be the above `cookie`.
     callback: Option<Dav1dLoggerCallback>,
 }
@@ -32,7 +32,10 @@ impl Dav1dLogger {
     /// `callback`, if non-[`None`]/`NULL` must be safe to call when:
     /// * the first argument is `cookie`
     /// * the rest of the arguments would be safe to call `printf` with
-    pub const unsafe fn new(cookie: *mut c_void, callback: Option<Dav1dLoggerCallback>) -> Self {
+    pub const unsafe fn new(
+        cookie: Option<NonNull<c_void>>,
+        callback: Option<Dav1dLoggerCallback>,
+    ) -> Self {
         Self { cookie, callback }
     }
 }
@@ -164,7 +167,7 @@ impl From<Option<Rav1dLogger>> for Dav1dLogger {
     fn from(logger: Option<Rav1dLogger>) -> Self {
         let cookie = match &logger {
             Some(Rav1dLogger::Dav1d(dav1d)) => dav1d.cookie,
-            _ => ptr::null_mut(),
+            _ => None,
         };
         let callback = logger.and_then(|logger| match logger {
             Rav1dLogger::Dav1d(dav1d) => dav1d.callback,

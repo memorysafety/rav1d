@@ -549,7 +549,7 @@ impl Rav1dPicture {
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     /// Custom data to pass to the allocator callbacks.
-    pub cookie: *mut c_void,
+    pub cookie: Option<NonNull<c_void>>,
 
     /// Allocate the picture buffer based on the [`Dav1dPictureParameters`].
     ///
@@ -608,8 +608,12 @@ pub struct Dav1dPicAllocator {
     /// [`stride`]: Dav1dPicture::data
     /// [`allocator_data`]: Dav1dPicture::allocator_data
     /// [`release_picture_callback`]: Self::release_picture_callback
-    pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult>,
+    pub alloc_picture_callback: Option<
+        unsafe extern "C" fn(
+            pic: *mut Dav1dPicture,
+            cookie: Option<NonNull<c_void>>,
+        ) -> Dav1dResult,
+    >,
 
     /// Release the picture buffer.
     ///
@@ -647,7 +651,7 @@ pub struct Dav1dPicAllocator {
     /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
     /// [`alloc_picture_callback`]: Self::alloc_picture_callback
     pub release_picture_callback:
-        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> ()>,
+        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<NonNull<c_void>>) -> ()>,
 }
 
 #[derive(Clone)]
@@ -675,7 +679,7 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// [`Rav1dContext::picture_pool`]: crate::src::internal::Rav1dContext::picture_pool
     /// [`Rav1dContext`]: crate::src::internal::Rav1dContext
-    pub cookie: *mut c_void,
+    pub cookie: Option<NonNull<c_void>>,
 
     /// See [`Dav1dPicAllocator::alloc_picture_callback`].
     ///
@@ -685,8 +689,10 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
-    pub alloc_picture_callback:
-        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult,
+    pub alloc_picture_callback: unsafe extern "C" fn(
+        pic: *mut Dav1dPicture,
+        cookie: Option<NonNull<c_void>>,
+    ) -> Dav1dResult,
 
     /// See [`Dav1dPicAllocator::release_picture_callback`].
     ///
@@ -697,7 +703,7 @@ pub(crate) struct Rav1dPicAllocator {
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub release_picture_callback:
-        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> (),
+        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<NonNull<c_void>>) -> (),
 }
 
 impl TryFrom<Dav1dPicAllocator> for Rav1dPicAllocator {
