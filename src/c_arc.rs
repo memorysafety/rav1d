@@ -78,6 +78,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         #[cfg(debug_assertions)]
         {
             use std::mem;
+            use std::ptr;
             use to_method::To;
 
             // Some extra checks to check if our ptrs are definitely invalid.
@@ -85,24 +86,23 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
             let real_ref = (*self.owner).as_ref().get_ref();
             assert_eq!(real_ref.to::<NonNull<T>>(), self.base_stable_ref.0);
 
-            // Cast through `*const ()` and use [`pointer::byte_offset_from`]
-            // to remove any fat ptr metadata.
-            let offset = unsafe {
-                self.stable_ref
-                    .0
-                    .as_ptr()
-                    .cast::<()>()
-                    .byte_offset_from((real_ref as *const T).cast::<()>())
-            };
-            let offset = offset.try_to::<usize>().unwrap();
+            let real_ptr = ptr::from_ref(real_ref);
+            let stable_ptr = self.stable_ref.0.as_ptr().cast_const();
+            // Cast through `*const ()` to remove any fat ptr metadata.
+            // Use arithmetic on the addresses (similar to `.wrapping_*` methods),
+            // as they don't have safety conditions (which we're checking here).
+            let [real_address, stable_address] =
+                [real_ptr, stable_ptr].map(|ptr| ptr.cast::<()>() as isize);
+            let offset = stable_address - real_address;
             let len = mem::size_of_val(real_ref);
-            let out_of_bounds = offset > len;
-            if out_of_bounds {
-                dbg!(real_ref as *const T);
-                dbg!(self.stable_ref.0.as_ptr());
-                dbg!(offset);
-                dbg!(len);
-                panic!("CArc::stable_ref is out of bounds");
+            if offset < 0 || offset > len as isize {
+                panic!(
+                    "CArc::stable_ref is out of bounds:
+    real_ref: {real_ptr:?}
+    stable_ref: {stable_ptr:?}
+    offset: {offset}
+    len: {len}"
+                );
             }
         }
 
