@@ -709,7 +709,7 @@ pub fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> i32 {
 /// Imports an `extern static` item from C and exposes it as a Rust fn.
 ///
 /// Doing `extern_table! { pub static foo: T; }` imports an item named
-/// `dav1d_foo` and generates a Rust function named `rav1d_foo` that returns a
+/// `dav1d_foo` and generates a Rust function named `foo` that returns a
 /// reference to the item. The declared type `T` must match the type and layout
 /// of the corresponding C definition.
 ///
@@ -722,7 +722,7 @@ macro_rules! extern_table {
     (pub static $name:ident: $type:ty;) => {
         paste::paste! {
             #[inline]
-            pub fn [<rav1d_ $name>]() -> &'static $type {
+            pub fn $name() -> &'static $type {
                 extern "C" {
                     static [<dav1d_ $name>]: $type;
                 }

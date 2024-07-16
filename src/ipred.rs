@@ -31,10 +31,10 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
 use crate::src::strided::Strided as _;
+use crate::src::tables::dr_intra_derivative;
 use crate::src::tables::filter_fn;
-use crate::src::tables::rav1d_dr_intra_derivative;
-use crate::src::tables::rav1d_filter_intra_taps;
-use crate::src::tables::rav1d_sm_weights;
+use crate::src::tables::filter_intra_taps;
+use crate::src::tables::sm_weights;
 use crate::src::tables::FLT_INCR;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
@@ -643,8 +643,8 @@ fn ipred_smooth_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_hor = &rav1d_sm_weights().0[width..][..width];
-    let weights_ver = &rav1d_sm_weights().0[height..][..height];
+    let weights_hor = &sm_weights().0[width..][..width];
+    let weights_ver = &sm_weights().0[height..][..height];
     let right = topleft[topleft_off + width].as_::<c_int>();
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
@@ -694,7 +694,7 @@ fn ipred_smooth_v_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_ver = &rav1d_sm_weights().0[height..][..height];
+    let weights_ver = &sm_weights().0[height..][..height];
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
     for y in 0..height {
@@ -741,7 +741,7 @@ fn ipred_smooth_h_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_hor = &rav1d_sm_weights().0[width..][..width];
+    let weights_hor = &sm_weights().0[width..][..width];
     let right = topleft[topleft_off + width].as_::<c_int>();
 
     for y in 0..height {
@@ -893,7 +893,7 @@ fn ipred_z1_rust<BD: BitDepth>(
     let enable_intra_edge_filter = (angle >> 10) != 0;
     angle &= 511;
     assert!(angle < 90);
-    let mut dx = rav1d_dr_intra_derivative()[(angle >> 1) as usize] as c_int;
+    let mut dx = dr_intra_derivative()[(angle >> 1) as usize] as c_int;
     let mut top_out = [0.into(); 64 + 64];
     let upsample_above = if enable_intra_edge_filter {
         get_upsample(width + height, 90 - angle, is_sm)
@@ -977,8 +977,8 @@ fn ipred_z2_rust<BD: BitDepth>(
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511;
     assert!(angle > 90 && angle < 180);
-    let mut dy = rav1d_dr_intra_derivative()[(angle - 90 >> 1) as usize] as c_int;
-    let mut dx = rav1d_dr_intra_derivative()[(180 - angle >> 1) as usize] as c_int;
+    let mut dy = dr_intra_derivative()[(angle - 90 >> 1) as usize] as c_int;
+    let mut dx = dr_intra_derivative()[(180 - angle >> 1) as usize] as c_int;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 180 - angle, is_sm)
     } else {
@@ -1113,7 +1113,7 @@ fn ipred_z3_rust<BD: BitDepth>(
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511;
     assert!(angle > 180);
-    let mut dy = rav1d_dr_intra_derivative()[(270 - angle >> 1) as usize] as usize;
+    let mut dy = dr_intra_derivative()[(270 - angle >> 1) as usize] as usize;
     let mut left_out = [0.into(); 64 + 64];
     let left;
     let left_off;
@@ -1243,7 +1243,7 @@ fn ipred_filter_rust<BD: BitDepth>(
     let stride = dst.pixel_stride::<BD>();
     let filt_idx = filt_idx & 511;
 
-    let filter = &rav1d_filter_intra_taps()[filt_idx];
+    let filter = &filter_intra_taps()[filt_idx];
     let mut top = &topleft_in[topleft_off + 1..][..width];
     let mut top_guard;
     for y in (0..height).step_by(2) {
@@ -1660,7 +1660,7 @@ mod neon {
         let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
-        let mut dx = rav1d_dr_intra_derivative()[(angle >> 1) as usize] as c_int;
+        let mut dx = dr_intra_derivative()[(angle >> 1) as usize] as c_int;
         const TOP_OUT_SIZE: usize = 64 + 64 * (64 + 15) * 2 + 16;
         let mut top_out = [0.into(); TOP_OUT_SIZE];
         let max_base_x;
@@ -1734,8 +1734,8 @@ mod neon {
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
         assert!(angle > 90 && angle < 180);
-        let mut dy = rav1d_dr_intra_derivative()[((angle - 90) >> 1) as usize] as c_int;
-        let mut dx = rav1d_dr_intra_derivative()[((180 - angle) >> 1) as usize] as c_int;
+        let mut dy = dr_intra_derivative()[((angle - 90) >> 1) as usize] as c_int;
+        let mut dx = dr_intra_derivative()[((180 - angle) >> 1) as usize] as c_int;
         let mut buf = [0.to::<BD::Pixel>(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
 
         // The asm can underread below the start of top[] and left[]; to avoid
@@ -1900,7 +1900,7 @@ mod neon {
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511;
         assert!(angle > 180);
-        let mut dy = rav1d_dr_intra_derivative()[(270 - angle >> 1) as usize] as c_int;
+        let mut dy = dr_intra_derivative()[(270 - angle >> 1) as usize] as c_int;
         let mut flipped = [0.into(); 64 + 64 + 16];
         let mut left_out = [0.into(); 64 + 64 + (64 + 15) * 2];
         let max_base_y;
