@@ -499,7 +499,6 @@ fn get_lo_ctx(
     let offset;
     match ctx_offsets {
         Some(ctx_offsets) => {
-            level(2, 1); // Bounds check all at once.
             mag = level(0, 1) + level(1, 0);
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
@@ -509,7 +508,6 @@ fn get_lo_ctx(
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
-            level(1, 4); // Bounds check all at once.
             mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
             *hi_mag = mag;
