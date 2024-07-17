@@ -613,7 +613,10 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
     if dbg {
         println!(
             "Post-non-zero[{}][{}][{}]: r={}",
-            tdim!().ctx, sctx, all_skip, ts_c.msac.rng,
+            tdim!().ctx,
+            sctx,
+            all_skip,
+            ts_c.msac.rng,
         );
     }
     if all_skip {
@@ -663,7 +666,12 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
             if dbg {
                 println!(
                     "Post-txtp-intra[{:?}->{}][{}][{}->{}]: r={}",
-                    tx, tdim!().min, y_mode_nofilt, idx, txtp, ts_c.msac.rng,
+                    tx,
+                    tdim!().min,
+                    y_mode_nofilt,
+                    idx,
+                    txtp,
+                    ts_c.msac.rng,
                 );
             }
             txtp
@@ -699,7 +707,11 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
             if dbg {
                 println!(
                     "Post-txtp-inter[{:?}->{}][{}->{}]: r={}",
-                    tx, tdim!().min, idx, txtp, ts_c.msac.rng,
+                    tx,
+                    tdim!().min,
+                    idx,
+                    txtp,
+                    ts_c.msac.rng,
                 );
             }
             txtp
@@ -762,7 +774,11 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
         if dbg {
             println!(
                 "Post-eob_hi_bit[{}][{}][{}][{}]: r={}",
-                tdim!().ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
+                tdim!().ctx,
+                chroma,
+                eob_bin,
+                eob_hi_bit,
+                ts_c.msac.rng,
             );
         }
         let eob = ((eob_hi_bit | 2) << (eob_bin - 2))
@@ -1068,13 +1084,34 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
         let cf = &mut cf;
         (rc, dc_tok) = match tx_class {
             TxClass::TwoD => decode_coefs_class::<{ TxClass::TwoD as _ }, BD>(
-                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
+                ts_c,
+                &tdim!(),
+                chroma,
+                scratch,
+                eob,
+                tx,
+                dbg,
+                cf,
             ),
             TxClass::H => decode_coefs_class::<{ TxClass::H as _ }, BD>(
-                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
+                ts_c,
+                &tdim!(),
+                chroma,
+                scratch,
+                eob,
+                tx,
+                dbg,
+                cf,
             ),
             TxClass::V => decode_coefs_class::<{ TxClass::V as _ }, BD>(
-                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
+                ts_c,
+                &tdim!(),
+                chroma,
+                scratch,
+                eob,
+                tx,
+                dbg,
+                cf,
             ),
         };
     } else {
@@ -1087,7 +1124,11 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
         if dbg {
             println!(
                 "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                tdim!().ctx, chroma, 0, dc_tok, ts_c.msac.rng,
+                tdim!().ctx,
+                chroma,
+                0,
+                dc_tok,
+                ts_c.msac.rng,
             );
         }
         if tok_br == 2 {
