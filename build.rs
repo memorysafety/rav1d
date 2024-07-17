@@ -292,10 +292,10 @@ mod asm {
             nasm.files(asm_file_paths);
             #[cfg(debug_assertions)]
             nasm.flag("-g");
-            #[cfg(all(debug_assertions, not(windows)))]
-            nasm.flag("-Fdwarf");
-            #[cfg(all(debug_assertions, windows))]
-            nasm.flag("-fwin64");
+            nasm.flag(match os {
+                "windows" => "-fwin64",
+                _ => "-Fdwarf",
+            });
             nasm.flag(&format!("-I{}/", out_dir.to_str().unwrap()));
             nasm.flag("-Isrc/");
             let obj = nasm.compile_objects().unwrap_or_else(|e| {
