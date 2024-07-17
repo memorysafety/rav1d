@@ -83,7 +83,9 @@ use crate::src::tables::dav1d_lo_ctx_offsets;
 use crate::src::tables::dav1d_skip_ctx;
 use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
+use crate::src::tables::dav1d_txfm_dimension;
 use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_txfm_size;
 use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
@@ -264,20 +266,24 @@ impl_MergeInt!(u64, u32);
 impl_MergeInt!(u128, u64);
 
 #[inline]
-fn get_skip_ctx(
-    t_dim: &TxfmInfo,
+fn get_skip_ctx<const txsize_discr: usize>(
     bs: BlockSize,
     a: &[u8],
     l: &[u8],
     chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> InRange<u8, 0, { 13 - 1 }> {
+    macro_rules! tdim {
+        () => {
+            dav1d_txfm_dimension::<txsize_discr>()
+        };
+    }
     let b_dim = bs.dimensions();
     let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
         let ss_hor = layout != Rav1dPixelLayout::I444;
-        let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
-            || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
+        let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > tdim!().lw
+            || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > tdim!().lh;
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
             dir[..N] != [0x40; N]
         }
@@ -297,7 +303,7 @@ fn get_skip_ctx(
         }
 
         (7 + (not_one_blk as u8) * 3) + cdir(a) + cdir(l)
-    } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
+    } else if b_dim[2] == tdim!().lw && b_dim[3] == tdim!().lh {
         0
     } else {
         /// Read and xor all the bytes.
@@ -342,7 +348,8 @@ fn get_skip_ctx(
 }
 
 #[inline]
-fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
+fn get_dc_sign_ctx<const txsize_discr: usize>(a: &[u8], l: &[u8]) -> c_uint {
+    let tx = dav1d_txfm_size::<txsize_discr>();
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
@@ -518,6 +525,8 @@ fn get_lo_ctx(
         }
 }
 
+#[rustfmt::skip]
+#[inline(always)]
 fn decode_coefs<BD: BitDepth>(
     f: &Rav1dFrameData,
     ts: usize,
@@ -535,6 +544,55 @@ fn decode_coefs<BD: BitDepth>(
     txtp: &mut TxfmType,
     res_ctx: &mut u8,
 ) -> c_int {
+    // We make the `TxfmSize` a const so the optimizer sees we don't need memory reads to access the
+    // `TxfmInfo` dimensions.
+    use TxfmSize::*;
+    match tx {
+        S4x4 => decode_coefs_inner::<BD, { S4x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S8x8 => decode_coefs_inner::<BD, { S8x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S16x16 => decode_coefs_inner::<BD, { S16x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S32x32 => decode_coefs_inner::<BD, { S32x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S64x64 => decode_coefs_inner::<BD, { S64x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R4x8 => decode_coefs_inner::<BD, { R4x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x4 => decode_coefs_inner::<BD, { R8x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x16 => decode_coefs_inner::<BD, { R8x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x8 => decode_coefs_inner::<BD, { R16x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x32 => decode_coefs_inner::<BD, { R16x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x16 => decode_coefs_inner::<BD, { R32x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x64 => decode_coefs_inner::<BD, { R32x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R64x32 => decode_coefs_inner::<BD, { R64x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R4x16 => decode_coefs_inner::<BD, { R4x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x4 => decode_coefs_inner::<BD, { R16x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x32 => decode_coefs_inner::<BD, { R8x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x8 => decode_coefs_inner::<BD, { R32x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x64 => decode_coefs_inner::<BD, { R16x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R64x16 => decode_coefs_inner::<BD, { R64x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+    }
+}
+
+#[inline(never)]
+fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
+    f: &Rav1dFrameData,
+    ts: usize,
+    ts_c: &mut Rav1dTileStateContext,
+    dbg_block_info: bool,
+    scratch: &mut TaskContextScratch,
+    t_cf: &mut Cf,
+    a: &mut [u8],
+    l: &mut [u8],
+    tx: TxfmSize,
+    bs: BlockSize,
+    b: &Av1Block,
+    plane: usize,
+    cf: CfSelect,
+    txtp: &mut TxfmType,
+    res_ctx: &mut u8,
+) -> c_int {
+    macro_rules! tdim {
+        () => {
+            dav1d_txfm_dimension::<txsize_discr>()
+        };
+    }
     let dc_sign_ctx;
     let dc_sign;
     let mut dc_dq;
@@ -542,7 +600,6 @@ fn decode_coefs<BD: BitDepth>(
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
     if dbg {
@@ -550,15 +607,15 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout);
+    let sctx = get_skip_ctx::<txsize_discr>(bs, a, l, chroma, f.cur.p.layout);
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
-        &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx.get() as usize],
+        &mut ts_c.cdf.coef.skip[tdim!().ctx as usize][sctx.get() as usize],
     );
     if dbg {
         println!(
             "Post-non-zero[{}][{}][{}]: r={}",
-            t_dim.ctx, sctx, all_skip, ts_c.msac.rng,
+            tdim!().ctx, sctx, all_skip, ts_c.msac.rng,
         );
     }
     if all_skip {
@@ -571,14 +628,14 @@ fn decode_coefs<BD: BitDepth>(
     use Av1BlockIntraInter::*;
     *txtp = match &b.ii {
         _ if lossless => {
-            assert!(t_dim.max == TxfmSize::S4x4 as _);
+            assert!(tdim!().max == TxfmSize::S4x4 as _);
             WHT_WHT
         }
-        Intra(_) if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
-        Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
+        Intra(_) if tdim!().max >= TxfmSize::S32x32 as _ => DCT_DCT,
+        Inter(_) if tdim!().max >= TxfmSize::S64x64 as _ => DCT_DCT,
         Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
-        Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
+        Inter(_) if chroma => get_uv_inter_txtp(&tdim!(), *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
         // such blocks are actually lossless. The remainder gets an implicit
         // transform type (for luma)
@@ -590,17 +647,17 @@ fn decode_coefs<BD: BitDepth>(
                 intra.y_mode
             };
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TxfmSize::S16x16 as _ {
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || tdim!().min == TxfmSize::S16x16 as _ {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
+                    &mut ts_c.cdf.m.txtp_intra2[tdim!().min as usize][y_mode_nofilt as usize],
                     4,
                 );
                 dav1d_tx_types_per_set[idx as usize + 0]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_intra1[t_dim.min as usize][y_mode_nofilt as usize],
+                    &mut ts_c.cdf.m.txtp_intra1[tdim!().min as usize][y_mode_nofilt as usize],
                     6,
                 );
                 dav1d_tx_types_per_set[idx as usize + 5]
@@ -608,17 +665,17 @@ fn decode_coefs<BD: BitDepth>(
             if dbg {
                 println!(
                     "Post-txtp-intra[{:?}->{}][{}][{}->{}]: r={}",
-                    tx, t_dim.min, y_mode_nofilt, idx, txtp, ts_c.msac.rng,
+                    tx, tdim!().min, y_mode_nofilt, idx, txtp, ts_c.msac.rng,
                 );
             }
             txtp
         }
         Inter(_) => {
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TxfmSize::S32x32 as _ {
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || tdim!().max == TxfmSize::S32x32 as _ {
                 let bool_idx = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_inter3[t_dim.min as usize],
+                    &mut ts_c.cdf.m.txtp_inter3[tdim!().min as usize],
                 );
                 idx = bool_idx as u8;
                 if bool_idx {
@@ -626,7 +683,7 @@ fn decode_coefs<BD: BitDepth>(
                 } else {
                     IDTX
                 }
-            } else if t_dim.min == TxfmSize::S16x16 as _ {
+            } else if tdim!().min == TxfmSize::S16x16 as _ {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter2.0,
@@ -636,7 +693,7 @@ fn decode_coefs<BD: BitDepth>(
             } else {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_inter1[t_dim.min as usize],
+                    &mut ts_c.cdf.m.txtp_inter1[tdim!().min as usize],
                     15,
                 );
                 dav1d_tx_types_per_set[idx as usize + 24]
@@ -644,7 +701,7 @@ fn decode_coefs<BD: BitDepth>(
             if dbg {
                 println!(
                     "Post-txtp-inter[{:?}->{}][{}->{}]: r={}",
-                    tx, t_dim.min, idx, txtp, ts_c.msac.rng,
+                    tx, tdim!().min, idx, txtp, ts_c.msac.rng,
                 );
             }
             txtp
@@ -653,7 +710,7 @@ fn decode_coefs<BD: BitDepth>(
 
     // find end-of-block (eob)
     let tx2dszctx =
-        cmp::min(t_dim.lw, TxfmSize::S32x32 as u8) + cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
+        cmp::min(tdim!().lw, TxfmSize::S32x32 as u8) + cmp::min(tdim!().lh, TxfmSize::S32x32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let chroma = chroma as usize;
     let is_1d = (tx_class != TxClass::TwoD) as usize;
@@ -702,12 +759,12 @@ fn decode_coefs<BD: BitDepth>(
     }
     let eob = if eob_bin > 1 {
         let eob_hi_bit_cdf =
-            &mut ts_c.cdf.coef.eob_hi_bit[t_dim.ctx as usize][chroma][eob_bin as usize];
+            &mut ts_c.cdf.coef.eob_hi_bit[tdim!().ctx as usize][chroma][eob_bin as usize];
         let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as u16;
         if dbg {
             println!(
                 "Post-eob_hi_bit[{}][{}][{}][{}]: r={}",
-                t_dim.ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
+                tdim!().ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
             );
         }
         let eob = ((eob_hi_bit | 2) << (eob_bin - 2))
@@ -744,8 +801,8 @@ fn decode_coefs<BD: BitDepth>(
         }
     }
 
-    let sw = cmp::min(1 << t_dim.lw, 8) as usize;
-    let sh = cmp::min(1 << t_dim.lh, 8) as usize;
+    let sw = cmp::min(1 << tdim!().lw, 8) as usize;
+    let sh = cmp::min(1 << tdim!().lh, 8) as usize;
     let cf_len = sw * 4 * sh * 4;
     let cf = match cf {
         CfSelect::Frame(offset) => &mut *f
@@ -1013,18 +1070,18 @@ fn decode_coefs<BD: BitDepth>(
         let cf = &mut cf;
         (rc, dc_tok) = match tx_class {
             TxClass::TwoD => decode_coefs_class::<{ TxClass::TwoD as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::H => decode_coefs_class::<{ TxClass::H as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::V => decode_coefs_class::<{ TxClass::V as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &tdim!(), chroma, scratch, eob, tx, dbg, cf,
             ),
         };
     } else {
-        let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma];
-        let hi_cdf = &mut ts_c.cdf.coef.br_tok[cmp::min(t_dim.ctx, 3) as usize][chroma];
+        let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[tdim!().ctx as usize][chroma];
+        let hi_cdf = &mut ts_c.cdf.coef.br_tok[cmp::min(tdim!().ctx, 3) as usize][chroma];
 
         // dc-only
         let tok_br = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[0], 2) as c_uint;
@@ -1032,7 +1089,7 @@ fn decode_coefs<BD: BitDepth>(
         if dbg {
             println!(
                 "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                t_dim.ctx, chroma, 0, dc_tok, ts_c.msac.rng,
+                tdim!().ctx, chroma, 0, dc_tok, ts_c.msac.rng,
             );
         }
         if tok_br == 2 {
@@ -1040,7 +1097,7 @@ fn decode_coefs<BD: BitDepth>(
             if dbg {
                 println!(
                     "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
-                    cmp::min(t_dim.ctx, 3),
+                    cmp::min(tdim!().ctx, 3),
                     chroma,
                     dc_tok,
                     ts_c.msac.rng,
@@ -1061,7 +1118,7 @@ fn decode_coefs<BD: BitDepth>(
     } else {
         None
     };
-    let dq_shift = cmp::max(0, t_dim.ctx as c_int - 2);
+    let dq_shift = cmp::max(0, tdim!().ctx as c_int - 2);
     let cf_max = !(!127u32
         << (match BD::BPC {
             BPC::BPC8 => 8,
@@ -1084,7 +1141,7 @@ fn decode_coefs<BD: BitDepth>(
             None => Ac::NoQm,
         });
     } else {
-        dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as c_int;
+        dc_sign_ctx = get_dc_sign_ctx::<txsize_discr>(a, l) as c_int;
         let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
         dc_sign = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, dc_sign_cdf) as c_int;
         if dbg {
