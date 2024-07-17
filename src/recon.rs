@@ -815,7 +815,7 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
     let mut rc;
     let mut dc_tok;
 
-    #[inline]
+    #[inline(always)]
     fn decode_coefs_class<const TX_CLASS: usize, BD: BitDepth>(
         ts_c: &mut Rav1dTileStateContext,
         t_dim: &TxfmInfo,
