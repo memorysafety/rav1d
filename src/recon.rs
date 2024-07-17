@@ -265,7 +265,7 @@ impl_MergeInt!(u32, u16);
 impl_MergeInt!(u64, u32);
 impl_MergeInt!(u128, u64);
 
-#[inline]
+#[inline(always)]
 fn get_skip_ctx<const txsize_discr: usize>(
     bs: BlockSize,
     a: &[u8],
@@ -347,7 +347,7 @@ fn get_skip_ctx<const txsize_discr: usize>(
     InRange::new(skip_ctx).unwrap()
 }
 
-#[inline]
+#[inline(always)]
 fn get_dc_sign_ctx<const txsize_discr: usize>(a: &[u8], l: &[u8]) -> c_uint {
     let tx = dav1d_txfm_size::<txsize_discr>();
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
