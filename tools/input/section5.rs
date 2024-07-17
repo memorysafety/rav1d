@@ -103,6 +103,9 @@ unsafe fn parse_obu_header(
     buf = buf.offset(1);
     buf_size -= 1;
     if extension_flag != 0 {
+        if buf_size == 0 {
+            return -1;
+        }
         buf = buf.offset(1);
         buf_size -= 1;
     }
