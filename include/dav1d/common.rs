@@ -14,7 +14,10 @@ pub(crate) type Rav1dUserData = Option<CArc<u8>>;
 impl From<Dav1dUserData> for Rav1dUserData {
     fn from(value: Dav1dUserData) -> Self {
         let Dav1dUserData { data: _, r#ref } = value;
-        r#ref.map(|r#ref| unsafe { CArc::from_raw(r#ref) })
+        r#ref.map(|r#ref| {
+            // SAFETY: `r#ref` came from `CArc::into_raw`.
+            unsafe { CArc::from_raw(r#ref) }
+        })
     }
 }
 

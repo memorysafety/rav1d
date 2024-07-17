@@ -84,6 +84,10 @@ impl<T: ?Sized> AsRef<T> for CBox<T> {
     fn as_ref(&self) -> &T {
         match self {
             Self::Rust(r#box) => r#box.as_ref(),
+            // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
+            // so we can take `&` references of it.
+            // Furthermore, `data` is never moved and is valid to dereference,
+            // so this reference can live as long as `CBox` and still be valid the whole time.
             Self::C { data, .. } => unsafe { data.pointer.as_ref() },
         }
     }

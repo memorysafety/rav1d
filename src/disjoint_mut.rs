@@ -934,6 +934,9 @@ impl<V> DisjointMut<Vec<V>> {
     }
 }
 
+/// SAFETY: We never materialize a `&mut [V]` since we
+/// only materialize a `&mut Vec<V>` and call [`Vec::as_mut_ptr`] on it,
+/// which never materializes a `&mut [V]`.
 unsafe impl<V> AsMutPtr for Vec<V> {
     type Target = V;
 
@@ -950,6 +953,7 @@ unsafe impl<V> AsMutPtr for Vec<V> {
     }
 }
 
+/// SAFETY: We never materialize a `&mut [V]` since we do a direct cast.
 unsafe impl<V, const N: usize> AsMutPtr for [V; N] {
     type Target = V;
 
@@ -962,6 +966,7 @@ unsafe impl<V, const N: usize> AsMutPtr for [V; N] {
     }
 }
 
+/// SAFETY: We never materialize a `&mut [V]` since we do a direct unsizing cast.
 unsafe impl<V> AsMutPtr for [V] {
     type Target = V;
 
@@ -974,6 +979,8 @@ unsafe impl<V> AsMutPtr for [V] {
     }
 }
 
+/// SAFETY: We never materialize a `&mut [V]` since we go use [`addr_of_mut!`]
+/// to create a `*mut [V]` directly, which we then unsize cast.
 unsafe impl<V> AsMutPtr for Box<[V]> {
     type Target = V;
 
