@@ -2303,7 +2303,7 @@ impl Rav1dMCDSPContext {
         self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, neon);
         self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, neon);
 
-        #[cfg(target_feature = "dotprod")]
+        #[cfg(target_arch = "aarch64")]
         if BD::BITDEPTH == 8 {
             if !flags.contains(CpuFlags::DOTPROD) {
                 return self;
@@ -2335,7 +2335,7 @@ impl Rav1dMCDSPContext {
             });
         }
 
-        #[cfg(target_feature = "i8mm")]
+        #[cfg(target_arch = "aarch64")]
         if BD::BITDEPTH == 8 {
             if !flags.contains(CpuFlags::I8MM) {
                 return self;
