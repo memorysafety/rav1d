@@ -54,6 +54,12 @@ impl<T: Sized> Unique<T> {
             _marker: PhantomData,
         }
     }
+
+    #[inline]
+    #[must_use]
+    pub fn is_aligned(&self) -> bool {
+        self.pointer.is_aligned()
+    }
 }
 
 impl<T: ?Sized> Unique<T> {
@@ -142,6 +148,13 @@ impl<T: ?Sized> Unique<T> {
         // SAFETY: is `NonNull`
         Unique {
             pointer: self.pointer.cast(),
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn map(self, f: impl FnOnce(NonNull<T>) -> NonNull<T>) -> Self {
+        Self {
+            pointer: f(self.pointer),
             _marker: PhantomData,
         }
     }
