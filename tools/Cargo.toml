@@ -4,6 +4,8 @@ authors = ["C2Rust"]
 version = "0.2.0"
 edition = "2021"
 default-run = "dav1d"
+description = "Rust port of the dav1d AV1 decoder CLI tools"
+license = "BSD-2-Clause"
 
 [[bin]]
 path = "dav1d.rs"

@@ -4,10 +4,12 @@ default-members = [".", "tools"]
 
 [package]
 name = "rav1d"
-authors = ["C2Rust"]
+authors = [""]
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.79"
+description = "Rust port of the dav1d AV1 decoder"
+license = "BSD-2-Clause"
 
 [lib]
 path = "lib.rs"
