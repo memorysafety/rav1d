@@ -6,6 +6,7 @@ edition = "2021"
 default-run = "dav1d"
 description = "Rust port of the dav1d AV1 decoder CLI tools"
 license = "BSD-2-Clause"
+repository = "https://github.com/memorysafety/rav1d"
 
 [[bin]]
 path = "dav1d.rs"
