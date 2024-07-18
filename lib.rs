@@ -54,6 +54,7 @@ pub mod src {
     pub(crate) mod pic_or_buf;
     pub(crate) mod pixels;
     pub(crate) mod relaxed_atomic;
+    pub mod send_sync_non_null;
     pub(crate) mod strided;
     pub(crate) mod with_offset;
     pub(crate) mod wrap_fn_ptr;

@@ -80,6 +80,7 @@ use rav1d::src::lib::dav1d_version_api;
 use rav1d::src::lib::DAV1D_API_VERSION_MAJOR;
 use rav1d::src::lib::DAV1D_API_VERSION_MINOR;
 use rav1d::src::lib::DAV1D_API_VERSION_PATCH;
+use rav1d::src::send_sync_non_null::SendSyncNonNull;
 use rav1d::Dav1dResult;
 use std::ffi::c_char;
 use std::ffi::c_double;
@@ -215,7 +216,7 @@ unsafe fn print_stats(istty: c_int, n: c_uint, num: c_uint, elapsed: u64, i_fps:
 
 unsafe extern "C" fn picture_alloc(
     p: *mut Dav1dPicture,
-    _: Option<NonNull<c_void>>,
+    _: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     let hbd = ((*p).p.bpc > 8) as c_int;
     let aligned_w = (*p).p.w + 127 & !(127 as c_int);
@@ -248,7 +249,7 @@ unsafe extern "C" fn picture_alloc(
     if buf.is_null() {
         return Dav1dResult(-12);
     }
-    (*p).allocator_data = NonNull::new(buf.cast());
+    (*p).allocator_data = NonNull::new(buf).map(|ptr| SendSyncNonNull::new_unchecked(ptr).cast());
     let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
     (*p).data[0] =
@@ -274,9 +275,9 @@ unsafe extern "C" fn picture_alloc(
     Dav1dResult(0)
 }
 
-unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: Option<NonNull<c_void>>) {
+unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: Option<SendSyncNonNull<c_void>>) {
     if let Some(data) = (*p).allocator_data {
-        free(data.as_ptr());
+        free(data.as_ptr().as_ptr());
     }
 }
 

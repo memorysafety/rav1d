@@ -9,6 +9,7 @@ use crate::src::c_box::FnFree;
 use crate::src::c_box::Free;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
@@ -37,7 +38,7 @@ impl Rav1dData {
     pub unsafe fn wrap(
         data: NonNull<[u8]>,
         free_callback: Option<FnFree>,
-        cookie: Option<NonNull<c_void>>,
+        cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult<Self> {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };
@@ -54,7 +55,7 @@ impl Rav1dData {
         &mut self,
         user_data: NonNull<u8>,
         free_callback: Option<FnFree>,
-        cookie: Option<NonNull<c_void>>,
+        cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult {
         let free = validate_input!(free_callback.ok_or(EINVAL))?;
         let free = Free { free, cookie };

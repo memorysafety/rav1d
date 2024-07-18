@@ -27,6 +27,7 @@ use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
 use crate::src::pixels::Pixels;
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::strided::Strided;
 use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
@@ -109,7 +110,7 @@ pub struct Dav1dPicture {
     pub itut_t35_ref: Option<RawArc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
     pub r#ref: Option<RawArc<Rav1dPictureData>>, // opaque, so we can change this
-    pub allocator_data: Option<NonNull<c_void>>,
+    pub allocator_data: Option<SendSyncNonNull<c_void>>,
 }
 
 #[derive(Clone, FromZeroes, FromBytes, AsBytes)]
@@ -390,7 +391,7 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
 
 pub struct Rav1dPictureData {
     pub data: [Rav1dPictureDataComponent; 3],
-    pub(crate) allocator_data: Option<NonNull<c_void>>,
+    pub(crate) allocator_data: Option<SendSyncNonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
 
@@ -549,7 +550,15 @@ impl Rav1dPicture {
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     /// Custom data to pass to the allocator callbacks.
-    pub cookie: Option<NonNull<c_void>>,
+    ///
+    /// # Safety
+    ///
+    /// All accesses to [`Self::cookie`] must be thread-safe
+    /// (i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`]).
+    ///
+    /// If used from Rust, [`Self::cookie`] is a [`SendSyncNonNull`],
+    /// whose constructors ensure this [`Send`]` + `[`Sync`] safety.
+    pub cookie: Option<SendSyncNonNull<c_void>>,
 
     /// Allocate the picture buffer based on the [`Dav1dPictureParameters`].
     ///
@@ -561,7 +570,7 @@ pub struct Dav1dPicAllocator {
     ///
     /// # Safety
     ///
-    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
+    /// See [`Self::cookie`]'s safety requirements.
     ///
     /// ### Additional `rav1d` requirement:
     ///
@@ -611,7 +620,7 @@ pub struct Dav1dPicAllocator {
     pub alloc_picture_callback: Option<
         unsafe extern "C" fn(
             pic: *mut Dav1dPicture,
-            cookie: Option<NonNull<c_void>>,
+            cookie: Option<SendSyncNonNull<c_void>>,
         ) -> Dav1dResult,
     >,
 
@@ -650,8 +659,9 @@ pub struct Dav1dPicAllocator {
     ///
     /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
     /// [`alloc_picture_callback`]: Self::alloc_picture_callback
-    pub release_picture_callback:
-        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<NonNull<c_void>>) -> ()>,
+    pub release_picture_callback: Option<
+        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<SendSyncNonNull<c_void>>) -> (),
+    >,
 }
 
 #[derive(Clone)]
@@ -679,7 +689,7 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// [`Rav1dContext::picture_pool`]: crate::src::internal::Rav1dContext::picture_pool
     /// [`Rav1dContext`]: crate::src::internal::Rav1dContext
-    pub cookie: Option<NonNull<c_void>>,
+    pub cookie: Option<SendSyncNonNull<c_void>>,
 
     /// See [`Dav1dPicAllocator::alloc_picture_callback`].
     ///
@@ -691,7 +701,7 @@ pub(crate) struct Rav1dPicAllocator {
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub alloc_picture_callback: unsafe extern "C" fn(
         pic: *mut Dav1dPicture,
-        cookie: Option<NonNull<c_void>>,
+        cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Dav1dResult,
 
     /// See [`Dav1dPicAllocator::release_picture_callback`].
@@ -703,7 +713,7 @@ pub(crate) struct Rav1dPicAllocator {
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub release_picture_callback:
-        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<NonNull<c_void>>) -> (),
+        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<SendSyncNonNull<c_void>>) -> (),
 }
 
 impl TryFrom<Dav1dPicAllocator> for Rav1dPicAllocator {
@@ -787,7 +797,7 @@ impl Rav1dPicAllocator {
     pub fn dealloc_picture_data(
         &self,
         data: &mut [Rav1dPictureDataComponent; 3],
-        allocator_data: Option<NonNull<c_void>>,
+        allocator_data: Option<SendSyncNonNull<c_void>>,
     ) {
         let data = data.each_mut().map(|data| data.as_dav1d());
         let mut pic_c = Dav1dPicture {

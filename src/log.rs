@@ -1,3 +1,4 @@
+use crate::src::send_sync_non_null::SendSyncNonNull;
 use std::ffi::c_char;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -6,11 +7,10 @@ use std::fmt::Write as _;
 use std::io::stderr;
 use std::io::stdout;
 use std::io::Write as _;
-use std::ptr::NonNull;
 
 pub type Dav1dLoggerCallback = unsafe extern "C" fn(
-    // The above `cookie` field.
-    cookie: Option<NonNull<c_void>>,
+    // [`Dav1dLogger::cookie`].
+    cookie: Option<SendSyncNonNull<c_void>>,
     // A `printf`-style format specifier.
     fmt: *const c_char,
     // `printf`-style variadic args.
@@ -21,7 +21,16 @@ pub type Dav1dLoggerCallback = unsafe extern "C" fn(
 #[repr(C)]
 pub struct Dav1dLogger {
     /// A cookie that's passed as the first argument to the callback below.
-    cookie: Option<NonNull<c_void>>,
+    ///
+    /// # Safety
+    ///
+    /// All accesses to [`Self::cookie`] must be thread-safe
+    /// (i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`]).
+    ///
+    /// If used from Rust, [`Self::cookie`] is a [`SendSyncNonNull`],
+    /// whose constructors ensure this [`Send`]` + `[`Sync`] safety.
+    cookie: Option<SendSyncNonNull<c_void>>,
+
     /// A `printf`-style function except for an extra first argument that will always be the above `cookie`.
     callback: Option<Dav1dLoggerCallback>,
 }
@@ -32,8 +41,10 @@ impl Dav1dLogger {
     /// `callback`, if non-[`None`]/`NULL` must be safe to call when:
     /// * the first argument is `cookie`
     /// * the rest of the arguments would be safe to call `printf` with
+    ///
+    /// See [`Self::cookie`]'s safety requirements.
     pub const unsafe fn new(
-        cookie: Option<NonNull<c_void>>,
+        cookie: Option<SendSyncNonNull<c_void>>,
         callback: Option<Dav1dLoggerCallback>,
     ) -> Self {
         Self { cookie, callback }
