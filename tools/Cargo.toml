@@ -1,5 +1,5 @@
 [package]
-name = "rav1d_cli"
+name = "rav1d-cli"
 authors = ["Rav1d Developers", "Prossimo"]
 version = "1.0.0"
 edition = "2021"

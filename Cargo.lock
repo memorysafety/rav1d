@@ -165,7 +165,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rav1d_cli"
+name = "rav1d-cli"
 version = "1.0.0"
 dependencies = [
  "cfg-if",
