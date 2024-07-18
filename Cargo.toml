@@ -4,7 +4,7 @@ default-members = [".", "tools"]
 
 [package]
 name = "rav1d"
-authors = [""]
+authors = ["Rav1d Developers", "Prossimo"]
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.79"

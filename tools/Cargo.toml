@@ -1,6 +1,6 @@
 [package]
 name = "rav1d_cli"
-authors = ["C2Rust"]
+authors = ["Rav1d Developers", "Prossimo"]
 version = "0.2.0"
 edition = "2021"
 default-run = "dav1d"
