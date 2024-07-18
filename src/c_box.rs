@@ -3,7 +3,6 @@
 use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::unique::Unique;
 use std::ffi::c_void;
-use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::ptr::drop_in_place;
@@ -67,7 +66,7 @@ impl<T: ?Sized> AsRef<T> for CBox<T> {
             // so we can take `&` references of it.
             // Furthermore, `data` is never moved and is valid to dereference,
             // so this reference can live as long as `CBox` and still be valid the whole time.
-            Self::C { data, .. } => unsafe { data.pointer.as_ref() },
+            Self::C { data, .. } => unsafe { data.as_ref() },
         }
     }
 }
@@ -85,7 +84,7 @@ impl<T: ?Sized> Drop for CBox<T> {
         match self {
             Self::Rust(_) => {} // Drop normally.
             Self::C { data, free, .. } => {
-                let ptr = data.pointer.as_ptr();
+                let ptr = data.as_ptr();
                 // SAFETY: See below.
                 // The [`FnFree`] won't run Rust's `fn drop`,
                 // so we have to do this ourselves first.
@@ -107,10 +106,7 @@ impl<T: ?Sized> CBox<T> {
     /// which must be accessed thread-safely.
     pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
         Self::C {
-            data: Unique {
-                pointer: data,
-                _marker: PhantomData,
-            },
+            data: data.into(),
             free,
         }
     }
