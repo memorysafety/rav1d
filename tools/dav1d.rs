@@ -81,6 +81,7 @@ use rav1d::src::lib::DAV1D_API_VERSION_MAJOR;
 use rav1d::src::lib::DAV1D_API_VERSION_MINOR;
 use rav1d::src::lib::DAV1D_API_VERSION_PATCH;
 use rav1d::src::send_sync_non_null::SendSyncNonNull;
+use rav1d::src::unique::Unique;
 use rav1d::Dav1dResult;
 use std::ffi::c_char;
 use std::ffi::c_double;
@@ -253,7 +254,8 @@ unsafe extern "C" fn picture_alloc(
     let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
     (*p).data[0] =
-        NonNull::new(data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void);
+        NonNull::new(data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void)
+            .map(|ptr| Unique::new(ptr));
     (*p).data[1] = NonNull::new(
         (if has_chroma != 0 {
             data.offset(y_sz as isize)
@@ -262,7 +264,8 @@ unsafe extern "C" fn picture_alloc(
         } else {
             0 as *mut u8
         }) as *mut c_void,
-    );
+    )
+    .map(|ptr| Unique::new(ptr));
     (*p).data[2] = NonNull::new(
         (if has_chroma != 0 {
             data.offset(y_sz as isize)
@@ -271,7 +274,8 @@ unsafe extern "C" fn picture_alloc(
         } else {
             0 as *mut u8
         }) as *mut c_void,
-    );
+    )
+    .map(|ptr| Unique::new(ptr));
     Dav1dResult(0)
 }
 
