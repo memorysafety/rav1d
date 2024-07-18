@@ -2,7 +2,6 @@
 name = "rav1d_cli"
 authors = ["C2Rust"]
 version = "0.2.0"
-publish = false
 edition = "2021"
 default-run = "dav1d"
 

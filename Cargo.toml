@@ -6,7 +6,6 @@ default-members = [".", "tools"]
 name = "rav1d"
 authors = ["C2Rust"]
 version = "0.2.0"
-publish = false
 edition = "2021"
 rust-version = "1.79"
 
