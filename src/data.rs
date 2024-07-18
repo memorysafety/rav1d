@@ -10,8 +10,8 @@ use crate::src::c_box::Free;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
 use crate::src::send_sync_non_null::SendSyncNonNull;
+use crate::src::unique::Unique;
 use std::ffi::c_void;
-use std::ptr::NonNull;
 
 impl From<CArc<[u8]>> for Rav1dData {
     fn from(data: CArc<[u8]>) -> Self {
@@ -36,7 +36,7 @@ impl Rav1dData {
     ///
     /// See [`CBox::from_c`]'s safety for `data`, `free_callback`, `cookie`.
     pub unsafe fn wrap(
-        data: NonNull<[u8]>,
+        data: Unique<[u8]>,
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult<Self> {
@@ -53,7 +53,7 @@ impl Rav1dData {
     /// See [`CBox::from_c`]'s safety for `user_data`, `free_callback`, `cookie`.
     pub unsafe fn wrap_user_data(
         &mut self,
-        user_data: NonNull<u8>,
+        user_data: Unique<u8>,
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult {

@@ -52,6 +52,7 @@ use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
+use crate::src::unique::Unique;
 use parking_lot::Mutex;
 use std::cmp;
 use std::ffi::c_char;
@@ -863,7 +864,7 @@ pub unsafe extern "C" fn dav1d_data_create(buf: Option<NonNull<Dav1dData>>, sz: 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap(
     buf: Option<NonNull<Dav1dData>>,
-    ptr: Option<NonNull<u8>>,
+    ptr: Option<Unique<u8>>,
     sz: usize,
     free_callback: Option<FnFree>,
     user_data: Option<SendSyncNonNull<c_void>>,
@@ -874,8 +875,10 @@ pub unsafe extern "C" fn dav1d_data_wrap(
         validate_input!((sz <= usize::MAX / 2, EINVAL))?;
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
+        // SAFETY: `data` is unique since `ptr` was unique.
+        let data = unsafe { Unique::from_ref(data) };
         // SAFETY: `ptr`, and thus `data`, is valid to dereference until `free_callback` is called on it, which deallocates it.
-        let data = unsafe { Rav1dData::wrap(data.into(), free_callback, user_data) }?;
+        let data = unsafe { Rav1dData::wrap(data, free_callback, user_data) }?;
         let data_c = data.into();
         // SAFETY: `buf` is safe to write to.
         unsafe { buf.as_ptr().write(data_c) };
@@ -891,7 +894,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: Option<NonNull<Dav1dData>>,
-    user_data: Option<NonNull<u8>>,
+    user_data: Option<Unique<u8>>,
     free_callback: Option<FnFree>,
     cookie: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
