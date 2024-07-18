@@ -6,7 +6,6 @@ use std::ffi::c_void;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::ptr::drop_in_place;
-use std::ptr::NonNull;
 
 pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<SendSyncNonNull<c_void>>);
 
@@ -104,11 +103,8 @@ impl<T: ?Sized> CBox<T> {
     /// until `free.free` is called on it, which must deallocate it.
     /// `free.free` is always called with `free.cookie`,
     /// which must be accessed thread-safely.
-    pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
-        Self::C {
-            data: data.into(),
-            free,
-        }
+    pub unsafe fn from_c(data: Unique<T>, free: Free) -> Self {
+        Self::C { data, free }
     }
 
     pub fn from_box(data: Box<T>) -> Self {

@@ -17,6 +17,7 @@ use std::ptr::NonNull;
 ///
 /// Unlike [`NonNull<T>`], [`Unique<T>`] is covariant over `T`.
 /// This should always be correct for any type which upholds [`Unique`]'s aliasing requirements.
+#[repr(transparent)]
 pub struct Unique<T: ?Sized> {
     pointer: NonNull<T>,
     // NOTE: this marker has no consequences for variance, but is necessary
@@ -60,29 +61,30 @@ impl<T: ?Sized> Unique<T> {
     ///
     /// # Safety
     ///
-    /// `ptr` must be non-null.
+    /// `ptr` must be unique.
     #[inline]
-    pub const unsafe fn new_unchecked(ptr: *mut T) -> Self {
-        // SAFETY: the caller must guarantee that `ptr` is non-null.
-        unsafe {
-            Unique {
-                pointer: NonNull::new_unchecked(ptr),
-                _marker: PhantomData,
-            }
+    pub const unsafe fn new(ptr: NonNull<T>) -> Self {
+        Unique {
+            pointer: ptr,
+            _marker: PhantomData,
         }
     }
 
-    /// Creates a new [`Unique`] if `ptr` is non-null.
     #[inline]
-    pub fn new(ptr: *mut T) -> Option<Self> {
-        if let Some(pointer) = NonNull::new(ptr) {
-            Some(Unique {
-                pointer,
-                _marker: PhantomData,
-            })
-        } else {
-            None
-        }
+    pub fn from_ref_mut(reference: &mut T) -> Self {
+        let ptr = reference.into();
+        // SAFETY: `&mut` guarantees uniqueness.
+        unsafe { Self::new(ptr) }
+    }
+
+    /// # Safety
+    ///
+    /// `reference` must be unique.
+    #[inline]
+    pub unsafe fn from_ref(reference: &T) -> Self {
+        let ptr = reference.into();
+        // SAFETY: Guaranteed by safety preconditions.
+        unsafe { Self::new(ptr) }
     }
 
     /// Acquires the underlying `*mut` pointer.
@@ -168,23 +170,8 @@ impl<T: ?Sized> fmt::Pointer for Unique<T> {
 
 impl<T: ?Sized> From<&mut T> for Unique<T> {
     /// Converts a `&mut T` to a [`Unique<T>`].
-    ///
-    /// This conversion is infallible since references cannot be null.
     #[inline]
     fn from(reference: &mut T) -> Self {
-        Self::from(NonNull::from(reference))
-    }
-}
-
-impl<T: ?Sized> From<NonNull<T>> for Unique<T> {
-    /// Converts a [`NonNull<T>`] to a [`Unique<T>`].
-    ///
-    /// This conversion is infallible since [`NonNull`] cannot be null.
-    #[inline]
-    fn from(pointer: NonNull<T>) -> Self {
-        Unique {
-            pointer,
-            _marker: PhantomData,
-        }
+        Self::from_ref_mut(reference)
     }
 }
