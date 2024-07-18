@@ -61,7 +61,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
 ) -> ());
 
 pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
-pub type CdefBottom<'a> = WithOffset<PicOrBuf<'a, AlignedVec64<u8>>>;
+pub type CdefBottom<'a, 'buf> = WithOffset<PicOrBuf<'a, 'buf, AlignedVec64<u8>>>;
 
 impl cdef::Fn {
     /// CDEF operates entirely on pre-filter data.

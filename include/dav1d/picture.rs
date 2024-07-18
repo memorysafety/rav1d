@@ -1,4 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(elided_lifetimes_in_paths)]
 
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
@@ -34,6 +35,7 @@ use libc::uintptr_t;
 use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::marker::PhantomData;
 use std::mem;
 use std::ptr::NonNull;
 use std::sync::Arc;
@@ -128,12 +130,14 @@ const RAV1D_PICTURE_GUARANTEED_MULTIPLE: usize = 64;
 /// though wrapped buffers may only be [`RAV1D_PICTURE_GUARANTEED_MULTIPLE`].
 const RAV1D_PICTURE_MULTIPLE: usize = 64 * 64;
 
-pub struct Rav1dPictureDataComponentInner {
+pub struct Rav1dPictureDataComponentInner<'a> {
     /// A ptr to the start of this slice of [`BitDepth::Pixel`]s*,
     /// even if [`Self::stride`] is negative.
     ///
     /// It is aligned to [`RAV1D_PICTURE_ALIGNMENT`].
     ptr: NonNull<u8>,
+
+    _phantom: PhantomData<&'a ()>,
 
     /// The length of [`Self::ptr`] in [`u8`] bytes.
     ///
@@ -144,7 +148,7 @@ pub struct Rav1dPictureDataComponentInner {
     stride: isize,
 }
 
-impl Rav1dPictureDataComponentInner {
+impl<'a> Rav1dPictureDataComponentInner<'a> {
     /// `len` and `stride` are in terms of [`u8`] bytes.
     ///
     /// # Safety
@@ -156,6 +160,7 @@ impl Rav1dPictureDataComponentInner {
                 return Self {
                     // Ensure it is aligned enough.
                     ptr: NonNull::<AlignedPixelChunk>::dangling().cast(),
+                    _phantom: PhantomData,
                     len: 0,
                     stride,
                 };
@@ -179,26 +184,37 @@ impl Rav1dPictureDataComponentInner {
         };
         // Guaranteed by `Dav1dPicAllocator::alloc_picture_callback`.
         assert!(len % RAV1D_PICTURE_MULTIPLE == 0);
-        Self { ptr, len, stride }
+
+        Self {
+            ptr,
+            _phantom: PhantomData,
+            len,
+            stride,
+        }
     }
 
     /// # Safety
     ///
     /// As opposed to [`Self::new`], this is safe because `buf` is a `&mut` and thus unique,
     /// so it is sound to further subdivide it into disjoint `&mut`s.
-    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+    pub fn wrap_buf<BD: BitDepth>(buf: &'a mut [BD::Pixel], stride: usize) -> Self {
         let buf = AsBytes::as_bytes_mut(buf);
         let ptr = NonNull::new(buf.as_mut_ptr()).unwrap();
         assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
         let len = buf.len();
         assert!(len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0);
         let stride = (stride * mem::size_of::<BD::Pixel>()) as isize;
-        Self { ptr, len, stride }
+        Self {
+            ptr,
+            _phantom: PhantomData,
+            len,
+            stride,
+        }
     }
 }
 
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
-unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
+unsafe impl AsMutPtr for Rav1dPictureDataComponentInner<'_> {
     type Target = u8;
 
     #[inline] // Inline so callers can see the assume.
@@ -224,9 +240,9 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
     }
 }
 
-pub struct Rav1dPictureDataComponent(DisjointMut<Rav1dPictureDataComponentInner>);
+pub struct Rav1dPictureDataComponent<'buf>(DisjointMut<Rav1dPictureDataComponentInner<'buf>>);
 
-impl Pixels for Rav1dPictureDataComponent {
+impl Pixels for Rav1dPictureDataComponent<'_> {
     fn byte_len(&self) -> usize {
         self.0.len()
     }
@@ -236,15 +252,15 @@ impl Pixels for Rav1dPictureDataComponent {
     }
 }
 
-impl Strided for Rav1dPictureDataComponent {
+impl Strided for Rav1dPictureDataComponent<'_> {
     fn stride(&self) -> isize {
         // SAFETY: We're only accessing the `stride` fields, not `ptr`.
         unsafe { (*self.0.inner()).stride }
     }
 }
 
-impl Rav1dPictureDataComponent {
-    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+impl<'buf> Rav1dPictureDataComponent<'buf> {
+    pub fn wrap_buf<BD: BitDepth>(buf: &'buf mut [BD::Pixel], stride: usize) -> Self {
         Self(DisjointMut::new(
             Rav1dPictureDataComponentInner::wrap_buf::<BD>(buf, stride),
         ))
@@ -258,7 +274,10 @@ impl Rav1dPictureDataComponent {
         BD::pxstride(self.byte_len() - (-stride) as usize)
     }
 
-    pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset {
+    pub fn with_offset<'a, BD: BitDepth>(&'a self) -> Rav1dPictureDataComponentOffset<'a, 'buf>
+    where
+        'buf: 'a,
+    {
         Rav1dPictureDataComponentOffset {
             data: self,
             offset: self.pixel_offset::<BD>(),
@@ -310,7 +329,10 @@ impl Rav1dPictureDataComponent {
     pub fn index<'a, BD: BitDepth>(
         &'a self,
         index: usize,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel>
+    where
+        'buf: 'a,
+    {
         self.0.element_as(index)
     }
 
@@ -319,7 +341,10 @@ impl Rav1dPictureDataComponent {
     pub fn index_mut<'a, BD: BitDepth>(
         &'a self,
         index: usize,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel>
+    where
+        'buf: 'a,
+    {
         self.0.mut_element_as(index)
     }
 
@@ -328,8 +353,9 @@ impl Rav1dPictureDataComponent {
     pub fn slice<'a, BD, I>(
         &'a self,
         index: I,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]>
     where
+        'buf: 'a,
         BD: BitDepth,
         I: SliceBounds,
     {
@@ -341,8 +367,9 @@ impl Rav1dPictureDataComponent {
     pub fn slice_mut<'a, BD, I>(
         &'a self,
         index: I,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]>
     where
+        'buf: 'a,
         BD: BitDepth,
         I: SliceBounds,
     {
@@ -350,14 +377,15 @@ impl Rav1dPictureDataComponent {
     }
 }
 
-pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
+pub type Rav1dPictureDataComponentOffset<'a, 'buf> =
+    WithOffset<&'a Rav1dPictureDataComponent<'buf>>;
 
-impl<'a> Rav1dPictureDataComponentOffset<'a> {
+impl<'a, 'buf> Rav1dPictureDataComponentOffset<'a, 'buf> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<BD: BitDepth>(
         &self,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel> {
         self.data.index::<BD>(self.offset)
     }
 
@@ -365,7 +393,7 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index_mut<BD: BitDepth>(
         &self,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, BD::Pixel> {
         self.data.index_mut::<BD>(self.offset)
     }
 
@@ -374,7 +402,7 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
     pub fn slice<BD: BitDepth>(
         &self,
         len: usize,
-    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]> {
         self.data.slice::<BD, _>((self.offset.., ..len))
     }
 
@@ -383,13 +411,13 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
     pub fn slice_mut<BD: BitDepth>(
         &self,
         len: usize,
-    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner<'buf>, [BD::Pixel]> {
         self.data.slice_mut::<BD, _>((self.offset.., ..len))
     }
 }
 
 pub struct Rav1dPictureData {
-    pub data: [Rav1dPictureDataComponent; 3],
+    pub data: [Rav1dPictureDataComponent<'static>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -529,7 +557,10 @@ impl From<Rav1dPicture> for Dav1dPicture {
 }
 
 impl Rav1dPicture {
-    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset; 3] {
+    pub fn lf_offsets<'a, BD: BitDepth>(
+        &'a self,
+        y: c_int,
+    ) -> [Rav1dPictureDataComponentOffset<'a, 'static>; 3] {
         // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
         // plane here to avoid having additional in-loop branches in various places.
         // We never use those values, so it doesn't really matter what they point
@@ -786,7 +817,7 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: &mut [Rav1dPictureDataComponent; 3],
+        data: &mut [Rav1dPictureDataComponent<'static>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
         let data = data.each_mut().map(|data| data.as_dav1d());

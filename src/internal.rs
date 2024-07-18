@@ -998,7 +998,7 @@ pub const EMU_EDGE_LEN: usize = 320 * (256 + 7);
 pub struct ScratchEmuEdge([u8; EMU_EDGE_LEN * 2]);
 
 impl ScratchEmuEdge {
-    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; EMU_EDGE_LEN] {
+    pub fn buf_mut<'a, BD: BitDepth>(&'a mut self) -> &'a mut [BD::Pixel; EMU_EDGE_LEN] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
 }

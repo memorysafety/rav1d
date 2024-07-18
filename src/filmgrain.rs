@@ -106,15 +106,15 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_src: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    _src_src: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
 ) -> ());
 
 impl fgy_32x32xn::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        dst: &Rav1dPictureDataComponent,
-        src: &Rav1dPictureDataComponent,
+        dst: &Rav1dPictureDataComponent<'static>,
+        src: &Rav1dPictureDataComponent<'static>,
         data: &Rav1dFilmGrainData,
         pw: usize,
         scaling: &BD::Scaling,
@@ -172,24 +172,24 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
 ) -> ());
 
 impl fguv_32x32xn::Fn {
     pub fn call<BD: BitDepth>(
         &self,
         layout: Rav1dPixelLayoutSubSampled,
-        dst: &Rav1dPictureDataComponent,
-        src: &Rav1dPictureDataComponent,
+        dst: &Rav1dPictureDataComponent<'static>,
+        src: &Rav1dPictureDataComponent<'static>,
         data: &Rav1dFilmGrainData,
         pw: usize,
         scaling: &BD::Scaling,
         grain_lut: &GrainLut<BD::Entry>,
         bh: usize,
         row_num: usize,
-        luma: &Rav1dPictureDataComponent,
+        luma: &Rav1dPictureDataComponent<'static>,
         is_uv: bool,
         is_id: bool,
         bd: BD,
@@ -538,8 +538,8 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    src_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `fgy_32x32xn::Fn::call`.
     let [dst_row, src_row] = [dst_row, src_row].map(|it| *unsafe { FFISafe::get(it) });
@@ -877,9 +877,9 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    src_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
+    luma_row: *const FFISafe<Rav1dPictureDataComponentOffset<'_, 'static>>,
 ) {
     let [dst_row, src_row, luma_row] = [dst_row, src_row, luma_row].map(|row| {
         // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.

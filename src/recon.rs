@@ -1696,19 +1696,19 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     }
 }
 
-enum MaybeTempPixels<'a, TmpStride> {
+enum MaybeTempPixels<'a, 'buf: 'a, TmpStride> {
     NonTemp {
-        dst: Rav1dPictureDataComponentOffset<'a>,
+        dst: Rav1dPictureDataComponentOffset<'a, 'buf>,
     },
     Temp {
-        tmp: &'a mut [i16],
+        tmp: &'buf mut [i16],
         tmp_stride: TmpStride,
     },
 }
 
-fn mc<BD: BitDepth>(
+fn mc<'buf, BD: BitDepth>(
     f: &Rav1dFrameData,
-    emu_edge: &mut ScratchEmuEdge,
+    emu_edge: &'buf mut ScratchEmuEdge,
     b: Bxy,
     dst: MaybeTempPixels<()>,
     bw4: c_int,
@@ -1747,7 +1747,7 @@ fn mc<BD: BitDepth>(
             w = f.bw * 4 >> ss_hor;
             h = f.bh * 4 >> ss_ver;
         }
-        let r#ref = if dx < (mx != 0) as c_int * 3
+        let r#ref: WithOffset<&Rav1dPictureDataComponent<'buf>> = if dx < (mx != 0) as c_int * 3
             || dy < (my != 0) as c_int * 3
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
@@ -1770,7 +1770,7 @@ fn mc<BD: BitDepth>(
                 offset: stride * (my != 0) as usize * 3 + (mx != 0) as usize * 3,
             }
         } else {
-            let r#ref = &ref_data[pl];
+            let r#ref: &Rav1dPictureDataComponent<'buf> = &ref_data[pl];
             r#ref.with_offset::<BD>() + (dy as isize * r#ref.pixel_stride::<BD>()) + dx as usize
         };
 
@@ -1987,9 +1987,9 @@ fn obmc<BD: BitDepth>(
     Ok(())
 }
 
-fn warp_affine<BD: BitDepth>(
+fn warp_affine<'buf, BD: BitDepth>(
     f: &Rav1dFrameData,
-    emu_edge: &mut ScratchEmuEdge,
+    emu_edge: &'buf mut ScratchEmuEdge,
     b: Bxy,
     mut dst: MaybeTempPixels<usize>,
     b_dim: &[u8; 4],
@@ -2028,28 +2028,31 @@ fn warp_affine<BD: BitDepth>(
             let my =
                 (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
 
-            let r#ref = if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
-                let emu_edge_buf = emu_edge.buf_mut::<BD>();
-                f.dsp.mc.emu_edge.call::<BD>(
-                    15,
-                    15,
-                    width as intptr_t,
-                    height as intptr_t,
-                    (dx - 3) as intptr_t,
-                    (dy - 3) as intptr_t,
-                    emu_edge_buf,
-                    32,
-                    &ref_data[pl],
-                );
-                let stride = 32;
-                Rav1dPictureDataComponentOffset {
-                    data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
-                    offset: stride * 3 + 3,
-                }
-            } else {
-                let r#ref = &ref_data[pl];
-                r#ref.with_offset::<BD>() + (dy as isize * r#ref.pixel_stride::<BD>()) + dx as usize
-            };
+            let r#ref: WithOffset<&Rav1dPictureDataComponent<'buf>> =
+                if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
+                    let emu_edge_buf = emu_edge.buf_mut::<BD>();
+                    f.dsp.mc.emu_edge.call::<BD>(
+                        15,
+                        15,
+                        width as intptr_t,
+                        height as intptr_t,
+                        (dx - 3) as intptr_t,
+                        (dy - 3) as intptr_t,
+                        emu_edge_buf,
+                        32,
+                        &ref_data[pl],
+                    );
+                    let stride = 32;
+                    Rav1dPictureDataComponentOffset {
+                        data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                        offset: stride * 3 + 3,
+                    }
+                } else {
+                    let r#ref: &Rav1dPictureDataComponent<'buf> = &ref_data[pl];
+                    r#ref.with_offset::<BD>()
+                        + (dy as isize * r#ref.pixel_stride::<BD>())
+                        + dx as usize
+                };
             let x = x as usize;
             match dst {
                 MaybeTempPixels::Temp {
