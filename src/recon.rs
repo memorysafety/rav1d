@@ -273,7 +273,7 @@ fn get_skip_ctx<const TX: usize>(
     chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> InRange<u8, 0, { 13 - 1 }> {
-    let t_dim = dav1d_txfm_dimension::<TX>();
+    let t_dim = const { dav1d_txfm_dimension::<TX>() };
     let b_dim = bs.dimensions();
     let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
@@ -345,7 +345,7 @@ fn get_skip_ctx<const TX: usize>(
 
 #[inline(always)]
 fn get_dc_sign_ctx<const TX: usize>(a: &[u8], l: &[u8]) -> c_uint {
-    let tx = dav1d_txfm_size::<TX>();
+    let tx = const { dav1d_txfm_size::<TX>() };
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
