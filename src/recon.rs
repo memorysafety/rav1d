@@ -266,7 +266,7 @@ impl_MergeInt!(u64, u32);
 impl_MergeInt!(u128, u64);
 
 #[inline(always)]
-fn get_skip_ctx<const txsize_discr: usize>(
+fn get_skip_ctx<const TX: usize>(
     bs: BlockSize,
     a: &[u8],
     l: &[u8],
@@ -275,7 +275,7 @@ fn get_skip_ctx<const txsize_discr: usize>(
 ) -> InRange<u8, 0, { 13 - 1 }> {
     macro_rules! tdim {
         () => {
-            dav1d_txfm_dimension::<txsize_discr>()
+            dav1d_txfm_dimension::<TX>()
         };
     }
     let b_dim = bs.dimensions();
@@ -348,8 +348,8 @@ fn get_skip_ctx<const txsize_discr: usize>(
 }
 
 #[inline(always)]
-fn get_dc_sign_ctx<const txsize_discr: usize>(a: &[u8], l: &[u8]) -> c_uint {
-    let tx = dav1d_txfm_size::<txsize_discr>();
+fn get_dc_sign_ctx<const TX: usize>(a: &[u8], l: &[u8]) -> c_uint {
+    let tx = dav1d_txfm_size::<TX>();
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
@@ -569,7 +569,7 @@ fn decode_coefs<BD: BitDepth>(
 }
 
 #[inline(never)]
-fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
+fn decode_coefs_inner<BD: BitDepth, const TX: usize>(
     f: &Rav1dFrameData,
     ts: usize,
     ts_c: &mut Rav1dTileStateContext,
@@ -588,7 +588,7 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
 ) -> c_int {
     macro_rules! tdim {
         () => {
-            dav1d_txfm_dimension::<txsize_discr>()
+            dav1d_txfm_dimension::<TX>()
         };
     }
     let dc_sign_ctx;
@@ -605,7 +605,7 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx::<txsize_discr>(bs, a, l, chroma, f.cur.p.layout);
+    let sctx = get_skip_ctx::<TX>(bs, a, l, chroma, f.cur.p.layout);
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[tdim!().ctx as usize][sctx.get() as usize],
@@ -1180,7 +1180,7 @@ fn decode_coefs_inner<BD: BitDepth, const txsize_discr: usize>(
             None => Ac::NoQm,
         });
     } else {
-        dc_sign_ctx = get_dc_sign_ctx::<txsize_discr>(a, l) as c_int;
+        dc_sign_ctx = get_dc_sign_ctx::<TX>(a, l) as c_int;
         let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
         dc_sign = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, dc_sign_cdf) as c_int;
         if dbg {

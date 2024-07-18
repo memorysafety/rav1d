@@ -192,8 +192,8 @@ impl BlockSize {
     }
 }
 
-pub const fn dav1d_txfm_size<const txsize_discr: usize>() -> TxfmSize {
-    let Some(size) = TxfmSize::from_repr(txsize_discr) else {
+pub const fn dav1d_txfm_size<const TX: usize>() -> TxfmSize {
+    let Some(size) = TxfmSize::from_repr(TX) else {
         unsafe {
             std::hint::unreachable_unchecked();
         }
@@ -201,9 +201,9 @@ pub const fn dav1d_txfm_size<const txsize_discr: usize>() -> TxfmSize {
     size
 }
 
-pub const fn dav1d_txfm_dimension<const txsize_discr: usize>() -> TxfmInfo {
+pub const fn dav1d_txfm_dimension<const TX: usize>() -> TxfmInfo {
     use TxfmSize::*;
-    match dav1d_txfm_size::<txsize_discr>() {
+    match dav1d_txfm_size::<TX>() {
         S4x4 => TxfmInfo {
             w: 1,
             h: 1,
