@@ -194,9 +194,7 @@ impl BlockSize {
 
 pub const fn dav1d_txfm_size<const TX: usize>() -> TxfmSize {
     let Some(size) = TxfmSize::from_repr(TX) else {
-        unsafe {
-            std::hint::unreachable_unchecked();
-        }
+        panic!("invalid `TxfmSize` discriminant");
     };
     size
 }
