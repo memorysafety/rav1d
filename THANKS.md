@@ -1,3 +1,15 @@
+# The rav1d project would like to thank
+
+## Prossimo
+The Internet Safety Research Group and its donors for funding this Rust port.
+
+## Contributors
+
+The rav1d Rust port authors:
+
+Khyber Sen, Nicole L, Per Larsen, Stephen Crane, Frank Bossen, Folkert de Vries
+
+
 # The dav1d project and VideoLAN association would like to thank
 
 ## AOM
