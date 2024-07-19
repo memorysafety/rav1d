@@ -569,21 +569,22 @@ fn decode_coefs<BD: BitDepth>(
 
     // transform type (chroma: derived, luma: explicitly coded)
     use Av1BlockIntraInter::*;
-    *txtp = match &b.ii {
+    *txtp = match b.ii() {
         _ if lossless => {
             assert!(t_dim.max == TxfmSize::S4x4 as _);
             WHT_WHT
         }
-        Intra(_) if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
-        Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
-        Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        Intra if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
+        Inter if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
+        Intra if chroma => dav1d_txtp_from_uvmode[b.intra().uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
-        Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
+        Inter if chroma => get_uv_inter_txtp(t_dim, *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
         // such blocks are actually lossless. The remainder gets an implicit
         // transform type (for luma)
         _ if frame_hdr.segmentation.qidx[b.seg_id.get()] == 0 => DCT_DCT,
-        Intra(intra) => {
+        Intra => {
+            let intra = b.intra();
             let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
                 dav1d_filter_mode_to_y_mode[intra.y_angle as usize]
             } else {
@@ -613,7 +614,7 @@ fn decode_coefs<BD: BitDepth>(
             }
             txtp
         }
-        Inter(_) => {
+        Inter => {
             let idx;
             let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TxfmSize::S32x32 as _ {
                 let bool_idx = rav1d_msac_decode_bool_adapt(
@@ -1506,9 +1507,9 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     assert!(t.frame_thread.pass == 1);
     assert!(b.skip == 0);
     let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let t_dim = &dav1d_txfm_dimensions[match &b.ii {
-        Av1BlockIntraInter::Intra(intra) => intra.tx,
-        Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
+    let t_dim = &dav1d_txfm_dimensions[match b.ii() {
+        Av1BlockIntraInter::Intra => b.intra().tx,
+        Av1BlockIntraInter::Inter => b.inter().max_ytx,
     } as usize];
 
     for init_y in (0..h4).step_by(16) {
@@ -1525,8 +1526,9 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                 x = init_x;
                 t.b.x += init_x as c_int;
                 while x < sub_w4 {
-                    match &b.ii {
-                        Av1BlockIntraInter::Inter(inter) => {
+                    match b.ii() {
+                        Av1BlockIntraInter::Inter => {
+                            let inter = b.inter();
                             let tx_split = [inter.tx_split0 as u16, inter.tx_split1];
                             read_coef_tree::<BD>(
                                 f,
@@ -1542,7 +1544,8 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 None,
                             );
                         }
-                        Av1BlockIntraInter::Intra(intra) => {
+                        Av1BlockIntraInter::Intra => {
+                            let intra = b.intra();
                             let mut cf_ctx = 0x40;
                             let mut txtp = DCT_DCT;
                             let a_start = bx4 + x as usize;
@@ -1619,9 +1622,9 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                     t.b.x += init_x as c_int;
                     while x < sub_cw4 {
                         let mut cf_ctx = 0x40;
-                        let mut txtp = match b.ii {
-                            Av1BlockIntraInter::Intra(_) => DCT_DCT,
-                            Av1BlockIntraInter::Inter(_) => {
+                        let mut txtp = match b.ii() {
+                            Av1BlockIntraInter::Intra => DCT_DCT,
+                            Av1BlockIntraInter::Inter => {
                                 t.scratch.inter_intra().ac_txtp_map.txtp_map()[(by4 as usize
                                     + (y << ss_ver) as usize)
                                     * 32
@@ -3188,7 +3191,6 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                             + t.b.x as usize
                                             - 1,
                                     )
-                                    .ii
                                     .filter2d()
                             },
                         )?;
@@ -3225,7 +3227,6 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                     .index(
                                         t.b.y as usize * f.b4_stride as usize + t.b.x as usize - 1,
                                     )
-                                    .ii
                                     .filter2d()
                             },
                         )?;
@@ -3262,7 +3263,6 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                         (t.b.y as usize - 1) * f.b4_stride as usize
                                             + t.b.x as usize,
                                     )
-                                    .ii
                                     .filter2d()
                             },
                         )?;

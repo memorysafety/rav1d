@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::align::ArrayDefault;
 use crate::src::enum_map::DefaultValue;
@@ -26,6 +24,7 @@ pub enum ObuMetaType {
     Timecode = 5,
 }
 
+#[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumCount, FromRepr, Default, Debug)]
 pub enum TxfmSize {
     // Square
@@ -191,6 +190,7 @@ pub enum InterIntraPredMode {
     Smooth = 3,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, FromRepr, EnumCount)]
 pub enum BlockPartition {
     #[default]
@@ -398,7 +398,7 @@ pub enum MotionMode {
     Warp = 2,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1BlockIntra {
     pub y_mode: u8,
@@ -448,7 +448,7 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
     }
 }
 
-#[derive(Clone, Default, FromZeroes, FromBytes, AsBytes)]
+#[derive(Clone, Copy, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
     pub mv: [Mv; 2],
@@ -479,7 +479,7 @@ pub struct Av1BlockInter2d {
     pub matrix: [i16; 4],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1BlockInterNd {
     /// Make [`Av1BlockInter1d`] the field instead of [`Av1BlockInter2d`]
@@ -516,7 +516,7 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
@@ -532,27 +532,59 @@ pub struct Av1BlockInter {
     pub tx_split1: u16,
 }
 
-#[repr(C)]
+#[repr(u8)]
+#[derive(Clone, Copy)]
 pub enum Av1BlockIntraInter {
-    Intra(Av1BlockIntra),
-    Inter(Av1BlockInter),
+    Intra,
+    Inter,
 }
 
-impl Av1BlockIntraInter {
+pub union Av1BlockIntraInterUnion {
+    intra: Av1BlockIntra,
+    inter: Av1BlockInter,
+}
+
+impl Av1Block {
     pub fn filter2d(&self) -> Filter2d {
         // More optimal code if we use a default instead of just panicking.
-        match self {
-            Self::Inter(inter) => Some(inter),
-            _ => None,
+        match self.ii {
+            Av1BlockIntraInter::Inter => {
+                // SAFETY: Union is tagged with `Self::ii`
+                let inter = unsafe { &self.ii_union.inter };
+                inter.filter2d
+            }
+            _ => Filter2d::default(),
         }
-        .map(|inter| inter.filter2d)
-        .unwrap_or_default()
     }
-}
 
-impl Default for Av1BlockIntraInter {
-    fn default() -> Self {
-        Self::Intra(Default::default())
+    pub fn ii(&self) -> Av1BlockIntraInter {
+        self.ii
+    }
+
+    pub fn inter(&self) -> &Av1BlockInter {
+        // SAFETY: Union is tagged with `Self::ii`
+        match self.ii {
+            Av1BlockIntraInter::Inter => unsafe { &self.ii_union.inter },
+            _ => panic!("Not an inter block"),
+        }
+    }
+
+    pub fn set_inter(&mut self, inter: Av1BlockInter) {
+        self.ii = Av1BlockIntraInter::Inter;
+        self.ii_union.inter = inter;
+    }
+
+    pub fn intra(&self) -> &Av1BlockIntra {
+        // SAFETY: Union is tagged with `Self::ii`
+        match self.ii {
+            Av1BlockIntraInter::Intra => unsafe { &self.ii_union.intra },
+            _ => panic!("Not an inter block"),
+        }
+    }
+
+    pub fn set_intra(&mut self, intra: Av1BlockIntra) {
+        self.ii = Av1BlockIntraInter::Intra;
+        self.ii_union.intra = intra;
     }
 }
 
@@ -590,15 +622,36 @@ impl Display for SegmentId {
     }
 }
 
-#[derive(Default)]
-#[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
     pub bp: BlockPartition,
+    // Tag for `ii_union`. This is seperated so that we can optimally pack this
+    // structure into 32 bytes, rather than needing 34 for 2-byte alignment of
+    // `Mv` in a tagged enum.
+    ii: Av1BlockIntraInter,
     pub seg_id: SegmentId,
     pub skip_mode: u8,
     pub skip: u8,
     pub uvtx: TxfmSize,
-    pub ii: Av1BlockIntraInter,
+    ii_union: Av1BlockIntraInterUnion,
+}
+
+// Manually impl default to ensure `ii` and `ii_union` are in sync.
+impl Default for Av1Block {
+    fn default() -> Self {
+        Self {
+            bl: Default::default(),
+            bs: Default::default(),
+            bp: Default::default(),
+            ii: Av1BlockIntraInter::Intra,
+            seg_id: Default::default(),
+            skip_mode: Default::default(),
+            skip: Default::default(),
+            uvtx: Default::default(),
+            ii_union: Av1BlockIntraInterUnion {
+                intra: Default::default(),
+            },
+        }
+    }
 }

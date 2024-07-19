@@ -1194,8 +1194,9 @@ fn decode_b(
     let frame_type = f.frame_hdr.as_ref().unwrap().frame_type;
 
     let FrameThreadPassState::First(ts_c) = pass else {
-        match &b.ii {
-            Av1BlockIntraInter::Intra(intra) => {
+        match b.ii() {
+            Av1BlockIntraInter::Intra => {
+                let intra = b.intra();
                 (bd_fn.recon_b_intra)(f, t, None, bs, intra_edge_flags, b, intra);
 
                 let y_mode = intra.y_mode;
@@ -1239,7 +1240,8 @@ fn decode_b(
                     );
                 }
             }
-            Av1BlockIntraInter::Inter(inter) => {
+            Av1BlockIntraInter::Inter => {
+                let inter = b.inter();
                 if frame_type.is_inter_or_switch() /* not intrabc */
                 && inter.comp_type.is_none()
                 && inter.motion_mode == MotionMode::Warp
@@ -1919,7 +1921,7 @@ fn decode_b(
             uv_angle,
             cfl_alpha,
         };
-        b.ii = Av1BlockIntraInter::Intra(intra.clone()); // cheap 9-byte clone
+        b.set_intra(intra.clone()); // cheap 9-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -2164,7 +2166,7 @@ fn decode_b(
             tx_split0,
             tx_split1,
         };
-        b.ii = Av1BlockIntraInter::Inter(inter.clone()); // Cheap 24-byte clone
+        b.set_inter(inter.clone()); // Cheap 24-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -3051,7 +3053,7 @@ fn decode_b(
             tx_split0,
             tx_split1,
         };
-        b.ii = Av1BlockIntraInter::Inter(inter.clone());
+        b.set_inter(inter.clone());
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -3180,10 +3182,11 @@ fn decode_b(
         }
     }
 
-    match &b.ii {
-        Av1BlockIntraInter::Inter(inter)
+    match b.ii() {
+        Av1BlockIntraInter::Inter
             if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
         {
+            let inter = b.inter();
             let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
             let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
             // keep track of motion vectors for each reference
@@ -3488,7 +3491,7 @@ fn decode_sb(
                 &mut ts_c.msac,
                 pc,
                 dav1d_partition_type_count[bl as usize].into(),
-            ) as usize)
+            ) as u8)
             .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
                 && matches!(
