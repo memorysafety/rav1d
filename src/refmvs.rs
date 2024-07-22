@@ -70,13 +70,13 @@ const _: () = assert!(mem::size_of::<RefMvsBlock>() == 12);
 
 #[repr(C)]
 pub(crate) struct AsmRefMvsFrame<'a> {
-    /// This lifetime is for the pointers in this [`refmvs_frame`],
+    /// This lifetime is for the pointers in this [`AsmRefMvsFrame`],
     /// which are borrowed from the parent [`RefMvsFrame`].
     /// Since this is a transient type for asm calls, a lifetime is fine,
     /// and since this is a ZST, the layout stays the same.
     _lifetime: PhantomData<&'a ()>,
-    /// A pointer to a [`refmvs_frame`] may be passed to a [`load_tmvs_fn`] function.
-    /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
+    /// A pointer to a [`AsmRefMvsFrame`] may be passed to a [`load_tmvs::Fn`] function.
+    /// However, the [`Self::_frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
     /// But we need to keep the layout the same, so we store a `*const ()` null ptr.
     _frm_hdr: *const (),
     pub iw4: i32,
