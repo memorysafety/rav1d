@@ -532,7 +532,6 @@ pub struct Av1BlockInter {
     pub tx_split1: u16,
 }
 
-#[repr(C)]
 pub enum Av1BlockIntraInter {
     Intra(Av1BlockIntra),
     Inter(Av1BlockInter),
