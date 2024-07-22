@@ -103,7 +103,8 @@ pub(crate) struct AsmRefMvsFrame<'a> {
     pub n_frame_threads: i32,
 }
 
-const R_PAD: usize = 1; // number of elements added to RefMvsFrame.r to avoid overread
+/// The number of elements added to [`RefMvsFrame::r`] to avoid an overread.
+const R_PAD: usize = 1;
 
 #[derive(Default)]
 pub struct RefMvsFrame {
