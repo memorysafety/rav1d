@@ -41,7 +41,7 @@ pub struct Dav1dDataProps {
 }
 
 #[derive(Clone)]
-#[repr(C)]
+// #[repr(C)]
 pub(crate) struct Rav1dDataProps {
     pub timestamp: i64,
     pub duration: i64,

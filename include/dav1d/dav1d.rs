@@ -140,7 +140,7 @@ pub struct Dav1dSettings {
     pub reserved: [u8; 16],
 }
 
-#[repr(C)]
+// #[repr(C)]
 pub(crate) struct Rav1dSettings {
     pub n_threads: c_int,
     pub max_frame_delay: c_int,

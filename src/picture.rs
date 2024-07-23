@@ -59,7 +59,7 @@ impl From<PictureFlags> for Rav1dEventFlags {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
+// #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
     pub visible: bool,

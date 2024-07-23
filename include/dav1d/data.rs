@@ -15,7 +15,7 @@ pub struct Dav1dData {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
+// #[repr(C)]
 pub(crate) struct Rav1dData {
     pub data: Option<CArc<[u8]>>,
     pub m: Rav1dDataProps,

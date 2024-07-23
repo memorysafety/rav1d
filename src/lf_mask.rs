@@ -44,7 +44,7 @@ impl ArrayDefault for Av1FilterLUT {
 }
 
 #[derive(Clone, Copy, Default)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1RestorationUnit {
     /// SGR: type = DAV1D_RESTORATION_SGRPROJ + sgr_idx
     pub r#type: Rav1dRestorationType,
@@ -55,7 +55,7 @@ pub struct Av1RestorationUnit {
 
 /// each struct describes one 128x128 area (1 or 4 SBs), pre-superres-scaling
 #[derive(Default)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1Filter {
     // each bit is 1 col
     pub filter_y: [[[[RelaxedAtomic<u16>; 2]; 3]; 32]; 2], // 0=col, 1=row
@@ -68,7 +68,7 @@ pub struct Av1Filter {
 
 /// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling
 #[derive(Default)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1Restoration {
     pub lr: [[RwLock<Av1RestorationUnit>; 4]; 3],
 }

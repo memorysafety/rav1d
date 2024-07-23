@@ -399,7 +399,7 @@ pub enum MotionMode {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1BlockIntra {
     pub y_mode: u8,
     pub uv_mode: u8,
@@ -480,7 +480,7 @@ pub struct Av1BlockInter2d {
 }
 
 #[derive(Clone)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1BlockInterNd {
     /// Make [`Av1BlockInter1d`] the field instead of [`Av1BlockInter2d`]
     /// simply because it is used much more often, so it's more convenient.
@@ -517,7 +517,7 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
 }
 
 #[derive(Clone)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
     pub comp_type: Option<CompInterType>,
@@ -590,7 +590,7 @@ impl Display for SegmentId {
 }
 
 #[derive(Default)]
-#[repr(C)]
+// #[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
