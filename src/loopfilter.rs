@@ -7,12 +7,12 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
+use crate::src::cursor::Cursor;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::strided::Strided as _;
-use crate::src::with_offset::WithOffset;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -35,7 +35,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     w: c_int,
     bitdepth_max: c_int,
     _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lvl: *const FFISafe<WithOffset<&DisjointMut<Vec<u8>>>>,
+    _lvl: *const FFISafe<Cursor<&DisjointMut<Vec<u8>>>>,
 ) -> ());
 
 impl loopfilter_sb::Fn {
@@ -44,7 +44,7 @@ impl loopfilter_sb::Fn {
         f: &Rav1dFrameData,
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
-        lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+        lvl: Cursor<&DisjointMut<Vec<u8>>>,
         w: usize,
     ) {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
@@ -290,7 +290,7 @@ enum YUV {
 fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
     mut dst: Rav1dPictureDataComponentOffset,
     vmask: &[u32; 3],
-    mut lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    mut lvl: Cursor<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _wh: c_int,
@@ -368,7 +368,7 @@ unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, c
     wh: c_int,
     bitdepth_max: c_int,
     dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    lvl: *const FFISafe<WithOffset<&DisjointMut<Vec<u8>>>>,
+    lvl: *const FFISafe<Cursor<&DisjointMut<Vec<u8>>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `loopfilter_sb::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };

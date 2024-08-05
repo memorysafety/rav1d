@@ -9,12 +9,12 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
+use crate::src::cursor::Cursor;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_cdef_directions;
-use crate::src::with_offset::WithOffset;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
@@ -60,8 +60,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     _bottom: *const FFISafe<CdefBottom>,
 ) -> ());
 
-pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
-pub type CdefBottom<'a> = WithOffset<PicOrBuf<'a, AlignedVec64<u8>>>;
+pub type CdefTop<'a> = Cursor<&'a DisjointMut<AlignedVec64<u8>>>;
+pub type CdefBottom<'a> = Cursor<PicOrBuf<'a, AlignedVec64<u8>>>;
 
 impl cdef::Fn {
     /// CDEF operates entirely on pre-filter data.

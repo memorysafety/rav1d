@@ -9,55 +9,55 @@ use std::ops::Sub;
 use std::ops::SubAssign;
 
 #[derive(Clone, Copy)]
-pub struct WithOffset<T> {
+pub struct Cursor<T> {
     pub data: T,
     pub offset: usize,
 }
 
-pub type CursorMut<'a, T> = WithOffset<&'a mut [T]>;
+pub type CursorMut<'a, T> = Cursor<&'a mut [T]>;
 
 impl<'a, T> CursorMut<'a, T> {
     pub fn new(data: &'a mut [T]) -> Self {
-        WithOffset { data, offset: 0 }
+        Cursor { data, offset: 0 }
     }
 
-    pub fn clone(&mut self) -> WithOffset<&mut [T]> {
-        WithOffset {
+    pub fn clone(&mut self) -> Cursor<&mut [T]> {
+        Cursor {
             data: self.data,
             offset: self.offset,
         }
     }
 }
 
-impl<T> AddAssign<usize> for WithOffset<T> {
+impl<T> AddAssign<usize> for Cursor<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     fn add_assign(&mut self, rhs: usize) {
         self.offset += rhs;
     }
 }
 
-impl<T> SubAssign<usize> for WithOffset<T> {
+impl<T> SubAssign<usize> for Cursor<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     fn sub_assign(&mut self, rhs: usize) {
         self.offset -= rhs;
     }
 }
 
-impl<T> AddAssign<isize> for WithOffset<T> {
+impl<T> AddAssign<isize> for Cursor<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     fn add_assign(&mut self, rhs: isize) {
         self.offset = self.offset.wrapping_add_signed(rhs);
     }
 }
 
-impl<T> SubAssign<isize> for WithOffset<T> {
+impl<T> SubAssign<isize> for Cursor<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     fn sub_assign(&mut self, rhs: isize) {
         self.offset = self.offset.wrapping_add_signed(-rhs);
     }
 }
 
-impl<T> Add<usize> for WithOffset<T> {
+impl<T> Add<usize> for Cursor<T> {
     type Output = Self;
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -67,7 +67,7 @@ impl<T> Add<usize> for WithOffset<T> {
     }
 }
 
-impl<T> Sub<usize> for WithOffset<T> {
+impl<T> Sub<usize> for Cursor<T> {
     type Output = Self;
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -77,7 +77,7 @@ impl<T> Sub<usize> for WithOffset<T> {
     }
 }
 
-impl<T> Add<isize> for WithOffset<T> {
+impl<T> Add<isize> for Cursor<T> {
     type Output = Self;
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -87,7 +87,7 @@ impl<T> Add<isize> for WithOffset<T> {
     }
 }
 
-impl<T> Sub<isize> for WithOffset<T> {
+impl<T> Sub<isize> for Cursor<T> {
     type Output = Self;
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -97,7 +97,7 @@ impl<T> Sub<isize> for WithOffset<T> {
     }
 }
 
-impl<P: Pixels> WithOffset<P> {
+impl<P: Pixels> Cursor<P> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
@@ -111,7 +111,7 @@ impl<P: Pixels> WithOffset<P> {
     }
 }
 
-impl<S: Strided> Strided for WithOffset<S> {
+impl<S: Strided> Strided for Cursor<S> {
     fn stride(&self) -> isize {
         self.data.stride()
     }
