@@ -10,11 +10,11 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
-use crate::src::cursor::CursorMut;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
 use crate::src::strided::Strided as _;
 use crate::src::tables::dav1d_sgr_x_by_x;
+use crate::src::with_offset::CursorMut;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
@@ -669,8 +669,9 @@ fn selfguided_filter<BD: BitDepth>(
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
-    let mut a = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
-    let mut b = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+    let mut a: CursorMut<i32> = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3usize;
+    let mut b: CursorMut<<BD as BitDepth>::Coef> =
+        CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3usize;
 
     let mut aa = a.clone() - REST_UNIT_STRIDE;
     let mut bb = b.clone() - REST_UNIT_STRIDE;

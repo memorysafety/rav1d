@@ -39,7 +39,6 @@ pub mod src {
     mod const_fn;
     pub mod cpu;
     mod ctx;
-    mod cursor;
     mod data;
     mod decode;
     mod dequant_tables;
