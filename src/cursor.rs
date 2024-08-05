@@ -1,3 +1,6 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::src::pixels::Pixels;
+use crate::src::strided::Strided;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Index;
@@ -5,77 +8,112 @@ use std::ops::IndexMut;
 use std::ops::Sub;
 use std::ops::SubAssign;
 
-pub struct CursorMut<'a, T> {
-    data: &'a mut [T],
-    index: usize,
+#[derive(Clone, Copy)]
+pub struct Cursor<T> {
+    pub data: T,
+    pub offset: usize,
 }
+
+pub type CursorMut<'a, T> = Cursor<&'a mut [T]>;
 
 impl<'a, T> CursorMut<'a, T> {
     pub fn new(data: &'a mut [T]) -> Self {
-        CursorMut { data, index: 0 }
+        Cursor { data, offset: 0 }
     }
 
-    pub fn as_slice(&self) -> &[T] {
-        &self.data[self.index..]
-    }
-
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
-        &mut self.data[self.index..]
-    }
-
-    #[allow(dead_code)] // TODO(kkysen) remove once used
-    pub fn as_ptr(&self) -> *const T {
-        self.as_slice().as_ptr()
-    }
-
-    #[allow(dead_code)] // TODO(kkysen) remove once used
-    pub fn as_mut_ptr(&mut self) -> *mut T {
-        self.as_mut_slice().as_mut_ptr()
-    }
-
-    pub fn clone(&mut self) -> CursorMut<'_, T> {
-        CursorMut {
+    pub fn clone(&mut self) -> Cursor<&mut [T]> {
+        Cursor {
             data: self.data,
-            index: self.index,
+            offset: self.offset,
         }
     }
 }
 
-impl<'a, T> From<&'a mut [T]> for CursorMut<'a, T> {
-    fn from(value: &'a mut [T]) -> Self {
-        CursorMut::new(value)
+impl<T> AddAssign<usize> for Cursor<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn add_assign(&mut self, rhs: usize) {
+        self.offset += rhs;
     }
 }
 
-impl<'a, T> Add<usize> for CursorMut<'a, T> {
+impl<T> SubAssign<usize> for Cursor<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn sub_assign(&mut self, rhs: usize) {
+        self.offset -= rhs;
+    }
+}
+
+impl<T> AddAssign<isize> for Cursor<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn add_assign(&mut self, rhs: isize) {
+        self.offset = self.offset.wrapping_add_signed(rhs);
+    }
+}
+
+impl<T> SubAssign<isize> for Cursor<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn sub_assign(&mut self, rhs: isize) {
+        self.offset = self.offset.wrapping_add_signed(-rhs);
+    }
+}
+
+impl<T> Add<usize> for Cursor<T> {
     type Output = Self;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     fn add(mut self, rhs: usize) -> Self::Output {
         self += rhs;
         self
     }
 }
 
-impl<'a, T> AddAssign<usize> for CursorMut<'a, T> {
-    fn add_assign(&mut self, rhs: usize) {
-        self.index += rhs;
-        debug_assert!(self.index <= self.data.len());
-    }
-}
-
-impl<'a, T> Sub<usize> for CursorMut<'a, T> {
+impl<T> Sub<usize> for Cursor<T> {
     type Output = Self;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     fn sub(mut self, rhs: usize) -> Self::Output {
         self -= rhs;
         self
     }
 }
 
-impl<'a, T> SubAssign<usize> for CursorMut<'a, T> {
-    fn sub_assign(&mut self, rhs: usize) {
-        debug_assert!(rhs <= self.index);
-        self.index -= rhs;
+impl<T> Add<isize> for Cursor<T> {
+    type Output = Self;
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn add(mut self, rhs: isize) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl<T> Sub<isize> for Cursor<T> {
+    type Output = Self;
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn sub(mut self, rhs: isize) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
+impl<P: Pixels> Cursor<P> {
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.data.as_ptr_at::<BD>(self.offset)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        self.data.as_mut_ptr_at::<BD>(self.offset)
+    }
+}
+
+impl<S: Strided> Strided for Cursor<S> {
+    fn stride(&self) -> isize {
+        self.data.stride()
     }
 }
 
@@ -83,13 +121,13 @@ impl<'a, T> Index<usize> for CursorMut<'a, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[self.index + index]
+        &self.data[self.offset + index]
     }
 }
 
 impl<'a, T> IndexMut<usize> for CursorMut<'a, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.data[self.index + index]
+        &mut self.data[self.offset + index]
     }
 }
 
@@ -97,7 +135,7 @@ impl<'a, T> Index<isize> for CursorMut<'a, T> {
     type Output = T;
 
     fn index(&self, index: isize) -> &Self::Output {
-        let index = self.index as isize + index;
+        let index = self.offset as isize + index;
         debug_assert!(index >= 0);
         &self.data[index as usize]
     }
@@ -105,7 +143,7 @@ impl<'a, T> Index<isize> for CursorMut<'a, T> {
 
 impl<'a, T> IndexMut<isize> for CursorMut<'a, T> {
     fn index_mut(&mut self, index: isize) -> &mut Self::Output {
-        let index = self.index as isize + index;
+        let index = self.offset as isize + index;
         debug_assert!(index >= 0);
         &mut self.data[index as usize]
     }

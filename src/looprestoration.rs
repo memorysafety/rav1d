@@ -669,8 +669,9 @@ fn selfguided_filter<BD: BitDepth>(
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
-    let mut a = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
-    let mut b = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+    let mut a: CursorMut<i32> = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3usize;
+    let mut b: CursorMut<<BD as BitDepth>::Coef> =
+        CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3usize;
 
     let mut aa = a.clone() - REST_UNIT_STRIDE;
     let mut bb = b.clone() - REST_UNIT_STRIDE;

@@ -8,6 +8,7 @@ use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
 use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cursor::Cursor;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
@@ -15,7 +16,6 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
 use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -271,35 +271,35 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             None
                         } else if sbrow_start && by == by_start {
                             let top = if resize {
-                                WithOffset {
+                                Cursor {
                                     data: &f.lf.cdef_line_buf,
                                     offset: f.lf.cdef_lpf_line[0],
                                 } + ((sby - 1) * 4) as isize * y_stride
                                     + (bx * 4) as isize
                             } else {
-                                WithOffset {
+                                Cursor {
                                     data: &f.lf.lr_line_buf,
                                     offset: f.lf.lr_lpf_line[0],
                                 } + (sby * (4 << sb128) - 4) as isize * y_stride
                                     + (bx * 4) as isize
                             };
                             let bottom = bptrs[0] + (8 * y_stride);
-                            Some((top, WithOffset::pic(bottom)))
+                            Some((top, Cursor::pic(bottom)))
                         } else if !sbrow_start && by + 2 >= by_end {
-                            let top = WithOffset {
+                            let top = Cursor {
                                 data: &f.lf.cdef_line_buf,
                                 offset: f.lf.cdef_line[tf as usize][0],
                             } + (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
                             let buf = if resize {
-                                WithOffset {
+                                Cursor {
                                     data: &f.lf.cdef_line_buf,
                                     offset: f.lf.cdef_lpf_line[0],
                                 } + (sby * 4 + 2) as isize * y_stride
                                     + (bx * 4) as isize
                             } else {
                                 let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
-                                WithOffset {
+                                Cursor {
                                     data: &f.lf.lr_line_buf,
                                     offset: f.lf.lr_lpf_line[0],
                                 } + line as isize * y_stride
@@ -307,7 +307,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             };
                             Some((
                                 top,
-                                WithOffset {
+                                Cursor {
                                     data: PicOrBuf::Buf(WithStride {
                                         buf: buf.data,
                                         stride: y_stride,
@@ -320,13 +320,13 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         };
 
                         let (top, bot) = top_bot.unwrap_or_else(|| {
-                            let top = WithOffset {
+                            let top = Cursor {
                                 data: &f.lf.cdef_line_buf,
                                 offset: f.lf.cdef_line[tf as usize][0],
                             } + have_tt as isize * (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
                             let bottom = bptrs[0] + (8 * y_stride);
-                            (top, WithOffset::pic(bottom))
+                            (top, Cursor::pic(bottom))
                         });
 
                         if y_pri_lvl != 0 {
@@ -373,36 +373,36 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     None
                                 } else if sbrow_start && by == by_start {
                                     let top = if resize {
-                                        WithOffset {
+                                        Cursor {
                                             data: &f.lf.cdef_line_buf,
                                             offset: f.lf.cdef_lpf_line[pl],
                                         } + ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     } else {
                                         let line = sby * (4 << sb128) - 4;
-                                        WithOffset {
+                                        Cursor {
                                             data: &f.lf.lr_line_buf,
                                             offset: f.lf.lr_lpf_line[pl],
                                         } + line as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     };
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    Some((top, WithOffset::pic(bottom)))
+                                    Some((top, Cursor::pic(bottom)))
                                 } else if !sbrow_start && by + 2 >= by_end {
-                                    let top = WithOffset {
+                                    let top = Cursor {
                                         data: &f.lf.cdef_line_buf,
                                         offset: f.lf.cdef_line[tf as usize][pl],
                                     } + (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
                                     let buf = if resize {
-                                        WithOffset {
+                                        Cursor {
                                             data: &f.lf.cdef_line_buf,
                                             offset: f.lf.cdef_lpf_line[pl],
                                         } + (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     } else {
                                         let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
-                                        WithOffset {
+                                        Cursor {
                                             data: &f.lf.lr_line_buf,
                                             offset: f.lf.lr_lpf_line[pl],
                                         } + line as isize * uv_stride
@@ -410,7 +410,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     };
                                     Some((
                                         top,
-                                        WithOffset {
+                                        Cursor {
                                             data: PicOrBuf::Buf(WithStride {
                                                 buf: buf.data,
                                                 stride: uv_stride,
@@ -423,13 +423,13 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 };
 
                                 let (top, bot) = top_bot.unwrap_or_else(|| {
-                                    let top = WithOffset {
+                                    let top = Cursor {
                                         data: &f.lf.cdef_line_buf,
                                         offset: f.lf.cdef_line[tf as usize][pl],
                                     } + have_tt as isize * (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
-                                    (top, WithOffset::pic(bottom))
+                                    (top, Cursor::pic(bottom))
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(

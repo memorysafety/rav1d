@@ -21,6 +21,7 @@ use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::assume::assume;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
+use crate::src::cursor::Cursor;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::in_range::InRange;
 use crate::src::internal::Bxy;
@@ -88,7 +89,6 @@ use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
-use crate::src::with_offset::WithOffset;
 use assert_matches::debug_assert_matches;
 use libc::intptr_t;
 use std::array;
@@ -3744,7 +3744,7 @@ pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
         f.dsp.mc.resize.call::<BD>(
-            WithOffset::pic(dst),
+            Cursor::pic(dst),
             src,
             dst_w as usize,
             (cmp::min(img_h, h_end) + h_start) as usize,

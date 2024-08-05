@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::assume::assume;
 use crate::src::c_arc::RawArc;
+use crate::src::cursor::Cursor;
 use crate::src::disjoint_mut::AsMutPtr;
 use crate::src::disjoint_mut::DisjointImmutGuard;
 use crate::src::disjoint_mut::DisjointMut;
@@ -29,7 +30,6 @@ use crate::src::error::Rav1dResult;
 use crate::src::pixels::Pixels;
 use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::strided::Strided;
-use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::array;
@@ -351,7 +351,7 @@ impl Rav1dPictureDataComponent {
     }
 }
 
-pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
+pub type Rav1dPictureDataComponentOffset<'a> = Cursor<&'a Rav1dPictureDataComponent>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.

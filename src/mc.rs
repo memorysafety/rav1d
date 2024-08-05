@@ -11,6 +11,7 @@ use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
 use crate::src::cpu::CpuFlags;
+use crate::src::cursor::Cursor;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
@@ -27,7 +28,6 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
-use crate::src::with_offset::WithOffset;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::ffi::c_int;
@@ -997,7 +997,7 @@ fn emu_edge_rust<BD: BitDepth>(
 }
 
 fn resize_rust<BD: BitDepth>(
-    dst: WithOffset<PicOrBuf<AlignedVec64<u8>>>,
+    dst: Cursor<PicOrBuf<AlignedVec64<u8>>>,
     src: Rav1dPictureDataComponentOffset,
     dst_w: usize,
     h: usize,
@@ -1506,13 +1506,13 @@ wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     mx: i32,
     bitdepth_max: i32,
     _src: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _dst: *const FFISafe<WithOffset<PicOrBuf<AlignedVec64<u8>>>>,
+    _dst: *const FFISafe<Cursor<PicOrBuf<AlignedVec64<u8>>>>,
 ) -> ());
 
 impl resize::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        dst: WithOffset<PicOrBuf<AlignedVec64<u8>>>,
+        dst: Cursor<PicOrBuf<AlignedVec64<u8>>>,
         src: Rav1dPictureDataComponentOffset,
         dst_w: usize,
         h: usize,
@@ -1943,7 +1943,7 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     mx0: i32,
     bitdepth_max: i32,
     src: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    dst: *const FFISafe<WithOffset<PicOrBuf<AlignedVec64<u8>>>>,
+    dst: *const FFISafe<Cursor<PicOrBuf<AlignedVec64<u8>>>>,
 ) {
     // SAFETY: Was passed as `FFISafe::new(_)` in `resize::Fn::call`.
     let dst = *unsafe { FFISafe::get(dst) };
