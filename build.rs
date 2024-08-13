@@ -105,8 +105,11 @@ mod asm {
             define(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
 
             if arch == ArchArm::Arm64 {
-                define(Define::bool("HAVE_DOTPROD", true));
-                define(Define::bool("HAVE_I8MM", true));
+                define(Define::bool(
+                    "HAVE_DOTPROD",
+                    cfg!(feature = "asm_arm64_dotprod"),
+                ));
+                define(Define::bool("HAVE_I8MM", cfg!(feature = "asm_arm64_i8mm")));
             }
         }
 
