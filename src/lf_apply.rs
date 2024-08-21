@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
+use crate::src::cursor::Cursor;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
@@ -13,7 +14,6 @@ use crate::src::lr_apply::LrRestorePlanes;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::strided::Strided as _;
 use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;
@@ -26,7 +26,7 @@ use std::ffi::c_uint;
 /// the last stripe with the top of the next super block row.
 fn backup_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    mut dst: WithOffset<WithStride<&DisjointMut<AlignedVec64<u8>>>>,
+    mut dst: Cursor<WithStride<&DisjointMut<AlignedVec64<u8>>>>,
     mut src: Rav1dPictureDataComponentOffset,
     ss_ver: c_int,
     sb128: u8,
@@ -85,7 +85,7 @@ fn backup_lpf<BD: BitDepth>(
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
             dsp.mc.resize.call::<BD>(
-                WithOffset::buf(dst),
+                Cursor::buf(dst),
                 src,
                 dst_w,
                 n_lines as usize,
@@ -180,7 +180,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
         if restore_planes.contains(LrRestorePlanes::Y) || resize == 0 {
             backup_lpf::<BD>(
                 c,
-                WithOffset {
+                Cursor {
                     data: WithStride {
                         buf: &f.lf.lr_line_buf,
                         stride: dst[0].stride(),
@@ -210,7 +210,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
             let cdef_line_start = (f.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
-                WithOffset {
+                Cursor {
                     data: WithStride {
                         buf: &f.lf.cdef_line_buf,
                         stride: src[0].stride(),
@@ -249,7 +249,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
             if restore_planes.contains(LrRestorePlanes::U) || resize == 0 {
                 backup_lpf::<BD>(
                     c,
-                    WithOffset {
+                    Cursor {
                         data: WithStride {
                             buf: &f.lf.lr_line_buf,
                             stride: dst[1].stride(),
@@ -279,7 +279,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     (f.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    WithOffset {
+                    Cursor {
                         data: WithStride {
                             buf: &f.lf.cdef_line_buf,
                             stride: src[1].stride(),
@@ -307,7 +307,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
             if restore_planes.contains(LrRestorePlanes::V) || resize == 0 {
                 backup_lpf::<BD>(
                     c,
-                    WithOffset {
+                    Cursor {
                         data: WithStride {
                             buf: &f.lf.lr_line_buf,
                             stride: dst[2].stride(),
@@ -337,7 +337,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     (f.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    WithOffset {
+                    Cursor {
                         data: WithStride {
                             buf: &f.lf.cdef_line_buf,
                             stride: src[2].stride(),
@@ -368,7 +368,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: Cursor<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
@@ -405,7 +405,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
 fn filter_plane_rows_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: Cursor<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
@@ -437,7 +437,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
 fn filter_plane_cols_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: Cursor<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
@@ -480,7 +480,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
 fn filter_plane_rows_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: Cursor<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
@@ -622,7 +622,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let lflvl = &f.lf.mask[lflvl_offset..];
-    let lvl = WithOffset {
+    let lvl = Cursor {
         data: &f.lf.level,
         offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
     };
@@ -643,7 +643,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let lvl = WithOffset {
+    let lvl = Cursor {
         data: &f.lf.level,
         offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
@@ -684,7 +684,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let lvl = WithOffset {
+    let lvl = Cursor {
         data: &f.lf.level,
         offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
     };
@@ -707,7 +707,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let lvl = WithOffset {
+    let lvl = Cursor {
         data: &f.lf.level,
         offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
