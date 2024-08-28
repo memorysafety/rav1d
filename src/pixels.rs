@@ -28,7 +28,7 @@ pub trait Pixels {
         self.as_mut_ptr::<BD>().cast_const()
     }
 
-    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `pixel_offset`.
     ///
     /// Bounds checked, but not [`DisjointMut`]-checked.
     #[cfg_attr(debug_assertions, track_caller)]
@@ -49,12 +49,26 @@ pub trait Pixels {
         unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
     }
 
-    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `pixel_offset`.
     ///
     /// Bounds checked, but not [`DisjointMut`]-checked.
     #[cfg_attr(debug_assertions, track_caller)]
-    fn as_ptr_at<BD: BitDepth>(&self, offset: usize) -> *const BD::Pixel {
-        self.as_mut_ptr_at::<BD>(offset).cast_const()
+    fn as_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *const BD::Pixel {
+        self.as_mut_ptr_at::<BD>(pixel_offset).cast_const()
+    }
+
+    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `pixel_offset`.
+    ///
+    /// There is no bounds checking and this ptr may wrap and go out of bounds.
+    fn wrapping_as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
+        self.as_mut_ptr::<BD>().wrapping_add(pixel_offset)
+    }
+
+    /// Absolute ptr to [`BitDepth::Pixel`]s starting at `pixel_offset`.
+    ///
+    /// There is no bounds checking and this ptr may wrap and go out of bounds.
+    fn wrapping_as_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *const BD::Pixel {
+        self.as_ptr::<BD>().wrapping_add(pixel_offset)
     }
 
     /// Determine if they reference the same data.

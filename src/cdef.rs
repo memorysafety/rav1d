@@ -86,7 +86,7 @@ impl cdef::Fn {
         let stride = dst.stride();
         let left = ptr::from_ref(left).cast();
         let top_ptr = top.as_ptr::<BD>().cast();
-        let bottom_ptr = bottom.as_ptr::<BD>().cast();
+        let bottom_ptr = bottom.wrapping_as_ptr::<BD>().cast();
         let top = FFISafe::new(&top);
         let bottom = FFISafe::new(&bottom);
         let sec_strength = sec_strength as c_int;
