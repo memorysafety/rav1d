@@ -43,6 +43,7 @@ use crate::src::internal::Rav1dTaskContextTaskThread;
 use crate::src::internal::TaskThreadData;
 use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
+use crate::src::log::Rav1dLogger;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -119,7 +120,7 @@ impl Default for Rav1dSettings {
             all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
-            logger: Default::default(),
+            logger: Some(Rav1dLogger::default()),
             strict_std_compliance: false,
             output_invisible_frames: false,
             inloop_filters: Rav1dInloopFilterType::all(),
