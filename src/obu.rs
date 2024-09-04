@@ -2460,7 +2460,7 @@ fn parse_obus(
         Some(Rav1dObuType::Padding) => {} // Ignore OBUs we don't care about.
         None => {
             // Print a warning, but don't fail for unknown types.
-            let len = gb.len();
+            let len = gb.remaining_len();
             writeln!(c.logger, "Unknown OBU type {raw_type} of size {len}");
         }
     }
