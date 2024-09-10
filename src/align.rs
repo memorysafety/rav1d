@@ -141,6 +141,15 @@ pub struct AlignedVec<T: Copy, C: AlignedByteChunk> {
 }
 
 impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
+    // Note that in Rust, no single allocation can exceed `isize::MAX` __bytes_.
+    const MAX_LEN: usize = {
+        if core::mem::size_of::<T>() == 0 {
+            usize::MAX
+        } else {
+            (isize::MAX as usize) / core::mem::size_of::<T>()
+        }
+    };
+
     /// Must check in all constructors.
     const fn check_byte_chunk_type_is_aligned() {
         assert!(mem::size_of::<C>() == mem::align_of::<C>());
@@ -183,6 +192,14 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
     }
 
     pub fn resize(&mut self, new_len: usize, value: T) {
+        // In addition to the obvious effect, this verifies the wrapping behavior of the
+        // `new_bytes` calculation. That can not overflow as the length limit does not overflow
+        // when multiplied with the size of `T`. Note that we one can still pass ludicrous
+        // requested buffer lengths, just not unsound ones.
+        assert!(
+            new_len <= Self::MAX_LEN,
+            "Resizing would overflow the underlying aligned buffer"
+        );
         let old_len = self.len();
 
         // Resize the underlying vector to have enough chunks for the new length.
@@ -266,4 +283,18 @@ unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
     fn len(&self) -> usize {
         self.len()
     }
+}
+
+#[test]
+#[should_panic]
+fn align_vec_fails() {
+    let mut v = AlignedVec::<u16, Align8<[u8; 8]>>::new();
+    // This resize must fail. Otherwise, the code below creates a very small actual allocation, and
+    // consequently a slice reference that points to memory outside the buffer.
+    v.resize(isize::MAX as usize + 2, 0u16);
+    // Note that in Rust, no single allocation can exceed `isize::MAX` __bytes_. _Meaning it is
+    // impossible to soundly create a slice of `u16` with `isize::MAX` elements. If we got to this
+    // point, everything is broken already. The indexing will the probably also wrap and appear to
+    // work.
+    assert_eq!(v.as_slice()[isize::MAX as usize], 0);
 }
