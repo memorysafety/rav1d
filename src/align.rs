@@ -141,12 +141,12 @@ pub struct AlignedVec<T: Copy, C: AlignedByteChunk> {
 }
 
 impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
-    // Note that in Rust, no single allocation can exceed `isize::MAX` __bytes_.
+    // Note that in Rust, no single allocation can exceed `isize::MAX` _bytes_.
     const MAX_LEN: usize = {
-        if core::mem::size_of::<T>() == 0 {
+        if mem::size_of::<T>() == 0 {
             usize::MAX
         } else {
-            (isize::MAX as usize) / core::mem::size_of::<T>()
+            (isize::MAX as usize) / mem::size_of::<T>()
         }
     };
 
@@ -292,7 +292,7 @@ fn align_vec_fails() {
     // This resize must fail. Otherwise, the code below creates a very small actual allocation, and
     // consequently a slice reference that points to memory outside the buffer.
     v.resize(isize::MAX as usize + 2, 0u16);
-    // Note that in Rust, no single allocation can exceed `isize::MAX` __bytes_. _Meaning it is
+    // Note that in Rust, no single allocation can exceed `isize::MAX` _bytes_. Meaning it is
     // impossible to soundly create a slice of `u16` with `isize::MAX` elements. If we got to this
     // point, everything is broken already. The indexing will the probably also wrap and appear to
     // work.
