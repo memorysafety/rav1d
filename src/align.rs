@@ -141,15 +141,6 @@ pub struct AlignedVec<T: Copy, C: AlignedByteChunk> {
 }
 
 impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
-    // Note that in Rust, no single allocation can exceed `isize::MAX` _bytes_.
-    const MAX_LEN: usize = {
-        if mem::size_of::<T>() == 0 {
-            usize::MAX
-        } else {
-            (isize::MAX as usize) / mem::size_of::<T>()
-        }
-    };
-
     /// Must check in all constructors.
     const fn check_byte_chunk_type_is_aligned() {
         assert!(mem::size_of::<C>() == mem::align_of::<C>());
@@ -192,26 +183,25 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
     }
 
     pub fn resize(&mut self, new_len: usize, value: T) {
-        // In addition to the obvious effect, this verifies the wrapping behavior of the
-        // `new_bytes` calculation. That can not overflow as the length limit does not overflow
-        // when multiplied with the size of `T`. Note that we one can still pass ludicrous
-        // requested buffer lengths, just not unsound ones.
-        assert!(
-            new_len <= Self::MAX_LEN,
-            "Resizing would overflow the underlying aligned buffer"
-        );
         let old_len = self.len();
 
         // Resize the underlying vector to have enough chunks for the new length.
-        //
-        // NOTE: We don't need to `drop` any elements if the `Vec` is truncated since `T: Copy`.
-        let new_bytes = mem::size_of::<T>() * new_len;
+        // SAFETY: The `new_bytes` calculation must not overflow, ensuring a mathematical match
+        // with the underlying `inner` buffer size. NOTE: one can still pass ludicrous requested
+        // buffer lengths, just not unsound ones.
+        let Some(new_bytes) = mem::size_of::<T>().checked_mul(new_len) else {
+            panic!("Resizing would overflow the underlying aligned buffer");
+        };
+
         let chunk_size = mem::size_of::<C>();
         let new_chunks = if (new_bytes % chunk_size) == 0 {
             new_bytes / chunk_size
         } else {
+            // NOTE: can not overflow. This case only occurs on `chunk_size >= 2`.
             (new_bytes / chunk_size) + 1
         };
+
+        // NOTE: We don't need to `drop` any elements if the `Vec` is truncated since `T: Copy`.
         self.inner.resize_with(new_chunks, MaybeUninit::uninit);
 
         // If we grew the vector, initialize the new elements past `len`.
