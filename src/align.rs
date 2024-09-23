@@ -186,12 +186,12 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
         let old_len = self.len();
 
         // Resize the underlying vector to have enough chunks for the new length.
-        // SAFETY: The `new_bytes` calculation must not overflow, ensuring a mathematical match
-        // with the underlying `inner` buffer size. NOTE: one can still pass ludicrous requested
-        // buffer lengths, just not unsound ones.
-        let Some(new_bytes) = mem::size_of::<T>().checked_mul(new_len) else {
-            panic!("Resizing would overflow the underlying aligned buffer");
-        };
+        // SAFETY: The `new_bytes` calculation must not overflow,
+        // ensuring a mathematical match with the underlying `inner` buffer size.
+        // NOTE: one can still pass ludicrous requested buffer lengths, just not unsound ones.
+        let new_bytes = mem::size_of::<T>()
+            .checked_mul(new_len)
+            .expect("Resizing would overflow the underlying aligned buffer");
 
         let chunk_size = mem::size_of::<C>();
         let new_chunks = if (new_bytes % chunk_size) == 0 {
