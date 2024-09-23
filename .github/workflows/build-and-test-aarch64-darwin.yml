@@ -34,7 +34,7 @@ jobs:
             target/
           key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
-        run:  cargo +stable build ${{ matrix.build.cargo_flags }}
+        run:  cargo build ${{ matrix.build.cargo_flags }}
       - name: test ${{ matrix.build.name }} build without frame delay
         run: |
           .github/workflows/test.sh \

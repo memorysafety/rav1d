@@ -30,7 +30,7 @@ use std::ptr;
 use std::slice;
 use zerocopy::FromZeroes;
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, FromZeroes)]
 #[repr(C, packed)]
 pub struct RefMvsTemporalBlock {
     pub mv: Mv,

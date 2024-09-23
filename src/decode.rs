@@ -29,6 +29,7 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::ctx::CaseSet;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::disjoint_mut::DisjointMutSlice;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
@@ -5220,11 +5221,9 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     // ref_mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         // TODO fallible allocation
-        f.mvs = Some(
-            (0..f.sb128h as usize * 16 * (f.b4_stride >> 1) as usize)
-                .map(|_| Default::default())
-                .collect(),
-        );
+        f.mvs = Some(DisjointMutArcSlice::new_zeroed_slice(
+            f.sb128h as usize * 16 * (f.b4_stride >> 1) as usize,
+        ));
         if !frame_hdr.allow_intrabc {
             for i in 0..7 {
                 f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
