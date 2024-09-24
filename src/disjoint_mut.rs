@@ -1201,7 +1201,7 @@ impl<T> FromIterator<T> for DisjointMutArcSlice<T> {
 
             // SAFETY: When `#[cfg(not(debug_assertions))]`, `DisjointMut` is `#[repr(transparent)]`,
             // containing only an `UnsafeCell`, which is also `#[repr(transparent)]`.
-            unsafe { mem::transmute::<Arc<[_]>, Arc<DisjointMut<[_]>>>(arc_slice) }
+            unsafe { Arc::from_raw(Arc::into_raw(arc_slice) as *const DisjointMut<[_]>) }
         };
         Self { inner }
     }
