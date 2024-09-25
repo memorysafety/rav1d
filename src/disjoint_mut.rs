@@ -1195,13 +1195,15 @@ impl<T> FromIterator<T> for DisjointMutArcSlice<T> {
             let arc_slice = iter.into_iter().collect::<Arc<[_]>>();
 
             // Do our best to check that `DisjointMut` is in fact `#[repr(transparent)]`.
-            type A = Vec<u8>; // Some concrete sized type.
-            const _: () = assert!(mem::size_of::<DisjointMut<A>>() == mem::size_of::<A>());
-            const _: () = assert!(mem::align_of::<DisjointMut<A>>() == mem::align_of::<A>());
+            const {
+                type A = Vec<u8>; // Some concrete sized type.
+                assert!(mem::size_of::<DisjointMut<A>>() == mem::size_of::<A>());
+                assert!(mem::align_of::<DisjointMut<A>>() == mem::align_of::<A>());
+            }
 
             // SAFETY: When `#[cfg(not(debug_assertions))]`, `DisjointMut` is `#[repr(transparent)]`,
             // containing only an `UnsafeCell`, which is also `#[repr(transparent)]`.
-            unsafe { mem::transmute::<Arc<[_]>, Arc<DisjointMut<[_]>>>(arc_slice) }
+            unsafe { Arc::from_raw(Arc::into_raw(arc_slice) as *const DisjointMut<[_]>) }
         };
         Self { inner }
     }
