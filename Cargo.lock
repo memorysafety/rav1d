@@ -168,6 +168,7 @@ dependencies = [
 name = "rav1d-cli"
 version = "1.0.0"
 dependencies = [
+ "cc",
  "cfg-if",
  "libc",
  "rav1d",
