@@ -671,7 +671,7 @@ pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::
 pub const DAV1D_MC_SMPTE_YCGCO: Dav1dMatrixCoefficients =
     Rav1dMatrixCoefficients::SMPTE_YCGCO.to_dav1d();
 pub const DAV1D_MC_BT2020_NCL: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::BT2020_CL.to_dav1d();
+    Rav1dMatrixCoefficients::BT2020_NCL.to_dav1d();
 pub const DAV1D_MC_BT2020_CL: Dav1dMatrixCoefficients =
     Rav1dMatrixCoefficients::BT2020_CL.to_dav1d();
 pub const DAV1D_MC_SMPTE2085: Dav1dMatrixCoefficients =
