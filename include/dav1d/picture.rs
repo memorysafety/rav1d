@@ -29,6 +29,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::pixels::Pixels;
 use crate::src::send_sync_non_null::SendSyncNonNull;
 use crate::src::strided::Strided;
+use crate::src::unique::Unique;
 use crate::src::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -94,7 +95,7 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
 pub struct Dav1dPicture {
     pub seq_hdr: Option<NonNull<Dav1dSequenceHeader>>,
     pub frame_hdr: Option<NonNull<Dav1dFrameHeader>>,
-    pub data: [Option<NonNull<c_void>>; 3],
+    pub data: [Option<Unique<c_void>>; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
     pub m: Dav1dDataProps,
@@ -134,7 +135,7 @@ pub struct Rav1dPictureDataComponentInner {
     /// even if [`Self::stride`] is negative.
     ///
     /// It is aligned to [`RAV1D_PICTURE_ALIGNMENT`].
-    ptr: NonNull<u8>,
+    ptr: Unique<u8>,
 
     /// The length of [`Self::ptr`] in [`u8`] bytes.
     ///
@@ -151,12 +152,12 @@ impl Rav1dPictureDataComponentInner {
     /// # Safety
     ///
     /// `ptr`, `len`, and `stride` must follow the requirements of [`Dav1dPicAllocator::alloc_picture_callback`].
-    unsafe fn new(ptr: Option<NonNull<u8>>, len: usize, stride: isize) -> Self {
+    unsafe fn new(ptr: Option<Unique<u8>>, len: usize, stride: isize) -> Self {
         let ptr = match ptr {
             None => {
                 return Self {
                     // Ensure it is aligned enough.
-                    ptr: NonNull::<AlignedPixelChunk>::dangling().cast(),
+                    ptr: Unique::<AlignedPixelChunk>::dangling().cast(),
                     len: 0,
                     stride,
                 };
@@ -168,13 +169,15 @@ impl Rav1dPictureDataComponentInner {
         assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
 
         let ptr = if stride < 0 {
-            let ptr = ptr.as_ptr();
-            // SAFETY: According to `Dav1dPicAllocator::alloc_picture_callback`,
-            // if the `stride` is negative, this is how we get the start of the data.
-            // `.offset(-stride)` puts us at one element past the end of the slice,
-            // and `.sub(len)` puts us back at the start of the slice.
-            let ptr = unsafe { ptr.offset(-stride).sub(len) };
-            NonNull::new(ptr).unwrap()
+            ptr.map(|ptr| {
+                let ptr = ptr.as_ptr();
+                // SAFETY: According to `Dav1dPicAllocator::alloc_picture_callback`,
+                // if the `stride` is negative, this is how we get the start of the data.
+                // `.offset(-stride)` puts us at one element past the end of the slice,
+                // and `.sub(len)` puts us back at the start of the slice.
+                let ptr = unsafe { ptr.offset(-stride).sub(len) };
+                NonNull::new(ptr).unwrap()
+            })
         } else {
             ptr
         };
@@ -189,7 +192,7 @@ impl Rav1dPictureDataComponentInner {
     /// so it is sound to further subdivide it into disjoint `&mut`s.
     pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
         let buf = AsBytes::as_bytes_mut(buf);
-        let ptr = NonNull::new(buf.as_mut_ptr()).unwrap();
+        let ptr = Unique::from_ref_mut(buf).cast();
         assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
         let len = buf.len();
         assert!(len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0);
@@ -292,11 +295,14 @@ impl Rav1dPictureDataComponent {
         self.as_strided_mut_ptr::<BD>().cast_const()
     }
 
-    fn as_dav1d(&self) -> Option<NonNull<c_void>> {
+    fn as_dav1d(&self) -> Option<Unique<c_void>> {
         if self.byte_len() == 0 {
             None
         } else {
-            NonNull::new(self.as_strided_byte_mut_ptr().cast())
+            let ptr = NonNull::new(self.as_strided_byte_mut_ptr()).unwrap();
+            // SAFETY: The `ptr` originally comes from a `Unique` in `Rav1dPictureDataComponentInner::ptr`.
+            let ptr = unsafe { Unique::new(ptr) };
+            Some(ptr.cast())
         }
     }
 
