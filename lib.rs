@@ -96,8 +96,40 @@ pub use src::error::Dav1dResult;
 
 // ---------------------------------------------------------------------------------------
 
-/// Public Rust API, mostly copied from <https://github.com/rust-av/dav1d-rs/blob/master/src/lib.rs>
+/// Public Rust API.
+///
+/// This is more or less the same API as <https://crates.io/crates/dav1d>,
+/// and is indeed a fork of that work.
 pub mod dav1d {
+    // This whole module was originally copied from https://github.com/rust-av/dav1d-rs/
+    // (specifically https://github.com/rust-av/dav1d-rs/blob/94b1deaa1e25bf29c77bb5cc8a08ddaf7663eede/src/lib.rs)
+    // with some modifications.
+    // `dav1d-rs` is under the MIT license, replicated here:
+
+    // MIT License
+    //
+    // Copyright (c) 2018 Luca Barbato
+    //
+    // Permission is hereby granted, free of charge, to any person obtaining a copy
+    // of this software and associated documentation files (the "Software"), to deal
+    // in the Software without restriction, including without limitation the rights
+    // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    // copies of the Software, and to permit persons to whom the Software is
+    // furnished to do so, subject to the following conditions:
+    //
+    // The above copyright notice and this permission notice shall be included in all
+    // copies or substantial portions of the Software.
+    //
+    // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    // SOFTWARE.
+
+    // The code below provides a safe API around the rav1d C FFI layer.
+
     use crate as rav1d;
 
     pub use av_data::pixel;
