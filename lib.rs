@@ -487,7 +487,7 @@ pub mod dav1d {
                     option_send_sync_non_null(buf).map(|v| v.cast()),
                 );
                 if let Some(offset) = offset {
-                    data.m.offset = offset;
+                    data.m.offset = offset as libc::off_t;
                 }
                 if let Some(timestamp) = timestamp {
                     data.m.timestamp = timestamp;
@@ -795,7 +795,7 @@ pub mod dav1d {
         /// This is the same offset as the one provided to [`Decoder::send_data`] or `-1` if none was
         /// provided.
         pub fn offset(&self) -> i64 {
-            self.inner.pic.m.offset
+            self.inner.pic.m.offset as i64
         }
 
         /// Chromaticity coordinates of the source colour primaries.
