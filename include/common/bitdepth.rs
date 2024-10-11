@@ -430,7 +430,7 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 /// [`avx512icl`]: crate::src::cpu::CpuFlags::AVX512ICL
 /// [`neon`]: crate::src::cpu::CpuFlags::NEON
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 macro_rules! bd_fn {
@@ -458,7 +458,7 @@ macro_rules! bd_fn {
 /// Similar to [`bd_fn!`] except that it selects which [`BitDepth`] `fn`
 /// based on `$bpc:literal bpc` instead of `$BD:ty`.
 #[cfg(all(
-    feature = "asm",
+    asm,
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 macro_rules! bpc_fn {
@@ -485,13 +485,13 @@ macro_rules! fn_identity {
 }
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 pub(crate) use bd_fn;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 pub(crate) use bpc_fn;

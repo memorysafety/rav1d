@@ -1736,7 +1736,7 @@ impl Rav1dRefmvsDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
@@ -1777,7 +1777,7 @@ impl Rav1dRefmvsDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -1792,7 +1792,7 @@ impl Rav1dRefmvsDSPContext {
 
     #[inline(always)]
     const fn init(self, flags: CpuFlags) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {

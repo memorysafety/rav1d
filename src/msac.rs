@@ -15,7 +15,7 @@ use std::ops::Range;
 use std::ptr;
 use std::slice;
 
-#[cfg(all(feature = "asm", target_feature = "sse2"))]
+#[cfg(all(asm, target_feature = "sse2"))]
 extern "C" {
     fn dav1d_msac_decode_hi_tok_sse2(s: *mut MsacAsmContext, cdf: *mut u16) -> c_uint;
     fn dav1d_msac_decode_bool_sse2(s: *mut MsacAsmContext, f: c_uint) -> c_uint;
@@ -39,7 +39,7 @@ extern "C" {
     ) -> c_uint;
 }
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+#[cfg(all(asm, target_arch = "x86_64"))]
 extern "C" {
     fn dav1d_msac_decode_symbol_adapt16_avx2(
         s: &mut MsacAsmContext,
@@ -49,7 +49,7 @@ extern "C" {
     ) -> c_uint;
 }
 
-#[cfg(all(feature = "asm", target_feature = "neon"))]
+#[cfg(all(asm, target_feature = "neon"))]
 extern "C" {
     fn dav1d_msac_decode_hi_tok_neon(s: *mut MsacAsmContext, cdf: *mut u16) -> c_uint;
     fn dav1d_msac_decode_bool_neon(s: *mut MsacAsmContext, f: c_uint) -> c_uint;
@@ -88,7 +88,7 @@ impl Rav1dMsacDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
@@ -109,7 +109,7 @@ impl Rav1dMsacDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm(self, _flags: CpuFlags) -> Self {
         self
@@ -117,7 +117,7 @@ impl Rav1dMsacDSPContext {
 
     #[inline(always)]
     const fn init(self, flags: CpuFlags) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
@@ -199,7 +199,7 @@ pub struct MsacAsmContext {
     pub rng: c_uint,
     pub cnt: c_int,
     allow_update_cdf: c_int,
-    #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+    #[cfg(all(asm, target_arch = "x86_64"))]
     symbol_adapt16: unsafe extern "C" fn(
         s: &mut MsacAsmContext,
         cdf: *mut u16,
@@ -217,7 +217,7 @@ impl Default for MsacAsmContext {
             cnt: Default::default(),
             allow_update_cdf: Default::default(),
 
-            #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+            #[cfg(all(asm, target_arch = "x86_64"))]
             symbol_adapt16: Rav1dMsacDSPContext::default().symbol_adapt16,
         }
     }
@@ -339,7 +339,7 @@ fn ctx_norm(s: &mut MsacContext, dif: EcWin, rng: c_uint) {
 }
 
 #[cfg_attr(
-    all(feature = "asm", any(target_feature = "sse2", target_feature = "neon")),
+    all(asm, any(target_feature = "sse2", target_feature = "neon")),
     allow(dead_code)
 )]
 fn rav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
@@ -356,7 +356,7 @@ fn rav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
 }
 
 #[cfg_attr(
-    all(feature = "asm", any(target_feature = "sse2", target_feature = "neon")),
+    all(asm, any(target_feature = "sse2", target_feature = "neon")),
     allow(dead_code)
 )]
 fn rav1d_msac_decode_bool_rust(s: &mut MsacContext, f: c_uint) -> bool {
@@ -436,7 +436,7 @@ fn rav1d_msac_decode_symbol_adapt_rust(s: &mut MsacContext, cdf: &mut [u16], n_s
 ///
 /// Must be called through [`Rav1dMsacDSPContext::symbol_adapt16`]
 /// in [`rav1d_msac_decode_symbol_adapt16`].
-#[cfg_attr(not(all(feature = "asm", target_arch = "x86_64")), allow(dead_code))]
+#[cfg_attr(not(all(asm, target_arch = "x86_64")), allow(dead_code))]
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn rav1d_msac_decode_symbol_adapt_c(
     s: &mut MsacAsmContext,
@@ -462,7 +462,7 @@ unsafe extern "C" fn rav1d_msac_decode_symbol_adapt_c(
 }
 
 #[cfg_attr(
-    all(feature = "asm", any(target_feature = "sse2", target_feature = "neon")),
+    all(asm, any(target_feature = "sse2", target_feature = "neon")),
     allow(dead_code)
 )]
 fn rav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16; 2]) -> bool {
@@ -482,7 +482,7 @@ fn rav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16; 2]) ->
 
 /// Return value is in the range `0..=15`.
 #[cfg_attr(
-    all(feature = "asm", any(target_feature = "sse2", target_feature = "neon")),
+    all(asm, any(target_feature = "sse2", target_feature = "neon")),
     allow(dead_code)
 )]
 fn rav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> u8 {
@@ -510,7 +510,7 @@ impl MsacContext {
             rng: 0x8000,
             cnt: -15,
             allow_update_cdf: (!disable_cdf_update_flag).into(),
-            #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+            #[cfg(all(asm, target_arch = "x86_64"))]
             symbol_adapt16: dsp.symbol_adapt16,
         };
         let mut s = Self {
@@ -531,12 +531,12 @@ pub fn rav1d_msac_decode_symbol_adapt4(s: &mut MsacContext, cdf: &mut [u16], n_s
     debug_assert!(n_symbols < 4);
     let ret;
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt4_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt4_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
@@ -557,12 +557,12 @@ pub fn rav1d_msac_decode_symbol_adapt8(s: &mut MsacContext, cdf: &mut [u16], n_s
     debug_assert!(n_symbols < 8);
     let ret;
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt8_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
             };
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt8_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
@@ -583,17 +583,17 @@ pub fn rav1d_msac_decode_symbol_adapt16(s: &mut MsacContext, cdf: &mut [u16], n_
     debug_assert!(n_symbols < 16);
     let ret;
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
+        if #[cfg(all(asm, target_arch = "x86_64"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 (s.symbol_adapt16)(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
             };
-        } else if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        } else if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt16_sse2(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize, cdf.len())
             };
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             ret = unsafe {
                 dav1d_msac_decode_symbol_adapt16_neon(&mut s.asm, cdf.as_mut_ptr(), n_symbols as usize)
@@ -608,12 +608,12 @@ pub fn rav1d_msac_decode_symbol_adapt16(s: &mut MsacContext, cdf: &mut [u16], n_
 
 pub fn rav1d_msac_decode_bool_adapt(s: &mut MsacContext, cdf: &mut [u16; 2]) -> bool {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_adapt_rust`].
             unsafe {
                 dav1d_msac_decode_bool_adapt_sse2(&mut s.asm, cdf.as_mut_ptr()) != 0
             }
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_adapt_rust`].
             unsafe {
                 dav1d_msac_decode_bool_adapt_neon(&mut s.asm, cdf.as_mut_ptr()) != 0
@@ -626,12 +626,12 @@ pub fn rav1d_msac_decode_bool_adapt(s: &mut MsacContext, cdf: &mut [u16; 2]) -> 
 
 pub fn rav1d_msac_decode_bool_equi(s: &mut MsacContext) -> bool {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_equi_rust`].
             unsafe {
                 dav1d_msac_decode_bool_equi_sse2(&mut s.asm) != 0
             }
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_equi_rust`].
             unsafe {
                 dav1d_msac_decode_bool_equi_neon(&mut s.asm) != 0
@@ -644,12 +644,12 @@ pub fn rav1d_msac_decode_bool_equi(s: &mut MsacContext) -> bool {
 
 pub fn rav1d_msac_decode_bool(s: &mut MsacContext, f: c_uint) -> bool {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_rust`].
             unsafe {
                 dav1d_msac_decode_bool_sse2(&mut s.asm, f) != 0
             }
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_rust`].
             unsafe {
                 dav1d_msac_decode_bool_neon(&mut s.asm, f) != 0
@@ -665,12 +665,12 @@ pub fn rav1d_msac_decode_bool(s: &mut MsacContext, f: c_uint) -> bool {
 pub fn rav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16; 4]) -> u8 {
     let ret;
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_feature = "sse2"))] {
+        if #[cfg(all(asm, target_feature = "sse2"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_hi_tok_rust`].
             ret = (unsafe {
                 dav1d_msac_decode_hi_tok_sse2(&mut s.asm, cdf.as_mut_ptr())
             }) as u8;
-        } else if #[cfg(all(feature = "asm", target_feature = "neon"))] {
+        } else if #[cfg(all(asm, target_feature = "neon"))] {
             // SAFETY: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_hi_tok_rust`].
             ret = unsafe {
                 dav1d_msac_decode_hi_tok_neon(&mut s.asm, cdf.as_mut_ptr())

@@ -107,12 +107,12 @@ impl CpuFlags {
         combined_flags
     }
 
-    #[cfg(not(feature = "asm"))]
+    #[cfg(not(asm))]
     pub fn run_time_detect() -> Self {
         Self::empty()
     }
 
-    #[cfg(feature = "asm")]
+    #[cfg(asm)]
     pub fn run_time_detect() -> Self {
         let mut flags = Self::empty();
 

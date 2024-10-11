@@ -34,7 +34,7 @@ use std::ptr;
 use to_method::To;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
@@ -913,7 +913,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 mod neon {
     use super::*;
 
@@ -1279,7 +1279,7 @@ impl Rav1dFilmGrainDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSSE3) {
@@ -1339,7 +1339,7 @@ impl Rav1dFilmGrainDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -1365,7 +1365,7 @@ impl Rav1dFilmGrainDSPContext {
 
     #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {

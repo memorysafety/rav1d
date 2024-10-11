@@ -52,12 +52,12 @@ use std::num::NonZeroUsize;
 use std::slice;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
 pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
@@ -350,7 +350,7 @@ fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
 }
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 macro_rules! assign_itx_fn {
@@ -366,7 +366,7 @@ macro_rules! assign_itx_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $type:ident, $type_enum:ident, $bpc:literal bpc, $ext:ident) => {{
         use paste::paste;
@@ -380,21 +380,21 @@ macro_rules! assign_itx_bpc_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx1_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx_bpc_fn!($c, $w, $h, dct_dct, DCT_DCT, $bpc bpc, $ext)
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 macro_rules! assign_itx1_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx_fn!($c, BD, $w, $h, dct_dct, DCT_DCT, $ext)
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx2_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx1_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -402,7 +402,7 @@ macro_rules! assign_itx2_bpc_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 macro_rules! assign_itx2_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx1_fn!($c, BD, $w, $h, $ext);
@@ -410,7 +410,7 @@ macro_rules! assign_itx2_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx12_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx2_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -427,7 +427,7 @@ macro_rules! assign_itx12_bpc_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 macro_rules! assign_itx12_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx2_fn!($c, BD, $w, $h, $ext);
@@ -444,7 +444,7 @@ macro_rules! assign_itx12_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx16_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx12_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -455,7 +455,7 @@ macro_rules! assign_itx16_bpc_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 macro_rules! assign_itx16_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx12_fn!($c, BD, $w, $h, $ext);
@@ -544,7 +544,7 @@ impl Rav1dInvTxfmDSPContext {
         c
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
@@ -721,7 +721,7 @@ impl Rav1dInvTxfmDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -764,7 +764,7 @@ impl Rav1dInvTxfmDSPContext {
 
     #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: u8) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {

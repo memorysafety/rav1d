@@ -38,15 +38,15 @@ use std::slice;
 use to_method::To;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::{bpc_fn, BPC};
 
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+#[cfg(all(asm, target_arch = "aarch64"))]
 use crate::include::common::bitdepth::bpc_fn;
 
 #[inline(never)]
@@ -2025,7 +2025,7 @@ impl Rav1dMCDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
@@ -2256,7 +2256,7 @@ impl Rav1dMCDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -2374,7 +2374,7 @@ impl Rav1dMCDSPContext {
 
     #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {

@@ -31,12 +31,12 @@ use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
 bitflags! {
@@ -957,7 +957,7 @@ fn sgr_mix_rust<BD: BitDepth>(
 }
 
 #[deny(unsafe_op_in_unsafe_fn)]
-#[cfg(all(feature = "asm", target_arch = "arm"))]
+#[cfg(all(asm, target_arch = "arm"))]
 mod neon {
     use super::*;
 
@@ -1572,7 +1572,7 @@ mod neon {
 }
 
 #[deny(unsafe_op_in_unsafe_fn)]
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+#[cfg(all(asm, target_arch = "aarch64"))]
 mod neon {
     use super::*;
 
@@ -3318,7 +3318,7 @@ mod neon {
 }
 
 #[deny(unsafe_op_in_unsafe_fn)]
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
 mod neon_erased {
     use super::*;
 
@@ -3422,7 +3422,7 @@ impl Rav1dLoopRestorationDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
@@ -3505,7 +3505,7 @@ impl Rav1dLoopRestorationDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -3539,7 +3539,7 @@ impl Rav1dLoopRestorationDSPContext {
 
     #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: u8) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {

@@ -79,7 +79,7 @@ macro_rules! wrap_fn_ptr {
                 };
             }
 
-            #[cfg(feature = "asm")]
+            #[cfg(asm)]
             #[allow(unused_macros)]
             macro_rules! decl_fn {
                 (fn $fn_name:ident) => {{
@@ -91,7 +91,7 @@ macro_rules! wrap_fn_ptr {
                 }};
             }
 
-            #[cfg(feature = "asm")]
+            #[cfg(asm)]
             #[allow(unused_imports)]
             pub(crate) use decl_fn;
         }

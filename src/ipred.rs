@@ -47,12 +47,12 @@ use zerocopy::AsBytes;
 use zerocopy::FromBytes;
 
 #[cfg(all(
-    feature = "asm",
+    asm,
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+#[cfg(all(asm, target_arch = "x86_64"))]
 use crate::include::common::bitdepth::bpc_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
@@ -1449,7 +1449,7 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     pal_pred_rust::<BD>(dst, pal, idx, w, h)
 }
 
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+#[cfg(all(asm, target_arch = "aarch64"))]
 mod neon {
     use super::*;
 
@@ -2056,7 +2056,7 @@ impl Rav1dIntraPredDSPContext {
         }
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(all(asm, any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSSE3) {
@@ -2188,7 +2188,7 @@ impl Rav1dIntraPredDSPContext {
         self
     }
 
-    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[cfg(all(asm, any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
@@ -2244,7 +2244,7 @@ impl Rav1dIntraPredDSPContext {
 
     #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
-        #[cfg(feature = "asm")]
+        #[cfg(asm)]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
