@@ -34,6 +34,7 @@ zerocopy = { version = "0.7.32", features = ["derive"] }
 
 [build-dependencies]
 cc = "1.0.79"
+cfg_aliases = "0.2.1"
 nasm-rs = { version = "0.3", features = ["parallel"] }
 
 [features]

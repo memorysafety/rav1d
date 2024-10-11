@@ -23,8 +23,15 @@ libc = "0.2"
 rav1d = { path = "../", version = "1.0.0", default-features = false }
 
 [features]
-default = ["asm", "asm_arm64_dotprod", "asm_arm64_i8mm", "bitdepth_8", "bitdepth_16"]
-asm = ["rav1d/asm"]
+default = [
+    "asm_nonlinux",
+    "asm_arm64_dotprod",
+    "asm_arm64_i8mm",
+    "bitdepth_8",
+    "bitdepth_16",
+]
+asm_nonlinux = ["rav1d/asm_nonlinux"]
+asm_linux = ["rav1d/asm_linux"]
 asm_arm64_dotprod = ["rav1d/asm_arm64_dotprod"]
 asm_arm64_i8mm = ["rav1d/asm_arm64_i8mm"]
 bitdepth_8 = ["rav1d/bitdepth_8"]
