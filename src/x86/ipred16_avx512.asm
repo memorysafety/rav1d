@@ -121,10 +121,10 @@ JMP_TABLE ipred_z2_16bpc,         avx512icl, w4, w8, w16, w32, w64
 JMP_TABLE ipred_z3_16bpc,         avx512icl, w4, w8, w16, w32, w64
 JMP_TABLE pal_pred_16bpc,         avx512icl, w4, w8, w16, w32, w64
 
-cextern smooth_weights_1d_16bpc
-cextern smooth_weights_2d_16bpc
-cextern dr_intra_derivative
-cextern filter_intra_taps
+cextern_args smooth_weights_1d_16bpc,data,hidden
+cextern_args smooth_weights_2d_16bpc,data,hidden
+cextern_args dr_intra_derivative,data,hidden
+cextern_args filter_intra_taps,data,hidden
 
 SECTION .text
 

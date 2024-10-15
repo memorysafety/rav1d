@@ -43,4 +43,4 @@ struc FGData
     .clip_to_restricted_range:  resd 1
 endstruc
 
-cextern gaussian_sequence
+cextern_args gaussian_sequence,data,hidden

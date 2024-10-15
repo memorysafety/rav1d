@@ -59,7 +59,7 @@ pd_0xfffffff0: times 4 dd 0xfffffff0
 wiener_shifts: dw 4, 4, 2048, 2048, 1, 1, 8192, 8192
 wiener_round:  dd 1049600, 1048832
 
-cextern sgr_x_by_x
+cextern_args sgr_x_by_x,data,hidden
 
 SECTION .text
 

@@ -53,7 +53,7 @@ pd_m9:         dd -9
 pd_34816:      dd 34816
 pd_8421376:    dd 8421376
 
-cextern sgr_x_by_x
+cextern_args sgr_x_by_x,data,hidden
 
 SECTION .text
 

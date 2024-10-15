@@ -158,11 +158,11 @@ BASE_JMP_TABLE prep, ssse3,    4, 8, 16, 32, 64, 128
 SCALED_JMP_TABLE put_8tap_scaled, ssse3, 2, 4, 8, 16, 32, 64, 128
 SCALED_JMP_TABLE prep_8tap_scaled, ssse3,   4, 8, 16, 32, 64, 128
 
-cextern mc_subpel_filters
+cextern_args mc_subpel_filters,data,hidden
 %define subpel_filters (mangle(private_prefix %+ _mc_subpel_filters)-8)
 
-cextern mc_warp_filter
-cextern resize_filter
+cextern_args mc_warp_filter,data,hidden
+cextern_args resize_filter,data,hidden
 
 SECTION .text
 

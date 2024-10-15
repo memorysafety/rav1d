@@ -173,8 +173,8 @@ JMP_TABLE ipred_cfl_ac_422, avx2, w16_pad1, w16_pad2, w16_pad3
 JMP_TABLE ipred_cfl_ac_444, avx2, w32_pad1, w32_pad2, w32_pad3, w4, w8, w16, w32
 JMP_TABLE pal_pred,         avx2, w4, w8, w16, w32, w64
 
-cextern dr_intra_derivative
-cextern filter_intra_taps
+cextern_args dr_intra_derivative,data,hidden
+cextern_args filter_intra_taps,data,hidden
 
 SECTION .text
 
