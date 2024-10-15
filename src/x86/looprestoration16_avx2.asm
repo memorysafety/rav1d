@@ -62,8 +62,8 @@ pd_0xf00801c7: dd 0xf00801c7
 
 %define pw_256 sgr_lshuf5
 
-cextern_args pb_0to63,data,hidden
-cextern_args sgr_x_by_x_avx2,data,hidden
+cextern_hidden_data pb_0to63
+cextern_hidden_data sgr_x_by_x_avx2
 
 SECTION .text
 

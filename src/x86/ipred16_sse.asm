@@ -99,10 +99,10 @@ JMP_TABLE ipred_cfl_left_16bpc,   ssse3, h4, h8, h16, h32
 JMP_TABLE ipred_cfl_ac_444_16bpc, ssse3, w4, w8, w16, w32
 JMP_TABLE pal_pred_16bpc,         ssse3, w4, w8, w16, w32, w64
 
-cextern_args smooth_weights_1d_16bpc,data,hidden
-cextern_args smooth_weights_2d_16bpc,data,hidden
-cextern_args dr_intra_derivative,data,hidden
-cextern_args filter_intra_taps,data,hidden
+cextern_hidden_data smooth_weights_1d_16bpc
+cextern_hidden_data smooth_weights_2d_16bpc
+cextern_hidden_data dr_intra_derivative
+cextern_hidden_data filter_intra_taps
 
 SECTION .text
 

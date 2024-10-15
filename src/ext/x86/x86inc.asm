@@ -868,17 +868,23 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     extern %1
 %endmacro
 
-; %2 and %3 give control over symbol type and symbol visibility, respectively.
-; E.g. `cextern_args some_symbol,data,hidden`.
+; Like `cextern`, but assumes the symbol is hidden data (i.e. `extern:data hidden`).
+; Portable across all supported platforms.
 ;
 ; This can be life saving in position-independent contexts, where it is very easy to generate
 ; illegal relocations otherwise.
 ;
 ; See <https://github.com/rerun-io/re_rav1d/pull/3> for more information.
-%macro cextern_args 3
+%macro cextern_hidden_data 1
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     CAT_XDEFINE cglobaled_, %1, 2
-    extern %1:%2 %3
+    %if FORMAT_ELF
+        extern %1:data hidden
+    %elif FORMAT_MACHO && HAVE_PRIVATE_EXTERN
+        extern %1:private_extern
+    %else
+        extern %1
+    %endif
 %endmacro
 
 ; Like cextern, but without the prefix. This should be used for symbols from external libraries.
