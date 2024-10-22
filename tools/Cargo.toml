@@ -22,6 +22,9 @@ cfg-if = "1.0.0"
 libc = "0.2"
 rav1d = { path = "../", version = "1.0.0", default-features = false }
 
+[build-dependencies]
+cc = "1.0.79"
+
 [features]
 default = ["asm", "asm_arm64_dotprod", "asm_arm64_i8mm", "bitdepth_8", "bitdepth_16"]
 asm = ["rav1d/asm"]
