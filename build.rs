@@ -292,6 +292,7 @@ mod asm {
             nasm.files(asm_file_paths);
             #[cfg(debug_assertions)]
             nasm.flag("-g");
+            #[cfg(debug_assertions)]
             nasm.flag(match os {
                 "windows" => "-fwin64",
                 _ => "-Fdwarf",
