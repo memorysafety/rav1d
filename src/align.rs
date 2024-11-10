@@ -146,8 +146,14 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
         assert!(mem::size_of::<C>() == mem::align_of::<C>());
     }
 
+    const fn check_inner_type_is_aligned() {
+        assert!(mem::align_of::<T>() <= mem::align_of::<C>());
+    }
+
     pub const fn new() -> Self {
         Self::check_byte_chunk_type_is_aligned();
+        Self::check_inner_type_is_aligned();
+
         Self {
             inner: Vec::new(),
             len: 0,
@@ -172,6 +178,9 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
     pub fn as_slice(&self) -> &[T] {
         // SAFETY: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
+        // SAFETY: The pointer is sufficiently aligned,
+        // as the chunks are always over-aligned with
+        // respect to `T`.
         unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
     }
 
@@ -179,6 +188,9 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         // SAFETY: The first `len` elements have been
         // initialized to `T`s in `Self::resize_with`.
+        // SAFETY: The pointer is sufficiently aligned,
+        // as the chunks are always over-aligned with
+        // respect to `T`.
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
     }
 
@@ -208,6 +220,9 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
         for offset in old_len..new_len {
             // SAFETY: We've allocated enough space to write
             // up to `new_len` elements into the buffer.
+            // SAFETY: The pointer is sufficiently aligned,
+            // as the chunks are always over-aligned with
+            // respect to `T`.
             unsafe { self.as_mut_ptr().add(offset).write(value) };
         }
 
@@ -287,4 +302,14 @@ fn align_vec_fails() {
     // point, everything is broken already. The indexing will the probably also wrap and appear to
     // work.
     assert_eq!(v.as_slice()[isize::MAX as usize], 0);
+}
+
+#[test]
+#[should_panic]
+fn under_aligned_storage_fails() {
+    let mut v = AlignedVec::<u128, Align1<[u8; 1]>>::new();
+
+    // Would be UB: unaligned write of type u128 to pointer aligned to 1 (or 8 in most allocators,
+    // but statically we only ensure an alignment of 1).
+    v.resize(1, 0u128);
 }
