@@ -251,12 +251,12 @@ HV_JMP_TABLE   prep, 8tap,  avx512icl, 2,    4, 8, 16, 32, 64, 128
 
 %define table_offset(type, fn) type %+ fn %+ SUFFIX %+ _table - type %+ SUFFIX
 
-cextern mc_subpel_filters
+cextern_hidden_data mc_subpel_filters
 %define subpel_filters (mangle(private_prefix %+ _mc_subpel_filters)-8)
 
-cextern mc_warp_filter
-cextern obmc_masks_avx2
-cextern resize_filter
+cextern_hidden_data mc_warp_filter
+cextern_hidden_data obmc_masks_avx2
+cextern_hidden_data resize_filter
 
 SECTION .text
 

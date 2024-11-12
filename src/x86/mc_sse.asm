@@ -202,7 +202,7 @@ const mc_warp_filter2 ; dav1d_mc_warp_filter[] reordered for pmaddubsw usage
 
 pw_258:  times 2 dw 258
 
-cextern mc_subpel_filters
+cextern_hidden_data mc_subpel_filters
 %define subpel_filters (mangle(private_prefix %+ _mc_subpel_filters)-8)
 
 %macro BIDIR_JMP_TABLE 2-*
@@ -9357,7 +9357,7 @@ cglobal emu_edge_8bpc, 10, 13, 2, bw, bh, iw, ih, x, \
 %undef reg_blkm
 %undef reg_tmp
 
-cextern resize_filter
+cextern_hidden_data resize_filter
 
 %macro SCRATCH 3
 %if ARCH_X86_32
