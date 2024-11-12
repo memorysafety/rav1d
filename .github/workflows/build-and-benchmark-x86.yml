@@ -15,7 +15,7 @@ jobs:
             - name: release build main branch
               run: |
                 git fetch --depth 1 origin main && git checkout origin/main
-                nice cargo +stable build --release --target-dir target.main
+                nice cargo build --release --target-dir target.main
             - name: benchmark on chimera 8-bit test data
               run: |
                 mkdir -p `dirname $LOCAL_FILE`
