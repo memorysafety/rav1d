@@ -192,10 +192,17 @@ impl BlockSize {
     }
 }
 
-pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
+pub const fn dav1d_txfm_size<const TX: usize>() -> TxfmSize {
+    let Some(size) = TxfmSize::from_repr(TX) else {
+        panic!("invalid `TxfmSize` discriminant");
+    };
+    size
+}
+
+pub const fn dav1d_txfm_dimension<const TX: usize>() -> TxfmInfo {
     use TxfmSize::*;
-    [
-        TxfmInfo {
+    match dav1d_txfm_size::<TX>() {
+        S4x4 => TxfmInfo {
             w: 1,
             h: 1,
             lw: 0,
@@ -205,7 +212,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: DefaultValue::DEFAULT,
             ctx: 0,
         },
-        TxfmInfo {
+        S8x8 => TxfmInfo {
             w: 2,
             h: 2,
             lw: 1,
@@ -215,7 +222,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S4x4,
             ctx: 1,
         },
-        TxfmInfo {
+        S16x16 => TxfmInfo {
             w: 4,
             h: 4,
             lw: 2,
@@ -225,7 +232,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S8x8,
             ctx: 2,
         },
-        TxfmInfo {
+        S32x32 => TxfmInfo {
             w: 8,
             h: 8,
             lw: 3,
@@ -235,7 +242,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S16x16,
             ctx: 3,
         },
-        TxfmInfo {
+        S64x64 => TxfmInfo {
             w: 16,
             h: 16,
             lw: 4,
@@ -245,7 +252,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S32x32,
             ctx: 4,
         },
-        TxfmInfo {
+        R4x8 => TxfmInfo {
             w: 1,
             h: 2,
             lw: 0,
@@ -255,7 +262,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S4x4,
             ctx: 1,
         },
-        TxfmInfo {
+        R8x4 => TxfmInfo {
             w: 2,
             h: 1,
             lw: 1,
@@ -265,7 +272,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S4x4,
             ctx: 1,
         },
-        TxfmInfo {
+        R8x16 => TxfmInfo {
             w: 2,
             h: 4,
             lw: 1,
@@ -275,7 +282,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S8x8,
             ctx: 2,
         },
-        TxfmInfo {
+        R16x8 => TxfmInfo {
             w: 4,
             h: 2,
             lw: 2,
@@ -285,7 +292,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S8x8,
             ctx: 2,
         },
-        TxfmInfo {
+        R16x32 => TxfmInfo {
             w: 4,
             h: 8,
             lw: 2,
@@ -295,7 +302,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S16x16,
             ctx: 3,
         },
-        TxfmInfo {
+        R32x16 => TxfmInfo {
             w: 8,
             h: 4,
             lw: 3,
@@ -305,7 +312,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S16x16,
             ctx: 3,
         },
-        TxfmInfo {
+        R32x64 => TxfmInfo {
             w: 8,
             h: 16,
             lw: 3,
@@ -315,7 +322,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S32x32,
             ctx: 4,
         },
-        TxfmInfo {
+        R64x32 => TxfmInfo {
             w: 16,
             h: 8,
             lw: 4,
@@ -325,7 +332,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: S32x32,
             ctx: 4,
         },
-        TxfmInfo {
+        R4x16 => TxfmInfo {
             w: 1,
             h: 4,
             lw: 0,
@@ -335,7 +342,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R4x8,
             ctx: 1,
         },
-        TxfmInfo {
+        R16x4 => TxfmInfo {
             w: 4,
             h: 1,
             lw: 2,
@@ -345,7 +352,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R8x4,
             ctx: 1,
         },
-        TxfmInfo {
+        R8x32 => TxfmInfo {
             w: 2,
             h: 8,
             lw: 1,
@@ -355,7 +362,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R8x16,
             ctx: 2,
         },
-        TxfmInfo {
+        R32x8 => TxfmInfo {
             w: 8,
             h: 2,
             lw: 3,
@@ -365,7 +372,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R16x8,
             ctx: 2,
         },
-        TxfmInfo {
+        R16x64 => TxfmInfo {
             w: 4,
             h: 16,
             lw: 2,
@@ -375,7 +382,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R16x32,
             ctx: 3,
         },
-        TxfmInfo {
+        R64x16 => TxfmInfo {
             w: 16,
             h: 4,
             lw: 4,
@@ -385,6 +392,31 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
             sub: R32x16,
             ctx: 3,
         },
+    }
+}
+
+pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
+    use TxfmSize::*;
+    [
+        dav1d_txfm_dimension::<{ S4x4 as _ }>(),
+        dav1d_txfm_dimension::<{ S8x8 as _ }>(),
+        dav1d_txfm_dimension::<{ S16x16 as _ }>(),
+        dav1d_txfm_dimension::<{ S32x32 as _ }>(),
+        dav1d_txfm_dimension::<{ S64x64 as _ }>(),
+        dav1d_txfm_dimension::<{ R4x8 as _ }>(),
+        dav1d_txfm_dimension::<{ R8x4 as _ }>(),
+        dav1d_txfm_dimension::<{ R8x16 as _ }>(),
+        dav1d_txfm_dimension::<{ R16x8 as _ }>(),
+        dav1d_txfm_dimension::<{ R16x32 as _ }>(),
+        dav1d_txfm_dimension::<{ R32x16 as _ }>(),
+        dav1d_txfm_dimension::<{ R32x64 as _ }>(),
+        dav1d_txfm_dimension::<{ R64x32 as _ }>(),
+        dav1d_txfm_dimension::<{ R4x16 as _ }>(),
+        dav1d_txfm_dimension::<{ R16x4 as _ }>(),
+        dav1d_txfm_dimension::<{ R8x32 as _ }>(),
+        dav1d_txfm_dimension::<{ R32x8 as _ }>(),
+        dav1d_txfm_dimension::<{ R16x64 as _ }>(),
+        dav1d_txfm_dimension::<{ R64x16 as _ }>(),
     ]
 };
 
