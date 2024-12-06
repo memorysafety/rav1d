@@ -190,74 +190,97 @@ unsafe fn insert_tasks(
 ) {
     let tasks = &*f.task_thread.tasks();
     let mut prev_t = None;
-    let mut current_block_34: u64;
     let mut maybe_t = tasks.head;
+
     while let Some(t) = maybe_t {
         if tasks[t].type_0 == TaskType::TileEntropy {
-            if tasks[first].type_0 > TaskType::TileEntropy {
-                current_block_34 = 11174649648027449784;
-            } else if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
-            } else {
-                if tasks[first].sby < tasks[t].sby {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-                current_block_34 = 15904375183555213903;
-            }
-        } else {
-            if tasks[first].type_0 == TaskType::TileEntropy {
+            if tasks[first].type_0 > TaskType::TileEntropy || tasks[first].sby > tasks[t].sby {
+                // Previously current_block_34 = 1117..., do nothing special here and continue.
+            } else if tasks[first].sby < tasks[t].sby {
                 insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                 return;
-            }
-            if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
             } else {
-                if tasks[first].sby < tasks[t].sby {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-                if tasks[first].type_0 as c_uint > tasks[t].type_0 as c_uint {
-                    current_block_34 = 11174649648027449784;
-                } else {
-                    if (tasks[first].type_0 as c_uint) < tasks[t].type_0 as c_uint {
-                        insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                        return;
-                    }
-                    current_block_34 = 15904375183555213903;
-                }
-            }
-        }
-        match current_block_34 {
-            15904375183555213903 => {
+                // Previously current_block_34 = 1590...: now inline these checks.
                 if !matches!(
                     tasks[first].type_0,
                     TaskType::TileReconstruction | TaskType::TileEntropy
                 ) {
                     unreachable!();
                 }
-                if !(tasks[first].type_0 == tasks[t].type_0) {
+                if tasks[first].type_0 != tasks[t].type_0 {
                     unreachable!();
                 }
-                if !(tasks[t].sby == tasks[first].sby) {
+                if tasks[t].sby != tasks[first].sby {
                     unreachable!();
                 }
+
                 let p = tasks[first].type_0 == TaskType::TileEntropy;
                 let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
                 let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
-                if !(t_tile_idx != p_tile_idx) {
+
+                if t_tile_idx == p_tile_idx {
                     unreachable!();
                 }
-                if !(t_tile_idx > p_tile_idx) {
+                if t_tile_idx <= p_tile_idx {
                     insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
             }
-            _ => {}
+        } else {
+            if tasks[first].type_0 == TaskType::TileEntropy {
+                insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                return;
+            }
+
+            if tasks[first].sby > tasks[t].sby {
+                // Previously current_block_34 = 1117..., just continue.
+            } else if tasks[first].sby < tasks[t].sby {
+                insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                return;
+            } else {
+                // sby are equal, compare types
+                let first_type = tasks[first].type_0 as c_uint;
+                let t_type = tasks[t].type_0 as c_uint;
+
+                if first_type > t_type {
+                    // Previously current_block_34 = 1117..., do nothing special.
+                } else if first_type < t_type {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                    return;
+                } else {
+                    // Previously current_block_34 = 1590...: inline these checks.
+                    if !matches!(
+                        tasks[first].type_0,
+                        TaskType::TileReconstruction | TaskType::TileEntropy
+                    ) {
+                        unreachable!();
+                    }
+                    if tasks[first].type_0 != tasks[t].type_0 {
+                        unreachable!();
+                    }
+                    if tasks[t].sby != tasks[first].sby {
+                        unreachable!();
+                    }
+
+                    let p = tasks[first].type_0 == TaskType::TileEntropy;
+                    let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
+                    let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
+
+                    if t_tile_idx == p_tile_idx {
+                        unreachable!();
+                    }
+                    if t_tile_idx <= p_tile_idx {
+                        insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                        return;
+                    }
+                }
+            }
         }
+
         prev_t = Some(t);
         maybe_t = tasks[t].next;
     }
+
     insert_tasks_between(c, f, first, last, prev_t, None, cond_signal);
 }
 
