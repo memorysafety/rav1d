@@ -310,14 +310,28 @@ mod asm {
             for o in obj {
                 cc.object(o);
             }
-            cc.compile(rav1dasm);
+            // Include the C tables for the assembly code
+            if matches!(arch, Arch::X86(..)) {
+                cc.flag("-DARCH_X86");
+            }
+            cc.file("src/tables.c")
+                .include(".")
+                .include("include")
+                .include("rav1d")
+                .compile(rav1dasm);
         } else {
             let mut cc = cc::Build::new();
             if arch == Arch::Arm(ArchArm::Arm64) {
                 cc.flag("-march=armv8.6-a");
             }
+            if matches!(arch, Arch::X86(..)) {
+                cc.flag("-DARCH_X86");
+            }
             cc.files(asm_file_paths)
+                .file("src/tables.c")
                 .include(".")
+                .include("include")
+                .include("rav1d")
                 .include(&out_dir)
                 .debug(cfg!(debug_assertions))
                 .compile(rav1dasm);

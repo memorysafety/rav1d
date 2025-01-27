@@ -15,7 +15,7 @@ exclude = ["*.c", "*.h", "*.in", "meson*", "tests/", "doc/", "package/"]
 
 [lib]
 path = "lib.rs"
-crate-type = ["staticlib", "rlib"]
+crate-type = ["staticlib", "rlib", "cdylib"]
 
 [dependencies]
 assert_matches = "1.5.0"
