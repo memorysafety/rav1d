@@ -1,7 +1,7 @@
 # The rav1d project would like to thank
 
 ## Prossimo
-The Internet Safety Research Group and its donors for funding this Rust port.
+The Internet Security Research Group (ISRG) and its donors for funding this Rust port.
 
 ## Contributors
 
