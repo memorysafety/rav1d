@@ -51,7 +51,7 @@ pd_m9:         dd -9
 pd_8:          dd 8
 pd_2147483648: dd 2147483648
 
-cextern sgr_x_by_x
+cextern_hidden_data sgr_x_by_x
 
 SECTION .text
 
