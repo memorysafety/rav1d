@@ -150,12 +150,7 @@ mod asm {
 
         // Note that avx* is never (at runtime) supported on x86.
         let x86_generic = &["cdef_sse", "itx_sse", "msac", "pal", "refmvs"][..];
-        let x86_64_generic = &[
-            "cdef_avx2",
-            "itx_avx2",
-            "itx_avx512",
-            "looprestoration_avx2",
-        ][..];
+        let x86_64_generic = &["cdef_avx2", "itx_avx2", "itx_avx512"][..];
         let x86_bpc8 = &[
             "filmgrain_sse",
             "ipred_sse",
@@ -171,6 +166,7 @@ mod asm {
             "ipred_avx512",
             "loopfilter_avx2",
             "loopfilter_avx512",
+            "looprestoration_avx2",
             "looprestoration_avx512",
             "mc_avx2",
             "mc_avx512",
