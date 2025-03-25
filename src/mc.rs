@@ -2028,28 +2028,6 @@ impl Rav1dMCDSPContext {
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
-        if !flags.contains(CpuFlags::SSE2) {
-            return self;
-        }
-
-        if let BPC::BPC8 = BD::BPC {
-            self.mct = enum_map!(Filter2d => mct::Fn; match key {
-                Bilinear => bpc_fn!(mct::decl_fn, 8 bpc, prep_bilin, sse2),
-                Regular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular, sse2),
-                RegularSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_smooth, sse2),
-                RegularSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_regular_sharp, sse2),
-                SmoothRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_regular, sse2),
-                Smooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth, sse2),
-                SmoothSharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_smooth_sharp, sse2),
-                SharpRegular8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_regular, sse2),
-                SharpSmooth8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp_smooth, sse2),
-                Sharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp, sse2),
-            });
-
-            self.warp8x8 = bpc_fn!(warp8x8::decl_fn, 8 bpc, warp_affine_8x8, sse2);
-            self.warp8x8t = bpc_fn!(warp8x8t::decl_fn, 8 bpc, warp_affine_8x8t, sse2);
-        }
-
         if !flags.contains(CpuFlags::SSSE3) {
             return self;
         }
