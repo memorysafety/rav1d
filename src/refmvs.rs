@@ -1331,8 +1331,7 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     let rp_stride = rf.rp_stride as usize;
     let r_stride = rf.r_stride as usize;
     let rp_proj = 16 * rp_stride * tile_row_idx as usize;
-    let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
-    let pass_off = if uses_2pass && pass == 2 {
+    let pass_off = if rf.n_frame_threads > 1 && pass == 2 {
         35 * r_stride * rf.n_tile_rows as usize
     } else {
         0
@@ -1595,7 +1594,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
     } else {
         1
     };
-    let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
+    let uses_2pass = (n_frame_threads > 1) as usize;
     // `mem::size_of::<refmvs_block>() == 12`,
     // but it's accessed using 16-byte loads in asm,
     // so add `R_PAD` elements to avoid buffer overreads.
