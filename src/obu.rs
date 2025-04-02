@@ -2419,7 +2419,7 @@ fn parse_obus(
                         min_luminance,
                     })); // TODO(kkysen) fallible allocation
                 }
-                Some(ObuMetaType::ItutT32) => {
+                Some(ObuMetaType::ItutT35) => {
                     let mut payload_size = gb.remaining_len();
                     // Don't take into account all the trailing bits for `payload_size`.
                     while payload_size > 0 && gb[payload_size as usize - 1] == 0 {
