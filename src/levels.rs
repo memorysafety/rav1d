@@ -22,7 +22,7 @@ pub enum ObuMetaType {
     HdrCll = 1,
     HdrMdcv = 2,
     Scalability = 3,
-    ItutT32 = 4,
+    ItutT35 = 4,
     Timecode = 5,
 }
 
