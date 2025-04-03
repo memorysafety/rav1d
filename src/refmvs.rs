@@ -36,12 +36,14 @@ pub struct RefMvsTemporalBlock {
     pub mv: Mv,
     pub r#ref: i8,
 }
+const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
 #[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
 #[repr(C)]
 pub struct RefMvsRefPair {
     pub r#ref: [i8; 2],
 }
+const _: () = assert!(mem::size_of::<RefMvsRefPair>() == 2);
 
 impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
@@ -54,6 +56,7 @@ impl From<[i8; 2]> for RefMvsRefPair {
 pub struct RefMvsMvPair {
     pub mv: [Mv; 2],
 }
+const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
 #[derive(Clone, Copy, FromZeroes)]
 #[repr(C, align(4))]
