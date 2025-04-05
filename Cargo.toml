@@ -35,10 +35,11 @@ cc = "1.0.79"
 nasm-rs = { version = "0.3", features = ["parallel"] }
 
 [features]
-default = ["asm", "asm_arm64_dotprod", "asm_arm64_i8mm", "bitdepth_8", "bitdepth_16"]
+default = ["asm", "asm_arm64_dotprod", "asm_arm64_i8mm", "asm_arm64_sve2", "bitdepth_8", "bitdepth_16"]
 asm = []
 asm_arm64_dotprod = ["asm"]
 asm_arm64_i8mm = ["asm"]
+asm_arm64_sve2 = ["asm"]
 bitdepth_8 = []
 bitdepth_16 = []
 

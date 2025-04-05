@@ -110,6 +110,7 @@ mod asm {
                     cfg!(feature = "asm_arm64_dotprod"),
                 ));
                 define(Define::bool("HAVE_I8MM", cfg!(feature = "asm_arm64_i8mm")));
+                define(Define::bool("HAVE_SVE2", cfg!(feature = "asm_arm64_sve2")));
             }
         }
 
@@ -208,6 +209,7 @@ mod asm {
 
         let arm_generic = &["itx", "msac", "refmvs", "looprestoration_common"][..];
         let arm_dotprod = &["mc_dotprod"][..];
+        let arm_sve_bpc16 = &["mc16_sve"][..];
         let arm_bpc8 = &[
             "cdef",
             "filmgrain",
@@ -255,6 +257,8 @@ mod asm {
         let arm64_all = &[
             arm_generic,
             arm_dotprod,
+            #[cfg(feature = "bitdepth_16")]
+            arm_sve_bpc16,
             #[cfg(feature = "bitdepth_8")]
             arm_bpc8,
             #[cfg(feature = "bitdepth_16")]
@@ -314,7 +318,11 @@ mod asm {
         } else {
             let mut cc = cc::Build::new();
             if arch == Arch::Arm(ArchArm::Arm64) {
-                cc.flag("-march=armv8.6-a");
+                if cfg!(feature = "asm_arm64_sve2") {
+                    cc.flag("-march=armv9.1-a")
+                } else {
+                    cc.flag("-march=armv8.6-a")
+                };
             }
             cc.files(asm_file_paths)
                 .include(".")
