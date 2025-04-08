@@ -542,7 +542,8 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> c_
     let hbd = ((*p).p.bpc > 8) as c_int;
     let w = (*p).p.w;
     let h = (*p).p.h;
-    let mut yptr: *mut u8 = (*p).data[0].map_or_else(ptr::null_mut, NonNull::as_ptr) as *mut u8;
+    let mut yptr: *mut u8 =
+        (*p).data[0].map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut u8;
     let mut y = 0;
     while y < h {
         md5_update(md5, yptr, (w << hbd) as c_uint);
@@ -559,7 +560,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> c_
         let mut pl = 1;
         while pl <= 2 {
             let mut uvptr: *mut u8 =
-                (*p).data[pl as usize].map_or_else(ptr::null_mut, NonNull::as_ptr) as *mut u8;
+                (*p).data[pl as usize].map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut u8;
             let mut y_0 = 0;
             while y_0 < ch {
                 md5_update(md5, uvptr, (cw << hbd) as c_uint);

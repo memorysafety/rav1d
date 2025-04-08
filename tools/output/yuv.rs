@@ -73,7 +73,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
     let mut current_block: u64;
     let mut ptr: *mut u8;
     let hbd = ((*p).p.bpc > 8) as c_int;
-    ptr = (*p).data[0].map_or_else(ptr::null_mut, NonNull::as_ptr) as *mut u8;
+    ptr = (*p).data[0].map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut u8;
     let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
@@ -102,7 +102,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
                         current_block = 7976072742316086414;
                         break;
                     }
-                    ptr = (*p).data[pl as usize].map_or_else(ptr::null_mut, NonNull::as_ptr)
+                    ptr = (*p).data[pl as usize].map_or_else(ptr::null_mut, |data| data.as_ptr())
                         as *mut u8;
                     let mut y_0 = 0;
                     while y_0 < ch {
