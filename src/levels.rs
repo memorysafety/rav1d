@@ -27,6 +27,7 @@ pub enum ObuMetaType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumCount, FromRepr, Default, Debug)]
+#[derive(std::marker::ConstParamTy)] // njn: hmm
 pub enum TxfmSize {
     // Square
     #[default]
