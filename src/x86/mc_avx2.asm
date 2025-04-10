@@ -91,10 +91,10 @@ pd_0x3ff:        dd 0x3ff
 pd_0x4000:       dd 0x4000
 pq_0x40000000:   dq 0x40000000
 
-cextern mc_subpel_filters
-cextern mc_warp_filter2
-cextern resize_filter
-cextern z_filter_s
+cextern_hidden_data mc_subpel_filters
+cextern_hidden_data mc_warp_filter2
+cextern_hidden_data resize_filter
+cextern_hidden_data z_filter_s
 
 %define subpel_filters (mangle(private_prefix %+ _mc_subpel_filters)-8)
 

@@ -213,8 +213,8 @@ JMP_TABLE ipred_dc_8bpc,         avx512icl, h4, h8, h16, h32, h64, w4, w8, w16, 
                                        s4-10*4, s8-10*4, s16-10*4, s32-10*4, s64-10*4
 JMP_TABLE ipred_dc_left_8bpc,    avx512icl, h4, h8, h16, h32, h64
 
-cextern dr_intra_derivative
-cextern pb_0to63
+cextern_hidden_data dr_intra_derivative
+cextern_hidden_data pb_0to63
 
 SECTION .text
 

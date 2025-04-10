@@ -51,7 +51,7 @@ pd_0xffff:     times 4 dd 0xffff
 pd_0xf00800a4: times 4 dd 0xf00800a4
 pd_0xf00801c7: times 4 dd 0xf00801c7
 
-cextern sgr_x_by_x
+cextern_hidden_data sgr_x_by_x
 
 SECTION .text
 
