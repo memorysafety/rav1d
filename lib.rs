@@ -4,6 +4,7 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
+#![feature(new_uninit)]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::all)]
 #![deny(clippy::undocumented_unsafe_blocks)]
