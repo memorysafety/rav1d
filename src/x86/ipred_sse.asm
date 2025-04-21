@@ -141,8 +141,8 @@ JMP_TABLE ipred_cfl,        ssse3, h4, h8, h16, h32, w4, w8, w16, w32, \
 JMP_TABLE ipred_cfl_left,   ssse3, h4, h8, h16, h32
 JMP_TABLE ipred_filter,     ssse3, w4, w8, w16, w32
 
-cextern dr_intra_derivative
-cextern filter_intra_taps
+cextern_hidden_data dr_intra_derivative
+cextern_hidden_data filter_intra_taps
 
 SECTION .text
 

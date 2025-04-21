@@ -194,11 +194,11 @@ SCALED_JMP_TABLE prep_8tap_scaled, avx2,   4, 8, 16, 32, 64, 128
 
 %define table_offset(type, fn) type %+ fn %+ SUFFIX %+ _table - type %+ SUFFIX
 
-cextern mc_subpel_filters
+cextern_hidden_data mc_subpel_filters
 %define subpel_filters (mangle(private_prefix %+ _mc_subpel_filters)-8)
 
-cextern mc_warp_filter
-cextern resize_filter
+cextern_hidden_data mc_warp_filter
+cextern_hidden_data resize_filter
 
 SECTION .text
 
