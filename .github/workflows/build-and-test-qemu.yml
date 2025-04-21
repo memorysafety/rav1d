@@ -29,7 +29,7 @@ jobs:
             linker: "riscv64-linux-gnu-gcc"
             wrapper: "qemu-riscv64-static"
             packages: "g++-riscv64-linux-gnu libc6-dev-riscv64-cross"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: test on ${{ matrix.target }}
     steps:
       - name: install prerequisites
