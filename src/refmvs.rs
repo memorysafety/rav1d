@@ -120,6 +120,8 @@ pub struct RefMvsFrame {
     pub mfmv_ref2ref: [[i32; 7]; 3],
     pub n_mfmvs: i32,
     pub n_blocks: u32,
+    // TODO: The C code uses a single buffer to store `rp_proj` and `r` to minimize
+    // the number of allocated buffers.
     pub rp_proj: DisjointMut<AlignedVec64<RefMvsTemporalBlock>>,
     pub rp_stride: u32,
     pub r: DisjointMut<AlignedVec64<RefMvsBlock>>,
