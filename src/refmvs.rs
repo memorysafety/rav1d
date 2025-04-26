@@ -36,12 +36,16 @@ pub struct RefMvsTemporalBlock {
     pub mv: Mv,
     pub r#ref: i8,
 }
+const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
 #[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
-#[repr(C)]
+// In C, this is packed and is 2 bytes.
+// In Rust, being packed and aligned is tricky
+#[repr(C, align(2))]
 pub struct RefMvsRefPair {
     pub r#ref: [i8; 2],
 }
+const _: () = assert!(mem::size_of::<RefMvsRefPair>() == 2);
 
 impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
@@ -54,8 +58,11 @@ impl From<[i8; 2]> for RefMvsRefPair {
 pub struct RefMvsMvPair {
     pub mv: [Mv; 2],
 }
+const _: () = assert!(mem::size_of::<RefMvsMvPair>() == 8);
 
 #[derive(Clone, Copy, FromZeroes)]
+// In C, this is packed and is 12 bytes.
+// In Rust, being packed and aligned is tricky
 #[repr(C, align(4))]
 pub struct RefMvsBlock {
     pub mv: RefMvsMvPair,
@@ -63,9 +70,6 @@ pub struct RefMvsBlock {
     pub bs: BlockSize,
     pub mf: u8,
 }
-
-// In C, this is packed and is 12 bytes.
-// In Rust, being packed and aligned is tricky
 const _: () = assert!(mem::size_of::<RefMvsBlock>() == 12);
 
 #[repr(C)]
