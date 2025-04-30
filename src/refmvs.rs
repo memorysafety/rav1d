@@ -96,13 +96,12 @@ pub(crate) struct AsmRefMvsFrame<'a> {
     pub mfmv_ref2cur: [i32; 3],
     pub mfmv_ref2ref: [[i32; 7]; 3],
     pub n_mfmvs: i32,
+    pub n_blocks: i32,
     pub rp: *mut RefMvsTemporalBlock,
     pub rp_ref: *const *mut RefMvsTemporalBlock,
     pub rp_proj: *mut RefMvsTemporalBlock,
     pub rp_stride: isize,
     pub r: *mut RefMvsBlock,
-    pub r_stride: isize,
-    pub n_tile_rows: i32,
     pub n_tile_threads: i32,
     pub n_frame_threads: i32,
 }
@@ -124,11 +123,12 @@ pub struct RefMvsFrame {
     pub mfmv_ref2cur: [i32; 3],
     pub mfmv_ref2ref: [[i32; 7]; 3],
     pub n_mfmvs: i32,
+    pub n_blocks: u32,
+    // TODO: The C code uses a single buffer to store `rp_proj` and `r` to minimize
+    // the number of allocated buffers.
     pub rp_proj: DisjointMut<AlignedVec64<RefMvsTemporalBlock>>,
     pub rp_stride: u32,
     pub r: DisjointMut<AlignedVec64<RefMvsBlock>>,
-    pub r_stride: u32,
-    pub n_tile_rows: u32,
     pub n_tile_threads: u32,
     pub n_frame_threads: u32,
 }
@@ -211,11 +211,10 @@ impl load_tmvs::Fn {
             mfmv_ref2cur,
             mfmv_ref2ref,
             n_mfmvs,
+            n_blocks,
             ref rp_proj,
             rp_stride,
             ref r,
-            r_stride,
-            n_tile_rows,
             n_tile_threads,
             n_frame_threads,
         } = *rf;
@@ -243,13 +242,12 @@ impl load_tmvs::Fn {
             mfmv_ref2cur,
             mfmv_ref2ref,
             n_mfmvs,
+            n_blocks: n_blocks as _,
             rp: mvs_to_dav1d(rp),
             rp_ref: rp_ref_dav1d.as_ptr(),
             rp_proj: rp_proj.as_mut_ptr(),
             rp_stride: rp_stride as _,
             r: r.as_mut_ptr(),
-            r_stride: r_stride as _,
-            n_tile_rows: n_tile_rows as _,
             n_tile_threads: n_tile_threads as _,
             n_frame_threads: n_frame_threads as _,
         };
@@ -1333,10 +1331,10 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
         tile_row_idx = 0;
     }
     let rp_stride = rf.rp_stride as usize;
-    let r_stride = rf.r_stride as usize;
+    let r_stride = rp_stride * 2;
     let rp_proj = 16 * rp_stride * tile_row_idx as usize;
     let pass_off = if rf.n_frame_threads > 1 && pass == 2 {
-        35 * r_stride * rf.n_tile_rows as usize
+        35 * 2 * rf.n_blocks as usize
     } else {
         0
     };
@@ -1586,40 +1584,35 @@ pub(crate) fn rav1d_refmvs_init_frame(
     n_tile_threads: u32,
     n_frame_threads: u32,
 ) -> Rav1dResult {
-    rf.sbsz = 16 << seq_hdr.sb128;
-    rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
-    rf.ih8 = frm_hdr.size.height + 7 >> 3;
-    rf.iw4 = rf.iw8 << 1;
-    rf.ih4 = rf.ih8 << 1;
-
-    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as u32;
+    let rp_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 3) as u32;
     let n_tile_rows = if n_tile_threads > 1 {
         frm_hdr.tiling.rows as u32
     } else {
         1
     };
-    let uses_2pass = (n_frame_threads > 1) as usize;
-    // `mem::size_of::<refmvs_block>() == 12`,
-    // but it's accessed using 16-byte loads in asm,
-    // so add `R_PAD` elements to avoid buffer overreads.
-    // TODO fallible allocation
-    rf.r.resize(
-        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass) + R_PAD,
-        FromZeroes::new_zeroed(),
-    );
-    rf.r_stride = r_stride;
+    let n_blocks = rp_stride * n_tile_rows;
 
-    let rp_stride = r_stride >> 1;
-    // TODO fallible allocation
-    rf.rp_proj.resize(
-        16 * rp_stride as usize * n_tile_rows as usize,
-        Default::default(),
-    );
+    rf.sbsz = 16 << seq_hdr.sb128;
+    rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
+    rf.ih8 = frm_hdr.size.height + 7 >> 3;
+    rf.iw4 = rf.iw8 << 1;
+    rf.ih4 = rf.ih8 << 1;
     rf.rp_stride = rp_stride;
-
-    rf.n_tile_rows = n_tile_rows;
     rf.n_tile_threads = n_tile_threads;
     rf.n_frame_threads = n_frame_threads;
+
+    if n_blocks != rf.n_blocks {
+        // `mem::size_of::<RefMvsBlock>() == 12`,
+        // but it's accessed using 16-byte unaligned loads in save_tmvs() asm,
+        // so add `R_PAD` elements to avoid buffer overreads.
+        let r_sz = 35 * 2 * n_blocks as usize * (1 + (n_frame_threads > 1) as usize) + R_PAD;
+        let rp_proj_sz = 16 * n_blocks as usize;
+        // TODO fallible allocation
+        rf.r.resize(r_sz, FromZeroes::new_zeroed());
+        rf.rp_proj.resize(rp_proj_sz, Default::default());
+        rf.n_blocks = n_blocks;
+    }
+
     let poc = frm_hdr.frame_offset as u32;
     for i in 0..7 {
         let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as i32, poc as i32);
