@@ -1780,6 +1780,11 @@ impl Rav1dRefmvsDSPContext {
             return self;
         }
 
+        #[cfg(target_arch = "aarch64")]
+        {
+            self.load_tmvs = load_tmvs::decl_fn!(fn dav1d_load_tmvs_neon);
+        }
+
         self.save_tmvs = save_tmvs::decl_fn!(fn dav1d_save_tmvs_neon);
         self.splat_mv = splat_mv::decl_fn!(fn dav1d_splat_mv_neon);
 
