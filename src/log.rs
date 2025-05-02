@@ -7,6 +7,7 @@ use std::fmt::Write as _;
 use std::io::stderr;
 use std::io::stdout;
 use std::io::Write as _;
+use std::ptr::fn_addr_eq;
 
 pub type Dav1dLoggerCallback = unsafe extern "C" fn(
     // [`Dav1dLogger::cookie`].
@@ -167,8 +168,8 @@ impl From<Dav1dLogger> for Option<Rav1dLogger> {
         let Dav1dLogger { cookie, callback } = logger;
         Some(match callback {
             None => return None,
-            Some(cb) if cb == marker::STDOUT => Rav1dLogger::Stdout,
-            Some(cb) if cb == marker::STDERR => Rav1dLogger::Stderr,
+            Some(cb) if fn_addr_eq(cb, marker::STDOUT) => Rav1dLogger::Stdout,
+            Some(cb) if fn_addr_eq(cb, marker::STDERR) => Rav1dLogger::Stderr,
             _ => Rav1dLogger::Dav1d(Dav1dLogger { cookie, callback }),
         })
     }
