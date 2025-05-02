@@ -677,6 +677,7 @@ unsafe fn parse_enum(
     return res;
 }
 
+#[allow(static_mut_refs)]
 pub unsafe fn parse(
     argc: c_int,
     argv: *const *mut c_char,
