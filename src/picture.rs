@@ -33,6 +33,7 @@ use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
 use std::ptr;
+use std::ptr::fn_addr_eq;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
@@ -196,8 +197,19 @@ impl Default for Rav1dPicAllocator {
 
 impl Rav1dPicAllocator {
     pub fn is_default(&self) -> bool {
-        let alloc = self.alloc_picture_callback == dav1d_default_picture_alloc;
-        let release = self.release_picture_callback == dav1d_default_picture_release;
+        let alloc = fn_addr_eq(
+            self.alloc_picture_callback,
+            dav1d_default_picture_alloc
+                as unsafe extern "C" fn(
+                    *mut Dav1dPicture,
+                    Option<SendSyncNonNull<c_void>>,
+                ) -> Dav1dResult,
+        );
+        let release = fn_addr_eq(
+            self.release_picture_callback,
+            dav1d_default_picture_release
+                as unsafe extern "C" fn(*mut Dav1dPicture, Option<SendSyncNonNull<c_void>>),
+        );
         assert!(alloc == release); // This should be impossible since these `fn`s are private.
         alloc && release
     }
