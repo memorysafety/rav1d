@@ -778,12 +778,14 @@ fn decode_coefs<BD: BitDepth>(
 
         let lo_cdf = &mut ts_c.cdf.coef.base_tok[t_dim.ctx as usize][chroma];
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
-        let sw = cmp::min(t_dim.w, 8);
-        let sh = cmp::min(t_dim.h, 8);
+
+        let slw = cmp::min(t_dim.lw, TxfmSize::S32x32 as u8);
+        let slh = cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
+        let tx2dszctx = slw + slh;
 
         // eob
         let mut ctx =
-            1 + (eob > sw as u16 * sh as u16 * 2) as u8 + (eob > sw as u16 * sh as u16 * 4) as u8;
+            1 + (eob > (2 << tx2dszctx) as u16) as u8 + (eob > (4 << tx2dszctx) as u16) as u8;
         let eob_tok =
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2);
         let mut tok = eob_tok + 1;
@@ -798,7 +800,7 @@ fn decode_coefs<BD: BitDepth>(
                 let is_rect = tx.is_rect() as usize;
                 lo_ctx_offsets = Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
                 scan = dav1d_scans[tx as usize];
-                stride = 4 * sh;
+                stride = 4 << slh;
             }
             TxClass::H | TxClass::V => {
                 lo_ctx_offsets = None;
@@ -810,31 +812,31 @@ fn decode_coefs<BD: BitDepth>(
         let shift;
         let shift2;
         let mask;
-        let swh_zero;
+        let slwh_zero;
         match tx_class {
             TxClass::TwoD => {
-                shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
+                shift = slh + 2;
                 shift2 = 0;
-                mask = 4 * sh - 1;
-                swh_zero = sw;
+                mask = (4 << slh) - 1;
+                slwh_zero = slw;
             }
             TxClass::H => {
-                shift = t_dim.lh + 2;
+                shift = slh + 2;
                 shift2 = 0;
-                mask = 4 * sh - 1;
-                swh_zero = sh;
+                mask = (4 << slh) - 1;
+                slwh_zero = slh;
             }
             TxClass::V => {
-                shift = t_dim.lw + 2;
-                shift2 = t_dim.lh + 2;
-                mask = 4 * sw - 1;
-                swh_zero = sw;
+                shift = slw + 2;
+                shift2 = slh + 2;
+                mask = (4 << slw) - 1;
+                slwh_zero = slw;
             }
         }
 
         // Optimizes better than `.fill(0)`,
         // which doesn't elide the bounds check, inline, or vectorize.
-        for i in 0..stride as usize * (4 * swh_zero as usize + 2) {
+        for i in 0..stride as usize * ((4 << slwh_zero) as usize + 2) {
             levels[i] = 0;
         }
 
@@ -891,7 +893,13 @@ fn decode_coefs<BD: BitDepth>(
             }
         }
         cf.set(rc, tok.to::<i16>() << 11);
-        levels[x as usize * stride as usize + y as usize] = level_tok as u8;
+        let level_off = if tx_class == TxClass::TwoD {
+            rc as usize
+        } else {
+            x as usize * stride as usize + y as usize
+        };
+        levels[level_off] = level_tok as u8;
+
         for i in (1..eob).rev() {
             // ac
             let rc_i;
@@ -915,7 +923,12 @@ fn decode_coefs<BD: BitDepth>(
             debug_assert!(x < 32 && y < 32);
             x %= 32;
             y %= 32;
-            let level = &mut levels[x as usize * stride as usize + y as usize..];
+            let level_off = if tx_class == TxClass::TwoD {
+                rc_i as usize
+            } else {
+                x as usize * stride as usize + y as usize
+            };
+            let level = &mut levels[level_off..];
             ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
             if tx_class == TxClass::TwoD {
                 y |= x;
