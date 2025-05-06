@@ -27,6 +27,7 @@ use std::ptr::addr_of_mut;
 use std::sync::Arc;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
+use zerocopy::FromZeroes;
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -1212,5 +1213,36 @@ impl<T> FromIterator<T> for DisjointMutArcSlice<T> {
 impl<T> Default for DisjointMutArcSlice<T> {
     fn default() -> Self {
         [].into_iter().collect()
+    }
+}
+
+impl<T: FromZeroes> DisjointMutArcSlice<T> {
+    pub fn new_zeroed_slice(len: usize) -> Self {
+        #[cfg(debug_assertions)]
+        let inner = {
+            let box_slice = Box::<[T]>::new_zeroed_slice(len);
+            Arc::new(DisjointMut::new(box_slice))
+        };
+        #[cfg(not(debug_assertions))]
+        let inner = {
+            use std::mem;
+
+            let arc_slice = Arc::<[T]>::new_zeroed_slice(len);
+
+            // Do our best to check that `DisjointMut` is in fact `#[repr(transparent)]`.
+            const {
+                type A = Vec<u8>; // Some concrete sized type.
+                assert!(mem::size_of::<DisjointMut<A>>() == mem::size_of::<A>());
+                assert!(mem::align_of::<DisjointMut<A>>() == mem::align_of::<A>());
+            }
+
+            // SAFETY: When `#[cfg(not(debug_assertions))]`, `DisjointMut` is `#[repr(transparent)]`,
+            // containing only an `UnsafeCell`, which is also `#[repr(transparent)]`.
+            unsafe { Arc::from_raw(Arc::into_raw(arc_slice) as *const DisjointMut<[_]>) }
+        };
+        // SAFETY: `T: FromZeroes`, and the `MaybeUninit<T>` is all zeros,
+        // since it is allocated with `new_zeroed_slice`, so we can transmute away the `MaybeUninit`.
+        let inner = unsafe { Arc::from_raw(Arc::into_raw(inner) as *const DisjointMutSlice<T>) };
+        Self { inner }
     }
 }
