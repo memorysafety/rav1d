@@ -4,6 +4,8 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
+#![allow(incomplete_features)] // njn: hmm
+#![feature(adt_const_params)] // njn: hmm
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::all)]
 #![deny(clippy::undocumented_unsafe_blocks)]
