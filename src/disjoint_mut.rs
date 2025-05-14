@@ -1012,14 +1012,14 @@ unsafe impl<V> AsMutPtr for [V] {
     }
 }
 
-/// SAFETY: We never materialize a `&mut [V]` since we go use [`addr_of_mut!`]
+/// SAFETY: We never materialize a `&mut [V]` since we use [`&raw mut`](`addr_of_mut!`)
 /// to create a `*mut [V]` directly, which we then unsize cast.
 unsafe impl<V> AsMutPtr for Box<[V]> {
     type Target = V;
 
     // SAFETY: `AsMutPtr::as_mut_ptr` may derefence `ptr`.
-    unsafe fn as_mut_ptr(mut ptr: *mut Self) -> *mut Self::Target {
-        (&raw mut ptr).cast()
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        unsafe { &raw mut **ptr }.cast()
     }
 
     fn len(&self) -> usize {
