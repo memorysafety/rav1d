@@ -17,6 +17,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: install rust toolchain
+        id: toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          # aarch64 feature detection is stable
+          toolchain: stable
+          target: aarch64-linux-android
       - name: cache rust dependencies
         uses: actions/cache@v4
         with:
@@ -28,9 +35,8 @@ jobs:
             target/
           key: aarch64-android-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo build for aarch64-linux-android
-        run:  |
-            rustup target add --toolchain stable aarch64-linux-android
-            cargo +stable build --target aarch64-linux-android --release
+        run: |
+            cargo +${{ steps.toolchain.outputs.name }} build --target aarch64-linux-android --release
         env:
           AR: llvm-ar
           CC: aarch64-linux-android26-clang

@@ -12,14 +12,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: cache rust toolchain
-        uses: actions/cache@v4
+      - name: install rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          path: |
-            ~/.rustup/toolchains
-            ~/.rustup/update-hashes
-            ~/.rustup/settings.toml
-          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+          toolchain: stable
+          components: rustfmt
       - name: cache rust crates
         uses: actions/cache@v4
         with:

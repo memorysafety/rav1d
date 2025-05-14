@@ -14,10 +14,14 @@ jobs:
             linker: "arm-linux-gnueabihf-gcc"
             wrapper: "qemu-arm-static"
             packages: "g++-arm-linux-gnueabihf libc6-dev-armhf-cross"
+            # arm feature detection is unstable
+            # should be the same as rust-toolchain.toml
+            toolchain: nightly-2025-05-01 
           - target: "aarch64-unknown-linux-gnu"
             linker: "aarch64-linux-gnu-gcc"
             wrapper: "qemu-aarch64-static"
             packages: "g++-aarch64-linux-gnu libc6-dev-arm64-cross"
+            toolchain: stable # aarch64 feature detection is stable
           - target: "x86_64-unknown-linux-gnu"
             linker: "cc"
             wrapper: "qemu-x86_64-static -cpu max" # enable AVX512
@@ -25,10 +29,14 @@ jobs:
             # NOTE: This appears to work for Ubuntu 22.04 and other systems
             # with a recent version of GNU ld (e.g. 2.38) whereas Ubuntu 20.04
             # fails with the following linker error: unsupported ISA subset `z'
+            toolchain: stable # x86_64 feature detection is stable
           - target: "riscv64gc-unknown-linux-gnu"
             linker: "riscv64-linux-gnu-gcc"
             wrapper: "qemu-riscv64-static"
             packages: "g++-riscv64-linux-gnu libc6-dev-riscv64-cross"
+            # riscv64 feature detection is unstable
+            # should be the same as rust-toolchain.toml
+            toolchain: nightly-2025-05-01
     runs-on: ubuntu-22.04
     name: test on ${{ matrix.target }}
     steps:
@@ -41,6 +49,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: install rust toolchain
+        id: toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          target: ${{ matrix.target }}
       - name: cache rust dependencies
         uses: actions/cache@v4
         with:
@@ -53,9 +67,8 @@ jobs:
           key: ${{ matrix.target }}-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo build for ${{ matrix.target }}
         run: |
-          rustup target add ${{ matrix.target }}
           RUSTFLAGS="-C target-feature=+crt-static -C linker=${{ matrix.linker }}" \
-            cargo build --release --target ${{ matrix.target }}
+            cargo +${{ steps.toolchain.outputs.name }} build --release --target ${{ matrix.target }}
       - name: run tests
         run: |
             .github/workflows/test.sh -t 2 \
