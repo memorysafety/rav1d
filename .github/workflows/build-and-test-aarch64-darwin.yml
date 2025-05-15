@@ -30,15 +30,7 @@ jobs:
           toolchain: stable # aarch64 feature detection is stable
           target: aarch64-apple-darwin
       - name: cache rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+        uses: Swatinem/rust-cache@v2
       - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
         run:  cargo +${{ steps.toolchain.outputs.name }} build ${{ matrix.build.cargo_flags }}
       - name: test ${{ matrix.build.name }} build without frame delay

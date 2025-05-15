@@ -37,16 +37,8 @@ jobs:
         with:
           toolchain: stable # x86_64 feature detection is stable
           target: ${{ matrix.target }}
-      - name: cache rust crates
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: cache rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: cache argon test vectors
         id: cache-argon
         uses: actions/cache@v4
