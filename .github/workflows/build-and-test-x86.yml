@@ -42,19 +42,10 @@ jobs:
         with:
           toolchain: stable # x86 and x86_64 feature detection are stable
           target: ${{ matrix.target }}
-      - name: cache rust crates
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: cache rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          cargo +${{ steps.toolchain.outputs.name }} clean
           cargo +${{ steps.toolchain.outputs.name }} build --target ${{ matrix.target }} ${{ matrix.build.flags }}
       - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
@@ -93,16 +84,8 @@ jobs:
         with:
           toolchain: stable # x86_64 feature detection is stable
           target: x86_64-apple-darwin
-      - name: cache rust crates
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: cache rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: cargo build for x86_64-apple-darwin
         run: |
           cargo +${{ steps.toolchain.outputs.name }} build --release

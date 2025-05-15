@@ -25,15 +25,7 @@ jobs:
           toolchain: stable
           target: aarch64-linux-android
       - name: cache rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: aarch64-android-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+        uses: Swatinem/rust-cache@v2
       - name: cargo build for aarch64-linux-android
         run: |
             cargo +${{ steps.toolchain.outputs.name }} build --target aarch64-linux-android --release
