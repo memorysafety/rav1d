@@ -208,6 +208,7 @@ impl<'a> GetBits<'a> {
     }
 
     pub fn get_bytes(&mut self, n: usize) -> &[u8] {
+        assert!(n<=self.remaining_len());
         assert_eq!(self.bits_left, 0);
         let i = self.index;
         self.index += n;
