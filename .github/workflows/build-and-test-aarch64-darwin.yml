@@ -33,6 +33,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
         run:  cargo +${{ steps.toolchain.outputs.name }} build ${{ matrix.build.cargo_flags }}
+      - name: Clippy
+        run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: test ${{ matrix.build.name }} build without frame delay
         run: |
           .github/workflows/test.sh \
@@ -76,4 +78,3 @@ jobs:
           name: meson-test-logs-aarch64-apple-darwin-${{ matrix.build.name }}
           path: |
             ${{ github.workspace }}/build/meson-logs/testlog-*.txt
-

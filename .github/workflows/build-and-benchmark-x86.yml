@@ -16,6 +16,7 @@ jobs:
               with:
                 toolchain: 1.87.0 # specific version for consistent perf
                 target: x86_64-unknown-linux-gnu
+                components: clippy
             - name: release build this PR
               run: nice cargo +${{ steps.toolchain.outputs.name }} build --release
             - name: release build main branch
