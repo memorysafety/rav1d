@@ -37,6 +37,7 @@ jobs:
         with:
           toolchain: stable # x86_64 feature detection is stable
           target: ${{ matrix.target }}
+          components: clippy
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: cache argon test vectors
@@ -53,6 +54,8 @@ jobs:
           cargo +${{ steps.toolchain.outputs.name }} build --target ${{ matrix.target }} ${{ matrix.build.flags }}
         env:
           RUSTFLAGS: "-C overflow-checks=on"
+      - name: Clippy
+        run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: download, check, and unpack argon test vectors
         if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
         run: | # delete the downloaded .zip to avoid out-of-diskspace errors
@@ -68,4 +71,3 @@ jobs:
       - name: run argon tests for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           tests/dav1d_argon.bash -d target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d -j `nproc`
-

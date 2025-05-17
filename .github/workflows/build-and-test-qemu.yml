@@ -16,7 +16,7 @@ jobs:
             packages: "g++-arm-linux-gnueabihf libc6-dev-armhf-cross"
             # arm feature detection is unstable
             # should be the same as rust-toolchain.toml
-            toolchain: nightly-2025-05-01 
+            toolchain: nightly-2025-05-01
           - target: "aarch64-unknown-linux-gnu"
             linker: "aarch64-linux-gnu-gcc"
             wrapper: "qemu-aarch64-static"
@@ -55,12 +55,15 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           target: ${{ matrix.target }}
+          components: clippy
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: cargo build for ${{ matrix.target }}
         run: |
           RUSTFLAGS="-C target-feature=+crt-static -C linker=${{ matrix.linker }}" \
             cargo +${{ steps.toolchain.outputs.name }} build --release --target ${{ matrix.target }}
+      - name: Clippy
+        run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: run tests
         run: |
             .github/workflows/test.sh -t 2 \

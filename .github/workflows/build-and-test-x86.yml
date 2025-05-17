@@ -42,11 +42,14 @@ jobs:
         with:
           toolchain: stable # x86 and x86_64 feature detection are stable
           target: ${{ matrix.target }}
+          components: clippy
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           cargo +${{ steps.toolchain.outputs.name }} build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+      - name: Clippy
+        run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           .github/workflows/test.sh \

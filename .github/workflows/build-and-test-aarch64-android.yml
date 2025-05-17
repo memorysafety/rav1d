@@ -24,6 +24,7 @@ jobs:
           # aarch64 feature detection is stable
           toolchain: stable
           target: aarch64-linux-android
+          components: clippy
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: cargo build for aarch64-linux-android
@@ -33,4 +34,3 @@ jobs:
           AR: llvm-ar
           CC: aarch64-linux-android26-clang
           RUSTFLAGS: "-C linker=aarch64-linux-android26-clang -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/17/lib/linux/aarch64 -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26"
-
