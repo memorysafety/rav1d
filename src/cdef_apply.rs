@@ -173,6 +173,12 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
 
     let mut bit = false;
+
+    // In C, this is declared uninitialized inside the loop,
+    // so it doesn't matter what it is initialized to in Rust as long as it is initialized,
+    // which means we can hoist it out of the loop to safely avoid re-initializing it.
+    let mut lr_bak = Align16([[[[0.into(); 2 /* x */]; 8 /* y */]; 3 /* plane */ ]; 2 /* idx */]);
+
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle != 0;
         let by_idx = (by & 30) >> 1;
@@ -195,8 +201,6 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
             backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
         }
 
-        let mut lr_bak =
-            Align16([[[[0.into(); 2 /* x */]; 8 /* y */]; 3 /* plane */ ]; 2 /* idx */]);
         let mut iptrs = ptrs;
         edges.remove(CdefEdgeFlags::HAVE_LEFT);
         edges.insert(CdefEdgeFlags::HAVE_RIGHT);
