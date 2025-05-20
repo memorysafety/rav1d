@@ -1,4 +1,4 @@
-use crate::src::const_fn::const_for;
+use crate::const_fn::const_for;
 use bitflags::bitflags;
 use std::ffi::c_uint;
 use std::num::NonZero;

@@ -9,6 +9,16 @@ use libc::strcpy;
 use libc::strncmp;
 use libc::strtod;
 use libc::strtoul;
+use rav1d::cpu::dav1d_set_cpu_flags_mask;
+#[cfg(any(
+    target_arch = "arm",
+    target_arch = "aarch64",
+    target_arch = "riscv32",
+    target_arch = "riscv64"
+))]
+use rav1d::cpu::CpuFlags;
+use rav1d::dav1d_default_settings;
+use rav1d::dav1d_version;
 use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
 use rav1d::include::dav1d::dav1d::Dav1dSettings;
@@ -21,16 +31,6 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
-#[cfg(any(
-    target_arch = "arm",
-    target_arch = "aarch64",
-    target_arch = "riscv32",
-    target_arch = "riscv64"
-))]
-use rav1d::src::cpu::CpuFlags;
-use rav1d::src::lib::dav1d_default_settings;
-use rav1d::src::lib::dav1d_version;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;

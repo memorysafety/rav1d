@@ -1,7 +1,7 @@
 use strum::EnumCount;
 
-use crate::src::const_fn::const_for;
-use crate::src::levels::TxfmSize;
+use crate::const_fn::const_for;
+use crate::levels::TxfmSize;
 
 static qm_tbl_32x16: [[[u8; 32 * 16]; 2]; 15] = [
     [

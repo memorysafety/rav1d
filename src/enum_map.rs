@@ -32,7 +32,7 @@ where
 // Has to be a macro until we have `#![feature(generic_const_exprs)]`.
 macro_rules! enum_map_ty {
     ($K:ty, $V:ty) => {
-        $crate::src::enum_map::EnumMap<$K, $V, { <$K as ::strum::EnumCount>::COUNT }>
+        $crate::enum_map::EnumMap<$K, $V, { <$K as ::strum::EnumCount>::COUNT }>
     }
 }
 
@@ -101,8 +101,8 @@ where
 /// [`MaybeUninit`]: std::mem::MaybeUninit
 macro_rules! enum_map {
     ($K:ty => $V:ty; match key { $($t:tt)* }) => {{
-        use $crate::src::enum_map::EnumKey;
-        use $crate::src::enum_map::EnumMap;
+        use $crate::enum_map::EnumKey;
+        use $crate::enum_map::EnumMap;
 
         let mut a = [<$V>::DEFAULT; <$K>::VALUES.len()];
         let mut i = 0;

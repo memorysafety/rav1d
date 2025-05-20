@@ -1,5 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::align::AlignedVec64;
+use crate::cpu::CpuFlags;
+use crate::cursor::CursorMut;
+use crate::disjoint_mut::DisjointMut;
+use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -8,14 +13,9 @@ use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::AlignedVec64;
-use crate::src::cpu::CpuFlags;
-use crate::src::cursor::CursorMut;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_sgr_x_by_x;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use crate::strided::Strided as _;
+use crate::tables::dav1d_sgr_x_by_x;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -80,7 +80,7 @@ pub struct LooprestorationParamsSgr {
 pub struct LooprestorationParams {
     /// [`Align16`] moved to [`Self`] because we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
     ///
-    /// [`Align16`]: crate::src::align::Align16
+    /// [`Align16`]: crate::align::Align16
     pub filter: [[i16; 8]; 2],
 }
 
@@ -961,8 +961,8 @@ fn sgr_mix_rust<BD: BitDepth>(
 mod neon {
     use super::*;
 
+    use crate::align::Align16;
     use crate::include::common::bitdepth::bd_fn;
-    use crate::src::align::Align16;
     use libc::intptr_t;
     use std::ptr;
 
@@ -1576,7 +1576,7 @@ mod neon {
 mod neon {
     use super::*;
 
-    use crate::src::align::Align16;
+    use crate::align::Align16;
     use std::array;
     use std::ptr;
 
