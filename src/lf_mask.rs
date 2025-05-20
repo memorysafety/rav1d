@@ -19,6 +19,7 @@ use parking_lot::RwLock;
 use std::cmp;
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
+use zerocopy::FromBytes;
 
 #[repr(C)]
 pub struct Av1FilterLUT {
@@ -449,6 +450,9 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     let bx4 = bx & 31;
     let by4 = by & 31;
 
+    let filter_level_yuv = filter_level.0.map(|a| a[0][0]);
+    let [filter_level_y, filter_level_uv] = *<[u16; 2]>::ref_from(&filter_level_yuv).unwrap();
+
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
@@ -456,8 +460,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
                 let idx = 4 * (level_cache_off + x);
                 // `0.., ..2` is for Y
                 let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                lvl[0] = filter_level[0][0][0];
-                lvl[1] = filter_level[1][0][0];
+                *u16::mut_from(lvl).unwrap() = filter_level_y;
             }
             level_cache_off += b4_stride;
         }
@@ -494,8 +497,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
             let idx = 4 * (level_cache_off + x);
             // `2.., ..2` is for UV
             let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            lvl[0] = filter_level[2][0][0];
-            lvl[1] = filter_level[3][0][0];
+            *u16::mut_from(lvl).unwrap() = filter_level_uv;
         }
         level_cache_off += b4_stride;
     }
