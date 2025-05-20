@@ -14,7 +14,6 @@ repository = "https://github.com/memorysafety/rav1d"
 exclude = ["*.c", "*.h", "*.in", "meson*", "tests/", "doc/", "package/"]
 
 [lib]
-path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]

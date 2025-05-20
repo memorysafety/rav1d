@@ -2,7 +2,7 @@
 
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::strided::Strided as _;
+use crate::strided::Strided as _;
 use std::fmt::Display;
 use std::io;
 use std::io::stdout;

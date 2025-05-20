@@ -1,10 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::c_arc::CArc;
+use crate::cpu::CpuFlags;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
-use crate::src::c_arc::CArc;
-use crate::src::cpu::CpuFlags;
 use cfg_if::cfg_if;
 use std::ffi::c_int;
 use std::ffi::c_uint;

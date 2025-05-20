@@ -10,6 +10,8 @@ use libc::fread;
 #[cfg(not(target_os = "windows"))]
 use libc::fseeko;
 use libc::strerror;
+use rav1d::dav1d_data_create;
+use rav1d::dav1d_data_unref;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::headers::Dav1dObuType;
 use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME;
@@ -17,8 +19,6 @@ use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
 use rav1d::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
-use rav1d::src::lib::dav1d_data_create;
-use rav1d::src::lib::dav1d_data_unref;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;

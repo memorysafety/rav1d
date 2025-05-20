@@ -1,6 +1,6 @@
-use crate::src::assume::assume;
-use crate::src::const_fn::const_for;
-use crate::src::enum_map::DefaultValue;
+use crate::assume::assume;
+use crate::const_fn::const_for;
+use crate::enum_map::DefaultValue;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;

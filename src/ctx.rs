@@ -36,9 +36,9 @@
 //! * employs the same small powers of 2 optimization the `case_set*` implementation did
 //! * is far simpler than the `case_set*` implementation, consisting of a `match` and array writes
 //!
-//! [`BlockContext`]: crate::src::env::BlockContext
-use crate::src::disjoint_mut::AsMutPtr;
-use crate::src::disjoint_mut::DisjointMut;
+//! [`BlockContext`]: crate::env::BlockContext
+use crate::disjoint_mut::AsMutPtr;
+use crate::disjoint_mut::DisjointMut;
 use std::iter::zip;
 
 /// Perform a `memset` optimized for lengths that are small powers of 2.
