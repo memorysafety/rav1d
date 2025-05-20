@@ -28,6 +28,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::slice;
+use zerocopy::AsBytes;
 use zerocopy::FromZeroes;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -38,7 +39,7 @@ pub struct RefMvsTemporalBlock {
 }
 const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
-#[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
+#[derive(Clone, Copy, Eq, FromZeroes, AsBytes)]
 // In C, this is packed and is 2 bytes.
 // In Rust, being packed and aligned is tricky
 #[repr(C, align(2))]
@@ -47,18 +48,32 @@ pub struct RefMvsRefPair {
 }
 const _: () = assert!(mem::size_of::<RefMvsRefPair>() == 2);
 
+impl PartialEq for RefMvsRefPair {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
+}
+
 impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
         RefMvsRefPair { r#ref: from }
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, FromZeroes)]
+#[derive(Clone, Copy, Default, Eq, FromZeroes, AsBytes)]
 #[repr(C)]
 pub struct RefMvsMvPair {
     pub mv: [Mv; 2],
 }
 const _: () = assert!(mem::size_of::<RefMvsMvPair>() == 8);
+
+impl PartialEq for RefMvsMvPair {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
+}
 
 #[derive(Clone, Copy, FromZeroes)]
 // In C, this is packed and is 12 bytes.
