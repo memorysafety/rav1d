@@ -43,7 +43,7 @@ fn main() {
         let getopt = "getopt";
         cc::Build::new()
             .files([&"../tools/compat/getopt.c"])
-            .include("../include/compat")
+            .include("../src/include/compat")
             .debug(cfg!(debug_assertions))
             .compile(&getopt);
         // cc automatically outputs the following line

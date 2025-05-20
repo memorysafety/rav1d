@@ -35,15 +35,15 @@
 /// and reduces the need to repeat the `fn` signature many times.
 ///
 /// [`BitDepth`]: crate::include::common::bitdepth::BitDepth
-/// [`DefaultValue`]: crate::src::enum_map::DefaultValue
-/// [`enum_map!`]: crate::src::enum_map::enum_map
+/// [`DefaultValue`]: crate::enum_map::DefaultValue
+/// [`enum_map!`]: crate::enum_map::enum_map
 /// [`bd_fn!`]: crate::include::common::bitdepth::bd_fn
 macro_rules! wrap_fn_ptr {
     ($vis:vis unsafe extern "C" fn $name:ident(
             $($arg_name:ident: $arg_ty:ty),*$(,)?
     ) -> $return_ty:ty) => {
         $vis mod $name {
-            use $crate::src::enum_map::DefaultValue;
+            use $crate::enum_map::DefaultValue;
             use super::*;
 
             pub type FnPtr = unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty;

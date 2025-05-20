@@ -3,8 +3,8 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::src::align::AlignedByteChunk;
-use crate::src::align::AlignedVec;
+use crate::align::AlignedByteChunk;
+use crate::align::AlignedVec;
 use std::cell::UnsafeCell;
 use std::fmt;
 use std::fmt::Debug;

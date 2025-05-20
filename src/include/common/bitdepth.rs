@@ -1,7 +1,7 @@
+use crate::align::Align16;
+use crate::align::Align8;
+use crate::align::ArrayDefault;
 use crate::include::common::intops::clip;
-use crate::src::align::Align16;
-use crate::src::align::Align8;
-use crate::src::align::ArrayDefault;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -421,14 +421,14 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 ///     * `arm`, `aarch64`:
 ///         * [`neon`]
 ///
-/// [`wrap_fn_ptr!`]: crate::src::wrap_fn_ptr::wrap_fn_ptr
-/// [`CpuFlags`]: crate::src::cpu::CpuFlags
-/// [`sse2`]: crate::src::cpu::CpuFlags::SSE2
-/// [`sse41`]: crate::src::cpu::CpuFlags::SSE41
-/// [`ssse3`]: crate::src::cpu::CpuFlags::SSSE3
-/// [`avx2`]: crate::src::cpu::CpuFlags::AVX2
-/// [`avx512icl`]: crate::src::cpu::CpuFlags::AVX512ICL
-/// [`neon`]: crate::src::cpu::CpuFlags::NEON
+/// [`wrap_fn_ptr!`]: crate::wrap_fn_ptr::wrap_fn_ptr
+/// [`CpuFlags`]: crate::cpu::CpuFlags
+/// [`sse2`]: crate::cpu::CpuFlags::SSE2
+/// [`sse41`]: crate::cpu::CpuFlags::SSE41
+/// [`ssse3`]: crate::cpu::CpuFlags::SSSE3
+/// [`avx2`]: crate::cpu::CpuFlags::AVX2
+/// [`avx512icl`]: crate::cpu::CpuFlags::AVX512ICL
+/// [`neon`]: crate::cpu::CpuFlags::NEON
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))

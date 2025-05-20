@@ -1,19 +1,19 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::align::AlignedVec64;
+use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::AlignedVec64;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::internal::Rav1dBitDepthDSPContext;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::lr_apply::LrRestorePlanes;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::strided::Strided as _;
-use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
+use crate::internal::Rav1dBitDepthDSPContext;
+use crate::internal::Rav1dContext;
+use crate::internal::Rav1dFrameData;
+use crate::lr_apply::LrRestorePlanes;
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::strided::Strided as _;
+use crate::strided::WithStride;
+use crate::with_offset::WithOffset;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;

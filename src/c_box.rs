@@ -1,6 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::src::send_sync_non_null::SendSyncNonNull;
+use crate::send_sync_non_null::SendSyncNonNull;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;

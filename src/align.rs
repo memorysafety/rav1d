@@ -6,8 +6,8 @@
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
 
-use crate::src::assume::assume;
-use crate::src::disjoint_mut::AsMutPtr;
+use crate::assume::assume;
+use crate::disjoint_mut::AsMutPtr;
 use std::marker::PhantomData;
 use std::mem;
 use std::mem::MaybeUninit;

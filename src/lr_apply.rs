@@ -1,18 +1,18 @@
 #![deny(unsafe_code)]
 
+use crate::align::Align16;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::Align16;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::looprestoration::LooprestorationParams;
-use crate::src::looprestoration::LooprestorationParamsSgr;
-use crate::src::looprestoration::LrEdgeFlags;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_sgr_params;
+use crate::internal::Rav1dContext;
+use crate::internal::Rav1dFrameData;
+use crate::lf_mask::Av1RestorationUnit;
+use crate::looprestoration::LooprestorationParams;
+use crate::looprestoration::LooprestorationParamsSgr;
+use crate::looprestoration::LrEdgeFlags;
+use crate::strided::Strided as _;
+use crate::tables::dav1d_sgr_params;
 use assert_matches::assert_matches;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
