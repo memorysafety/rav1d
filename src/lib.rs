@@ -31,7 +31,6 @@ use std::sync::Once;
 use std::thread;
 use to_method::To as _;
 
-#[path = "../include"]
 pub mod include {
     pub mod common {
         pub(crate) mod attributes;
