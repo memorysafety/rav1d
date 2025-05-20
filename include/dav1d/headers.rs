@@ -1,7 +1,7 @@
-use crate::src::align::ArrayDefault;
-use crate::src::enum_map::EnumKey;
-use crate::src::levels::SegmentId;
-use crate::src::relaxed_atomic::RelaxedAtomic;
+use crate::align::ArrayDefault;
+use crate::enum_map::EnumKey;
+use crate::levels::SegmentId;
+use crate::relaxed_atomic::RelaxedAtomic;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;

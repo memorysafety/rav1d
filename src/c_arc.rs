@@ -1,7 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::src::c_box::CBox;
-use crate::src::error::Rav1dResult;
+use crate::c_box::CBox;
+use crate::error::Rav1dResult;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;

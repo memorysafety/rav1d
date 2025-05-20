@@ -1,5 +1,9 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::align::AlignedVec64;
+use crate::cpu::CpuFlags;
+use crate::disjoint_mut::DisjointMut;
+use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -7,15 +11,11 @@ use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::AlignedVec64;
-use crate::src::cpu::CpuFlags;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::pic_or_buf::PicOrBuf;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_cdef_directions;
-use crate::src::with_offset::WithOffset;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use crate::pic_or_buf::PicOrBuf;
+use crate::strided::Strided as _;
+use crate::tables::dav1d_cdef_directions;
+use crate::with_offset::WithOffset;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -637,7 +637,7 @@ mod neon {
         _top: *const FFISafe<CdefTop>,
         _bottom: *const FFISafe<CdefBottom>,
     ) {
-        use crate::src::align::Align16;
+        use crate::align::Align16;
 
         let dst = dst.cast();
         let left = left.cast();

@@ -1,10 +1,10 @@
-use crate::src::align::Align16;
-use crate::src::align::Align32;
-use crate::src::align::Align64;
-use crate::src::const_fn::const_for;
-use crate::src::const_fn::const_min;
-use crate::src::levels::BlockSize;
-use crate::src::levels::InterIntraPredMode;
+use crate::align::Align16;
+use crate::align::Align32;
+use crate::align::Align64;
+use crate::const_fn::const_for;
+use crate::const_fn::const_min;
+use crate::levels::BlockSize;
+use crate::levels::InterIntraPredMode;
 use paste::paste;
 use std::cmp::Ordering;
 use strum::EnumCount;

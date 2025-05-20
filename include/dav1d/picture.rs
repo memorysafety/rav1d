@@ -1,5 +1,15 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::c_arc::RawArc;
+use crate::disjoint_mut::AsMutPtr;
+use crate::disjoint_mut::DisjointImmutGuard;
+use crate::disjoint_mut::DisjointMut;
+use crate::disjoint_mut::DisjointMutGuard;
+use crate::disjoint_mut::SliceBounds;
+use crate::error::Dav1dResult;
+use crate::error::Rav1dError;
+use crate::error::Rav1dError::EINVAL;
+use crate::error::Rav1dResult;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -15,20 +25,10 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::src::c_arc::RawArc;
-use crate::src::disjoint_mut::AsMutPtr;
-use crate::src::disjoint_mut::DisjointImmutGuard;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::disjoint_mut::DisjointMutGuard;
-use crate::src::disjoint_mut::SliceBounds;
-use crate::src::error::Dav1dResult;
-use crate::src::error::Rav1dError;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dResult;
-use crate::src::pixels::Pixels;
-use crate::src::send_sync_non_null::SendSyncNonNull;
-use crate::src::strided::Strided;
-use crate::src::with_offset::WithOffset;
+use crate::pixels::Pixels;
+use crate::send_sync_non_null::SendSyncNonNull;
+use crate::strided::Strided;
+use crate::with_offset::WithOffset;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::array;
@@ -599,7 +599,7 @@ pub struct Dav1dPicAllocator {
     ///     * [`Dav1dPicture::p`]
     ///     * [`Dav1dPicture::seq_hdr`]
     ///     * [`Dav1dPicture::frame_hdr`]
-    ///     
+    ///
     ///     This is not a change from the original `DAV1D_API`,
     ///     just a clarification of it.
     ///
@@ -638,12 +638,12 @@ pub struct Dav1dPicAllocator {
     /// # Args
     ///
     /// * `pic`: The picture that was filled by [`alloc_picture_callback`].
-    ///     
+    ///
     ///     The only fields of `pic` that will be set are
     ///     the ones allocated by [`Self::alloc_picture_callback`]:
     ///     * [`Dav1dPicture::data`]
     ///     * [`Dav1dPicture::allocator_data`]
-    ///     
+    ///
     ///     NOTE: This is a slight change from the original `DAV1D_API`, which was underspecified.
     ///     However, all known uses of this API follow this already:
     ///     * `libdav1d`: [`dav1d_default_picture_release`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/src/picture.c#L85-87)
@@ -657,7 +657,7 @@ pub struct Dav1dPicAllocator {
     ///
     /// * `cookie`: Custom pointer passed to all calls.
     ///
-    /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
+    /// [`dav1d_get_picture`]: crate::lib::dav1d_get_picture
     /// [`alloc_picture_callback`]: Self::alloc_picture_callback
     pub release_picture_callback: Option<
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: Option<SendSyncNonNull<c_void>>) -> (),
@@ -687,8 +687,8 @@ pub(crate) struct Rav1dPicAllocator {
     /// free data owned by a [`Dav1dPicAllocator`] potentially,
     /// which it may not do, as there are no current APIs for doing so.
     ///
-    /// [`Rav1dContext::picture_pool`]: crate::src::internal::Rav1dContext::picture_pool
-    /// [`Rav1dContext`]: crate::src::internal::Rav1dContext
+    /// [`Rav1dContext::picture_pool`]: crate::internal::Rav1dContext::picture_pool
+    /// [`Rav1dContext`]: crate::internal::Rav1dContext
     pub cookie: Option<SendSyncNonNull<c_void>>,
 
     /// See [`Dav1dPicAllocator::alloc_picture_callback`].

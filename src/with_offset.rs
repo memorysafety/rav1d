@@ -1,6 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
-use crate::src::pixels::Pixels;
-use crate::src::strided::Strided;
+use crate::pixels::Pixels;
+use crate::strided::Strided;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Sub;

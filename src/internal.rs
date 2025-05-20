@@ -1,3 +1,20 @@
+use crate::align::Align16;
+use crate::align::Align64;
+use crate::align::AlignedVec64;
+use crate::cdef::Rav1dCdefDSPContext;
+use crate::cdf::CdfContext;
+use crate::cdf::CdfThreadContext;
+use crate::cpu::rav1d_get_cpu_flags;
+use crate::cpu::CpuFlags;
+use crate::disjoint_mut::DisjointImmutGuard;
+use crate::disjoint_mut::DisjointMut;
+use crate::disjoint_mut::DisjointMutArcSlice;
+use crate::disjoint_mut::DisjointMutGuard;
+use crate::env::BlockContext;
+use crate::error::Rav1dError;
+use crate::filmgrain::Rav1dFilmGrainDSPContext;
+use crate::filmgrain::GRAIN_HEIGHT;
+use crate::filmgrain::GRAIN_WIDTH;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
@@ -18,74 +35,57 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align16;
-use crate::src::align::Align64;
-use crate::src::align::AlignedVec64;
-use crate::src::cdef::Rav1dCdefDSPContext;
-use crate::src::cdf::CdfContext;
-use crate::src::cdf::CdfThreadContext;
-use crate::src::cpu::rav1d_get_cpu_flags;
-use crate::src::cpu::CpuFlags;
-use crate::src::disjoint_mut::DisjointImmutGuard;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::disjoint_mut::DisjointMutArcSlice;
-use crate::src::disjoint_mut::DisjointMutGuard;
-use crate::src::env::BlockContext;
-use crate::src::error::Rav1dError;
-use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::src::filmgrain::GRAIN_HEIGHT;
-use crate::src::filmgrain::GRAIN_WIDTH;
-use crate::src::ipred::Rav1dIntraPredDSPContext;
-use crate::src::itx::Rav1dInvTxfmDSPContext;
-use crate::src::levels::Av1Block;
-use crate::src::levels::Filter2d;
-use crate::src::levels::SegmentId;
-use crate::src::levels::TxfmType;
-use crate::src::levels::WHT_WHT;
-use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::log::Rav1dLogger;
-use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
-use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
-use crate::src::lr_apply::LrRestorePlanes;
-use crate::src::mc::Rav1dMCDSPContext;
-use crate::src::msac::MsacContext;
-use crate::src::msac::Rav1dMsacDSPContext;
-use crate::src::pal::Rav1dPalDSPContext;
-use crate::src::picture::PictureFlags;
-use crate::src::picture::Rav1dThreadPicture;
-use crate::src::pool::MemPool;
-use crate::src::recon::rav1d_backup_ipred_edge;
-use crate::src::recon::rav1d_copy_pal_block_uv;
-use crate::src::recon::rav1d_copy_pal_block_y;
-use crate::src::recon::rav1d_filter_sbrow;
-use crate::src::recon::rav1d_filter_sbrow_cdef;
-use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
-use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
-use crate::src::recon::rav1d_filter_sbrow_lr;
-use crate::src::recon::rav1d_filter_sbrow_resize;
-use crate::src::recon::rav1d_read_coef_blocks;
-use crate::src::recon::rav1d_read_pal_plane;
-use crate::src::recon::rav1d_read_pal_uv;
-use crate::src::recon::rav1d_recon_b_inter;
-use crate::src::recon::rav1d_recon_b_intra;
-use crate::src::recon::BackupIpredEdgeFn;
-use crate::src::recon::CopyPalBlockFn;
-use crate::src::recon::FilterSbrowFn;
-use crate::src::recon::ReadCoefBlocksFn;
-use crate::src::recon::ReadPalPlaneFn;
-use crate::src::recon::ReadPalUVFn;
-use crate::src::recon::ReconBInterFn;
-use crate::src::recon::ReconBIntraFn;
-use crate::src::refmvs::Rav1dRefmvsDSPContext;
-use crate::src::refmvs::RefMvsFrame;
-use crate::src::refmvs::RefMvsTemporalBlock;
-use crate::src::refmvs::RefmvsTile;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::thread_task::Rav1dTaskIndex;
-use crate::src::thread_task::Rav1dTasks;
+use crate::ipred::Rav1dIntraPredDSPContext;
+use crate::itx::Rav1dInvTxfmDSPContext;
+use crate::levels::Av1Block;
+use crate::levels::Filter2d;
+use crate::levels::SegmentId;
+use crate::levels::TxfmType;
+use crate::levels::WHT_WHT;
+use crate::lf_mask::Av1Filter;
+use crate::lf_mask::Av1FilterLUT;
+use crate::lf_mask::Av1Restoration;
+use crate::lf_mask::Av1RestorationUnit;
+use crate::log::Rav1dLogger;
+use crate::loopfilter::Rav1dLoopFilterDSPContext;
+use crate::looprestoration::Rav1dLoopRestorationDSPContext;
+use crate::lr_apply::LrRestorePlanes;
+use crate::mc::Rav1dMCDSPContext;
+use crate::msac::MsacContext;
+use crate::msac::Rav1dMsacDSPContext;
+use crate::pal::Rav1dPalDSPContext;
+use crate::picture::PictureFlags;
+use crate::picture::Rav1dThreadPicture;
+use crate::pool::MemPool;
+use crate::recon::rav1d_backup_ipred_edge;
+use crate::recon::rav1d_copy_pal_block_uv;
+use crate::recon::rav1d_copy_pal_block_y;
+use crate::recon::rav1d_filter_sbrow;
+use crate::recon::rav1d_filter_sbrow_cdef;
+use crate::recon::rav1d_filter_sbrow_deblock_cols;
+use crate::recon::rav1d_filter_sbrow_deblock_rows;
+use crate::recon::rav1d_filter_sbrow_lr;
+use crate::recon::rav1d_filter_sbrow_resize;
+use crate::recon::rav1d_read_coef_blocks;
+use crate::recon::rav1d_read_pal_plane;
+use crate::recon::rav1d_read_pal_uv;
+use crate::recon::rav1d_recon_b_inter;
+use crate::recon::rav1d_recon_b_intra;
+use crate::recon::BackupIpredEdgeFn;
+use crate::recon::CopyPalBlockFn;
+use crate::recon::FilterSbrowFn;
+use crate::recon::ReadCoefBlocksFn;
+use crate::recon::ReadPalPlaneFn;
+use crate::recon::ReadPalUVFn;
+use crate::recon::ReconBInterFn;
+use crate::recon::ReconBIntraFn;
+use crate::refmvs::Rav1dRefmvsDSPContext;
+use crate::refmvs::RefMvsFrame;
+use crate::refmvs::RefMvsTemporalBlock;
+use crate::refmvs::RefmvsTile;
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::thread_task::Rav1dTaskIndex;
+use crate::thread_task::Rav1dTasks;
 use atomig::Atom;
 use atomig::Atomic;
 use libc::ptrdiff_t;
@@ -321,7 +321,7 @@ pub(crate) struct TaskThreadData {
     /// This is used for delayed reset of the task cur pointer when
     /// such operation is needed but the thread doesn't enter a critical
     /// section (typically when executing the next sbrow task locklessly).
-    /// See [`crate::src::thread_task::reset_task_cur`].
+    /// See [`crate::thread_task::reset_task_cur`].
     pub reset_task_cur: AtomicU32,
     pub cond_signaled: AtomicI32,
     pub delayed_fg_exec: RelaxedAtomic<i32>,
@@ -371,8 +371,8 @@ impl Rav1dContextTaskThread {
 /// It is not accessed by other threads
 /// (not in the call tree of [`rav1d_worker_task`]).
 ///
-/// [`rav1d_flush`]: crate::src::lib::rav1d_flush
-/// [`rav1d_worker_task`]: crate::src::thread_task::rav1d_worker_task
+/// [`rav1d_flush`]: crate::lib::rav1d_flush
+/// [`rav1d_worker_task`]: crate::thread_task::rav1d_worker_task
 #[derive(Default)]
 pub struct Rav1dState {
     /// Cache of OBUs that make up a single frame before we submit them

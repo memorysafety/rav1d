@@ -1,5 +1,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::error::Dav1dResult;
+use crate::error::Rav1dError::EGeneric;
+use crate::error::Rav1dResult;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::DRav1d;
@@ -17,15 +20,12 @@ use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
-use crate::src::error::Dav1dResult;
-use crate::src::error::Rav1dError::EGeneric;
-use crate::src::error::Rav1dResult;
-use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::log::Rav1dLog as _;
-use crate::src::log::Rav1dLogger;
-use crate::src::pool::MemPool;
-use crate::src::send_sync_non_null::SendSyncNonNull;
+use crate::internal::Rav1dFrameContext;
+use crate::internal::Rav1dFrameData;
+use crate::log::Rav1dLog as _;
+use crate::log::Rav1dLogger;
+use crate::pool::MemPool;
+use crate::send_sync_non_null::SendSyncNonNull;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::ffi::c_int;

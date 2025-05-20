@@ -1,15 +1,15 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::c_arc::CArc;
+use crate::c_box::CBox;
+use crate::c_box::FnFree;
+use crate::c_box::Free;
+use crate::error::Rav1dError::EINVAL;
+use crate::error::Rav1dResult;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
-use crate::src::c_arc::CArc;
-use crate::src::c_box::CBox;
-use crate::src::c_box::FnFree;
-use crate::src::c_box::Free;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dResult;
-use crate::src::send_sync_non_null::SendSyncNonNull;
+use crate::send_sync_non_null::SendSyncNonNull;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 

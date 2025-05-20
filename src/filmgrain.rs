@@ -1,5 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::cpu::CpuFlags;
+use crate::enum_map::enum_map;
+use crate::enum_map::enum_map_ty;
+use crate::enum_map::DefaultValue;
+use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynEntry;
@@ -11,15 +16,10 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::cpu::CpuFlags;
-use crate::src::enum_map::enum_map;
-use crate::src::enum_map::enum_map_ty;
-use crate::src::enum_map::DefaultValue;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::internal::GrainLut;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_gaussian_sequence;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use crate::internal::GrainLut;
+use crate::strided::Strided as _;
+use crate::tables::dav1d_gaussian_sequence;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;

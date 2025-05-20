@@ -1,21 +1,21 @@
 #![deny(unsafe_code)]
 
+use crate::align::Align16;
+use crate::align::AlignedVec64;
+use crate::cdef::CdefEdgeFlags;
+use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::Align16;
-use crate::src::align::AlignedVec64;
-use crate::src::cdef::CdefEdgeFlags;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::pic_or_buf::PicOrBuf;
-use crate::src::strided::Strided as _;
-use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
+use crate::internal::Rav1dContext;
+use crate::internal::Rav1dFrameData;
+use crate::internal::Rav1dTaskContext;
+use crate::pic_or_buf::PicOrBuf;
+use crate::strided::Strided as _;
+use crate::strided::WithStride;
+use crate::with_offset::WithOffset;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;

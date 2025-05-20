@@ -1,22 +1,22 @@
 #![deny(unsafe_code)]
 
+use crate::align::Align16;
+use crate::align::Align32;
+use crate::align::Align4;
+use crate::align::Align8;
+use crate::error::Rav1dResult;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::src::align::Align16;
-use crate::src::align::Align32;
-use crate::src::align::Align4;
-use crate::src::align::Align8;
-use crate::src::error::Rav1dResult;
-use crate::src::levels::BlockLevel;
-use crate::src::levels::BlockPartition;
-use crate::src::levels::BlockSize;
-use crate::src::levels::MVJoint;
-use crate::src::levels::SegmentId;
-use crate::src::levels::TxfmSize;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::tables::dav1d_partition_type_count;
+use crate::levels::BlockLevel;
+use crate::levels::BlockPartition;
+use crate::levels::BlockSize;
+use crate::levels::MVJoint;
+use crate::levels::SegmentId;
+use crate::levels::TxfmSize;
+use crate::levels::N_COMP_INTER_PRED_MODES;
+use crate::levels::N_INTRA_PRED_MODES;
+use crate::levels::N_UV_INTRA_PRED_MODES;
+use crate::tables::dav1d_partition_type_count;
 use parking_lot::RwLock;
 use parking_lot::RwLockWriteGuard;
 use std::cmp;
