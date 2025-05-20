@@ -46,7 +46,7 @@ cdata = configuration_data()
 cdata_asm = configuration_data()
 
 # Include directories
-dav1d_inc_dirs = include_directories(['.', 'include/dav1d', 'include'])
+dav1d_inc_dirs = include_directories(['.', 'src/include/dav1d', 'src/include'])
 
 
 
@@ -560,7 +560,7 @@ endif
 librav1d = custom_target(
     'librav1d',
     output: 'librav1d.a',
-    input: ['lib.rs'],
+    input: ['src/lib.rs'],
     command: cargo_command,
     install: true,
     install_dir: get_option('libdir')
@@ -570,7 +570,7 @@ librav1d = custom_target(
 # Include subdir meson.build files
 # The order is important!
 
-subdir('include')
+subdir('src/include')
 
 subdir('doc')
 
