@@ -510,10 +510,12 @@ fn cdef_find_dir_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 mod neon {
+    use std::mem::MaybeUninit;
+
     use super::*;
 
     wrap_fn_ptr!(unsafe extern "C" fn padding(
-        tmp: *mut u16,
+        tmp: *mut MaybeUninit<u16>,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
         left: *const [LeftPixelRow2px<DynPixel>; 8],
@@ -526,7 +528,7 @@ mod neon {
     impl padding::Fn {
         fn call<BD: BitDepth>(
             &self,
-            tmp: &mut [u16],
+            tmp: &mut [MaybeUninit<u16>],
             src: *const BD::Pixel,
             src_stride: ptrdiff_t,
             left: *const [LeftPixelRow2px<BD::Pixel>; 8],
@@ -557,7 +559,7 @@ mod neon {
     wrap_fn_ptr!(unsafe extern "C" fn filter(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: *const u16,
+        tmp: *const MaybeUninit<u16>,
         pri_strength: c_int,
         sec_strength: c_int,
         dir: c_int,
@@ -572,7 +574,7 @@ mod neon {
             &self,
             dst: *mut BD::Pixel,
             dst_stride: ptrdiff_t,
-            tmp: &[u16],
+            tmp: &[MaybeUninit<u16>],
             pri_strength: c_int,
             sec_strength: c_int,
             dir: c_int,
@@ -643,7 +645,11 @@ mod neon {
         let bottom = bottom.cast();
         let bd = BD::from_c(bitdepth_max);
 
-        let mut tmp_buf = Align16([0; TMP_LEN]);
+        // Use `MaybeUninit` here to avoid over-initialization.
+        // C doesn't initialize this either and only partially initializes it in `padding`.
+        // Since we're just passing this to a few asm calls that are `unsafe` anyways,
+        // initializing this in Rust doesn't really add any extra safety.
+        let mut tmp_buf = Align16([MaybeUninit::uninit(); TMP_LEN]);
         let tmp = &mut tmp_buf.0[2 * TMP_STRIDE + 8..];
         padding::Fn::neon::<BD, W>().call::<BD>(tmp, dst, stride, left, top, bottom, H, edges);
         filter::Fn::neon::<BD, W>().call(
