@@ -336,7 +336,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                f.dsp.cdef.fb[0].call::<BD>(
+                                f.dsp.cdef.fb[0].call::<BD, 8, 8>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
@@ -350,7 +350,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            f.dsp.cdef.fb[0].call::<BD>(
+                            f.dsp.cdef.fb[0].call::<BD, 8, 8>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
@@ -436,18 +436,45 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     (top, WithOffset::pic(bottom))
                                 });
 
-                                f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
-                                    bptrs[pl],
-                                    &lr_bak[bit as usize][pl],
-                                    top,
-                                    bot,
-                                    uv_pri_lvl.into(),
-                                    uv_sec_lvl,
-                                    uvdir,
-                                    damping - 1,
-                                    edges,
-                                    bd,
-                                );
+                                match uv_idx {
+                                    0 => f.dsp.cdef.fb[0].call::<BD, 8, 8>(
+                                        bptrs[pl],
+                                        &lr_bak[bit as usize][pl],
+                                        top,
+                                        bot,
+                                        uv_pri_lvl.into(),
+                                        uv_sec_lvl,
+                                        uvdir,
+                                        damping - 1,
+                                        edges,
+                                        bd,
+                                    ),
+                                    1 => f.dsp.cdef.fb[1].call::<BD, 4, 8>(
+                                        bptrs[pl],
+                                        &lr_bak[bit as usize][pl],
+                                        top,
+                                        bot,
+                                        uv_pri_lvl.into(),
+                                        uv_sec_lvl,
+                                        uvdir,
+                                        damping - 1,
+                                        edges,
+                                        bd,
+                                    ),
+                                    2 => f.dsp.cdef.fb[2].call::<BD, 4, 4>(
+                                        bptrs[pl],
+                                        &lr_bak[bit as usize][pl],
+                                        top,
+                                        bot,
+                                        uv_pri_lvl.into(),
+                                        uv_sec_lvl,
+                                        uvdir,
+                                        damping - 1,
+                                        edges,
+                                        bd,
+                                    ),
+                                    _ => unreachable!(),
+                                };
                             }
                         }
                         bit = !bit;
