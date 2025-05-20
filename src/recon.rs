@@ -83,7 +83,9 @@ use crate::src::tables::dav1d_lo_ctx_offsets;
 use crate::src::tables::dav1d_skip_ctx;
 use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
+use crate::src::tables::dav1d_txfm_dimension;
 use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_txfm_size;
 use crate::src::tables::dav1d_txtp_from_uvmode;
 use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
@@ -263,15 +265,15 @@ impl_MergeInt!(u32, u16);
 impl_MergeInt!(u64, u32);
 impl_MergeInt!(u128, u64);
 
-#[inline]
-fn get_skip_ctx(
-    t_dim: &TxfmInfo,
+#[inline(always)]
+fn get_skip_ctx<const TX: usize>(
     bs: BlockSize,
     a: &[u8],
     l: &[u8],
     chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> InRange<u8, 0, { 13 - 1 }> {
+    let t_dim = const { dav1d_txfm_dimension::<TX>() };
     let b_dim = bs.dimensions();
     let skip_ctx = if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
@@ -341,8 +343,9 @@ fn get_skip_ctx(
     InRange::new(skip_ctx).unwrap()
 }
 
-#[inline]
-fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
+#[inline(always)]
+fn get_dc_sign_ctx<const TX: usize>(a: &[u8], l: &[u8]) -> c_uint {
+    let tx = const { dav1d_txfm_size::<TX>() };
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
@@ -492,7 +495,6 @@ fn get_lo_ctx(
     let offset;
     match ctx_offsets {
         Some(ctx_offsets) => {
-            level(2, 1); // Bounds check all at once.
             mag = level(0, 1) + level(1, 0);
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
@@ -502,7 +504,6 @@ fn get_lo_ctx(
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
-            level(1, 4); // Bounds check all at once.
             mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
             *hi_mag = mag;
@@ -518,6 +519,8 @@ fn get_lo_ctx(
         }
 }
 
+#[rustfmt::skip]
+#[inline(always)]
 fn decode_coefs<BD: BitDepth>(
     f: &Rav1dFrameData,
     ts: usize,
@@ -535,6 +538,51 @@ fn decode_coefs<BD: BitDepth>(
     txtp: &mut TxfmType,
     res_ctx: &mut u8,
 ) -> c_int {
+    // We make the `TxfmSize` a const so the optimizer sees we don't need memory reads to access the
+    // `TxfmInfo` dimensions.
+    use TxfmSize::*;
+    match tx {
+        S4x4 => decode_coefs_inner::<BD, { S4x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S8x8 => decode_coefs_inner::<BD, { S8x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S16x16 => decode_coefs_inner::<BD, { S16x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S32x32 => decode_coefs_inner::<BD, { S32x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        S64x64 => decode_coefs_inner::<BD, { S64x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R4x8 => decode_coefs_inner::<BD, { R4x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x4 => decode_coefs_inner::<BD, { R8x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x16 => decode_coefs_inner::<BD, { R8x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x8 => decode_coefs_inner::<BD, { R16x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x32 => decode_coefs_inner::<BD, { R16x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x16 => decode_coefs_inner::<BD, { R32x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x64 => decode_coefs_inner::<BD, { R32x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R64x32 => decode_coefs_inner::<BD, { R64x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R4x16 => decode_coefs_inner::<BD, { R4x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x4 => decode_coefs_inner::<BD, { R16x4 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R8x32 => decode_coefs_inner::<BD, { R8x32 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R32x8 => decode_coefs_inner::<BD, { R32x8 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R16x64 => decode_coefs_inner::<BD, { R16x64 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+        R64x16 => decode_coefs_inner::<BD, { R64x16 as _ }>(f, ts, ts_c, dbg_block_info, scratch, t_cf, a, l, tx, bs, b, plane, cf, txtp, res_ctx),
+    }
+}
+
+#[inline(never)]
+fn decode_coefs_inner<BD: BitDepth, const TX: usize>(
+    f: &Rav1dFrameData,
+    ts: usize,
+    ts_c: &mut Rav1dTileStateContext,
+    dbg_block_info: bool,
+    scratch: &mut TaskContextScratch,
+    t_cf: &mut Cf,
+    a: &mut [u8],
+    l: &mut [u8],
+    tx: TxfmSize,
+    bs: BlockSize,
+    b: &Av1Block,
+    plane: usize,
+    cf: CfSelect,
+    txtp: &mut TxfmType,
+    res_ctx: &mut u8,
+) -> c_int {
+    let t_dim = const { dav1d_txfm_dimension::<TX>() };
     let dc_sign_ctx;
     let dc_sign;
     let mut dc_dq;
@@ -542,7 +590,6 @@ fn decode_coefs<BD: BitDepth>(
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
     if dbg {
@@ -550,7 +597,7 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout);
+    let sctx = get_skip_ctx::<TX>(bs, a, l, chroma, f.cur.p.layout);
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx.get() as usize],
@@ -578,7 +625,7 @@ fn decode_coefs<BD: BitDepth>(
         Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
         Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
-        Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
+        Inter(_) if chroma => get_uv_inter_txtp(&t_dim, *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
         // such blocks are actually lossless. The remainder gets an implicit
         // transform type (for luma)
@@ -760,7 +807,7 @@ fn decode_coefs<BD: BitDepth>(
     let mut rc;
     let mut dc_tok;
 
-    #[inline]
+    #[inline(always)]
     fn decode_coefs_class<const TX_CLASS: usize, BD: BitDepth>(
         ts_c: &mut Rav1dTileStateContext,
         t_dim: &TxfmInfo,
@@ -1026,13 +1073,13 @@ fn decode_coefs<BD: BitDepth>(
         let cf = &mut cf;
         (rc, dc_tok) = match tx_class {
             TxClass::TwoD => decode_coefs_class::<{ TxClass::TwoD as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::H => decode_coefs_class::<{ TxClass::H as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
             TxClass::V => decode_coefs_class::<{ TxClass::V as _ }, BD>(
-                ts_c, t_dim, chroma, scratch, eob, tx, dbg, cf,
+                ts_c, &t_dim, chroma, scratch, eob, tx, dbg, cf,
             ),
         };
     } else {
@@ -1097,7 +1144,7 @@ fn decode_coefs<BD: BitDepth>(
             None => Ac::NoQm,
         });
     } else {
-        dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as c_int;
+        dc_sign_ctx = get_dc_sign_ctx::<TX>(a, l) as c_int;
         let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
         dc_sign = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, dc_sign_cdf) as c_int;
         if dbg {
