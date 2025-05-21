@@ -10,7 +10,7 @@ use crate::src::align::AlignedVec64;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
@@ -134,7 +134,7 @@ fn adjust_strength(strength: u8, var: c_uint) -> c_int {
 pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     p: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: i32,
     by_start: c_int,
@@ -156,7 +156,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let mut ptrs = p;
     let sbsz = 16;
     let sb64w = f.sb128w << 1;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let damping = frame_hdr.cdef.damping + bitdepth_min_8;
     let layout: Rav1dPixelLayout = f.cur.p.layout;
     let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
@@ -167,7 +167,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_dir: &[u8; 8] = &UV_DIRS[(layout == Rav1dPixelLayout::I422) as usize];
 
     let have_tt = c.tc.len() > 1;
-    let sb128 = f.seq_hdr.as_ref().unwrap().sb128;
+    let sb128 = f.seq_hdr.sb128;
     let resize = frame_hdr.size.width[0] != frame_hdr.size.width[1];
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
