@@ -22,6 +22,7 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContextTaskThread;
 use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContextTaskThread;
@@ -393,10 +394,10 @@ fn merge_pending(c: &Rav1dContext) -> c_int {
     return res;
 }
 
-fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameDataWithHeaders, pass: c_int) -> Rav1dResult {
+    let frame_hdr = &f.frame_hdr;
     let has_deblock = (frame_hdr.loopfilter.level_y != [0; 2]) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = !f.lf.restore_planes.is_empty();
@@ -441,12 +442,12 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
 
 pub(crate) fn rav1d_task_create_tile_sbrow(
     fc: &Rav1dFrameContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     pass: c_int,
     _cond_signal: c_int,
 ) -> Rav1dResult {
     let tasks = &fc.task_thread.tasks;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let num_tasks = frame_hdr.tiling.cols as usize * frame_hdr.tiling.rows as usize;
     fc.task_thread.done[(pass & 1) as usize].store(0, Ordering::SeqCst);
     create_filter_sbrow(fc, f, pass)?;
@@ -1028,11 +1029,12 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             unreachable!();
                         }
                         let mut res_0 = Err(EINVAL);
-                        let mut f = fc.data.try_write().unwrap();
+                        let mut f_guard = fc.data.try_write().unwrap();
+                        let f = f_guard.assert_has_headers_mut();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            res_0 = rav1d_decode_frame_init_cdf(c, fc, &mut f, &fc.in_cdf());
+                            res_0 = rav1d_decode_frame_init_cdf(c, fc, f, &fc.in_cdf());
                         }
-                        let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+                        let frame_hdr = &f.frame_hdr;
                         if frame_hdr.refresh_context != 0 && !fc.task_thread.update_set.get() {
                             f.out_cdf.progress().unwrap().store(
                                 (if res_0.is_err() {
@@ -1043,14 +1045,15 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                 Ordering::SeqCst,
                             );
                         }
-                        drop(f);
+                        drop(f_guard);
                         if res_0.is_ok() {
                             if !(c.fc.len() > 1) {
                                 unreachable!();
                             }
                             let mut p_0 = 1;
                             while p_0 <= 2 {
-                                let f = fc.data.try_read().unwrap();
+                                let f_guard = fc.data.try_read().unwrap();
+                                let f = f_guard.assert_has_headers();
                                 let res_1 = rav1d_task_create_tile_sbrow(fc, &f, p_0, 0);
                                 if res_1.is_err() {
                                     assert!(
@@ -1062,7 +1065,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     fc.task_thread.done[(2 - p_0) as usize]
                                         .store(1 as c_int, Ordering::SeqCst);
                                     fc.task_thread.error.store(-(1 as c_int), Ordering::SeqCst);
-                                    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+                                    let frame_hdr = &f.frame_hdr;
                                     fc.task_thread.task_counter.fetch_sub(
                                         frame_hdr.tiling.cols as c_int
                                             * frame_hdr.tiling.rows as c_int
@@ -1080,7 +1083,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                         if fc.task_thread.task_counter.load(Ordering::SeqCst) != 0 {
                                             unreachable!();
                                         }
-                                        drop(f);
+                                        drop(f_guard);
                                         let _ = rav1d_decode_frame_exit(c, fc, Err(ENOMEM));
                                         fc.task_thread.cond.notify_one();
                                     } else {
@@ -1118,6 +1121,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             1 as c_int + (t.type_0 == TaskType::TileReconstruction) as c_int
                         };
                         if error_0 == 0 {
+                            let f = f.assert_has_headers();
                             error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, &f) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
@@ -1206,6 +1210,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     TaskType::DeblockCols => {
                         {
                             let f = fc.data.try_read().unwrap();
+                            let f = f.assert_has_headers();
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 (f.bd_fn().filter_sbrow_deblock_cols)(c, &f, &mut tc, sby);
                             }
@@ -1225,15 +1230,16 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         continue 'fallthrough;
                     }
                     TaskType::DeblockRows => {
-                        let f = fc.data.try_read().unwrap();
+                        let f_guard = fc.data.try_read().unwrap();
+                        let f = f_guard.assert_has_headers();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                             (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
                         }
                         // signal deblock progress
-                        let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-                        let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+                        let seq_hdr = &f.seq_hdr;
+                        let frame_hdr = &f.frame_hdr;
                         if frame_hdr.loopfilter.level_y != [0; 2] {
-                            drop(f);
+                            drop(f_guard);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                             fc.frame_thread_progress.deblock.store(
                                 if error_0 != 0 { TILE_ERROR } else { sby + 1 },
@@ -1244,7 +1250,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                 ttd.cond.notify_one();
                             }
                         } else if seq_hdr.cdef != 0 || !f.lf.restore_planes.is_empty() {
-                            drop(f);
+                            drop(f_guard);
                             let copy_lpf = fc.frame_thread_progress.copy_lpf.try_read().unwrap();
                             copy_lpf[(sby >> 5) as usize]
                                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
@@ -1271,13 +1277,13 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         continue 'fallthrough;
                     }
                     TaskType::Cdef => {
-                        let f = fc.data.try_read().unwrap();
-                        let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-                        if seq_hdr.cdef != 0 {
+                        let f_guard = fc.data.try_read().unwrap();
+                        let f = f_guard.assert_has_headers();
+                        if f.seq_hdr.cdef != 0 {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
                             }
-                            drop(f);
+                            drop(f_guard);
                             reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
@@ -1288,8 +1294,8 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     }
                     TaskType::SuperResolution => {
                         let f = fc.data.try_read().unwrap();
-                        let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
+                        let f = f.assert_has_headers();
+                        if f.frame_hdr.size.width[0] != f.frame_hdr.size.width[1] {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
                             }
@@ -1299,6 +1305,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     }
                     TaskType::LoopRestoration => {
                         let f = fc.data.try_read().unwrap();
+                        let f = f.assert_has_headers();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0
                             && !f.lf.restore_planes.is_empty()
                         {

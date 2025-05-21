@@ -27,7 +27,7 @@ use crate::src::internal::Bxy;
 use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileStateContext;
 use crate::src::internal::ScratchEmuEdge;
@@ -121,7 +121,7 @@ macro_rules! debug_block_info {
         use crate::src::internal::Bxy;
 
         let tb: Bxy = $tb;
-        false && $f.frame_hdr.as_ref().unwrap().frame_offset == 2 && tb.debug_block_info()
+        false && $f.frame_hdr.frame_offset == 2 && tb.debug_block_info()
     }};
 }
 pub(crate) use debug_block_info;
@@ -129,7 +129,7 @@ pub(crate) use debug_block_info;
 const DEBUG_B_PIXELS: bool = false;
 
 pub(crate) type ReconBIntraFn = fn(
-    &Rav1dFrameData,
+    &Rav1dFrameDataWithHeaders,
     &mut Rav1dTaskContext,
     Option<&mut Rav1dTileStateContext>,
     BlockSize,
@@ -139,7 +139,7 @@ pub(crate) type ReconBIntraFn = fn(
 ) -> ();
 
 pub(crate) type ReconBInterFn = fn(
-    &Rav1dFrameData,
+    &Rav1dFrameDataWithHeaders,
     &mut Rav1dTaskContext,
     Option<&mut Rav1dTileStateContext>,
     BlockSize,
@@ -148,12 +148,12 @@ pub(crate) type ReconBInterFn = fn(
 ) -> Result<(), ()>;
 
 pub(crate) type FilterSbrowFn =
-    fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
+    fn(&Rav1dContext, &Rav1dFrameDataWithHeaders, &mut Rav1dTaskContext, c_int) -> ();
 
-pub(crate) type BackupIpredEdgeFn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
+pub(crate) type BackupIpredEdgeFn = fn(&Rav1dFrameDataWithHeaders, &mut Rav1dTaskContext) -> ();
 
 pub(crate) type ReadCoefBlocksFn = fn(
-    &Rav1dFrameData,
+    &Rav1dFrameDataWithHeaders,
     &mut Rav1dTaskContext,
     &mut Rav1dTileStateContext,
     BlockSize,
@@ -162,7 +162,7 @@ pub(crate) type ReadCoefBlocksFn = fn(
 
 pub(crate) type CopyPalBlockFn = fn(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -171,7 +171,7 @@ pub(crate) type CopyPalBlockFn = fn(
 
 pub(crate) type ReadPalPlaneFn = fn(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     ts_c: &mut Rav1dTileStateContext,
     pl: bool,
     sz_ctx: u8,
@@ -181,7 +181,7 @@ pub(crate) type ReadPalPlaneFn = fn(
 
 pub(crate) type ReadPalUVFn = fn(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     ts_c: &mut Rav1dTileStateContext,
     sz_ctx: u8,
     bx4: usize,
@@ -519,7 +519,7 @@ fn get_lo_ctx(
 }
 
 fn decode_coefs<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     ts: usize,
     ts_c: &mut Rav1dTileStateContext,
     dbg_block_info: bool,
@@ -540,7 +540,7 @@ fn decode_coefs<BD: BitDepth>(
     let mut dc_dq;
     let ts = &f.ts[ts];
     let chroma = plane != 0;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
@@ -1261,7 +1261,7 @@ enum CfSelect {
 }
 
 fn read_coef_tree<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     mut ts_c: Option<&mut Rav1dTileStateContext>,
     bs: BlockSize,
@@ -1453,7 +1453,7 @@ fn read_coef_tree<BD: BitDepth>(
 }
 
 pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     ts_c: &mut Rav1dTileStateContext,
     bs: BlockSize,
@@ -1707,7 +1707,7 @@ enum MaybeTempPixels<'a, TmpStride> {
 }
 
 fn mc<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     emu_edge: &mut ScratchEmuEdge,
     b: Bxy,
     dst: MaybeTempPixels<()>,
@@ -1867,7 +1867,7 @@ fn mc<BD: BitDepth>(
 }
 
 fn obmc<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     dst: Rav1dPictureDataComponentOffset,
     b_dim: &[u8; 4],
@@ -1988,7 +1988,7 @@ fn obmc<BD: BitDepth>(
 }
 
 fn warp_affine<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     emu_edge: &mut ScratchEmuEdge,
     b: Bxy,
     mut dst: MaybeTempPixels<usize>,
@@ -2080,7 +2080,7 @@ fn warp_affine<BD: BitDepth>(
 }
 
 pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     mut ts_c: Option<&mut Rav1dTileStateContext>,
     bs: BlockSize,
@@ -2115,7 +2115,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
 
-    let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
+    let intra_edge_filter = f.seq_hdr.intra_edge_filter;
     let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
 
     for init_y in (0..h4).step_by(16) {
@@ -2758,7 +2758,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
 }
 
 pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     mut ts_c: Option<&mut Rav1dTileStateContext>,
     bs: BlockSize,
@@ -2803,7 +2803,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         + 4 * (t.b.y as isize * y_dst.pixel_stride::<BD>() + t.b.x as isize);
     let uvdstoff = 4
         * ((t.b.x >> ss_hor) as isize + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.frame_type.is_key_or_intra() {
         // intrabc
         assert!(!frame_hdr.size.super_res.enabled);
@@ -3637,7 +3637,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -3645,14 +3645,14 @@ pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         return;
     }
 
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.loopfilter.level_y == [0; 2] {
         return;
     }
 
     let y = sby * f.sb_step * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
@@ -3665,17 +3665,17 @@ pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     let y = sby * f.sb_step * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
     let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y != [0; 2])
     {
@@ -3689,7 +3689,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -3700,7 +3700,7 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let start = sby * sbsz;
@@ -3719,7 +3719,7 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -3758,7 +3758,7 @@ pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -3775,18 +3775,16 @@ pub(crate) fn rav1d_filter_sbrow_lr<BD: BitDepth>(
 
 pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    if seq_hdr.cdef != 0 {
+    if f.seq_hdr.cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(c, f, t, sby);
     }
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
+    if f.frame_hdr.size.width[0] != f.frame_hdr.size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(c, f, t, sby);
     }
     if !f.lf.restore_planes.is_empty() {
@@ -3794,7 +3792,7 @@ pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
     }
 }
 
-pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut Rav1dTaskContext) {
+pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameDataWithHeaders, t: &mut Rav1dTaskContext) {
     let cur_data = &f.cur.data.as_ref().unwrap().data;
 
     let ts = &f.ts[t.ts];
@@ -3837,7 +3835,7 @@ pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut 
 
 pub(crate) fn rav1d_copy_pal_block_y<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -3862,7 +3860,7 @@ pub(crate) fn rav1d_copy_pal_block_y<BD: BitDepth>(
 
 pub(crate) fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -3891,7 +3889,7 @@ pub(crate) fn rav1d_copy_pal_block_uv<BD: BitDepth>(
 /// Return `pal_sz`.
 pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     ts_c: &mut Rav1dTileStateContext,
     pl: bool,
     sz_ctx: u8,
@@ -4082,7 +4080,7 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
 /// Return `pal_sz[1]`.
 pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     ts_c: &mut Rav1dTileStateContext,
     sz_ctx: u8,
     bx4: usize,

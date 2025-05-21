@@ -8,7 +8,7 @@ use crate::src::align::AlignedVec64;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::lr_apply::LrRestorePlanes;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::strided::Strided as _;
@@ -149,17 +149,17 @@ fn backup_lpf<BD: BitDepth>(
 
 pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     src: [Rav1dPictureDataComponentOffset; 3],
     sby: c_int,
 ) {
     let bd = BD::from_c(f.bitdepth_max);
 
     let have_tt = (c.tc.len() > 1) as c_int;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset_y = 8 * (sby != 0) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let tt_off = have_tt * sby * (4 << seq_hdr.sb128);
     let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
     let dst = array::from_fn::<_, 3, _>(|i| {
@@ -366,7 +366,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 
 #[inline]
 fn filter_plane_cols_y<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     have_left: bool,
     lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
@@ -403,7 +403,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
 
 #[inline]
 fn filter_plane_rows_y<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     have_top: bool,
     lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
@@ -435,7 +435,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
 
 #[inline]
 fn filter_plane_cols_uv<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     have_left: bool,
     lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
@@ -478,7 +478,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
 
 #[inline]
 fn filter_plane_rows_uv<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     have_top: bool,
     lvl: WithOffset<&DisjointMut<Vec<u8>>>,
     b4_stride: usize,
@@ -515,7 +515,7 @@ fn filter_plane_rows_uv<BD: BitDepth>(
 }
 
 pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     [py, pu, pv]: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
     sby: c_int,
@@ -523,7 +523,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 ) {
     let lflvl = &f.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = ((sby & is_sb64) as u32) << 4;
     let sbsz = 32 >> is_sb64;
@@ -539,7 +539,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let uv_endy4 = (endy4 + ss_ver as u32) >> ss_ver;
     let mut lpf_y_idx = (sby << sbl2) as usize;
     let mut lpf_uv_idx = (sby << sbl2 - ss_ver) as usize;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
 
     // fix lpf strength at tile col boundaries
     let mut tile_col = 1;
@@ -666,7 +666,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 }
 
 pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     p: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: usize,
     sby: c_int,
@@ -675,7 +675,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
 
     // Don't filter outside the frame
     let have_top = sby > 0;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
@@ -702,7 +702,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         );
     }
 
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }

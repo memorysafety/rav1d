@@ -9,7 +9,7 @@ use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::strided::Strided as _;
 use crate::src::with_offset::WithOffset;
@@ -41,7 +41,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
 impl loopfilter_sb::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        f: &Rav1dFrameData,
+        f: &Rav1dFrameDataWithHeaders,
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
         lvl: WithOffset<&DisjointMut<Vec<u8>>>,

@@ -6,7 +6,7 @@ use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::Align16;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataWithHeaders;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LooprestorationParamsSgr;
@@ -32,7 +32,7 @@ bitflags! {
 
 fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     mut p: Rav1dPictureDataComponentOffset,
     left: &[[BD::Pixel; 4]; 128 + 8],
     x: c_int,
@@ -45,7 +45,7 @@ fn lr_stripe<BD: BitDepth>(
 ) {
     let bd = BD::from_c(f.bitdepth_max);
 
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
@@ -143,7 +143,7 @@ fn backup_4xu<BD: BitDepth>(
 
 fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     mut p: Rav1dPictureDataComponentOffset,
     y: c_int,
     w: c_int,
@@ -154,7 +154,7 @@ fn lr_sbrow<BD: BitDepth>(
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = chroma & (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let unit_size_log2 = frame_hdr.restoration.unit_size[(plane != 0) as usize];
     let unit_size = (1 as c_int) << unit_size_log2;
     let half_unit_size = unit_size >> 1;
@@ -247,14 +247,14 @@ fn lr_sbrow<BD: BitDepth>(
 
 pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataWithHeaders,
     dst: [Rav1dPictureDataComponentOffset; 3],
     sby: c_int,
 ) {
     let offset_y = 8 * (sby != 0) as c_int;
     let restore_planes = f.lf.restore_planes;
     let not_last = ((sby + 1) < f.sbh) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     if restore_planes.contains(LrRestorePlanes::Y) {
         let h = f.sr_cur.p.p.h;
         let w = f.sr_cur.p.p.w;
