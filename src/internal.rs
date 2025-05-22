@@ -305,8 +305,10 @@ pub(crate) struct TaskThreadDataDelayedFg {
 }
 
 // TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+/// SAFETY: This is marked unsafe, but it will be removed anyway
 unsafe impl Send for TaskThreadDataDelayedFg {}
 // TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+/// SAFETY: This is marked unsafe, but it will be removed anyway
 unsafe impl Sync for TaskThreadDataDelayedFg {}
 
 #[derive(Default)]
@@ -437,8 +439,10 @@ pub struct Rav1dContext {
 }
 
 // TODO(SJC): Remove when Rav1dContext is thread-safe
+/// SAFETY: This is marked unsafe, but it will be removed anyway
 unsafe impl Send for Rav1dContext {}
 // TODO(SJC): Remove when Rav1dContext is thread-safe
+/// SAFETY: This is marked unsafe, but it will be removed anyway
 unsafe impl Sync for Rav1dContext {}
 
 #[derive(Default)]
