@@ -485,6 +485,17 @@ fn get_lo_ctx(
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as u32;
 
+    // Stride:
+    //  - In the H | V cases, stride is fixed at 16.
+    //  - In the TwoD case, stride = 4 << slh. Max slh is TxfmSize::S32x32 as u8 which
+    //    is 3. max stride  = 4 << 3 = 32
+    //
+    // We accesses level pairs (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (1, 1) and (2, 0),
+    // which means means the maximum index we access is:
+    //  - 2 * 16 + 0 = 32 in the H | V cases
+    //  - 2 * 32 + 0 = 64 in the TwoD case
+    // Therefore, the caller must ensure that levels has at least 33 or 65 elements
+
     let mut mag = level(0, 1) + level(1, 0);
     let offset;
     match ctx_offsets {
@@ -916,11 +927,25 @@ fn decode_coefs<BD: BitDepth>(
             debug_assert!(x < 32 && y < 32);
             x %= 32;
             y %= 32;
+            // The caller of get_lo_ctx() must ensure that there are at least 65 elements in
+            // level in the TwoD case, and 33 elements in H | V. The size of levels is 32 * 34,
+            // therefore level_off must be such that
+            //  - H|V:  32 * 34 - level_off >= 33 -> level_off <= 1055
+            //  - TwoD: 32 * 34 - level_off >= 65 -> level_off <= 1023
             let level_off = if tx_class == TxClass::TwoD {
+                // TwoD case
+                // rc_i is from scan[i], which has type Scan, which as a max
+                // of 1023 by virtue of the type definition. That's the max from
+                // the calculation above. Therefore we are OK.
                 rc_i as usize
             } else {
+                // H|V case
+                // max x and y are 31, stride = 16
+                // Therefore, max level_off is 527, which is OK.
                 x as usize * stride as usize + y as usize
             };
+            // at this point we know that get_lo_ctx can elide the bounds check on levels
+            // because it is statically known that level has at least 65 elements
             let level = &mut levels[level_off..];
             ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
             if tx_class == TxClass::TwoD {
@@ -982,6 +1007,9 @@ fn decode_coefs<BD: BitDepth>(
         ctx = if tx_class == TxClass::TwoD {
             0
         } else {
+            // The caller of get_lo_ctx() must ensure that there are at least 65 elements in
+            // level in the TwoD case, and 33 elements in H | V. The size of levels is 32 * 34,
+            // and we are not offsetting into it, so this is trivially true.
             get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
         };
         let mut dc_tok =
