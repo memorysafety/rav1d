@@ -1,4 +1,9 @@
 //! Largely copied from [`rust-lang/rust/library/core/src/ptr/unique.rs`](https://github.com/rust-lang/rust/blob/e35364a521372ce682e4bd4a5850d97ea33b0eab/library/core/src/ptr/unique.rs#L58).
+//!
+//! Used under the MIT license <LICENSE-MIT> or <http://opensource.org/licenses/MIT>.
+//! Copyright is retained by the original Rust contributors.
+//! For full authorship information, see the Rust compiler version control history or
+//! <https://thanks.rust-lang.org>.
 
 use std::fmt;
 use std::marker::PhantomData;
