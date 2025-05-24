@@ -76,6 +76,7 @@ use crate::picture::Rav1dThreadPicture;
 use crate::pixels::Pixels as _;
 use crate::scan::DAV1D_SCANS;
 use crate::strided::Strided as _;
+use crate::tables::LoCtxOffset;
 use crate::tables::TxfmInfo;
 use crate::tables::DAV1D_FILTER_2D;
 use crate::tables::DAV1D_FILTER_MODE_TO_Y_MODE;
@@ -477,11 +478,11 @@ fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut u32,
-    ctx_offsets: Option<&[[u8; 5]; 5]>,
+    ctx_offsets: Option<&[[LoCtxOffset; 5]; 5]>,
     x: u8,
     y: u8,
     stride: u8,
-) -> u8 {
+) -> usize {
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as u32;
 
@@ -505,7 +506,9 @@ fn get_lo_ctx(
             mag += level(1, 1);
             *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
-            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)];
+            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)].get();
+            // With the type for ctx_offsets guaranteeing bounds, this gets elided
+            assert!(offset <= 21);
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
@@ -513,14 +516,35 @@ fn get_lo_ctx(
             *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
             offset = 26 + if y > 1 { 10 } else { y * 5 };
+            // This is trivially elided from the definition of offset
+            assert!(offset <= 36);
         }
     }
-    offset
+
+    // What is the maxiumum value of `lo_ctx`, the result?
+    // The callers are using it as a lookup into `lo_cdf`, which has size 41.
+    // Can we statically prove the our return value is less than 41?
+    //
+    // In the `H | V` cases, the maximum value of `offset` is `26 + 10 = 36`
+    // In the `TwoD` case, `offset` takes a value from `ctx_offsets`. The highest
+    // value in the underlying table is 21, and we guarantee that with types.
+    //
+    // So at this point, `offset <= 36`. However, it seems the compiler needs
+    // some help to unify the offset maxima from the branches. This seems to
+    // suffice.
+    assert!(offset <= 36);
+
+    let lo_ctx = offset as usize
         + if mag > 512 {
             4
         } else {
-            ((mag + 64) >> 7) as u8
-        }
+            // `mag <= 512` in this branch, so the maximum value is `576 >> 7 == 4`
+            ((mag + 64) >> 7) as u8 as usize
+        } as usize;
+
+    // `36 + 4 == 40`, so this too should be elided, as with subsequent bounds checks
+    assert!(lo_ctx < 41);
+    lo_ctx
 }
 
 fn decode_coefs<BD: BitDepth>(
@@ -947,11 +971,11 @@ fn decode_coefs<BD: BitDepth>(
             // At this point, we know that `get_lo_ctx` can elide the bounds check on `level`
             // because it is statically known that `level` has at least 65 elements.
             let level = &mut levels[level_off..];
-            ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
+            let lo_ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
             if tx_class == TxClass::TwoD {
                 y |= x;
             }
-            tok = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3);
+            tok = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[lo_ctx], 3);
             if dbg {
                 println!(
                     "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -1004,7 +1028,7 @@ fn decode_coefs<BD: BitDepth>(
             }
         }
         // dc
-        ctx = if tx_class == TxClass::TwoD {
+        let lo_ctx = if tx_class == TxClass::TwoD {
             0
         } else {
             // The caller of `get_lo_ctx` must ensure that there are at least
@@ -1014,7 +1038,7 @@ fn decode_coefs<BD: BitDepth>(
             get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
         };
         let mut dc_tok =
-            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3) as c_uint;
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[lo_ctx], 3) as c_uint;
         if dbg {
             println!(
                 "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
