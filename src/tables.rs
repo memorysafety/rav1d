@@ -4,6 +4,7 @@ use strum::EnumCount;
 
 use crate::align::{Align16, Align4, Align64, Align8};
 use crate::enum_map::DefaultValue;
+use crate::in_range::InRange;
 use crate::include::dav1d::headers::{
     Rav1dFilterMode, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
 };
@@ -459,27 +460,28 @@ pub static DAV1D_YMODE_SIZE_CONTEXT: [u8; BlockSize::COUNT] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
-pub static DAV1D_LO_CTX_OFFSETS: [[[u8; 5]; 5]; 3] = [
+pub type LoCtxOffset = InRange<u8, 0, 21>;
+pub static DAV1D_LO_CTX_OFFSETS: [[[LoCtxOffset; 5]; 5]; 3] = [
     [
-        [0, 1, 6, 6, 21],
-        [1, 6, 6, 21, 21],
-        [6, 6, 21, 21, 21],
-        [6, 21, 21, 21, 21],
-        [21, 21, 21, 21, 21],
+        LoCtxOffset::new_array([0, 1, 6, 6, 21]),
+        LoCtxOffset::new_array([1, 6, 6, 21, 21]),
+        LoCtxOffset::new_array([6, 6, 21, 21, 21]),
+        LoCtxOffset::new_array([6, 21, 21, 21, 21]),
+        LoCtxOffset::new_array([21, 21, 21, 21, 21]),
     ],
     [
-        [0, 16, 6, 6, 21],
-        [16, 16, 6, 21, 21],
-        [16, 16, 21, 21, 21],
-        [16, 16, 21, 21, 21],
-        [16, 16, 21, 21, 21],
+        LoCtxOffset::new_array([0, 16, 6, 6, 21]),
+        LoCtxOffset::new_array([16, 16, 6, 21, 21]),
+        LoCtxOffset::new_array([16, 16, 21, 21, 21]),
+        LoCtxOffset::new_array([16, 16, 21, 21, 21]),
+        LoCtxOffset::new_array([16, 16, 21, 21, 21]),
     ],
     [
-        [0, 11, 11, 11, 11],
-        [11, 11, 11, 11, 11],
-        [6, 6, 21, 21, 21],
-        [6, 21, 21, 21, 21],
-        [21, 21, 21, 21, 21],
+        LoCtxOffset::new_array([0, 11, 11, 11, 11]),
+        LoCtxOffset::new_array([11, 11, 11, 11, 11]),
+        LoCtxOffset::new_array([6, 6, 21, 21, 21]),
+        LoCtxOffset::new_array([6, 21, 21, 21, 21]),
+        LoCtxOffset::new_array([21, 21, 21, 21, 21]),
     ],
 ];
 
