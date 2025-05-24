@@ -29,6 +29,10 @@ raw-cpuid = "11.0.1"
 strum = { version = "0.27", features = ["derive"] }
 to_method = "1.1.0"
 zerocopy = { version = "0.7.32", features = ["derive"] }
+mimalloc = { version = "0.1.46", optional = true }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = { version = "0.6.0", optional = true }
 
 [build-dependencies]
 cc = "1.0.79"
@@ -42,6 +46,13 @@ asm_arm64_i8mm = ["asm"]
 asm_arm64_sve2 = ["asm"]
 bitdepth_8 = []
 bitdepth_16 = []
+# Use the mimalloc memory allocator
+mimalloc = ["dep:mimalloc"]
+# Use the mimalloc memory allocator in secure mode
+# (This has a ~10% performance penalty!)
+mimalloc_secure = ["mimalloc/secure"]
+# Use the jemalloc memory allocator (used in Firefox)
+jemalloc = ["dep:tikv-jemallocator"]
 
 [profile.dev]
 panic = "abort"
