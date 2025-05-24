@@ -556,6 +556,9 @@ cargo_command = [
 if get_option('buildtype') == 'release'
     cargo_command += ['--release']
 endif
+if get_option('malloc') != 'default'
+    cargo_command += ['--features', get_option('malloc')]
+endif
 
 librav1d = custom_target(
     'librav1d',
