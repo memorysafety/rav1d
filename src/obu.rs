@@ -2446,7 +2446,7 @@ fn parse_obus(
                             country_code_extension_byte,
                             payload,
                         };
-                        state.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
+                        state.itut_t35.push(itut_t35); // TODO fallible allocation
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
