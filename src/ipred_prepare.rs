@@ -186,6 +186,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
 
     let bitdepth = bd.bitdepth();
     let stride = dst.pixel_stride::<BD>();
+    let is_neg_stride = 0 > stride;
+    let abs_stride = if is_neg_stride { (stride * -1) as usize } else { stride as usize };
 
     match mode {
         VERT_PRED..=VERT_LEFT_PRED => {
@@ -245,8 +247,26 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         let left = &mut topleft_out[topleft_out_offset - sz..];
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
-            for i in 0..px_have {
-                left[sz - 1 - i] = *(dst + (i as isize * stride - 1)).index::<BD>();
+            {
+                let slice_offset = if is_neg_stride { px_have as isize * stride } else { 0 };
+                let dst_slice = &*(dst + slice_offset - 1isize)
+                    .slice::<BD>((px_have - 1) * abs_stride + 1);
+                
+                // SAFETY: We've already implcitly bounds checked with the `slice()` call.  
+                //         We can safely avoid any bounds-checking overhead now.
+                if is_neg_stride {
+                    for i in 0..px_have {
+                        left[sz - 1 - i] = *unsafe { 
+                            dst_slice.get_unchecked((px_have * abs_stride) - (i * abs_stride))
+                        };
+                    }
+                } else {
+                    for i in 0..px_have {
+                        left[sz - 1 - i] = *unsafe {
+                            dst_slice.get_unchecked(i * abs_stride)
+                        }
+                    }
+                }
             }
             if px_have < sz {
                 BD::pixel_set(left, left[sz - px_have], sz - px_have);
@@ -274,9 +294,24 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             };
             if have_bottomleft {
                 let px_have = cmp::min(sz, (h - y - th << 2) as usize);
-                for i in 0..px_have {
-                    bottom_left[sz - 1 - i] =
-                        *(dst + ((sz + i) as isize * stride - 1)).index::<BD>();
+                {
+                    let slice_offset = if is_neg_stride { (px_have + sz) as isize * stride } else { (sz * abs_stride) as isize };
+                    let dst_slice = &*(dst + slice_offset - 1isize).slice::<BD>((px_have - 1) * abs_stride + 1);
+                    // SAFETY: We've already implcitly bounds checked with the `slice()` call.  
+                    //         We can safely avoid any bounds-checking overhead now.
+                    if is_neg_stride {
+                        for i in 0..px_have {
+                            bottom_left[sz - 1 - i] = *unsafe { 
+                                dst_slice.get_unchecked((px_have * abs_stride) - (i * abs_stride))
+                            };
+                        }
+                    } else {
+                        for i in 0..px_have {
+                            bottom_left[sz - 1 - i] = *unsafe {
+                                dst_slice.get_unchecked(i * abs_stride)
+                            }
+                        }
+                    }
                 }
                 if px_have < sz {
                     BD::pixel_set(bottom_left, bottom_left[sz - px_have], sz - px_have);
