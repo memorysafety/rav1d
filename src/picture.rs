@@ -28,7 +28,6 @@ use crate::src::mem::MemPool;
 use crate::src::send_sync_non_null::SendSyncNonNull;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
-use parking_lot::Mutex;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
@@ -262,7 +261,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
     frame_flags: &mut PictureFlags,
     f: &mut Rav1dFrameData,
     bpc: u8,
-    itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
+    itut_t35: Vec<Rav1dITUTT35>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = fc.len() > 1;
