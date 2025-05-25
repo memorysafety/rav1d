@@ -2508,7 +2508,7 @@ fn parse_obus(
                     state.content_light.clone(),
                     state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
+                    Rav1dITUTT35::to_immut(&mut state.itut_t35),
                     props.clone(),
                 );
                 state.event_flags |= state.refs[frame_hdr.existing_frame_idx as usize]
@@ -2568,7 +2568,7 @@ fn parse_obus(
                     state.content_light.clone(),
                     state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
+                    Rav1dITUTT35::to_immut(&mut state.itut_t35),
                     props.clone(),
                 );
             }

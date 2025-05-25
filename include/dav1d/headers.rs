@@ -820,9 +820,9 @@ impl From<&Rav1dITUTT35> for Dav1dITUTT35 {
 
 impl Rav1dITUTT35 {
     pub fn to_immut(
-        mutable: Vec<Rav1dITUTT35>,
+        mutable: &mut Vec<Rav1dITUTT35>,
     ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
-        let rav1d = mutable.into_boxed_slice();
+        let rav1d: Box<[_]> = mutable.drain(..).collect();
         let dav1d = rav1d.iter().map(Dav1dITUTT35::from).collect();
         Arc::new(DRav1d { rav1d, dav1d })
     }

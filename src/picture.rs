@@ -261,7 +261,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
     frame_flags: &mut PictureFlags,
     f: &mut Rav1dFrameData,
     bpc: u8,
-    itut_t35: Vec<Rav1dITUTT35>,
+    itut_t35: &mut Vec<Rav1dITUTT35>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = fc.len() > 1;

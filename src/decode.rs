@@ -5135,9 +5135,6 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
 
     // allocate frame
 
-    // We must take itut_t35 out of the context before the call so borrowck can
-    // see we mutably borrow `c.itut_t35` disjointly from the task thread lock.
-    let itut_t35 = mem::take(&mut state.itut_t35);
     let res = rav1d_thread_picture_alloc(
         &c.fc,
         &c.logger,
@@ -5149,7 +5146,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         &mut state.frame_flags,
         &mut f,
         bpc,
-        itut_t35,
+        &mut state.itut_t35,
     );
     if res.is_err() {
         on_error(
