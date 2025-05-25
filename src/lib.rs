@@ -394,7 +394,7 @@ fn output_image(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPicture
     } else {
         res = rav1d_apply_grain(c, out, &r#in.p);
     }
-    let _ = mem::take(r#in);
+    *r#in = Default::default();
 
     if use_cache && state.out.p.data.is_some() {
         state.cache = mem::take(&mut state.out);
@@ -465,16 +465,15 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
         mem::take(&mut *fc.task_thread.retval.try_lock().unwrap())
             .err_or(())
             .inspect_err(|_| {
-                state.cached_error_props = out_delayed.p.m.clone();
-                let _ = mem::take(out_delayed);
+                state.cached_error_props = mem::take(out_delayed).p.m;
             })?;
         if out_delayed.p.data.is_some() {
+            let out_delayed = mem::take(out_delayed);
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                state.out = out_delayed.clone();
-                state.event_flags |= out_delayed.flags.into();
+                state.out = out_delayed;
+                state.event_flags |= state.out.flags.into();
             }
-            let _ = mem::take(out_delayed);
             if output_picture_ready(c, state, false) {
                 return output_image(c, state, out);
             }
@@ -530,7 +529,7 @@ pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dRe
     state.in_0 = in_0.clone();
     let res = gen_picture(c, state);
     if res.is_ok() {
-        let _ = mem::take(in_0);
+        *in_0 = Default::default();
     }
     res
 }
@@ -612,7 +611,7 @@ pub(crate) fn rav1d_apply_grain(
     }
     let res = rav1d_picture_alloc_copy(&c.logger, out, in_0.p.w, in_0);
     if res.is_err() {
-        let _ = mem::take(out);
+        *out = Default::default();
         return res;
     } else {
         if c.tc.len() > 1 {
@@ -707,7 +706,7 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
             *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut state.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
-                let _ = mem::take(out_delayed);
+                *out_delayed = Default::default();
             }
         }
         state.frame_thread.next = 0;
