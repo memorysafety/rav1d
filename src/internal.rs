@@ -880,7 +880,7 @@ impl Rav1dFrameData {
 #[repr(C)]
 pub(crate) struct Rav1dFrameDataWithHeaders {
     pub seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
-    pub frame_hdr: Arc<DRav1d<Rav1dFrameHeader, Dav1dSequenceHeader>>,
+    pub frame_hdr: Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>,
     pub refp: [Rav1dThreadPicture; 7],
     // during block coding / reconstruction
     pub cur: Rav1dPicture,
