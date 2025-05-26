@@ -232,7 +232,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
             fc.task_thread.finished = AtomicBool::new(true);
             fc.task_thread.ttd = Arc::clone(&task_thread);
             let f = fc.data.get_mut();
-            f.lf.last_sharpness = u8::MAX;
+            f.content.lf.last_sharpness = u8::MAX;
             fc
         })
         // TODO fallible allocation

@@ -9,7 +9,7 @@ use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::ffi_safe::FFISafe;
-use crate::src::internal::Rav1dFrameDataWithHeaders;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::strided::Strided as _;
 use crate::src::with_offset::WithOffset;
@@ -41,7 +41,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
 impl loopfilter_sb::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        f: &Rav1dFrameDataWithHeaders,
+        f: &Rav1dFrameData,
         dst: Rav1dPictureDataComponentOffset,
         mask: &[u32; 3],
         lvl: WithOffset<&DisjointMut<Vec<u8>>>,
@@ -53,10 +53,10 @@ impl loopfilter_sb::Fn {
         // SAFETY: `lvl.offset` is in bounds, just checked above.
         let lvl_ptr = unsafe { lvl.data.as_mut_ptr().add(lvl.offset) };
         let lvl_ptr = lvl_ptr.cast::<[u8; 4]>();
-        let b4_stride = f.b4_stride;
-        let lut = &f.lf.lim_lut;
+        let b4_stride = f.content.b4_stride;
+        let lut = &f.content.lf.lim_lut;
         let w = w as c_int;
-        let bd = f.bitdepth_max;
+        let bd = f.content.bitdepth_max;
         let dst = FFISafe::new(&dst);
         let lvl = FFISafe::new(&lvl);
         // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.

@@ -21,7 +21,7 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameData;
+use crate::src::internal::Rav1dFrameDataMaybeHeaders;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::MemPool;
@@ -260,11 +260,11 @@ pub(crate) fn rav1d_thread_picture_alloc(
     output_invisible_frames: bool,
     max_spatial_id: u8,
     frame_flags: &mut PictureFlags,
-    f: &mut Rav1dFrameData,
+    f: &mut Rav1dFrameDataMaybeHeaders, // TODO: deoption
     bpc: u8,
     itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
 ) -> Rav1dResult {
-    let p = &mut f.sr_cur;
+    let p = &mut f.content.sr_cur;
     let have_frame_mt = fc.len() > 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     picture_alloc_with_edges(
@@ -283,7 +283,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
         content_light,
         mastering_display,
         Rav1dITUTT35::to_immut(itut_t35),
-        f.tiles[0].data.m.clone(),
+        f.content.tiles[0].data.m.clone(),
     );
 
     // Don't clear these flags from `c.frame_flags` if the frame is not going to be output.

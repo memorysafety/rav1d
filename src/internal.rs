@@ -509,7 +509,7 @@ pub(crate) struct Rav1dFrameContextBdFn {
     pub filter_sbrow: FilterSbrowFn,
     pub filter_sbrow_deblock_cols: FilterSbrowFn,
     pub filter_sbrow_deblock_rows: FilterSbrowFn,
-    pub filter_sbrow_cdef: fn(&Rav1dContext, &Rav1dFrameDataWithHeaders, &mut Rav1dTaskContext, c_int) -> (),
+    pub filter_sbrow_cdef: fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: FilterSbrowFn,
     pub filter_sbrow_lr: FilterSbrowFn,
     pub backup_ipred_edge: BackupIpredEdgeFn,
@@ -749,7 +749,7 @@ pub(crate) struct Rav1dFrameContext {
     /// Index in [`Rav1dContext::fc`]
     pub index: usize,
 
-    pub data: RwLock<Rav1dFrameData>,
+    pub data: RwLock<Rav1dFrameDataMaybeHeaders>,
     pub in_cdf: RwLock<CdfThreadContext>,
     pub task_thread: Rav1dFrameContextTaskThread,
     pub frame_thread_progress: Rav1dFrameContextFrameThreadProgress,
@@ -783,9 +783,7 @@ impl Rav1dFrameContext {
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct Rav1dFrameData {
-    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
-    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+pub(crate) struct Rav1dFrameContent {
     pub refp: [Rav1dThreadPicture; 7],
     // during block coding / reconstruction
     pub cur: Rav1dPicture,
@@ -839,8 +837,23 @@ pub(crate) struct Rav1dFrameData {
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
-impl Rav1dFrameData {
-    pub fn assert_has_headers<'a>(&'a self) -> &'a Rav1dFrameDataWithHeaders {
+#[derive(Default)]
+#[repr(C)]
+pub(crate) struct Rav1dFrameDataMaybeHeaders {
+    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+    pub content: Rav1dFrameContent,
+}
+
+#[repr(C)]
+pub(crate) struct Rav1dFrameData {
+    pub seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
+    pub frame_hdr: Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>,
+    pub content: Rav1dFrameContent,
+}
+
+impl Rav1dFrameDataMaybeHeaders {
+    pub fn assert_has_headers<'a>(&'a self) -> &'a Rav1dFrameData {
         if self.seq_hdr.as_ref().is_none() {
             panic!("required sequence header past this point");
         }
@@ -857,7 +870,7 @@ impl Rav1dFrameData {
         }
     }
 
-    pub fn assert_has_headers_mut<'a>(&'a mut self) -> &'a mut Rav1dFrameDataWithHeaders {
+    pub fn assert_has_headers_mut<'a>(&'a mut self) -> &'a mut Rav1dFrameData {
         if self.seq_hdr.as_ref().is_none() {
             panic!("required sequence header past this point");
         }
@@ -877,66 +890,9 @@ impl Rav1dFrameData {
     }
 }
 
-#[repr(C)]
-pub(crate) struct Rav1dFrameDataWithHeaders {
-    pub seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
-    pub frame_hdr: Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>,
-    pub refp: [Rav1dThreadPicture; 7],
-    // during block coding / reconstruction
-    pub cur: Rav1dPicture,
-    // after super-resolution upscaling
-    pub sr_cur: Rav1dThreadPicture,
-    pub mvs: Option<DisjointMutArcSlice<RefMvsTemporalBlock>>, // Previously pooled.
-    pub ref_mvs: [Option<DisjointMutArcSlice<RefMvsTemporalBlock>>; 7],
-    pub cur_segmap: Option<DisjointMutArcSlice<SegmentId>>, // Previously pooled.
-    pub prev_segmap: Option<DisjointMutArcSlice<SegmentId>>,
-    pub refpoc: [c_uint; 7],
-    pub refrefpoc: [[c_uint; 7]; 7],
-    pub gmv_warp_allowed: [u8; 7],
-    pub out_cdf: CdfThreadContext,
-    pub tiles: Vec<Rav1dTileGroup>,
-
-    // for scalable references
-    pub svc: [[ScalableMotionParams; 2]; 7], /* [2 x,y][7] */
-    pub resize_step: [c_int; 2],             /* y, uv */
-    pub resize_start: [c_int; 2],            /* y, uv */
-
-    pub ts: Vec<Rav1dTileState>,
-    pub dsp: &'static Rav1dBitDepthDSPContext,
-
-    // `ipred_edge` contains 3 arrays of size `ipred_edge_off`. Use `index *
-    // ipred_edge_off` to access one of the sub-arrays. Note that `ipred_edge_off`
-    // is in pixel units (not bytes), so use `slice_as`/`mut_slice_as` and an offset
-    // in pixel units when slicing.
-    pub ipred_edge: DisjointMut<AlignedVec64<u8>>, // DynPixel
-    pub ipred_edge_off: usize,
-
-    pub b4_stride: ptrdiff_t,
-    pub w4: c_int,
-    pub h4: c_int,
-    pub bw: c_int,
-    pub bh: c_int,
-    pub sb128w: c_int,
-    pub sb128h: c_int,
-    pub sbh: c_int,
-    pub sb_shift: c_int,
-    pub sb_step: c_int,
-    pub sr_sb128w: c_int,
-    pub dq: [[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT], /* [SegmentId::COUNT][3 plane][2 dc/ac] */
-    pub qm: [[Option<&'static [u8]>; 3]; 19],                 /* [3 plane][19] */
-    pub a: Vec<BlockContext>,                                 /* len = w*tile_rows */
-    pub rf: RefMvsFrame,
-    pub jnt_weights: [[u8; 7]; 7],
-    pub bitdepth_max: c_int,
-
-    pub frame_thread: Rav1dFrameContextFrameThread,
-    pub lf: Rav1dFrameContextLf,
-    pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
-}
-
-impl Rav1dFrameDataWithHeaders {
+impl Rav1dFrameData {
     pub fn bd_fn(&self) -> &'static Rav1dFrameContextBdFn {
-        let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
+        let bpc = BPC::from_bitdepth_max(self.content.bitdepth_max);
         Rav1dFrameContextBdFn::get(bpc)
     }
 }

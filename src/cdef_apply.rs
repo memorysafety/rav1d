@@ -10,7 +10,7 @@ use crate::src::align::AlignedVec64;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameDataWithHeaders;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::pic_or_buf::PicOrBuf;
 use crate::src::strided::Strided as _;
@@ -134,7 +134,7 @@ fn adjust_strength(strength: u8, var: c_uint) -> c_int {
 pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
-    f: &Rav1dFrameDataWithHeaders,
+    f: &Rav1dFrameData,
     p: [Rav1dPictureDataComponentOffset; 3],
     lflvl_offset: i32,
     by_start: c_int,
@@ -142,11 +142,11 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     sbrow_start: bool,
     sby: c_int,
 ) {
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
 
     let bitdepth_min_8 = match BD::BPC {
         BPC::BPC8 => 0,
-        BPC::BPC16 => f.cur.p.bpc - 8,
+        BPC::BPC16 => f.content.cur.p.bpc - 8,
     };
     let mut edges: CdefEdgeFlags = if by_start > 0 {
         CdefEdgeFlags::HAVE_BOTTOM | CdefEdgeFlags::HAVE_TOP
@@ -155,10 +155,10 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     };
     let mut ptrs = p;
     let sbsz = 16;
-    let sb64w = f.sb128w << 1;
+    let sb64w = f.content.sb128w << 1;
     let frame_hdr = &f.frame_hdr;
     let damping = frame_hdr.cdef.damping + bitdepth_min_8;
-    let layout: Rav1dPixelLayout = f.cur.p.layout;
+    let layout: Rav1dPixelLayout = f.content.cur.p.layout;
     let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
@@ -169,14 +169,14 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let have_tt = c.tc.len() > 1;
     let sb128 = f.seq_hdr.sb128;
     let resize = frame_hdr.size.width[0] != frame_hdr.size.width[1];
-    let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
-    let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
+    let y_stride: ptrdiff_t = BD::pxstride(f.content.cur.stride[0]);
+    let uv_stride: ptrdiff_t = BD::pxstride(f.content.cur.stride[1]);
 
     let mut bit = false;
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle != 0;
         let by_idx = (by & 30) >> 1;
-        if by + 2 >= f.bh {
+        if by + 2 >= f.content.bh {
             edges.remove(CdefEdgeFlags::HAVE_BOTTOM);
         }
 
@@ -185,14 +185,14 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
         {
             // backup pre-filter data for next iteration
             let cdef_top_bak = [
-                f.lf.cdef_line[!tf as usize][0]
+                f.content.lf.cdef_line[!tf as usize][0]
                     .wrapping_add_signed(have_tt as isize * sby as isize * 4 * y_stride),
-                f.lf.cdef_line[!tf as usize][1]
+                f.content.lf.cdef_line[!tf as usize][1]
                     .wrapping_add_signed(have_tt as isize * sby as isize * 8 * uv_stride),
-                f.lf.cdef_line[!tf as usize][2]
+                f.content.lf.cdef_line[!tf as usize][2]
                     .wrapping_add_signed(have_tt as isize * sby as isize * 8 * uv_stride),
             ];
-            backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
+            backup2lines::<BD>(&f.content.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
         }
 
         let mut lr_bak =
@@ -205,7 +205,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
         for sbx in 0..sb64w {
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
-            let cdef_idx = f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
+            let cdef_idx = f.content.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
                 .get() as c_int;
             if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
@@ -215,7 +215,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
             } else {
                 // Create a complete 32-bit mask for the sb row ahead of time.
                 let noskip_row =
-                    &f.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
+                    &f.content.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
                 let noskip_mask = (noskip_row[1].get() as u32) << 16 | noskip_row[0].get() as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
@@ -234,8 +234,8 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                 uv_sec_lvl <<= bitdepth_min_8;
 
                 let mut bptrs = iptrs;
-                for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, f.bw)).step_by(2) {
-                    if bx + 2 >= f.bw {
+                for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, f.content.bw)).step_by(2) {
+                    if bx + 2 >= f.content.bw {
                         edges.remove(CdefEdgeFlags::HAVE_RIGHT);
                     }
 
@@ -262,7 +262,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
+                            f.content.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };
@@ -272,14 +272,14 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         } else if sbrow_start && by == by_start {
                             let top = if resize {
                                 WithOffset {
-                                    data: &f.lf.cdef_line_buf,
-                                    offset: f.lf.cdef_lpf_line[0],
+                                    data: &f.content.lf.cdef_line_buf,
+                                    offset: f.content.lf.cdef_lpf_line[0],
                                 } + ((sby - 1) * 4) as isize * y_stride
                                     + (bx * 4) as isize
                             } else {
                                 WithOffset {
-                                    data: &f.lf.lr_line_buf,
-                                    offset: f.lf.lr_lpf_line[0],
+                                    data: &f.content.lf.lr_line_buf,
+                                    offset: f.content.lf.lr_lpf_line[0],
                                 } + (sby * (4 << sb128) - 4) as isize * y_stride
                                     + (bx * 4) as isize
                             };
@@ -287,21 +287,21 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             Some((top, WithOffset::pic(bottom)))
                         } else if !sbrow_start && by + 2 >= by_end {
                             let top = WithOffset {
-                                data: &f.lf.cdef_line_buf,
-                                offset: f.lf.cdef_line[tf as usize][0],
+                                data: &f.content.lf.cdef_line_buf,
+                                offset: f.content.lf.cdef_line[tf as usize][0],
                             } + (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
                             let buf = if resize {
                                 WithOffset {
-                                    data: &f.lf.cdef_line_buf,
-                                    offset: f.lf.cdef_lpf_line[0],
+                                    data: &f.content.lf.cdef_line_buf,
+                                    offset: f.content.lf.cdef_lpf_line[0],
                                 } + (sby * 4 + 2) as isize * y_stride
                                     + (bx * 4) as isize
                             } else {
                                 let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
                                 WithOffset {
-                                    data: &f.lf.lr_line_buf,
-                                    offset: f.lf.lr_lpf_line[0],
+                                    data: &f.content.lf.lr_line_buf,
+                                    offset: f.content.lf.lr_lpf_line[0],
                                 } + line as isize * y_stride
                                     + (bx * 4) as isize
                             };
@@ -321,8 +321,8 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let (top, bot) = top_bot.unwrap_or_else(|| {
                             let top = WithOffset {
-                                data: &f.lf.cdef_line_buf,
-                                offset: f.lf.cdef_line[tf as usize][0],
+                                data: &f.content.lf.cdef_line_buf,
+                                offset: f.content.lf.cdef_line[tf as usize][0],
                             } + have_tt as isize * (sby * 4) as isize * y_stride
                                 + (bx * 4) as isize;
                             let bottom = bptrs[0] + (8 * y_stride);
@@ -332,7 +332,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                f.dsp.cdef.fb[0].call::<BD>(
+                                f.content.dsp.cdef.fb[0].call::<BD>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
@@ -346,7 +346,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            f.dsp.cdef.fb[0].call::<BD>(
+                            f.content.dsp.cdef.fb[0].call::<BD>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
@@ -374,15 +374,15 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 } else if sbrow_start && by == by_start {
                                     let top = if resize {
                                         WithOffset {
-                                            data: &f.lf.cdef_line_buf,
-                                            offset: f.lf.cdef_lpf_line[pl],
+                                            data: &f.content.lf.cdef_line_buf,
+                                            offset: f.content.lf.cdef_lpf_line[pl],
                                         } + ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     } else {
                                         let line = sby * (4 << sb128) - 4;
                                         WithOffset {
-                                            data: &f.lf.lr_line_buf,
-                                            offset: f.lf.lr_lpf_line[pl],
+                                            data: &f.content.lf.lr_line_buf,
+                                            offset: f.content.lf.lr_lpf_line[pl],
                                         } + line as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     };
@@ -390,21 +390,21 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     Some((top, WithOffset::pic(bottom)))
                                 } else if !sbrow_start && by + 2 >= by_end {
                                     let top = WithOffset {
-                                        data: &f.lf.cdef_line_buf,
-                                        offset: f.lf.cdef_line[tf as usize][pl],
+                                        data: &f.content.lf.cdef_line_buf,
+                                        offset: f.content.lf.cdef_line[tf as usize][pl],
                                     } + (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
                                     let buf = if resize {
                                         WithOffset {
-                                            data: &f.lf.cdef_line_buf,
-                                            offset: f.lf.cdef_lpf_line[pl],
+                                            data: &f.content.lf.cdef_line_buf,
+                                            offset: f.content.lf.cdef_lpf_line[pl],
                                         } + (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     } else {
                                         let line = sby * (4 << sb128) + 4 * sb128 as c_int + 2;
                                         WithOffset {
-                                            data: &f.lf.lr_line_buf,
-                                            offset: f.lf.lr_lpf_line[pl],
+                                            data: &f.content.lf.lr_line_buf,
+                                            offset: f.content.lf.lr_lpf_line[pl],
                                         } + line as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize
                                     };
@@ -424,15 +424,15 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
 
                                 let (top, bot) = top_bot.unwrap_or_else(|| {
                                     let top = WithOffset {
-                                        data: &f.lf.cdef_line_buf,
-                                        offset: f.lf.cdef_line[tf as usize][pl],
+                                        data: &f.content.lf.cdef_line_buf,
+                                        offset: f.content.lf.cdef_line[tf as usize][pl],
                                     } + have_tt as isize * (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
                                     let bottom = bptrs[pl] + ((8 >> ss_ver) * uv_stride);
                                     (top, WithOffset::pic(bottom))
                                 });
 
-                                f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
+                                f.content.dsp.cdef.fb[uv_idx as usize].call::<BD>(
                                     bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,

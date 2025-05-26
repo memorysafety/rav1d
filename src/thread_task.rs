@@ -22,7 +22,7 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContextTaskThread;
 use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dFrameDataWithHeaders;
+use crate::src::internal::Rav1dFrameDataMaybeHeaders;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContextTaskThread;
@@ -394,17 +394,17 @@ fn merge_pending(c: &Rav1dContext) -> c_int {
     return res;
 }
 
-fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameDataWithHeaders, pass: c_int) -> Rav1dResult {
+fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
     let frame_hdr = &f.frame_hdr;
     let has_deblock = (frame_hdr.loopfilter.level_y != [0; 2]) as c_int;
     let seq_hdr = &f.seq_hdr;
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
-    let has_lr = !f.lf.restore_planes.is_empty();
+    let has_lr = !f.content.lf.restore_planes.is_empty();
     if pass & 1 != 0 {
         fc.frame_thread_progress.entropy.store(0, Ordering::Relaxed);
     } else {
-        let prog_sz = ((f.sbh + 31 & !(31 as c_int)) >> 5) as usize;
+        let prog_sz = ((f.content.sbh + 31 & !(31 as c_int)) >> 5) as usize;
         let mut frame = fc.frame_thread_progress.frame.try_write().unwrap();
         frame.clear();
         frame.resize_with(prog_sz, Default::default);
@@ -415,7 +415,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameDataWithHeaders, pa
         copy_lpf.resize_with(prog_sz, Default::default);
         fc.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
     }
-    f.frame_thread.next_tile_row[(pass & 1) as usize].set(0);
+    f.content.frame_thread.next_tile_row[(pass & 1) as usize].set(0);
     let type_0 = if pass == 1 {
         TaskType::EntropyProgress
     } else if has_deblock != 0 {
@@ -442,7 +442,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameDataWithHeaders, pa
 
 pub(crate) fn rav1d_task_create_tile_sbrow(
     fc: &Rav1dFrameContext,
-    f: &Rav1dFrameDataWithHeaders,
+    f: &Rav1dFrameData,
     pass: c_int,
     _cond_signal: c_int,
 ) -> Rav1dResult {
@@ -454,9 +454,9 @@ pub(crate) fn rav1d_task_create_tile_sbrow(
     {
         let mut pending_tasks = tasks.pending_tasks.lock();
         for tile_idx in 0..num_tasks {
-            let ts = &f.ts[tile_idx];
+            let ts = &f.content.ts[tile_idx];
             let t = Rav1dTask {
-                sby: ts.tiling.row_start >> f.sb_shift,
+                sby: ts.tiling.row_start >> f.content.sb_shift,
                 recon_progress: 0,
                 deblock_progress: 0,
                 deps_skip: 0.into(),
@@ -542,14 +542,14 @@ fn ensure_progress<'l, 'ttd: 'l>(
 
 #[inline]
 fn check_tile(
-    f: &Rav1dFrameData,
+    f: &Rav1dFrameDataMaybeHeaders,
     task_thread: &Rav1dFrameContextTaskThread,
     t: &Rav1dTask,
     frame_mt: c_int,
 ) -> c_int {
     let tp = t.type_0 == TaskType::TileEntropy;
     let tile_idx = t.tile_idx as usize;
-    let ts = &f.ts[tile_idx];
+    let ts = &f.content.ts[tile_idx];
     let p1 = ts.progress[tp as usize].load(Ordering::SeqCst);
     if p1 < t.sby {
         return 1;
@@ -567,11 +567,12 @@ fn check_tile(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
         // check reference state
-        let p = &f.sr_cur;
+        let p = &f.content.sr_cur;
         let ss_ver = (p.p.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let p_b = ((t.sby + 1) << f.sb_shift + 2) as c_uint;
-        let tile_sby = t.sby - (ts.tiling.row_start >> f.sb_shift);
+        let p_b = ((t.sby + 1) << f.content.sb_shift + 2) as c_uint;
+        let tile_sby = t.sby - (ts.tiling.row_start >> f.content.sb_shift);
         let lowest_px = f
+            .content
             .lowest_pixel_mem
             .index(ts.lowest_pixel + tile_sby as usize);
         for n in t.deps_skip.get()..7 {
@@ -597,9 +598,9 @@ fn check_tile(
                     if max == i32::MIN {
                         break 'next;
                     }
-                    iclip(max, 1 as c_int, f.refp[n as usize].p.p.h) as c_uint
+                    iclip(max, 1 as c_int, f.content.refp[n as usize].p.p.h) as c_uint
                 };
-                let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
+                let p3 = f.content.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
                     .load(Ordering::SeqCst);
                 if p3 < lowest {
                     return 1;
@@ -616,22 +617,23 @@ fn check_tile(
 }
 
 #[inline]
-fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
+fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameDataMaybeHeaders) -> c_int {
     // Note that `progress.is_some() == c.fc.len() > 1`.
     let frame_prog = f
+        .content
         .sr_cur
         .progress
         .as_ref()
         .map(|progress| progress[1].load(Ordering::SeqCst))
         .unwrap_or(0);
     if frame_prog >= FRAME_ERROR {
-        return f.sbh - 1;
+        return f.content.sbh - 1;
     }
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
     let (idx, prog) = frame
         .iter()
         .enumerate()
-        .skip(frame_prog as usize >> (f.sb_shift + 7))
+        .skip(frame_prog as usize >> (f.content.sb_shift + 7))
         .find_map(|(i, progress)| {
             let val = !progress.load(Ordering::SeqCst);
             match val.trailing_zeros() {
@@ -653,7 +655,7 @@ fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
     fc.task_thread.done[1].store(1, Ordering::SeqCst);
     {
         let f = fc.data.try_read().unwrap();
-        let progress = &**f.sr_cur.progress.as_ref().unwrap();
+        let progress = &**f.content.sr_cur.progress.as_ref().unwrap();
         progress[0].store(FRAME_ERROR, Ordering::SeqCst);
         progress[1].store(FRAME_ERROR, Ordering::SeqCst);
     }
@@ -898,7 +900,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             assert!(done == 0 || error != 0, "done: {done}, error: {error}");
                             let frame_hdr = fc.frame_hdr();
                             let tile_row_base = frame_hdr.tiling.cols as c_int
-                                * f.frame_thread.next_tile_row[p as usize].get();
+                                * f.content.frame_thread.next_tile_row[p as usize].get();
                             if p {
                                 let p1_0 = fc.frame_thread_progress.entropy.load(Ordering::SeqCst);
                                 if p1_0 < t.sby {
@@ -909,7 +911,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     .fetch_or((p1_0 == TILE_ERROR) as c_int, Ordering::SeqCst);
                             }
                             for tc_0 in 0..frame_hdr.tiling.cols {
-                                let ts = &f.ts[(tile_row_base + tc_0 as c_int) as usize];
+                                let ts = &f.content.ts[(tile_row_base + tc_0 as c_int) as usize];
                                 let p2 = ts.progress[p as usize].load(Ordering::SeqCst);
                                 if p2 < t.recon_progress {
                                     break 'next;
@@ -918,17 +920,17 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     .error
                                     .fetch_or((p2 == TILE_ERROR) as c_int, Ordering::SeqCst);
                             }
-                            if (t.sby + 1) < f.sbh {
+                            if (t.sby + 1) < f.content.sbh {
                                 // add sby+1 to list to replace this one
                                 let next_t = Rav1dTask {
                                     sby: t.sby + 1,
                                     recon_progress: t.sby + 2,
                                     ..t.without_next()
                                 };
-                                let ntr = f.frame_thread.next_tile_row[p as usize].get() + 1;
+                                let ntr = f.content.frame_thread.next_tile_row[p as usize].get() + 1;
                                 let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
                                 if next_t.sby == start {
-                                    f.frame_thread.next_tile_row[p as usize].set(ntr);
+                                    f.content.frame_thread.next_tile_row[p as usize].set(ntr);
                                 }
                                 drop(t);
                                 fc.task_thread.insert_task(c, next_t, 0);
@@ -1036,7 +1038,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         }
                         let frame_hdr = &f.frame_hdr;
                         if frame_hdr.refresh_context != 0 && !fc.task_thread.update_set.get() {
-                            f.out_cdf.progress().unwrap().store(
+                            f.content.out_cdf.progress().unwrap().store(
                                 (if res_0.is_err() {
                                     TILE_ERROR
                                 } else {
@@ -1069,12 +1071,12 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     fc.task_thread.task_counter.fetch_sub(
                                         frame_hdr.tiling.cols as c_int
                                             * frame_hdr.tiling.rows as c_int
-                                            + f.sbh,
+                                            + f.content.sbh,
                                         Ordering::SeqCst,
                                     );
 
                                     // Note that `progress.is_some() == c.fc.len() > 1`.
-                                    let progress = &**f.sr_cur.progress.as_ref().unwrap();
+                                    let progress = &**f.content.sr_cur.progress.as_ref().unwrap();
                                     progress[(p_0 - 1) as usize]
                                         .store(FRAME_ERROR, Ordering::SeqCst);
                                     if p_0 == 2
@@ -1111,9 +1113,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         let f = fc.data.try_read().unwrap();
                         let p_1 = t.type_0 == TaskType::TileEntropy;
                         let tile_idx = t.tile_idx as usize;
-                        let ts = &f.ts[tile_idx];
+                        let ts = &f.content.ts[tile_idx];
                         tc.ts = tile_idx;
-                        tc.b.y = sby << f.sb_shift;
+                        tc.b.y = sby << f.content.sb_shift;
                         let uses_2pass = (c.fc.len() > 1) as c_int;
                         tc.frame_thread.pass = if uses_2pass == 0 {
                             0 as c_int
@@ -1131,7 +1133,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
 
                         // signal progress
                         fc.task_thread.error.fetch_or(error_0, Ordering::SeqCst);
-                        if (sby + 1) << f.sb_shift < ts.tiling.row_end {
+                        if (sby + 1) << f.content.sb_shift < ts.tiling.row_end {
                             t.sby += 1;
                             t.deps_skip = 0.into();
                             if check_tile(&f, &fc.task_thread, &t, uses_2pass) == 0 {
@@ -1162,15 +1164,15 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                 if error_0 == 0 {
                                     rav1d_cdf_thread_update(
                                         frame_hdr,
-                                        &mut f.out_cdf.cdf_write(),
-                                        &f.ts[frame_hdr.tiling.update as usize]
+                                        &mut f.content.out_cdf.cdf_write(),
+                                        &f.content.ts[frame_hdr.tiling.update as usize]
                                             .context
                                             .try_lock()
                                             .unwrap()
                                             .cdf,
                                     );
                                 }
-                                if let Some(progress) = f.out_cdf.progress() {
+                                if let Some(progress) = f.content.out_cdf.progress() {
                                     progress.store(
                                         (if error_0 != 0 { TILE_ERROR } else { 1 as c_int })
                                             as c_uint,
@@ -1249,7 +1251,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
-                        } else if seq_hdr.cdef != 0 || !f.lf.restore_planes.is_empty() {
+                        } else if seq_hdr.cdef != 0 || !f.content.lf.restore_planes.is_empty() {
                             drop(f_guard);
                             let copy_lpf = fc.frame_thread_progress.copy_lpf.try_read().unwrap();
                             copy_lpf[(sby >> 5) as usize]
@@ -1307,7 +1309,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         let f = fc.data.try_read().unwrap();
                         let f = f.assert_has_headers();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0
-                            && !f.lf.restore_planes.is_empty()
+                            && !f.content.lf.restore_planes.is_empty()
                         {
                             (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
                         }
@@ -1329,8 +1331,8 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
             // if task completed [typically LR], signal picture progress as per below
             let f = fc.data.try_read().unwrap();
             let uses_2pass_0 = (c.fc.len() > 1) as c_int;
-            let sbh = f.sbh;
-            let sbsz = f.sb_step * 4;
+            let sbh = f.content.sbh;
+            let sbsz = f.content.sb_step * 4;
             if t.type_0 == TaskType::EntropyProgress {
                 error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                 let y: c_uint = if sby + 1 == sbh {
@@ -1339,8 +1341,8 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                 };
                 // Note that `progress.is_some() == c.fc.len() > 1`.
-                let progress = &**f.sr_cur.progress.as_ref().unwrap();
-                if f.sr_cur.p.data.is_some() {
+                let progress = &**f.content.sr_cur.progress.as_ref().unwrap();
+                if f.content.sr_cur.p.data.is_some() {
                     progress[0].store(if error_0 != 0 { FRAME_ERROR } else { y }, Ordering::SeqCst);
                 }
                 drop(f);
@@ -1392,9 +1394,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                 };
                 // Note that `progress.is_some() == c.fc.len() > 1`.
-                if let Some(progress) = &f.sr_cur.progress {
+                if let Some(progress) = &f.content.sr_cur.progress {
                     // upon flush, this can be free'ed already
-                    if f.sr_cur.p.data.is_some() {
+                    if f.content.sr_cur.p.data.is_some() {
                         progress[1].store(
                             if error_0 != 0 { FRAME_ERROR } else { y_0 },
                             Ordering::SeqCst,
