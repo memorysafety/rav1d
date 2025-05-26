@@ -164,8 +164,8 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     let sr_cur_data = &f.content.sr_cur.p.data.as_ref().unwrap().data;
     let dst = array::from_fn::<_, 3, _>(|i| {
         let data = &sr_cur_data[i];
-        let offset =
-            f.content.lf.lr_lpf_line[i].wrapping_add_signed(tt_off as isize * data.pixel_stride::<BD>());
+        let offset = f.content.lf.lr_lpf_line[i]
+            .wrapping_add_signed(tt_off as isize * data.pixel_stride::<BD>());
         Rav1dPictureDataComponentOffset { data, offset }
     });
 
@@ -207,7 +207,8 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
             let cdef_off_y = (sby * 4) as isize * src[0].pixel_stride::<BD>();
             let cdef_plane_y_sz = 4 * f.content.sbh as isize * src[0].pixel_stride::<BD>();
             let y_span = cdef_plane_y_sz - src[0].pixel_stride::<BD>();
-            let cdef_line_start = (f.content.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
+            let cdef_line_start =
+                (f.content.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
                 WithOffset {

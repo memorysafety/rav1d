@@ -205,7 +205,8 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
         for sbx in 0..sb64w {
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
-            let cdef_idx = f.content.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
+            let cdef_idx = f.content.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx
+                [sb64_idx as usize]
                 .get() as c_int;
             if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
@@ -214,8 +215,8 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                 last_skip = true;
             } else {
                 // Create a complete 32-bit mask for the sb row ahead of time.
-                let noskip_row =
-                    &f.content.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
+                let noskip_row = &f.content.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask
+                    [by_idx as usize];
                 let noskip_mask = (noskip_row[1].get() as u32) << 16 | noskip_row[0].get() as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
@@ -262,7 +263,11 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.content.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
+                            f.content
+                                .dsp
+                                .cdef
+                                .dir
+                                .call::<BD>(bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };

@@ -1224,7 +1224,11 @@ fn decode_b(
                     }
                     let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                     for r in rr {
-                        let block = &mut f.content.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        let block = &mut f
+                            .content
+                            .rf
+                            .r
+                            .index_mut(r + t.b.x as usize + bw4 as usize - 1);
                         block.r#ref.r#ref[0] = 0;
                         block.bs = bs;
                     }
@@ -1302,7 +1306,11 @@ fn decode_b(
                     }
                     let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                     for r in rr {
-                        let block = &mut f.content.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        let block = &mut f
+                            .content
+                            .rf
+                            .r
+                            .index_mut(r + t.b.x as usize + bw4 as usize - 1);
                         block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
                         block.mv.mv[0] = inter.nd.one_d.mv[0];
                         block.bs = bs;
@@ -1346,7 +1354,14 @@ fn decode_b(
                 .prev_segmap
                 .as_ref()
                 .map(|prev_segmap| {
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.content.b4_stride)
+                    get_prev_frame_segid(
+                        frame_hdr,
+                        t.b,
+                        w4,
+                        h4,
+                        &prev_segmap.inner,
+                        f.content.b4_stride,
+                    )
                 })
                 .unwrap_or_default();
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
@@ -1458,7 +1473,14 @@ fn decode_b(
                 .prev_segmap
                 .as_ref()
                 .map(|prev_segmap| {
-                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.content.b4_stride)
+                    get_prev_frame_segid(
+                        frame_hdr,
+                        t.b,
+                        w4,
+                        h4,
+                        &prev_segmap.inner,
+                        f.content.b4_stride,
+                    )
                 })
                 .unwrap_or_default();
         } else {
@@ -1861,7 +1883,8 @@ fn decode_b(
                 let len = (cbw4 * cbh4 * 8) as u32;
                 let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
                 Some(
-                    f.content.frame_thread
+                    f.content
+                        .frame_thread
                         .pal_idx
                         .index_mut((pal_idx as usize.., ..len as usize)),
                 )
@@ -2911,7 +2934,8 @@ fn decode_b(
                 .expect("valid variant");
                 if motion_mode == MotionMode::Warp {
                     has_subpel_filter = false;
-                    t.warpmv = derive_warpmv(&f.content.rf.r, t, bw4, bh4, &mask, mv1d0, t.warpmv.clone());
+                    t.warpmv =
+                        derive_warpmv(&f.content.rf.r, t, bw4, bh4, &mask, mv1d0, t.warpmv.clone());
                     if debug_block_info!(f, t.b) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
@@ -3190,7 +3214,10 @@ fn decode_b(
             if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
         {
             let sby = t.b.y - ts.tiling.row_start >> f.content.sb_shift;
-            let mut lowest_px = f.content.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
+            let mut lowest_px = f
+                .content
+                .lowest_pixel_mem
+                .index_mut(ts.lowest_pixel + sby as usize);
             // keep track of motion vectors for each reference
             if inter.comp_type.is_none() {
                 // y
@@ -3247,13 +3274,16 @@ fn decode_b(
                             .unwrap();
 
                         if bw4 == 1 {
-                            is_sub8x8 &= f.content.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                            is_sub8x8 &=
+                                f.content.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                         }
                         if bh4 == ss_ver {
-                            is_sub8x8 &= f.content.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
+                            is_sub8x8 &=
+                                f.content.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
                         }
                         if bw4 == 1 && bh4 == ss_ver {
-                            is_sub8x8 &= f.content.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                            is_sub8x8 &=
+                                f.content.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                         }
 
                         r
@@ -3355,7 +3385,9 @@ fn decode_b(
                         .map(|(r#ref, mv)| (r#ref as usize, mv))
                 };
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.content.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == GLOBALMV_GLOBALMV
+                        && f.content.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -3374,7 +3406,9 @@ fn decode_b(
                     }
                 }
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.content.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == GLOBALMV_GLOBALMV
+                        && f.content.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -4137,7 +4171,9 @@ pub(crate) fn rav1d_decode_tile_sbrow(
 
     if frame_hdr.frame_type.is_inter_or_switch() && c.fc.len() > 1 {
         let sby = t.b.y - ts.tiling.row_start >> f.content.sb_shift;
-        *f.content.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
+        *f.content
+            .lowest_pixel_mem
+            .index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
     }
 
     reset_context(
@@ -4286,9 +4322,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
         }
     }
 
-    if f.seq_hdr.ref_frame_mvs != 0
-        && c.tc.len() > 1
-        && f.frame_hdr.frame_type.is_inter_or_switch()
+    if f.seq_hdr.ref_frame_mvs != 0 && c.tc.len() > 1 && f.frame_hdr.frame_type.is_inter_or_switch()
     {
         c.dsp.refmvs.save_tmvs.call(
             &t.rt,
@@ -4346,7 +4380,10 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     let f = f.assert_has_headers_mut();
 
     // TODO: Fallible allocation
-    f.content.lf.start_of_tile_row.resize(f.content.sbh as usize, 0);
+    f.content
+        .lf
+        .start_of_tile_row
+        .resize(f.content.sbh as usize, 0);
 
     let frame_hdr = &f.frame_hdr;
     let mut sby = 0;
@@ -4362,7 +4399,10 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     let n_ts = frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int;
     if c.fc.len() > 1 {
         // TODO: Fallible allocation
-        f.content.frame_thread.tile_start_off.resize(n_ts as usize, 0);
+        f.content
+            .frame_thread
+            .tile_start_off
+            .resize(n_ts as usize, 0);
     }
     // TODO: Fallible allocation
     f.content.ts.resize_with(n_ts as usize, Default::default);
@@ -4398,7 +4438,8 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
         let lowest_pixel_mem_sz = frame_hdr.tiling.cols as usize * f.content.sbh as usize;
         // TODO: Fallible allocation
-        f.content.lowest_pixel_mem
+        f.content
+            .lowest_pixel_mem
             .resize(lowest_pixel_mem_sz, Default::default());
 
         let mut lowest_pixel_offset = 0;
@@ -4414,26 +4455,30 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
         let cbi_sz = num_sb128 * size_mul[0] as c_int;
         // TODO: Fallible allocation
-        f.content.frame_thread
+        f.content
+            .frame_thread
             .cbi
             .resize_with(cbi_sz as usize * 32 * 32 / 4, Default::default);
 
         let cf_sz = (num_sb128 * size_mul[0] as c_int) << hbd;
         // TODO: Fallible allocation
-        f.content.frame_thread
+        f.content
+            .frame_thread
             .cf
             .get_mut()
             .resize(cf_sz as usize * 128 * 128 / 2, 0);
 
         if frame_hdr.allow_screen_content_tools {
             // TODO: Fallible allocation
-            f.content.frame_thread
+            f.content
+                .frame_thread
                 .pal
                 .resize(num_sb128 as usize * 16 * 16 << hbd);
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
             // TODO: Fallible allocation
-            f.content.frame_thread
+            f.content
+                .frame_thread
                 .pal_idx
                 .resize(pal_idx_sz as usize * 128 * 128 / 8, Default::default());
         } else if !f.content.frame_thread.pal.is_empty() {
@@ -4500,7 +4545,8 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
                 offset.wrapping_add_signed(-(uv_stride_px * (f.content.sbh as isize * 8 - 1)));
         } else {
             f.content.lf.cdef_lpf_line[1] = offset;
-            f.content.lf.cdef_lpf_line[2] = offset.wrapping_add_signed(uv_stride_px * f.content.sbh as isize * 4);
+            f.content.lf.cdef_lpf_line[2] =
+                offset.wrapping_add_signed(uv_stride_px * f.content.sbh as isize * 4);
         }
     }
 
@@ -4525,7 +4571,8 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
     let mut offset = bpc.pxstride(64usize);
     if y_stride < 0 {
-        f.content.lf.lr_lpf_line[0] = offset.wrapping_add_signed(-(y_stride_px * (num_lines as isize - 1)));
+        f.content.lf.lr_lpf_line[0] =
+            offset.wrapping_add_signed(-(y_stride_px * (num_lines as isize - 1)));
     } else {
         f.content.lf.lr_lpf_line[0] = offset;
     }
@@ -4544,14 +4591,20 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
     f.content.lf.mask.clear();
     // TODO: Fallible allocation.
-    f.content.lf.mask.resize_with(num_sb128 as usize, Default::default);
+    f.content
+        .lf
+        .mask
+        .resize_with(num_sb128 as usize, Default::default);
     // over-allocate by 3 bytes since some of the SIMD implementations
     // index this from the level type and can thus over-read by up to 3 bytes.
-    f.content.lf.level
+    f.content
+        .lf
+        .level
         .resize_with(4 * num_sb128 as usize * 32 * 32 + 3, Default::default); // TODO: Fallible allocation
     if c.fc.len() > 1 {
         // TODO: Fallible allocation
-        f.content.frame_thread
+        f.content
+            .frame_thread
             .b
             .resize_with(num_sb128 as usize * 32 * 32, Default::default);
     }
@@ -4559,7 +4612,9 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     f.content.sr_sb128w = f.content.sr_cur.p.p.w + 127 >> 7;
     let lr_mask_sz = f.content.sr_sb128w * f.content.sb128h;
     // TODO: Fallible allocation
-    f.content.lf.lr_mask
+    f.content
+        .lf
+        .lr_mask
         .resize_with(lr_mask_sz as usize, Default::default);
     f.content.lf.restore_planes = LrRestorePlanes::from_bits_truncate(
         frame_hdr
@@ -4578,7 +4633,9 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
     let ipred_edge_sz = f.content.sbh * f.content.sb128w << hbd;
     // TODO: Fallible allocation
-    f.content.ipred_edge.resize(ipred_edge_sz as usize * 128 * 3, 0);
+    f.content
+        .ipred_edge
+        .resize(ipred_edge_sz as usize * 128 * 3, 0);
     f.content.ipred_edge_off = bpc.pxstride(ipred_edge_sz as usize * 128);
 
     let re_sz = f.content.sb128h as usize * frame_hdr.tiling.cols as usize;
@@ -4816,10 +4873,15 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
                 rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
             }
             if f.frame_hdr.frame_type.is_inter_or_switch() {
-                c.dsp
-                    .refmvs
-                    .save_tmvs
-                    .call(&t.rt, &f.content.rf, &f.content.mvs, 0, f.content.bw >> 1, t.b.y >> 1, by_end);
+                c.dsp.refmvs.save_tmvs.call(
+                    &t.rt,
+                    &f.content.rf,
+                    &f.content.mvs,
+                    0,
+                    f.content.bw >> 1,
+                    t.b.y >> 1,
+                    by_end,
+                );
             }
 
             // loopfilter + cdef + restoration
@@ -5095,18 +5157,21 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
             if frame_hdr.size.width[0] != state.refs[refidx].p.p.p.w
                 || frame_hdr.size.height != state.refs[refidx].p.p.p.h
             {
-                f.content.svc[i][0].scale = scale_fac(state.refs[refidx].p.p.p.w, frame_hdr.size.width[0]);
-                f.content.svc[i][1].scale = scale_fac(state.refs[refidx].p.p.p.h, frame_hdr.size.height);
+                f.content.svc[i][0].scale =
+                    scale_fac(state.refs[refidx].p.p.p.w, frame_hdr.size.width[0]);
+                f.content.svc[i][1].scale =
+                    scale_fac(state.refs[refidx].p.p.p.h, frame_hdr.size.height);
                 f.content.svc[i][0].step = f.content.svc[i][0].scale + 8 >> 4;
                 f.content.svc[i][1].step = f.content.svc[i][1].scale + 8 >> 4;
             } else {
                 f.content.svc[i][1].scale = 0;
                 f.content.svc[i][0].scale = f.content.svc[i][1].scale;
             }
-            f.content.gmv_warp_allowed[i] = (frame_hdr.gmv[i].r#type > Rav1dWarpedMotionType::Translation
-                && !frame_hdr.force_integer_mv
-                && !rav1d_get_shear_params(&frame_hdr.gmv[i])
-                && f.content.svc[i][0].scale == 0) as u8;
+            f.content.gmv_warp_allowed[i] =
+                (frame_hdr.gmv[i].r#type > Rav1dWarpedMotionType::Translation
+                    && !frame_hdr.force_integer_mv
+                    && !rav1d_get_shear_params(&frame_hdr.gmv[i])
+                    && f.content.svc[i][0].scale == 0) as u8;
         }
     }
 
@@ -5178,8 +5243,12 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         // Re-borrow to allow independent borrows of fields
         let f = &mut *f;
-        let res =
-            rav1d_picture_alloc_copy(&c.logger, &mut f.content.cur, frame_hdr.size.width[0], &f.content.sr_cur.p);
+        let res = rav1d_picture_alloc_copy(
+            &c.logger,
+            &mut f.content.cur,
+            frame_hdr.size.width[0],
+            &f.content.sr_cur.p,
+        );
         if res.is_err() {
             on_error(fc, f, out, &mut state.cached_error_props, &state.in_0.m);
             return res;
@@ -5193,7 +5262,11 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         let in_cw = f.content.cur.p.w + ss_hor >> ss_hor;
         let out_cw = f.content.sr_cur.p.p.w + ss_hor >> ss_hor;
         f.content.resize_step[1] = scale_fac(in_cw, out_cw);
-        f.content.resize_start[0] = get_upscale_x0(f.content.cur.p.w, f.content.sr_cur.p.p.w, f.content.resize_step[0]);
+        f.content.resize_start[0] = get_upscale_x0(
+            f.content.cur.p.w,
+            f.content.sr_cur.p.p.w,
+            f.content.resize_step[0],
+        );
         f.content.resize_start[1] = get_upscale_x0(in_cw, out_cw, f.content.resize_step[1]);
     }
 
@@ -5237,7 +5310,8 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         );
         if !frame_hdr.allow_intrabc {
             for i in 0..7 {
-                f.content.refpoc[i] = f.content.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
+                f.content.refpoc[i] =
+                    f.content.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
             }
         } else {
             f.content.refpoc.fill(0);

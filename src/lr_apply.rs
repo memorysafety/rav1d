@@ -92,7 +92,8 @@ fn lr_stripe<BD: BitDepth>(
             w0: lr.sgr_weights[0] as i16,
             w1: 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16),
         };
-        lr_fn = f.content.dsp.lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
+        lr_fn = f.content.dsp.lr.sgr
+            [(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
     }
 
     let mut left = &left[..];

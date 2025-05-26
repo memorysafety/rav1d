@@ -865,9 +865,7 @@ impl Rav1dFrameDataMaybeHeaders {
         // Safety: we just asserted that seq_hdr and frame_hdr are Some, and Option<Arc<T>> has the
         // same layout as Arc<T>. further, `Rav1dFrameData` and `Rav1dFrameDataWithHeaders` have
         // the same layout with repr(C) ensuring their field ordering is identical.
-        unsafe {
-            std::mem::transmute(self)
-        }
+        unsafe { std::mem::transmute(self) }
     }
 
     pub fn assert_has_headers_mut<'a>(&'a mut self) -> &'a mut Rav1dFrameData {
@@ -884,9 +882,7 @@ impl Rav1dFrameDataMaybeHeaders {
         // the same layout with repr(C) ensuring their field ordering is identical.
         // Same as `assert_has_headers` overall; we have the sole `&mut self`, so we maintain
         // exclusivity with the returned `&'a mut` ref returned here.
-        unsafe {
-            std::mem::transmute(self)
-        }
+        unsafe { std::mem::transmute(self) }
     }
 }
 
@@ -896,7 +892,6 @@ impl Rav1dFrameData {
         Rav1dFrameContextBdFn::get(bpc)
     }
 }
-
 
 #[derive(Default)]
 #[repr(C)]

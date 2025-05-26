@@ -927,7 +927,8 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     recon_progress: t.sby + 2,
                                     ..t.without_next()
                                 };
-                                let ntr = f.content.frame_thread.next_tile_row[p as usize].get() + 1;
+                                let ntr =
+                                    f.content.frame_thread.next_tile_row[p as usize].get() + 1;
                                 let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
                                 if next_t.sby == start {
                                     f.content.frame_thread.next_tile_row[p as usize].set(ntr);
