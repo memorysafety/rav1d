@@ -886,6 +886,18 @@ impl Rav1dFrameDataMaybeHeaders {
     }
 }
 
+impl<'a> From<&'a mut Rav1dFrameData> for &'a mut Rav1dFrameDataMaybeHeaders {
+    fn from(v: &'a mut Rav1dFrameData) -> Self {
+        // Safety: as an implementation detail of Rust today, Arc<T> is just a glorified
+        // NonNull<ArcInner<T>>. this will be niche elided into a `Some` when transmuted to
+        // `Option<Arc<T>>`. this is not guaranteed to remain so, and `Arc<T, A>` with non-ZST
+        // allocators will trivially violate this.
+        //
+        // to repeat: safe only as an implementation detail of Rust to date.
+        unsafe { std::mem::transmute(v) }
+    }
+}
+
 impl Rav1dFrameData {
     pub fn bd_fn(&self) -> &'static Rav1dFrameContextBdFn {
         let bpc = BPC::from_bitdepth_max(self.content.bitdepth_max);
