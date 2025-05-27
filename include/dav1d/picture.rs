@@ -185,9 +185,15 @@ impl Rav1dPictureDataComponentInner {
 
     /// # Safety
     ///
-    /// As opposed to [`Self::new`], this is safe because `buf` is a `&mut` and thus unique,
-    /// so it is sound to further subdivide it into disjoint `&mut`s.
-    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+    /// `buf` must outlive the returned [`Self`].
+    ///
+    /// As opposed to [`Self::new`], `buf` is a `&mut`, so it must be unique,
+    /// so it is sound to further subdivide it into disjoint `&mut`s as long as its lifetime lasts.
+    /// However, adding proper lifetimes is difficult
+    /// (see [#1317](https://github.com/memorysafety/rav1d/pull/1317)),
+    /// so instead we make this an `unsafe` precondition,
+    /// that `buf` must outlive the returned [`Self`].
+    pub unsafe fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
         let buf = AsBytes::as_bytes_mut(buf);
         let ptr = NonNull::new(buf.as_mut_ptr()).unwrap();
         assert!(ptr.cast::<AlignedPixelChunk>().is_aligned());
@@ -245,9 +251,15 @@ impl Strided for Rav1dPictureDataComponent {
 }
 
 impl Rav1dPictureDataComponent {
-    pub fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
+    /// # Safety
+    ///
+    /// `buf` must outlive the returned [`Self`].
+    ///
+    /// See [`Rav1dPictureDataComponentInner::wrap_buf`] for more details.
+    pub unsafe fn wrap_buf<BD: BitDepth>(buf: &mut [BD::Pixel], stride: usize) -> Self {
         Self(DisjointMut::new(
-            Rav1dPictureDataComponentInner::wrap_buf::<BD>(buf, stride),
+            // SAFETY: Delegated.
+            unsafe { Rav1dPictureDataComponentInner::wrap_buf::<BD>(buf, stride) },
         ))
     }
 
