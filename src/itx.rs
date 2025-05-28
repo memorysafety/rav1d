@@ -18,12 +18,14 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::{
     FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
 };
+#[cfg(not(all(feature = "asm", target_feature = "neon")))]
+use crate::itx_1d::rav1d_inv_wht4_1d_c;
 use crate::itx_1d::{
     rav1d_inv_adst16_1d_c, rav1d_inv_adst4_1d_c, rav1d_inv_adst8_1d_c, rav1d_inv_dct16_1d_c,
     rav1d_inv_dct32_1d_c, rav1d_inv_dct4_1d_c, rav1d_inv_dct64_1d_c, rav1d_inv_dct8_1d_c,
     rav1d_inv_flipadst16_1d_c, rav1d_inv_flipadst4_1d_c, rav1d_inv_flipadst8_1d_c,
     rav1d_inv_identity16_1d_c, rav1d_inv_identity32_1d_c, rav1d_inv_identity4_1d_c,
-    rav1d_inv_identity8_1d_c, rav1d_inv_wht4_1d_c,
+    rav1d_inv_identity8_1d_c,
 };
 use crate::levels::{
     TxfmSize, TxfmType, ADST_ADST, ADST_DCT, ADST_FLIPADST, DCT_ADST, DCT_DCT, DCT_FLIPADST,
@@ -187,7 +189,10 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
         H_FLIPADST => (Identity, FlipAdst),
         V_ADST => (Adst, Identity),
         V_FLIPADST => (FlipAdst, Identity),
+
+        #[cfg(not(all(feature = "asm", target_feature = "neon")))]
         WHT_WHT if (W, H) == (4, 4) => return inv_txfm_add_wht_wht_4x4_rust(dst, coeff, bd),
+
         _ => unreachable!(),
     };
 
@@ -288,6 +293,7 @@ pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm::Fn; N_TX_TYPES_PLUS_LL]; TxfmSize::COUNT],
 }
 
+#[cfg(not(all(feature = "asm", target_feature = "neon")))]
 fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     coeff: &mut [BD::Coef],
