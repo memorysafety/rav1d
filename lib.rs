@@ -1,13 +1,14 @@
-#![allow(non_upper_case_globals)]
 #![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![cfg_attr(
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
-#![deny(unsafe_op_in_unsafe_fn)]
-#![allow(clippy::all)]
-#![deny(clippy::undocumented_unsafe_blocks)]
-#![deny(clippy::missing_safety_doc)]
+#![allow(non_upper_case_globals, clippy::all)]
+#![deny(
+    unsafe_op_in_unsafe_fn,
+    clippy::missing_safety_doc,
+    clippy::undocumented_unsafe_blocks
+)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
 compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");
