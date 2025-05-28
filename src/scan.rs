@@ -1,6 +1,7 @@
 use strum::EnumCount;
 
 use crate::align::Align32;
+use crate::const_fn::const_for;
 use crate::in_range::InRange;
 use crate::levels::TxfmSize;
 
@@ -227,4 +228,55 @@ pub static DAV1D_SCANS: [&'static [Scan]; TxfmSize::COUNT] = [
     &SCAN_32X8.0,
     &SCAN_16X32.0,
     &SCAN_32X16.0,
+];
+
+const fn init_tbl<const S: usize>(scan: &'static [Scan; S], h: u16) -> [u8; S] {
+    let mut last_nonzero_col_from_eob: [u8; S] = [0; S];
+
+    let mut max_col: u8 = 0;
+    const_for!(n in 0..S => {
+        let rc = scan[n].const_get();
+        let rcx = (rc & (h - 1) as u16) as u8;
+        max_col = if rcx > max_col { rcx } else {max_col };
+        last_nonzero_col_from_eob[n] = max_col;
+    });
+
+    last_nonzero_col_from_eob
+}
+
+static LAST_NONZERO_COL_FROM_EOB_4X4: [u8; 16] = init_tbl(&SCAN_4X4.0, 4);
+static LAST_NONZERO_COL_FROM_EOB_8X8: [u8; 64] = init_tbl(&SCAN_8X8.0, 8);
+static LAST_NONZERO_COL_FROM_EOB_16X16: [u8; 256] = init_tbl(&SCAN_16X16.0, 16);
+static LAST_NONZERO_COL_FROM_EOB_32X32: [u8; 1024] = init_tbl(&SCAN_32X32.0, 32);
+static LAST_NONZERO_COL_FROM_EOB_4X8: [u8; 32] = init_tbl(&SCAN_4X8.0, 8);
+static LAST_NONZERO_COL_FROM_EOB_8X4: [u8; 32] = init_tbl(&SCAN_8X4.0, 4);
+static LAST_NONZERO_COL_FROM_EOB_8X16: [u8; 128] = init_tbl(&SCAN_8X16.0, 16);
+static LAST_NONZERO_COL_FROM_EOB_16X8: [u8; 128] = init_tbl(&SCAN_16X8.0, 8);
+static LAST_NONZERO_COL_FROM_EOB_16X32: [u8; 512] = init_tbl(&SCAN_16X32.0, 32);
+static LAST_NONZERO_COL_FROM_EOB_32X16: [u8; 512] = init_tbl(&SCAN_32X16.0, 16);
+static LAST_NONZERO_COL_FROM_EOB_4X16: [u8; 64] = init_tbl(&SCAN_4X16.0, 16);
+static LAST_NONZERO_COL_FROM_EOB_16X4: [u8; 64] = init_tbl(&SCAN_16X4.0, 4);
+static LAST_NONZERO_COL_FROM_EOB_8X32: [u8; 256] = init_tbl(&SCAN_8X32.0, 32);
+static LAST_NONZERO_COL_FROM_EOB_32X8: [u8; 256] = init_tbl(&SCAN_32X8.0, 8);
+
+pub static DAV1D_LAST_NONZERO_COL_FROM_EOB: [&'static [u8]; TxfmSize::COUNT] = [
+    &LAST_NONZERO_COL_FROM_EOB_4X4,
+    &LAST_NONZERO_COL_FROM_EOB_8X8,
+    &LAST_NONZERO_COL_FROM_EOB_16X16,
+    &LAST_NONZERO_COL_FROM_EOB_32X32,
+    &LAST_NONZERO_COL_FROM_EOB_32X32,
+    &LAST_NONZERO_COL_FROM_EOB_4X8,
+    &LAST_NONZERO_COL_FROM_EOB_8X4,
+    &LAST_NONZERO_COL_FROM_EOB_8X16,
+    &LAST_NONZERO_COL_FROM_EOB_16X8,
+    &LAST_NONZERO_COL_FROM_EOB_16X32,
+    &LAST_NONZERO_COL_FROM_EOB_32X16,
+    &LAST_NONZERO_COL_FROM_EOB_32X32,
+    &LAST_NONZERO_COL_FROM_EOB_32X32,
+    &LAST_NONZERO_COL_FROM_EOB_4X16,
+    &LAST_NONZERO_COL_FROM_EOB_16X4,
+    &LAST_NONZERO_COL_FROM_EOB_8X32,
+    &LAST_NONZERO_COL_FROM_EOB_32X8,
+    &LAST_NONZERO_COL_FROM_EOB_16X32,
+    &LAST_NONZERO_COL_FROM_EOB_32X16,
 ];
