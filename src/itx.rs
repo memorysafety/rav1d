@@ -32,7 +32,9 @@ use crate::levels::{
     FLIPADST_ADST, FLIPADST_DCT, FLIPADST_FLIPADST, H_ADST, H_DCT, H_FLIPADST, IDTX,
     N_TX_TYPES_PLUS_LL, V_ADST, V_DCT, V_FLIPADST, WHT_WHT,
 };
+use crate::scan::DAV1D_LAST_NONZERO_COL_FROM_EOB;
 use crate::strided::Strided as _;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
@@ -42,15 +44,17 @@ fn inv_txfm_add<BD: BitDepth>(
     dst: Rav1dPictureDataComponentOffset,
     coeff: &mut [BD::Coef],
     eob: i32,
-    w: usize,
-    h: usize,
+    tx: TxfmSize,
     shift: u8,
-    first_1d_fn: Itx1dFn,
-    second_1d_fn: Itx1dFn,
-    has_dc_only: bool,
+    txtp: TxfmType,
     bd: BD,
 ) {
     let bitdepth_max = bd.bitdepth_max().as_::<i32>();
+
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
+    let w = 4 * t_dim.w as usize;
+    let h = 4 * t_dim.h as usize;
+    let has_dc_only = txtp == DCT_DCT;
 
     assert!(w >= 4 && w <= 64);
     assert!(h >= 4 && h <= 64);
@@ -78,6 +82,63 @@ fn inv_txfm_add<BD: BitDepth>(
         return;
     }
 
+    #[derive(PartialEq, Clone, Copy)]
+    enum Type {
+        Identity,
+        Dct,
+        Adst,
+        FlipAdst,
+    }
+    use Type::*;
+    // For some reason, this is flipped.
+    let (second, first) = match txtp {
+        IDTX => (Identity, Identity),
+        DCT_DCT => (Dct, Dct),
+        ADST_DCT => (Adst, Dct),
+        FLIPADST_DCT => (FlipAdst, Dct),
+        H_DCT => (Identity, Dct),
+        DCT_ADST => (Dct, Adst),
+        ADST_ADST => (Adst, Adst),
+        FLIPADST_ADST => (FlipAdst, Adst),
+        DCT_FLIPADST => (Dct, FlipAdst),
+        ADST_FLIPADST => (Adst, FlipAdst),
+        FLIPADST_FLIPADST => (FlipAdst, FlipAdst),
+        V_DCT => (Dct, Identity),
+        H_ADST => (Identity, Adst),
+        H_FLIPADST => (Identity, FlipAdst),
+        V_ADST => (Adst, Identity),
+        V_FLIPADST => (FlipAdst, Identity),
+
+        #[cfg(not(all(feature = "asm", target_feature = "neon")))]
+        WHT_WHT if (w, h) == (4, 4) => return inv_txfm_add_wht_wht_4x4_rust(dst, coeff, bd),
+
+        _ => unreachable!(),
+    };
+
+    fn resolve_1d_fn(r#type: Type, n: usize) -> Itx1dFn {
+        match (r#type, n) {
+            (Identity, 4) => rav1d_inv_identity4_1d_c,
+            (Identity, 8) => rav1d_inv_identity8_1d_c,
+            (Identity, 16) => rav1d_inv_identity16_1d_c,
+            (Identity, 32) => rav1d_inv_identity32_1d_c,
+            (Dct, 4) => rav1d_inv_dct4_1d_c,
+            (Dct, 8) => rav1d_inv_dct8_1d_c,
+            (Dct, 16) => rav1d_inv_dct16_1d_c,
+            (Dct, 32) => rav1d_inv_dct32_1d_c,
+            (Dct, 64) => rav1d_inv_dct64_1d_c,
+            (Adst, 4) => rav1d_inv_adst4_1d_c,
+            (Adst, 8) => rav1d_inv_adst8_1d_c,
+            (Adst, 16) => rav1d_inv_adst16_1d_c,
+            (FlipAdst, 4) => rav1d_inv_flipadst4_1d_c,
+            (FlipAdst, 8) => rav1d_inv_flipadst8_1d_c,
+            (FlipAdst, 16) => rav1d_inv_flipadst16_1d_c,
+            _ => unreachable!(),
+        }
+    }
+
+    let first_1d_fn = resolve_1d_fn(first, w);
+    let second_1d_fn = resolve_1d_fn(second, h);
+
     let sh = cmp::min(h, 32);
     let sw = cmp::min(w, 32);
 
@@ -96,8 +157,18 @@ fn inv_txfm_add<BD: BitDepth>(
     let col_clip_max = !col_clip_min;
 
     let mut tmp = [0; 64 * 64];
-    let mut c = &mut tmp[..];
-    for y in 0..sh {
+    let mut c = &mut tmp[..sh * w];
+    let eob = eob as usize;
+    // in first 1d itx
+    let last_nonzero_col = if second == Identity && first != Identity {
+        std::cmp::min(sh - 1, eob)
+    } else if first == Identity && second != Identity {
+        eob >> (t_dim.lw + 2)
+    } else {
+        DAV1D_LAST_NONZERO_COL_FROM_EOB[tx as usize][eob as usize] as usize
+    };
+    assert!(last_nonzero_col < sh);
+    for y in 0..=last_nonzero_col {
         if is_rect2 {
             for x in 0..sw {
                 c[x] = coeff[y + x * sh].as_::<i32>() * 181 + 128 >> 8;
@@ -110,6 +181,8 @@ fn inv_txfm_add<BD: BitDepth>(
         first_1d_fn(c, 1.try_into().unwrap(), row_clip_min, row_clip_max);
         c = &mut c[w..];
     }
+    // fill remaining values in slice `c` with 0
+    c.fill(0);
 
     coeff.fill(0.into());
     for i in 0..w * sh {
@@ -162,76 +235,9 @@ fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: B
         (64, 64) => 2,
         _ => unreachable!(),
     };
-    let has_dc_only = TYPE == DCT_DCT;
 
-    enum Type {
-        Identity,
-        Dct,
-        Adst,
-        FlipAdst,
-    }
-    use Type::*;
-    // For some reason, this is flipped.
-    let (second, first) = match TYPE {
-        IDTX => (Identity, Identity),
-        DCT_DCT => (Dct, Dct),
-        ADST_DCT => (Adst, Dct),
-        FLIPADST_DCT => (FlipAdst, Dct),
-        H_DCT => (Identity, Dct),
-        DCT_ADST => (Dct, Adst),
-        ADST_ADST => (Adst, Adst),
-        FLIPADST_ADST => (FlipAdst, Adst),
-        DCT_FLIPADST => (Dct, FlipAdst),
-        ADST_FLIPADST => (Adst, FlipAdst),
-        FLIPADST_FLIPADST => (FlipAdst, FlipAdst),
-        V_DCT => (Dct, Identity),
-        H_ADST => (Identity, Adst),
-        H_FLIPADST => (Identity, FlipAdst),
-        V_ADST => (Adst, Identity),
-        V_FLIPADST => (FlipAdst, Identity),
-
-        #[cfg(not(all(feature = "asm", target_feature = "neon")))]
-        WHT_WHT if (W, H) == (4, 4) => return inv_txfm_add_wht_wht_4x4_rust(dst, coeff, bd),
-
-        _ => unreachable!(),
-    };
-
-    fn resolve_1d_fn(r#type: Type, n: usize) -> Itx1dFn {
-        match (r#type, n) {
-            (Identity, 4) => rav1d_inv_identity4_1d_c,
-            (Identity, 8) => rav1d_inv_identity8_1d_c,
-            (Identity, 16) => rav1d_inv_identity16_1d_c,
-            (Identity, 32) => rav1d_inv_identity32_1d_c,
-            (Dct, 4) => rav1d_inv_dct4_1d_c,
-            (Dct, 8) => rav1d_inv_dct8_1d_c,
-            (Dct, 16) => rav1d_inv_dct16_1d_c,
-            (Dct, 32) => rav1d_inv_dct32_1d_c,
-            (Dct, 64) => rav1d_inv_dct64_1d_c,
-            (Adst, 4) => rav1d_inv_adst4_1d_c,
-            (Adst, 8) => rav1d_inv_adst8_1d_c,
-            (Adst, 16) => rav1d_inv_adst16_1d_c,
-            (FlipAdst, 4) => rav1d_inv_flipadst4_1d_c,
-            (FlipAdst, 8) => rav1d_inv_flipadst8_1d_c,
-            (FlipAdst, 16) => rav1d_inv_flipadst16_1d_c,
-            _ => unreachable!(),
-        }
-    }
-
-    let first_1d_fn = resolve_1d_fn(first, W);
-    let second_1d_fn = resolve_1d_fn(second, H);
-
-    inv_txfm_add(
-        dst,
-        coeff,
-        eob,
-        W,
-        H,
-        shift,
-        first_1d_fn,
-        second_1d_fn,
-        has_dc_only,
-        bd,
-    )
+    let tx = TxfmSize::from_wh(W, H);
+    inv_txfm_add(dst, coeff, eob, tx, shift, TYPE, bd)
 }
 
 /// # Safety

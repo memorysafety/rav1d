@@ -23,7 +23,7 @@ where
 
 impl<T, const MIN: u128, const MAX: u128> InRange<T, MIN, MAX>
 where
-    T: TryFrom<u128, Error: Debug> + PartialEq + Eq + PartialOrd + Ord,
+    T: TryFrom<u128, Error: Debug> + PartialEq + Eq + PartialOrd + Ord + Copy,
 {
     fn in_bounds(&self) -> bool {
         *self >= Self::min() && *self <= Self::max()
@@ -41,6 +41,10 @@ where
     pub fn get(self) -> T {
         // SAFETY: Checked in `Self::new`.
         unsafe { assert_unchecked(self.in_bounds()) };
+        self.0
+    }
+
+    pub const fn const_get(&'static self) -> T {
         self.0
     }
 }
