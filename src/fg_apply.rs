@@ -133,7 +133,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let seq_hdr = &***out.seq_hdr.as_ref().unwrap();
     let frame_hdr = &***out.frame_hdr.as_ref().unwrap();
     let data = &frame_hdr.film_grain.data;
-    let data_c = &data.clone().into();
+    let data_c = &data.clone();
     let in_data = &r#in.data.as_ref().unwrap().data;
     let out_data = &out.data.as_ref().unwrap().data;
     let w = out.p.w as usize;

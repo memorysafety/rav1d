@@ -1284,8 +1284,8 @@ fn decode_b(
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
                     |case, dir| {
-                        case.set_disjoint(&dir.filter[0], filter[0].into());
-                        case.set_disjoint(&dir.filter[1], filter[1].into());
+                        case.set_disjoint(&dir.filter[0], filter[0]);
+                        case.set_disjoint(&dir.filter[1], filter[1]);
                         case.set_disjoint(&dir.intra, 0);
                     },
                 );
@@ -3484,7 +3484,7 @@ fn decode_sb(
             bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize].into(),
+                dav1d_partition_type_count[bl as usize],
             ) as usize)
             .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
