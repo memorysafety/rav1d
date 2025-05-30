@@ -4672,7 +4672,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
             } else {
                 &[]
             }
-            .into_iter()
+            .iter()
             .copied()
             .chain(iter::repeat(0)),
         )

@@ -1733,7 +1733,7 @@ unsafe extern "C" fn splat_mv_c(
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
     // SAFETY: Length sliced in `splat_mv::Fn::call`.
     let rr = unsafe { slice::from_raw_parts_mut(rr, bh4) };
-    let rr = rr.into_iter().map(|&mut r| {
+    let rr = rr.iter_mut().map(|&mut r| {
         // SAFETY: `r` is from `rf.r.index_mut((ri + bx4.., ..bw4)).as_mut_ptr().sub(bx4)` in `splat_mv::Fn::call`.
         unsafe { slice::from_raw_parts_mut(r.add(bx4), bw4) }
     });

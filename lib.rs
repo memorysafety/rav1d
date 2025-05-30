@@ -18,7 +18,6 @@
     clippy::duplicate_underscore_argument,
     clippy::identity_op,
     clippy::int_plus_one,
-    clippy::into_iter_on_ref,
     clippy::large_const_arrays,
     clippy::manual_div_ceil,
     clippy::manual_range_contains,
