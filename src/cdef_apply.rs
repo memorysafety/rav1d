@@ -44,7 +44,7 @@ impl Backup2x8Flags {
 fn backup2lines<BD: BitDepth>(
     dst_buf: &DisjointMut<AlignedVec64<u8>>,
     dst_off: [usize; 3],
-    src: [Rav1dPictureDataComponentOffset; 3],
+    src: &[Rav1dPictureDataComponentOffset; 3],
     layout: Rav1dPixelLayout,
 ) {
     let y_stride = src[0].pixel_stride::<BD>();
@@ -198,7 +198,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                 f.lf.cdef_line[!tf as usize][2]
                     .wrapping_add_signed(have_tt as isize * sby as isize * 8 * uv_stride),
             ];
-            backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
+            backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, &ptrs, layout);
         }
 
         let mut iptrs = ptrs;
@@ -266,7 +266,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
+                            f.dsp.cdef.dir.call::<BD>(&bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };
@@ -337,10 +337,10 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
                                 f.dsp.cdef.fb[0].call::<BD>(
-                                    bptrs[0],
+                                    &bptrs[0],
                                     &lr_bak[bit as usize][0],
-                                    top,
-                                    bot,
+                                    &top,
+                                    &bot,
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
@@ -351,10 +351,10 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             }
                         } else if y_sec_lvl != 0 {
                             f.dsp.cdef.fb[0].call::<BD>(
-                                bptrs[0],
+                                &bptrs[0],
                                 &lr_bak[bit as usize][0],
-                                top,
-                                bot,
+                                &top,
+                                &bot,
                                 0,
                                 y_sec_lvl,
                                 0,
@@ -437,10 +437,10 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
-                                    bptrs[pl],
+                                    &bptrs[pl],
                                     &lr_bak[bit as usize][pl],
-                                    top,
-                                    bot,
+                                    &top,
+                                    &bot,
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl,
                                     uvdir,
