@@ -208,6 +208,10 @@ pub struct MsacAsmContext {
     ) -> c_uint,
 }
 
+#[cfg_attr(
+    not(all(feature = "asm", target_arch = "x86_64")),
+    expect(clippy::derivable_impls)
+)]
 impl Default for MsacAsmContext {
     fn default() -> Self {
         Self {

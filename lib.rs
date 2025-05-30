@@ -3,7 +3,7 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
-#![allow(clippy::derivable_impls, clippy::erasing_op, clippy::ptr_eq)]
+#![allow(clippy::erasing_op, clippy::ptr_eq)]
 #![expect(
     non_upper_case_globals,
     clippy::arc_with_non_send_sync,
