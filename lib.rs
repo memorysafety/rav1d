@@ -3,7 +3,11 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
-#![allow(clippy::erasing_op)]
+#![allow(
+    clippy::erasing_op,
+    clippy::type_complexity,
+    clippy::too_many_arguments
+)]
 #![expect(
     non_upper_case_globals,
     clippy::arc_with_non_send_sync,
@@ -36,8 +40,6 @@
     clippy::precedence,
     clippy::redundant_static_lifetimes,
     clippy::search_is_some,
-    clippy::too_many_arguments,
-    clippy::type_complexity,
     clippy::unit_arg,
     clippy::uninlined_format_args,
     clippy::unnecessary_cast,
