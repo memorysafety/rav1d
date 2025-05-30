@@ -251,7 +251,7 @@ pub fn rav1d_picture_copy_props(
 // itut_t35 was taken out of the c.itut_t35 originally, but that violates Rust
 // borrowing rules so we need to pass it to this function explicitly.
 pub(crate) fn rav1d_thread_picture_alloc(
-    fc: &Box<[Rav1dFrameContext]>,
+    fc: &[Rav1dFrameContext],
     logger: &Option<Rav1dLogger>,
     allocator: &Rav1dPicAllocator,
     content_light: Option<Arc<Rav1dContentLightLevel>>,

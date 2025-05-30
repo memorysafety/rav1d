@@ -11,7 +11,6 @@
 #![expect(
     non_upper_case_globals,
     clippy::arc_with_non_send_sync,
-    clippy::borrowed_box,
     clippy::cast_abs_to_unsigned,
     clippy::collapsible_else_if,
     clippy::collapsible_if,
