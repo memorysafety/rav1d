@@ -29,7 +29,6 @@
     clippy::nonminimal_bool,
     clippy::partialeq_to_none,
     clippy::precedence,
-    clippy::unnecessary_cast,
     clippy::unnecessary_mut_passed,
     clippy::zero_prefixed_literal
 )]

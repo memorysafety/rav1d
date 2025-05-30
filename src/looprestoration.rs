@@ -687,8 +687,8 @@ fn selfguided_filter<BD: BitDepth>(
             aa[i] = ((x * bb[i].as_::<c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as c_int;
             bb[i] = x.as_::<BD::Coef>();
         }
-        aa += step as usize * REST_UNIT_STRIDE;
-        bb += step as usize * REST_UNIT_STRIDE;
+        aa += step * REST_UNIT_STRIDE;
+        bb += step * REST_UNIT_STRIDE;
     }
 
     fn six_neighbors<P>(p: &CursorMut<P>, i: isize) -> c_int

@@ -330,7 +330,7 @@ fn mask_edges_intra(
 
     CaseSet::<32, true>::many(
         [(a, thl4c), (l, twl4c)],
-        [w4 as usize, h4 as usize],
+        [w4, h4],
         [0, 0],
         |case, (dir, tl4c)| {
             case.set(dir, tl4c);
@@ -413,7 +413,7 @@ fn mask_edges_chroma(
 
     CaseSet::<32, true>::many(
         [(a, thl4c), (l, twl4c)],
-        [cw4 as usize, ch4 as usize],
+        [cw4, ch4],
         [0, 0],
         |case, (dir, tl4c)| {
             case.set(dir, tl4c);

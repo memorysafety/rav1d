@@ -457,46 +457,46 @@ pub static dav1d_partition_type_count: [u8; BlockLevel::COUNT] = [
 ];
 
 pub static dav1d_tx_types_per_set: [u8; 40] = [
-    IDTX as u8,
-    DCT_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    IDTX as u8,
-    DCT_DCT as u8,
-    V_DCT as u8,
-    H_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    IDTX as u8,
-    V_DCT as u8,
-    H_DCT as u8,
-    DCT_DCT as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    FLIPADST_DCT as u8,
-    DCT_FLIPADST as u8,
-    ADST_ADST as u8,
-    FLIPADST_FLIPADST as u8,
-    ADST_FLIPADST as u8,
-    FLIPADST_ADST as u8,
-    IDTX as u8,
-    V_DCT as u8,
-    H_DCT as u8,
-    V_ADST as u8,
-    H_ADST as u8,
-    V_FLIPADST as u8,
-    H_FLIPADST as u8,
-    DCT_DCT as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    FLIPADST_DCT as u8,
-    DCT_FLIPADST as u8,
-    ADST_ADST as u8,
-    FLIPADST_FLIPADST as u8,
-    ADST_FLIPADST as u8,
-    FLIPADST_ADST as u8,
+    IDTX,
+    DCT_DCT,
+    ADST_ADST,
+    ADST_DCT,
+    DCT_ADST,
+    IDTX,
+    DCT_DCT,
+    V_DCT,
+    H_DCT,
+    ADST_ADST,
+    ADST_DCT,
+    DCT_ADST,
+    IDTX,
+    V_DCT,
+    H_DCT,
+    DCT_DCT,
+    ADST_DCT,
+    DCT_ADST,
+    FLIPADST_DCT,
+    DCT_FLIPADST,
+    ADST_ADST,
+    FLIPADST_FLIPADST,
+    ADST_FLIPADST,
+    FLIPADST_ADST,
+    IDTX,
+    V_DCT,
+    H_DCT,
+    V_ADST,
+    H_ADST,
+    V_FLIPADST,
+    H_FLIPADST,
+    DCT_DCT,
+    ADST_DCT,
+    DCT_ADST,
+    FLIPADST_DCT,
+    DCT_FLIPADST,
+    ADST_ADST,
+    FLIPADST_FLIPADST,
+    ADST_FLIPADST,
+    FLIPADST_ADST,
 ];
 
 pub static dav1d_ymode_size_context: [u8; BlockSize::COUNT] = [
@@ -581,13 +581,8 @@ pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; Filter2d::COUNT] = [
     [Rav1dFilterMode::Bilinear, Rav1dFilterMode::Bilinear],
 ];
 
-pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
-    DC_PRED as u8,
-    VERT_PRED as u8,
-    HOR_PRED as u8,
-    HOR_DOWN_PRED as u8,
-    DC_PRED as u8,
-];
+pub static dav1d_filter_mode_to_y_mode: [u8; 5] =
+    [DC_PRED, VERT_PRED, HOR_PRED, HOR_DOWN_PRED, DC_PRED];
 
 pub static dav1d_intra_mode_context: [u8; N_INTRA_PRED_MODES] =
     [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
@@ -1101,7 +1096,7 @@ pub fn filter_fn(flt_ptr: &[i8], p: [i32; 7]) -> i32 {
     let flt_ptr = &flt_ptr[..48 + 1];
     let mut sum = 0;
     for i in 0..7 {
-        sum += flt_ptr[FILTER_INDICES[i]] as i32 * p[i] as i32;
+        sum += flt_ptr[FILTER_INDICES[i]] as i32 * p[i];
     }
     sum
 }

@@ -286,7 +286,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
 
         let mut bl = BlockLevel::Bl128x128 as u8;
         while bl <= BlockLevel::Bl32x32 as u8 {
-            indices.branch[bl as usize].index = level_index(bl as u8 + sb128);
+            indices.branch[bl as usize].index = level_index(bl + sb128);
             bl += 1;
         }
 

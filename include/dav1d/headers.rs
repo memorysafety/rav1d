@@ -130,7 +130,7 @@ impl TryFrom<Dav1dTxfmMode> for Rav1dTxfmMode {
 
 pub type Dav1dFilterMode = u8;
 pub const DAV1D_N_SWITCHABLE_FILTERS: usize = Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize;
-pub const DAV1D_N_FILTERS: usize = Rav1dFilterMode::N_FILTERS as usize;
+pub const DAV1D_N_FILTERS: usize = Rav1dFilterMode::N_FILTERS;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = Rav1dFilterMode::Switchable as Dav1dFilterMode;
 pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = Rav1dFilterMode::Bilinear as Dav1dFilterMode;
 pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode;

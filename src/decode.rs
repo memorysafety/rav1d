@@ -265,7 +265,7 @@ fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut Mv, mv_prec: 
         &mut ts_c.msac,
         &mut ts_c.cdf.mv.joint.0,
         MVJoint::all().bits(),
-    ) as u8);
+    ));
 
     let mv_cdf = &mut ts_c.cdf.mv;
 
@@ -752,7 +752,7 @@ fn read_pal_indices(
             let color_idx = rav1d_msac_decode_symbol_adapt8(
                 &mut ts_c.msac,
                 &mut color_map_cdf[ctx[m] as usize],
-                pal_sz as u8 - 1,
+                pal_sz - 1,
             ) as usize;
             pal_tmp[(i - j) * stride + j] = order[m][color_idx];
         }
@@ -807,7 +807,7 @@ fn read_vartx_tree(
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [&t.l, &f.a[t.a]],
-                [bh4 as usize, bw4 as usize],
+                [bh4, bw4],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
                     case.set_disjoint(&dir.tx, TxfmSize::S4x4);
@@ -818,7 +818,7 @@ fn read_vartx_tree(
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&t.l, 1), (&f.a[t.a], 0)],
-                [bh4 as usize, bw4 as usize],
+                [bh4, bw4],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
                     // TODO check unwrap is optimized out
@@ -1383,8 +1383,7 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                let mut seg_id =
-                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                let mut seg_id = neg_deinterleave(diff, pred_seg_id, last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
@@ -1471,8 +1470,7 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                let mut seg_id =
-                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                let mut seg_id = neg_deinterleave(diff, pred_seg_id, last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
@@ -1795,7 +1793,7 @@ fn decode_b(
                 &mut ts_c.cdf.m.use_filter_intra[bs as usize],
             );
             if is_filter {
-                y_mode = FILTER_PRED as u8;
+                y_mode = FILTER_PRED;
                 y_angle = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.filter_intra.0,
@@ -2240,10 +2238,7 @@ fn decode_b(
             r#ref,
             interintra_type,
         } = if b.skip_mode != 0 {
-            let r#ref = [
-                frame_hdr.skip_mode.refs[0] as i8,
-                frame_hdr.skip_mode.refs[1] as i8,
-            ];
+            let r#ref = [frame_hdr.skip_mode.refs[0], frame_hdr.skip_mode.refs[1]];
             let comp_type = CompInterType::Avg;
             let inter_mode = NEARESTMV_NEARESTMV;
             let drl_idx = DrlProximity::Nearest;
@@ -2570,7 +2565,7 @@ fn decode_b(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.wedge_idx[ctx],
                             15,
-                        ) as u8;
+                        );
                     }
                     comp_type
                 } else {
@@ -2608,7 +2603,7 @@ fn decode_b(
         } else {
             // ref
             let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
-                seg.r#ref as i8 - 1
+                seg.r#ref - 1
             } else if seg
                 .filter(|seg| seg.globalmv != 0 || seg.skip != 0)
                 .is_some()
@@ -2840,7 +2835,7 @@ fn decode_b(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_idx[wedge_ctx as usize],
                         15,
-                    ) as u8;
+                    );
                 }
             } else {
                 interintra_mode = Default::default();
@@ -4215,7 +4210,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
                 continue;
             }
 
-            let frame_type = frame_hdr.restoration.r#type[p as usize];
+            let frame_type = frame_hdr.restoration.r#type[p];
 
             if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;

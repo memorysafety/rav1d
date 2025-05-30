@@ -59,7 +59,7 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
             let ex = (p1[0] as usize) << shift_x;
             let dx = ex - bx;
             for x in (0..dx).step_by(pad) {
-                let range = scaling[bx + x + pad] as isize - scaling[(bx + x) as usize] as isize;
+                let range = scaling[bx + x + pad] as isize - scaling[bx + x] as isize;
                 let mut r = rnd as isize;
                 for n in 1..pad {
                     r += range;

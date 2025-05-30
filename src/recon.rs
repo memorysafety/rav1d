@@ -343,8 +343,8 @@ fn get_skip_ctx(
 
 #[inline]
 fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
-    let mask = 0xc0c0c0c0c0c0c0c0 as u64;
-    let mul = 0x101010101010101 as u64;
+    let mask = 0xc0c0c0c0c0c0c0c0_u64;
+    let mul = 0x101010101010101_u64;
 
     use TxfmSize::*;
     let s = match tx {
@@ -854,7 +854,7 @@ fn decode_coefs<BD: BitDepth>(
                 // Transposing reduces the stride and padding requirements.
                 x = eob as u8 & mask;
                 y = (eob >> shift) as u8;
-                rc = eob as u16;
+                rc = eob;
             }
             TxClass::V => {
                 x = eob as u8 & mask;
@@ -913,7 +913,7 @@ fn decode_coefs<BD: BitDepth>(
                 TxClass::H => {
                     x = i as u8 & mask;
                     y = (i >> shift) as u8;
-                    rc_i = i as u16;
+                    rc_i = i;
                 }
                 TxClass::V => {
                     x = i as u8 & mask;
@@ -1635,7 +1635,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                         let mut txtp = match b.ii {
                             Av1BlockIntraInter::Intra(_) => DCT_DCT,
                             Av1BlockIntraInter::Inter(_) => {
-                                t.scratch.inter_intra().ac_txtp_map.txtp_map()[(by4 as usize
+                                t.scratch.inter_intra().ac_txtp_map.txtp_map()[(by4
                                     + (y << ss_ver) as usize)
                                     * 32
                                     + bx4
@@ -1690,7 +1690,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     f.bw - t.b.x + ss_hor as c_int >> ss_hor,
                                 ) as usize,
                             ],
-                            [cby4 + y as usize, cbx4 as usize + x as usize],
+                            [cby4 + y as usize, cbx4 + x as usize],
                             |case, dir| {
                                 case.set_disjoint(dir, cf_ctx);
                             },

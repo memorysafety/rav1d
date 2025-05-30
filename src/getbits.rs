@@ -79,7 +79,7 @@ impl<'a> GetBits<'a> {
         let state = self.state;
         self.bits_left -= n;
         self.state = state << n;
-        (state as u64 >> 64 - n) as c_uint
+        (state >> 64 - n) as c_uint
     }
 
     pub fn get_sbits(&mut self, n: c_int) -> c_int {

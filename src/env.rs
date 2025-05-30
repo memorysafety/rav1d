@@ -143,8 +143,7 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
         return if ytxtp == IDTX { IDTX } else { DCT_DCT };
     }
     if uvt_dim.min == TxfmSize::S16x16 as _
-        && ((1 << ytxtp as u8)
-            & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST)))
+        && ((1 << ytxtp) & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST)))
             != 0
     {
         return DCT_DCT;
