@@ -15,7 +15,6 @@
     clippy::collapsible_if,
     clippy::doc_overindented_list_items,
     clippy::duplicate_underscore_argument,
-    clippy::eq_op, // error by default,
     clippy::erasing_op, // error by default
     clippy::explicit_auto_deref,
     clippy::identity_op,

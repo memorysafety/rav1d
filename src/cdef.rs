@@ -181,9 +181,9 @@ fn padding<BD: BitDepth>(
     let stride = src.pixel_stride::<BD>();
 
     // Fill extended input buffer.
-    let mut x_start = 2 - 2;
+    let mut x_start = 0;
     let mut x_end = w + 2 + 2;
-    let mut y_start = 2 - 2;
+    let mut y_start = 0;
     let mut y_end = h + 2 + 2;
     if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
         fill(tmp, w + 4, 2);
