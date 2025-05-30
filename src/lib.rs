@@ -415,15 +415,11 @@ fn output_picture_ready(c: &Rav1dContext, state: &mut Rav1dState, drain: bool) -
             }
             state.cache = mem::take(&mut state.out);
             return false;
-        } else {
-            if state.cache.p.data.is_some() && drain {
-                return true;
-            } else {
-                if state.out.p.data.is_some() {
-                    state.cache = mem::take(&mut state.out);
-                    return false;
-                }
-            }
+        } else if state.cache.p.data.is_some() && drain {
+            return true;
+        } else if state.out.p.data.is_some() {
+            state.cache = mem::take(&mut state.out);
+            return false;
         }
     }
     state.out.p.data.is_some()

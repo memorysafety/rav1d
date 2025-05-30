@@ -68,12 +68,10 @@ pub fn get_intra_ctx(
         } else {
             *l.intra.index(yb4 as usize) * 2
         }
+    } else if have_top {
+        *a.intra.index(xb4 as usize) * 2
     } else {
-        if have_top {
-            *a.intra.index(xb4 as usize) * 2
-        } else {
-            0
-        }
+        0
     }
 }
 
@@ -207,12 +205,10 @@ pub fn get_comp_ctx(
                 ((*l.r#ref[0].index(yb4 as usize) >= 4) ^ (*a.r#ref[0].index(xb4 as usize) >= 4))
                     as u8
             }
+        } else if a.comp_type.index(xb4 as usize).is_some() {
+            3
         } else {
-            if a.comp_type.index(xb4 as usize).is_some() {
-                3
-            } else {
-                (*a.r#ref[0].index(xb4 as usize) >= 4) as u8
-            }
+            (*a.r#ref[0].index(xb4 as usize) >= 4) as u8
         }
     } else if have_left {
         if l.comp_type.index(yb4 as usize).is_some() {

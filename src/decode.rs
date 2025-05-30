@@ -402,17 +402,15 @@ fn neg_deinterleave(diff: u8, r#ref: SegmentId, max: u8) -> u8 {
         } else {
             diff
         }
-    } else {
-        if diff <= 2 * (max - r#ref - 1) {
-            if diff & 1 != 0 {
-                r#ref + (diff + 1 >> 1)
-            } else {
-                r#ref - (diff >> 1)
-            }
+    } else if diff <= 2 * (max - r#ref - 1) {
+        if diff & 1 != 0 {
+            r#ref + (diff + 1 >> 1)
         } else {
-            // The C code returns a signed integer which is immediately cast to `uint8_t`
-            max.wrapping_sub(diff + 1)
+            r#ref - (diff >> 1)
         }
+    } else {
+        // The C code returns a signed integer which is immediately cast to `uint8_t`
+        max.wrapping_sub(diff + 1)
     }
 }
 

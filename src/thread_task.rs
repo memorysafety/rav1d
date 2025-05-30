@@ -100,10 +100,8 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
             ttd.cur.set(reset_frame_idx.wrapping_sub(first));
             return curr_found(c, ttd, first as usize);
         }
-    } else {
-        if frame_idx == u32::MAX {
-            return 0 as c_int;
-        }
+    } else if frame_idx == u32::MAX {
+        return 0 as c_int;
     }
     if frame_idx < first {
         frame_idx += c.fc.len() as c_uint;
