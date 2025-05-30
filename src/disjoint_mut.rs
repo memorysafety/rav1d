@@ -606,7 +606,7 @@ impl Display for Bounds {
 
 impl Debug for Bounds {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 

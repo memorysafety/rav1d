@@ -36,7 +36,6 @@
     clippy::nonminimal_bool,
     clippy::partialeq_to_none,
     clippy::precedence,
-    clippy::uninlined_format_args,
     clippy::unnecessary_cast,
     clippy::unnecessary_mut_passed,
     clippy::upper_case_acronyms,
