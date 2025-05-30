@@ -744,12 +744,11 @@ pub unsafe extern "C" fn dav1d_close(c_out: Option<NonNull<Option<Dav1dContext>>
         return;
     };
     // SAFETY: `c_out` is safe to read from and write to.
-    let c_out = unsafe { c_out.as_mut() };
-    mem::take(c_out).map(|c| {
+    if let Some(c) = unsafe { c_out.as_mut() } {
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         let c = unsafe { c.into_arc() };
         rav1d_close(c);
-    });
+    };
 }
 
 impl Rav1dContext {
