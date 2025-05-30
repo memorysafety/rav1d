@@ -3465,12 +3465,6 @@ fn decode_sb(
     let mut by8 = 0;
     let ctx = match pass {
         FrameThreadPassState::First(ts_c) => {
-            if false && bl == BlockLevel::Bl64x64 {
-                println!(
-                    "poc={},y={},x={},bl={:?},r={}",
-                    frame_hdr.frame_offset, t.b.y, t.b.x, bl, ts_c.msac.rng,
-                );
-            }
             bx8 = (t.b.x & 31) >> 1;
             by8 = (t.b.y & 31) >> 1;
             Some((

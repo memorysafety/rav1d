@@ -543,6 +543,7 @@ fn decode_coefs<BD: BitDepth>(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    #[allow(clippy::overly_complex_bool_expr)]
     let dbg = dbg_block_info && plane != 0 && false;
 
     if dbg {
