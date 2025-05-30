@@ -2,6 +2,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use strum::FromRepr;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Debug)]
 #[repr(u8)]
 #[non_exhaustive]

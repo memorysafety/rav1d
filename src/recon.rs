@@ -2,8 +2,8 @@
 
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
@@ -1078,8 +1078,8 @@ fn decode_coefs<BD: BitDepth>(
     let dq_shift = cmp::max(0, t_dim.ctx as c_int - 2);
     let cf_max = !(!127u32
         << (match BD::BPC {
-            BPC::BPC8 => 8,
-            BPC::BPC16 => f.cur.p.bpc,
+            Bpc::Bpc8 => 8,
+            Bpc::Bpc16 => f.cur.p.bpc,
         })) as i32;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;

@@ -2,10 +2,10 @@
 
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::src::align::AlignedVec64;
@@ -419,7 +419,7 @@ fn wiener_rust<BD: BitDepth>(
         for i in 0..w {
             let mut sum = 1 << bitdepth + 6;
 
-            if BD::BPC == BPC::BPC8 {
+            if BD::BPC == Bpc::Bpc8 {
                 sum += tmp[i + 3].to::<i32>() * 128;
             }
 
@@ -3420,7 +3420,7 @@ impl Rav1dLoopRestorationDSPContext {
             return self;
         }
 
-        if let BPC::BPC8 = BD::BPC {
+        if let Bpc::Bpc8 = BD::BPC {
             self.wiener[0] = bpc_fn!(loop_restoration_filter::decl_fn, 8 bpc, wiener_filter7, sse2);
             self.wiener[1] = bpc_fn!(loop_restoration_filter::decl_fn, 8 bpc, wiener_filter5, sse2);
         };
@@ -3432,7 +3432,7 @@ impl Rav1dLoopRestorationDSPContext {
         self.wiener[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter7, ssse3);
         self.wiener[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter5, ssse3);
 
-        if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+        if matches!(BD::BPC, Bpc::Bpc8) || bpc == 10 {
             self.sgr[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_5x5, ssse3);
             self.sgr[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_3x3, ssse3);
             self.sgr[2] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_mix, ssse3);
@@ -3447,7 +3447,7 @@ impl Rav1dLoopRestorationDSPContext {
             self.wiener[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter7, avx2);
             self.wiener[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, wiener_filter5, avx2);
 
-            if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+            if matches!(BD::BPC, Bpc::Bpc8) || bpc == 10 {
                 self.sgr[0] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_5x5, avx2);
                 self.sgr[1] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_3x3, avx2);
                 self.sgr[2] = bd_fn!(loop_restoration_filter::decl_fn, BD, sgr_filter_mix, avx2);
@@ -3465,13 +3465,13 @@ impl Rav1dLoopRestorationDSPContext {
             );
             self.wiener[1] = match BD::BPC {
                 // With VNNI we don't need a 5-tap version.
-                BPC::BPC8 => self.wiener[0],
-                BPC::BPC16 => {
+                Bpc::Bpc8 => self.wiener[0],
+                Bpc::Bpc16 => {
                     bpc_fn!(loop_restoration_filter::decl_fn, 16 bpc, wiener_filter5, avx512icl)
                 }
             };
 
-            if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+            if matches!(BD::BPC, Bpc::Bpc8) || bpc == 10 {
                 self.sgr[0] = bd_fn!(
                     loop_restoration_filter::decl_fn,
                     BD,
@@ -3517,7 +3517,7 @@ impl Rav1dLoopRestorationDSPContext {
             self.wiener[1] = loop_restoration_filter::Fn::new(wiener_filter_neon_erased::<BD>);
         }
 
-        if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+        if matches!(BD::BPC, Bpc::Bpc8) || bpc == 10 {
             use neon_erased::*;
 
             self.sgr[0] = loop_restoration_filter::Fn::new(sgr_filter_5x5_neon_erased::<BD>);

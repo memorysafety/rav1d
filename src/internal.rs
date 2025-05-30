@@ -1,7 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
@@ -549,12 +549,12 @@ impl Rav1dFrameContextBdFn {
         }
     }
 
-    pub const fn get(bpc: BPC) -> &'static Self {
+    pub const fn get(bpc: Bpc) -> &'static Self {
         const BPC8: Rav1dFrameContextBdFn = Rav1dFrameContextBdFn::new::<BitDepth8>();
         const BPC16: Rav1dFrameContextBdFn = Rav1dFrameContextBdFn::new::<BitDepth16>();
         match bpc {
-            BPC::BPC8 => &BPC8,
-            BPC::BPC16 => &BPC16,
+            Bpc::Bpc8 => &BPC8,
+            Bpc::Bpc16 => &BPC16,
         }
     }
 }
@@ -850,7 +850,7 @@ pub(crate) struct Rav1dFrameData {
 
 impl Rav1dFrameData {
     pub fn bd_fn(&self) -> &'static Rav1dFrameContextBdFn {
-        let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
+        let bpc = Bpc::from_bitdepth_max(self.bitdepth_max);
         Rav1dFrameContextBdFn::get(bpc)
     }
 

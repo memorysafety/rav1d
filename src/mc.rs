@@ -44,7 +44,7 @@ use to_method::To;
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::{bpc_fn, BPC};
+use crate::include::common::bitdepth::{bpc_fn, Bpc};
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 use crate::include::common::bitdepth::bpc_fn;
@@ -2103,7 +2103,7 @@ impl Rav1dMCDSPContext {
             return self;
         }
 
-        if let BPC::BPC8 = BD::BPC {
+        if let Bpc::Bpc8 = BD::BPC {
             self.warp8x8 = bpc_fn!(warp8x8::decl_fn, 8 bpc, warp_affine_8x8, sse4);
             self.warp8x8t = bpc_fn!(warp8x8t::decl_fn, 8 bpc, warp_affine_8x8t, sse4);
         }

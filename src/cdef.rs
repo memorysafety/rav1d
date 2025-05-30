@@ -30,7 +30,7 @@ use std::ptr;
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::{bpc_fn, BPC};
+use crate::include::common::bitdepth::{bpc_fn, Bpc};
 
 bitflags! {
     #[repr(transparent)]
@@ -682,7 +682,7 @@ impl Rav1dCdefDSPContext {
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
-        if matches!(BD::BPC, BPC::BPC8) {
+        if matches!(BD::BPC, Bpc::Bpc8) {
             if !flags.contains(CpuFlags::SSE2) {
                 return self;
             }
@@ -706,7 +706,7 @@ impl Rav1dCdefDSPContext {
         }
 
         self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, sse4);
-        if matches!(BD::BPC, BPC::BPC8) {
+        if matches!(BD::BPC, Bpc::Bpc8) {
             self.fb[0] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_8x8, sse4);
             self.fb[1] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x8, sse4);
             self.fb[2] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x4, sse4);

@@ -1,7 +1,7 @@
 #![deny(unsafe_code)]
 
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -49,7 +49,7 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let n = (points[points.len() - 1][0] as usize) << shift_x;
     scaling[n..][..scaling_size - n].fill(points[points.len() - 1][1]);
 
-    if BD::BPC != BPC::BPC8 {
+    if BD::BPC != Bpc::Bpc8 {
         let pad = 1 << shift_x;
         let rnd = pad >> 1;
         for ps in points.windows(2) {

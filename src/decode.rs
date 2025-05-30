@@ -1,5 +1,5 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::clip;
 use crate::include::common::intops::clip_u8;
@@ -3881,7 +3881,7 @@ fn setup_tile(
                 0
             });
         ts.frame_thread[p].cf.set(if !frame_thread.cf.is_empty() {
-            let bpc = BPC::from_bitdepth_max(bitdepth_max);
+            let bpc = Bpc::from_bitdepth_max(bitdepth_max);
             bpc.coef_stride(tile_start_off * size_mul[0] as u32 >> (seq_hdr.hbd == 0) as c_int)
         } else {
             0
@@ -4438,7 +4438,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     // TODO: Fallible allocation.
     f.lf.cdef_line_buf.resize(alloc_sz, 0);
 
-    let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
+    let bpc = Bpc::from_bitdepth_max(f.bitdepth_max);
     let y_stride_px = bpc.pxstride(f.cur.stride[0]);
     let uv_stride_px = bpc.pxstride(f.cur.stride[1]);
 

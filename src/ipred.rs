@@ -2,8 +2,8 @@
 
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
@@ -240,7 +240,7 @@ fn splat_dc<BD: BitDepth>(
     let width = width as usize;
     assert!(dc <= bd.bitdepth_max().as_::<c_int>());
     let dc = dc.as_::<BD::Pixel>();
-    if BD::BPC == BPC::BPC8 && width > 4 {
+    if BD::BPC == Bpc::Bpc8 && width > 4 {
         for y in 0..height {
             let dst = dst + y * dst.pixel_stride::<BD>();
             let dst = &mut *dst.slice_mut::<BD>(width);
@@ -312,8 +312,8 @@ fn dc_gen<BD: BitDepth>(
     height: c_int,
 ) -> c_uint {
     let (multiplier_1x2, multiplier_1x4, base_shift) = match BD::BPC {
-        BPC::BPC8 => (0x5556, 0x3334, 16),
-        BPC::BPC16 => (0xAAAB, 0x6667, 17),
+        Bpc::Bpc8 => (0x5556, 0x3334, 16),
+        Bpc::Bpc16 => (0xAAAB, 0x6667, 17),
     };
 
     let mut dc = (width + height >> 1) as u32;
@@ -1630,13 +1630,13 @@ mod neon {
 
         let out = out.as_mut_ptr().cast();
         match BD::BPC {
-            BPC::BPC8 => {
+            Bpc::Bpc8 => {
                 // Really a no-op cast, but it's difficult to do it properly with generics.
                 let px = px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel;
                 // SAFETY: We're assuming the asm is actually correct and safe.
                 unsafe { dav1d_ipred_pixel_set_8bpc_neon(out, px, n) }
             }
-            BPC::BPC16 => {
+            Bpc::Bpc16 => {
                 let px = px.into();
                 // SAFETY: We're assuming the asm is actually correct and safe.
                 unsafe { dav1d_ipred_pixel_set_16bpc_neon(out, px, n) }
@@ -2148,7 +2148,7 @@ impl Rav1dIntraPredDSPContext {
                 return self;
             }
 
-            if let BPC::BPC8 = BD::BPC {
+            if let Bpc::Bpc8 = BD::BPC {
                 self.intra_pred[DC_PRED as usize] =
                     bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc, avx512icl);
                 self.intra_pred[DC_128_PRED as usize] =

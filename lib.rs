@@ -34,7 +34,6 @@
     clippy::precedence,
     clippy::unnecessary_cast,
     clippy::unnecessary_mut_passed,
-    clippy::upper_case_acronyms,
     clippy::zero_prefixed_literal
 )]
 #![deny(
