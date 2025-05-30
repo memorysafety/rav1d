@@ -1664,7 +1664,7 @@ fn decode_b(
         }
 
         // angle delta
-        let y_angle = if b_dim[2] + b_dim[3] >= 2 && y_mode >= VERT_PRED && y_mode <= VERT_LEFT_PRED
+        let y_angle = if b_dim[2] + b_dim[3] >= 2 && (VERT_PRED..=VERT_LEFT_PRED).contains(&y_mode)
         {
             let acdf = &mut ts_c.cdf.m.angle_delta[y_mode as usize - VERT_PRED as usize];
             let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6);
@@ -1724,8 +1724,7 @@ fn decode_b(
                     );
                 }
                 uv_angle = 0;
-            } else if b_dim[2] + b_dim[3] >= 2 && uv_mode >= VERT_PRED && uv_mode <= VERT_LEFT_PRED
-            {
+            } else if b_dim[2] + b_dim[3] >= 2 && (VERT_PRED..=VERT_LEFT_PRED).contains(&uv_mode) {
                 let acdf = &mut ts_c.cdf.m.angle_delta[uv_mode as usize - VERT_PRED as usize];
                 let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6);
                 uv_angle = angle as i8 - 3;
