@@ -746,7 +746,7 @@ fn read_pal_indices(
     for i in 1..4 * (w4 + h4) - 1 {
         // top/left-to-bottom/right diagonals ("wave-front")
         let first = cmp::min(i, w4 * 4 - 1);
-        let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
+        let last = (i + 1).saturating_sub(h4 * 4);
         order_palette(pal_tmp, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = rav1d_msac_decode_symbol_adapt8(

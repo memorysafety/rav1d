@@ -19,7 +19,6 @@
     clippy::identity_op,
     clippy::int_plus_one,
     clippy::large_const_arrays,
-    clippy::manual_saturating_arithmetic,
     clippy::module_inception,
     clippy::misrefactored_assign_op,
     clippy::needless_borrow,
