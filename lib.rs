@@ -22,7 +22,6 @@
     clippy::int_plus_one,
     clippy::into_iter_on_ref,
     clippy::large_const_arrays,
-    clippy::len_zero,
     clippy::manual_div_ceil,
     clippy::manual_range_contains,
     clippy::manual_saturating_arithmetic,

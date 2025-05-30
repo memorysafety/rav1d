@@ -4078,7 +4078,7 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
                 (*cache).as_::<c_int>()
             );
         }
-        print!("{}, pal=", if cache.len() != 0 { "]" } else { "[]" });
+        print!("{}, pal=", if cache.is_empty() { "[]" } else { "[" });
         for (n, pal) in pal.iter().enumerate() {
             print!(
                 "{}{:02x}",
@@ -4086,7 +4086,9 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
                 (*pal).as_::<c_int>()
             );
         }
-        println!("]");
+        if !cache.is_empty() {
+            println!("]");
+        }
     }
 
     pal_sz_u8
