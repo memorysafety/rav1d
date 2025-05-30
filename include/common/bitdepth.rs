@@ -387,39 +387,39 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 /// # Args
 ///
 /// * `$decl_fn:path` (optional):
-///     A path to a macro that, given a `fn $fn_name:ident`,
-///     declares and returns an `extern "C" fn`
-///     with the appropriate signature for this `fn`.
-///     This should usually be `mod::decl_fn`,
-///     where the `mod` is defined by [`wrap_fn_ptr!`],
-///     but it doesn't have to be.
+///   A path to a macro that, given a `fn $fn_name:ident`,
+///   declares and returns an `extern "C" fn`
+///   with the appropriate signature for this `fn`.
+///   This should usually be `mod::decl_fn`,
+///   where the `mod` is defined by [`wrap_fn_ptr!`],
+///   but it doesn't have to be.
 ///
-///     \* If omitted, this defaults to [`fn_identity`],
-///     which returns the `fn` given without declaring one inline.
-///     This should be used when the `fn` you are selecting
-///     is already declared elsewhere.
+///   \* If omitted, this defaults to [`fn_identity`],
+///   which returns the `fn` given without declaring one inline.
+///   This should be used when the `fn` you are selecting
+///   is already declared elsewhere.
 ///
 /// * `$BD:ty`:
-///     A `<BD: `[`BitDepth`]`>` generic type parameter.
-///     [`Bpc::Bpc8`] results in `bpc8` and
-///     [`Bpc::Bpc16`] results in `bpc16`.
+///   A `<BD: `[`BitDepth`]`>` generic type parameter.
+///   [`Bpc::Bpc8`] results in `bpc8` and
+///   [`Bpc::Bpc16`] results in `bpc16`.
 ///
 /// * `$name:ident`:
-///     The inner name of the asm `fn` to be declared and evaluated to.
-///     This excludes the `dav1d_` prefix and the `_bpc{8,16}_$asm` suffix.
+///   The inner name of the asm `fn` to be declared and evaluated to.
+///   This excludes the `dav1d_` prefix and the `_bpc{8,16}_$asm` suffix.
 ///
 /// * `$asm:ident`:
-///     The asm variant the asm `fn` is named with.
-///     The possible values correspond to the [`CpuFlags`]:
-///     * `x86`, `x86_64`:
-///         * [`sse2`]
-///         * [`ssse3`]
-///         * [`sse41`]
-///     * `x86_64`:
-///         * [`avx2`]
-///         * [`avx512icl`]
-///     * `arm`, `aarch64`:
-///         * [`neon`]
+///   The asm variant the asm `fn` is named with.
+///   The possible values correspond to the [`CpuFlags`]:
+///   * `x86`, `x86_64`:
+///     * [`sse2`]
+///     * [`ssse3`]
+///     * [`sse41`]
+///   * `x86_64`:
+///     * [`avx2`]
+///     * [`avx512icl`]
+///   * `arm`, `aarch64`:
+///     * [`neon`]
 ///
 /// [`wrap_fn_ptr!`]: crate::src::wrap_fn_ptr::wrap_fn_ptr
 /// [`CpuFlags`]: crate::src::cpu::CpuFlags

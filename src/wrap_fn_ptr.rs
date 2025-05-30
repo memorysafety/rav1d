@@ -4,32 +4,32 @@
 /// this generates a `mod` with the name of the `fn` provided that contains:
 ///
 /// * `type FnPtr`:
-///     The raw, inner `fn` ptr (according to the provided signature) contained by `Fn`.
+///   The raw, inner `fn` ptr (according to the provided signature) contained by `Fn`.
 ///
 /// * `type Fn`:
-///     A newtype wrapping `FnPtr`.
-///     It defines `const fn new(FnPtr) -> Self` to construct it
-///     and `const fn get(&self) -> &FnPtr` to read the `FnPtr`.
+///   A newtype wrapping `FnPtr`.
+///   It defines `const fn new(FnPtr) -> Self` to construct it
+///   and `const fn get(&self) -> &FnPtr` to read the `FnPtr`.
 ///
-///     These methods are marked `pub(super)`
-///     as they are meant to be used in the module calling [`wrap_fn_ptr!`].
+///   These methods are marked `pub(super)`
+///   as they are meant to be used in the module calling [`wrap_fn_ptr!`].
 ///
-///     It is meant for a `fn call` method to also be implemented
-///     for this type to allow users to call the `fn`
-///     in a type-safe (e.x. [`BitDepth`]-wise)
-///     and generally safer (memory safety-wise) way.
+///   It is meant for a `fn call` method to also be implemented
+///   for this type to allow users to call the `fn`
+///   in a type-safe (e.x. [`BitDepth`]-wise)
+///   and generally safer (memory safety-wise) way.
 ///
 /// * `impl ` [`DefaultValue`] ` for Fn`:
-///     A `const`-compatible default implementation of `Fn`
-///     that just calls [`unimplemented!`].
-///     This lets `Fn` be used by [`enum_map!`] without wrapping it in an [`Option`],
-///     and removes any need for an [`Option::unwrap`] check,
-///     as the check is moved to inside the `fn` call.
+///   A `const`-compatible default implementation of `Fn`
+///   that just calls [`unimplemented!`].
+///   This lets `Fn` be used by [`enum_map!`] without wrapping it in an [`Option`],
+///   and removes any need for an [`Option::unwrap`] check,
+///   as the check is moved to inside the `fn` call.
 ///
 /// * `decl_fn!`:
-///     A macro that, given a `fn $fn_name:ident`,
-///     declares an `extern "C" fn` with the `fn` signature provided.
-///     This macro can and is meant to be used with [`bd_fn!`].
+///   A macro that, given a `fn $fn_name:ident`,
+///   declares an `extern "C" fn` with the `fn` signature provided.
+///   This macro can and is meant to be used with [`bd_fn!`].
 ///
 /// This ensures that the `fn` signature is consistent between all of these
 /// and reduces the need to repeat the `fn` signature many times.

@@ -14,7 +14,6 @@
     clippy::cast_abs_to_unsigned,
     clippy::collapsible_else_if,
     clippy::collapsible_if,
-    clippy::doc_overindented_list_items,
     clippy::duplicate_underscore_argument,
     clippy::identity_op,
     clippy::int_plus_one,
