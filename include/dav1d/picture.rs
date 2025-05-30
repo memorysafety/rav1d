@@ -274,8 +274,7 @@ impl Rav1dPictureDataComponent {
             // SAFETY: This puts `ptr` one element past the end of the slice of pixels.
             let ptr = unsafe { ptr.add(self.byte_len()) };
             // SAFETY: `stride` is negative and `-stride < len`, so this should stay in bounds.
-            let ptr = unsafe { ptr.offset(stride) };
-            ptr
+            unsafe { ptr.offset(stride) }
         } else {
             ptr
         }
