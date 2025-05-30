@@ -4824,15 +4824,17 @@ pub(crate) fn rav1d_decode_frame_exit(
         cf.fill_with(Default::default);
     }
 
-    if retval.is_ok() && c.fc.len() > 1 && c.strict_std_compliance {
-        if f.refp.iter().any(|rf| {
+    if retval.is_ok()
+        && c.fc.len() > 1
+        && c.strict_std_compliance
+        && f.refp.iter().any(|rf| {
             rf.p.frame_hdr.is_some()
                 && rf.progress.as_ref().unwrap()[1].load(Ordering::SeqCst) == FRAME_ERROR
-        }) {
-            retval = Err(EINVAL);
-            task_thread.error.store(1, Ordering::SeqCst);
-            f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
-        }
+        })
+    {
+        retval = Err(EINVAL);
+        task_thread.error.store(1, Ordering::SeqCst);
+        f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
     }
 
     let _ = mem::take(&mut f.refp);

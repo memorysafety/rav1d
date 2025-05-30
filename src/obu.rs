@@ -1491,17 +1491,15 @@ fn parse_skip_mode(
                     refpoc as c_int,
                     off_before as c_int,
                 ) < 0
-                {
-                    if off_before2 == 0xffffffff
+                    && (off_before2 == 0xffffffff
                         || get_poc_diff(
                             seqhdr.order_hint_n_bits,
                             refpoc as c_int,
                             off_before2 as c_int,
-                        ) > 0
-                    {
-                        off_before2 = refpoc;
-                        off_before2_idx = i;
-                    }
+                        ) > 0)
+                {
+                    off_before2 = refpoc;
+                    off_before2_idx = i;
                 }
             }
 

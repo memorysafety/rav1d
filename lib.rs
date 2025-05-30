@@ -12,7 +12,6 @@
     non_upper_case_globals,
     clippy::arc_with_non_send_sync,
     clippy::cast_abs_to_unsigned,
-    clippy::collapsible_if,
     clippy::duplicate_underscore_argument,
     clippy::identity_op,
     clippy::int_plus_one,

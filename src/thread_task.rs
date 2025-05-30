@@ -1285,10 +1285,10 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     TaskType::SuperResolution => {
                         let f = fc.data.try_read().unwrap();
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
-                            if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
-                            }
+                        if frame_hdr.size.width[0] != frame_hdr.size.width[1]
+                            && fc.task_thread.error.load(Ordering::SeqCst) == 0
+                        {
+                            (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
                         }
                         task_type = TaskType::LoopRestoration;
                         continue 'fallthrough;
