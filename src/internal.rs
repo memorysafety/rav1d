@@ -274,6 +274,7 @@ impl<BD: BitDepth> Default for GrainBD<BD> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum Grain {
     #[cfg(feature = "bitdepth_8")]
     Bpc8(GrainBD<BitDepth8>),
