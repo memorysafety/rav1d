@@ -3170,7 +3170,7 @@ fn decode_b(
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
-            [..(bh4 as usize + 1) / 2]
+            [..(bh4 as usize).div_ceil(2)]
         {
             noskip_mask[bx_idx as usize].update(|it| it | mask as u16);
             if bw4 == 32 {
