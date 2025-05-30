@@ -41,7 +41,6 @@
     clippy::option_map_unit_fn,
     clippy::partialeq_to_none,
     clippy::precedence,
-    clippy::redundant_closure,
     clippy::redundant_pattern_matching,
     clippy::redundant_static_lifetimes,
     clippy::search_is_some,
