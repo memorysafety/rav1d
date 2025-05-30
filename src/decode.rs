@@ -4654,9 +4654,9 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
 
     let tiling = &frame_hdr.tiling;
 
-    let n_bytes = tiling.n_bytes.try_into().unwrap();
-    let rows: usize = tiling.rows.try_into().unwrap();
-    let cols = tiling.cols.try_into().unwrap();
+    let n_bytes = usize::from(tiling.n_bytes);
+    let rows = usize::from(tiling.rows);
+    let cols = usize::from(tiling.cols);
     let sb128w: usize = f.sb128w.try_into().unwrap();
 
     // parse individual tiles per tile group
@@ -4773,7 +4773,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
     let Rav1dFrameHeaderTiling { rows, cols, .. } = frame_hdr.tiling;
-    let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
+    let [rows, cols] = [rows, cols].map(usize::from);
     // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
     let row_start_sb = frame_hdr.tiling.row_start_sb;
     for (tile_row, sbh_start_end) in row_start_sb[..rows + 1].windows(2).take(rows).enumerate() {
