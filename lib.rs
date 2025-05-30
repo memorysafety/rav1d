@@ -6,7 +6,6 @@
 #![allow(clippy::derivable_impls, clippy::ptr_eq)]
 #![expect(
     non_upper_case_globals,
-    clippy::absurd_extreme_comparisons, // error by default
     clippy::arc_with_non_send_sync,
     clippy::borrow_deref_ref,
     clippy::borrowed_box,

@@ -2435,7 +2435,7 @@ fn parse_obus(
                         payload_size -= 1;
                     }
 
-                    if payload_size <= 0 || gb[payload_size] != 0x80 {
+                    if payload_size == 0 || gb[payload_size] != 0x80 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let country_code = country_code as u8;
