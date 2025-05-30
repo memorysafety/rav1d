@@ -709,19 +709,18 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
         }
     }
     row = ttd.delayed_fg_progress[0].fetch_add(1, Ordering::SeqCst);
-    let _ = task_thread_lock.take();
+    drop(task_thread_lock.take());
     let delayed_fg = ttd.delayed_fg.try_read().unwrap();
     progmax = (delayed_fg.out.p.h + FG_BLOCK_SIZE as i32 - 1) / FG_BLOCK_SIZE as i32;
     loop {
         if (row + 1) < progmax {
             ttd.cond.notify_one();
         } else if row + 1 >= progmax {
-            *task_thread_lock = Some(ttd.lock.lock());
+            let _locked = ttd.lock.lock();
             ttd.delayed_fg_exec.set(0);
             if row >= progmax {
                 break;
             }
-            let _ = task_thread_lock.take();
         }
         {
             let dsp = &Rav1dBitDepthDSPContext::get(delayed_fg.out.p.bpc)

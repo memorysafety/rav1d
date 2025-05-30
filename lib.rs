@@ -24,7 +24,6 @@
     clippy::len_without_is_empty,
     clippy::len_zero,
     clippy::let_and_return,
-    clippy::let_underscore_lock,
     clippy::manual_div_ceil,
     clippy::manual_range_contains,
     clippy::manual_saturating_arithmetic,
