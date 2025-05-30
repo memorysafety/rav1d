@@ -65,12 +65,12 @@ pub fn apply_sign64(v: c_int, s: i64) -> c_int {
 
 #[inline]
 pub fn ulog2(v: c_uint) -> c_int {
-    return 31 - clz(v);
+    31 - clz(v)
 }
 
 #[inline]
 pub fn u64log2(v: u64) -> c_int {
-    return 63 - clzll(v as c_ulonglong);
+    63 - clzll(v as c_ulonglong)
 }
 
 #[inline]

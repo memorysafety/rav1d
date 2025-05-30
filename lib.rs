@@ -23,7 +23,6 @@
     clippy::needless_borrow,
     clippy::needless_lifetimes,
     clippy::needless_range_loop,
-    clippy::needless_return,
     clippy::neg_multiply,
     clippy::nonminimal_bool,
     clippy::partialeq_to_none,

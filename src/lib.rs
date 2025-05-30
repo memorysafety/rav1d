@@ -613,7 +613,7 @@ pub(crate) fn rav1d_apply_grain(
     let res = rav1d_picture_alloc_copy(&c.logger, out, in_0.p.w, in_0);
     if res.is_err() {
         let _ = mem::take(out);
-        return res;
+        res
     } else {
         if c.tc.len() > 1 {
             rav1d_task_delayed_fg(c, out, in_0);
@@ -630,8 +630,8 @@ pub(crate) fn rav1d_apply_grain(
                 _ => {}
             }
         }
-        return Ok(());
-    };
+        Ok(())
+    }
 }
 
 /// # Safety

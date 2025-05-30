@@ -290,7 +290,7 @@ fn dc_gen_top<BD: BitDepth>(
     for i in 0..width as usize {
         dc += topleft[offset + 1 + i].as_::<c_uint>();
     }
-    return dc >> width.trailing_zeros();
+    dc >> width.trailing_zeros()
 }
 
 fn dc_gen_left<BD: BitDepth>(
@@ -302,7 +302,7 @@ fn dc_gen_left<BD: BitDepth>(
     for i in 0..height as usize {
         dc += topleft[offset - (1 + i)].as_::<c_uint>();
     }
-    return dc >> height.trailing_zeros();
+    dc >> height.trailing_zeros()
 }
 
 fn dc_gen<BD: BitDepth>(
@@ -333,7 +333,7 @@ fn dc_gen<BD: BitDepth>(
         };
         dc >>= base_shift;
     }
-    return dc;
+    dc
 }
 
 #[derive(FromRepr)]

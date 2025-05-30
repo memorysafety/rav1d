@@ -703,10 +703,10 @@ fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
     let max = (1 << 14) - 1;
-    return Mv {
+    Mv {
         y: iclip(y + 8192 + (y >> 31) >> 14, -max, max) as i16,
         x: iclip(x + 8192 + (x >> 31) >> 14, -max, max) as i16,
-    };
+    }
 }
 
 fn add_temporal_candidate(

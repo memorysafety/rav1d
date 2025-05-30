@@ -261,7 +261,7 @@ pub fn get_comp_dir_ctx(
         let l_ref0 = *l.r#ref[0].index(yb4 as usize);
 
         if !a_comp && !l_comp {
-            return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
+            1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8
         } else if !a_comp || !l_comp {
             let edge = if a_comp { &a } else { &l };
             let off = if a_comp { xb4 } else { yb4 };
@@ -295,7 +295,7 @@ pub fn get_comp_dir_ctx(
         return 4 * has_uni_comp(&edge, off) as u8;
     } else {
         return 2;
-    };
+    }
 }
 
 #[inline]
@@ -305,7 +305,7 @@ pub fn get_poc_diff(order_hint_n_bits: u8, poc0: c_int, poc1: c_int) -> c_int {
     }
     let mask = 1 << order_hint_n_bits - 1;
     let diff = poc0 - poc1;
-    return (diff & mask - 1) - (diff & mask);
+    (diff & mask - 1) - (diff & mask)
 }
 
 #[inline]
@@ -704,5 +704,5 @@ pub(crate) fn get_gmv_2d(
     if hdr.force_integer_mv {
         fix_int_mv_precision(&mut res);
     }
-    return res;
+    res
 }

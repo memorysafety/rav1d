@@ -4080,7 +4080,7 @@ fn check_trailing_bits_after_symbol_coder(msac: &MsacContext) -> Result<(), ()> 
         return Err(());
     }
 
-    return Ok(());
+    Ok(())
 }
 
 pub(crate) fn rav1d_decode_tile_sbrow(

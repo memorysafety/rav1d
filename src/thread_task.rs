@@ -71,7 +71,7 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
         for fc in wrapping_iter(c.fc.iter(), first + ttd.cur.get() as usize) {
             fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::None);
         }
-        return 1;
+        1
     }
 
     let first = ttd.first.load(Ordering::SeqCst);
@@ -126,7 +126,7 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
         }
         ttd.cur.update(|cur| cur + 1);
     }
-    return curr_found(c, ttd, first as usize);
+    curr_found(c, ttd, first as usize)
 }
 
 #[inline]
@@ -389,7 +389,7 @@ fn merge_pending(c: &Rav1dContext) -> c_int {
     for fc in c.fc.iter() {
         res |= fc.task_thread.tasks.merge_pending_frame(c) as c_int;
     }
-    return res;
+    res
 }
 
 fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
@@ -535,7 +535,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
         *task_thread_lock = Some(ttd.lock.lock());
         return 1 as c_int;
     }
-    return 0 as c_int;
+    0 as c_int
 }
 
 #[inline]
@@ -610,7 +610,7 @@ fn check_tile(
             t.deps_skip.update(|it| it + 1);
         }
     }
-    return 0;
+    0
 }
 
 #[inline]
