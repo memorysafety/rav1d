@@ -3,6 +3,7 @@
 use crate::src::cpu::CpuFlags;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::ffi::c_int;
+use std::ptr;
 use std::slice;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
@@ -69,7 +70,7 @@ unsafe extern "C" fn pal_idx_finish_c(
     assert!(w >= 4 && w <= bw && (w & 3) == 0);
     assert!(h >= 4 && h <= bh && (h & 3) == 0);
 
-    let idx = if src == dst {
+    let idx = if ptr::eq(src, dst) {
         // SAFETY: `src` length sliced in `pal_idx_finish::Fn::call` and `src == dst`.
         let tmp = unsafe { slice::from_raw_parts_mut(dst, bw * bh) };
         PalIdx::Tmp(tmp)
