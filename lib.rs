@@ -43,7 +43,6 @@
     clippy::uninlined_format_args,
     clippy::unnecessary_cast,
     clippy::unnecessary_mut_passed,
-    clippy::unnecessary_lazy_evaluations,
     clippy::unneeded_wildcard_pattern,
     clippy::upper_case_acronyms,
     clippy::useless_conversion,

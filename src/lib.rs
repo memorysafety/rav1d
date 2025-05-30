@@ -851,7 +851,7 @@ pub unsafe extern "C" fn dav1d_data_create(buf: Option<NonNull<Dav1dData>>, sz: 
         unsafe { buf.as_ptr().write(data) };
         Ok(ptr)
     }()
-    .unwrap_or_else(|_| ptr::null_mut())
+    .unwrap_or(ptr::null_mut())
 }
 
 /// # Safety
