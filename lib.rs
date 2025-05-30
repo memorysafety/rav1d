@@ -40,7 +40,6 @@
     clippy::precedence,
     clippy::redundant_static_lifetimes,
     clippy::search_is_some,
-    clippy::unit_arg,
     clippy::uninlined_format_args,
     clippy::unnecessary_cast,
     clippy::unnecessary_mut_passed,

@@ -2469,12 +2469,14 @@ fn parse_obus(
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 Rav1dFrameType::Intra => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 _ => {}
@@ -2598,7 +2600,8 @@ fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 Rav1dFrameType::Intra => {
@@ -2606,7 +2609,8 @@ fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 _ => {}
