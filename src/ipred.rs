@@ -501,7 +501,7 @@ fn ipred_v_rust<BD: BitDepth>(
     for y in 0..height {
         let dst = dst + (y as isize * dst.pixel_stride::<BD>());
         BD::pixel_copy(
-            &mut *dst.slice_mut::<BD>(width),
+            &mut dst.slice_mut::<BD>(width),
             &topleft[topleft_off + 1..][..width],
             width,
         );
@@ -545,7 +545,7 @@ fn ipred_h_rust<BD: BitDepth>(
     for y in 0..height {
         let dst = dst + (y as isize * dst.pixel_stride::<BD>());
         BD::pixel_set(
-            &mut *dst.slice_mut::<BD>(width),
+            &mut dst.slice_mut::<BD>(width),
             topleft[topleft_off - (1 + y)],
             width,
         );

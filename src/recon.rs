@@ -1814,8 +1814,8 @@ fn mc<BD: BitDepth>(
         let pos_y = scale_mv(orig_pos_y, f.svc[refidx][1].scale);
         let left = pos_x >> 10;
         let top = pos_y >> 10;
-        let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
-        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx][1].step >> 10) + 1;
+        let right = (pos_x + (bw4 * h_mul - 1) * f.svc[refidx][0].step >> 10) + 1;
+        let bottom = (pos_y + (bh4 * v_mul - 1) * f.svc[refidx][1].step >> 10) + 1;
 
         if debug_block_info!(f, b) {
             println!(

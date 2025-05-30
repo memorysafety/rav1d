@@ -1616,7 +1616,7 @@ fn decode_b(
         } else if last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             rav1d_calc_lf_values(
-                &mut (*ts.lflvlmem.try_write().unwrap()),
+                &mut ts.lflvlmem.try_write().unwrap(),
                 frame_hdr,
                 &last_delta_lf,
             );
@@ -4703,7 +4703,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
             setup_tile(
                 c,
                 ts,
-                &***f.seq_hdr.as_ref().unwrap(),
+                f.seq_hdr.as_ref().unwrap(),
                 frame_hdr,
                 f.bitdepth_max,
                 f.sb_shift,
@@ -4887,8 +4887,8 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
             if c.tc.len() > 1 {
                 res = rav1d_task_create_tile_sbrow(fc, &f, 0, 1);
                 drop(f); // release the frame data before waiting for the other threads
-                let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock();
-                (*fc.task_thread.ttd).cond.notify_one();
+                let mut task_thread_lock = fc.task_thread.ttd.lock.lock();
+                fc.task_thread.ttd.cond.notify_one();
                 if res.is_ok() {
                     while fc.task_thread.done[0].load(Ordering::SeqCst) == 0
                         || fc.task_thread.task_counter.load(Ordering::SeqCst) > 0

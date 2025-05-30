@@ -657,7 +657,7 @@ fn fix_int_mv_precision(mv: &mut Mv) {
 pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut Mv) {
     if hdr.force_integer_mv {
         fix_int_mv_precision(mv);
-    } else if !(*hdr).hp {
+    } else if !hdr.hp {
         mv.x = (mv.x - (mv.x >> 15)) & !1;
         mv.y = (mv.y - (mv.y >> 15)) & !1;
     }

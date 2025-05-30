@@ -14,7 +14,6 @@
     clippy::collapsible_if,
     clippy::doc_overindented_list_items,
     clippy::duplicate_underscore_argument,
-    clippy::explicit_auto_deref,
     clippy::identity_op,
     clippy::int_plus_one,
     clippy::into_iter_on_ref,

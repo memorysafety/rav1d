@@ -255,7 +255,7 @@ impl DerefMut for MsacContext {
 
 impl MsacContext {
     pub fn data(&self) -> &[u8] {
-        &**self.data.as_ref().unwrap()
+        self.data.as_ref().unwrap()
     }
 
     pub fn buf_index(&self) -> usize {
