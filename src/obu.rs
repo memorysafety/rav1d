@@ -2223,7 +2223,7 @@ fn parse_obus(
             state.n_tiles = 0;
             return Err(EINVAL);
         }
-        if let Err(_) = state.tiles.try_reserve_exact(1) {
+        if state.tiles.try_reserve_exact(1).is_err() {
             return Err(EINVAL);
         }
         state.n_tiles += 1 + hdr.end - hdr.start;

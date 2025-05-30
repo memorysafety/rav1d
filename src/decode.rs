@@ -2613,7 +2613,10 @@ fn decode_b(
             // ref
             let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
                 seg.r#ref as i8 - 1
-            } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
+            } else if seg
+                .filter(|seg| seg.globalmv != 0 || seg.skip != 0)
+                .is_some()
+            {
                 0
             } else {
                 let ctx1 = av1_get_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
