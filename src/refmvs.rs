@@ -327,7 +327,7 @@ impl save_tmvs::Fn {
         assert!(row_start8 >= 0);
         assert!((row_end8 - row_start8) as u32 <= 16);
 
-        let rp = &*rp.as_ref().unwrap();
+        let rp = rp.as_ref().unwrap();
 
         let row_end8 = cmp::min(row_end8, rf.ih8);
         let col_end8 = cmp::min(col_end8, rf.iw8);

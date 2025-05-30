@@ -2472,7 +2472,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         bd,
                     );
                 }
-                if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                     for pl in 1..3 {
                         let uv_dst = cur_data[pl].with_offset::<BD>() + uv_off;
