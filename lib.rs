@@ -10,7 +10,6 @@
     clippy::borrow_deref_ref,
     clippy::borrowed_box,
     clippy::cast_abs_to_unsigned,
-    clippy::clone_on_copy,
     clippy::collapsible_else_if,
     clippy::collapsible_if,
     clippy::doc_overindented_list_items,

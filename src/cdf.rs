@@ -5103,9 +5103,9 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
             mi: default_cdf.mi.clone(),
             mv: CdfMvContext {
                 comp: [default_cdf.mv.comp.clone(), default_cdf.mv.comp.clone()],
-                joint: default_cdf.mv.joint.clone(),
+                joint: default_cdf.mv.joint,
             },
-            kfym: default_cdf.kfym.clone(),
+            kfym: default_cdf.kfym,
         },
     }
 }

@@ -4772,7 +4772,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
     let Rav1dFrameHeaderTiling { rows, cols, .. } = frame_hdr.tiling;
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
     // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
-    let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
+    let row_start_sb = frame_hdr.tiling.row_start_sb;
     for (tile_row, sbh_start_end) in row_start_sb[..rows + 1].windows(2).take(rows).enumerate() {
         // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
         let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
