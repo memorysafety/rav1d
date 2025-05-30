@@ -520,7 +520,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             seq_hdr_ref: seq_hdr.map(RawArc::from_arc),
             content_light_ref: content_light.map(RawArc::from_arc),
             mastering_display_ref: mastering_display.map(RawArc::from_arc),
-            itut_t35_ref: Some(itut_t35).map(RawArc::from_arc),
+            itut_t35_ref: Some(RawArc::from_arc(itut_t35)),
             reserved_ref: Default::default(),
             // Order flipped so that the borrow comes before the move.
             allocator_data: data.as_ref().and_then(|arc| arc.allocator_data),
