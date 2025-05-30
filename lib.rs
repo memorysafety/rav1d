@@ -3,7 +3,7 @@
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
 )]
-#![allow(clippy::derivable_impls, clippy::ptr_eq)]
+#![allow(clippy::derivable_impls, clippy::erasing_op, clippy::ptr_eq)]
 #![expect(
     non_upper_case_globals,
     clippy::arc_with_non_send_sync,
@@ -15,7 +15,6 @@
     clippy::collapsible_if,
     clippy::doc_overindented_list_items,
     clippy::duplicate_underscore_argument,
-    clippy::erasing_op, // error by default
     clippy::explicit_auto_deref,
     clippy::identity_op,
     clippy::incompatible_msrv,
