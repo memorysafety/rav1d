@@ -2170,7 +2170,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
             }
 
             let intra_flags = sm_flag(&f.a[t.a], bx4 as usize)
-                | sm_flag(&mut t.l, by4 as usize)
+                | sm_flag(&t.l, by4 as usize)
                 | intra_edge_filter_flag;
             let sb_has_tr = if (init_x + 16) < w4 {
                 true
@@ -2527,8 +2527,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                 }
             }
 
-            let sm_uv_fl =
-                sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
+            let sm_uv_fl = sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&t.l, cby4 as usize);
             let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
                 true
             } else if init_y != 0 {

@@ -630,7 +630,7 @@ fn derive_warpmv(
     }
 
     wmp.r#type = if !rav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.b.x, t.b.y)
-        && !rav1d_get_shear_params(&mut wmp)
+        && !rav1d_get_shear_params(&wmp)
     {
         Rav1dWarpedMotionType::Affine
     } else {
@@ -1251,7 +1251,7 @@ fn decode_b(
                         t.warpmv.matrix[4] = two_d.matrix[2] as i32;
                         t.warpmv.matrix[5] = two_d.matrix[3] as i32 + 0x10000;
                         rav1d_set_affine_mv2d(bw4, bh4, two_d.mv2d, &mut t.warpmv, t.b.x, t.b.y);
-                        rav1d_get_shear_params(&mut t.warpmv);
+                        rav1d_get_shear_params(&t.warpmv);
                         if debug_block_info!(f, t.b) {
                             println!(
                                 "[ {} {} {}\n  {} {} {} ]\n\
