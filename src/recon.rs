@@ -1384,7 +1384,7 @@ fn read_coef_tree<BD: BitDepth>(
                 CfSelect::Task
             };
         if t.frame_thread.pass != 2 {
-            let ts_c = ts_c.as_deref_mut().unwrap();
+            let ts_c = ts_c.unwrap();
             eob = decode_coefs::<BD>(
                 f,
                 t.ts,

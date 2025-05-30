@@ -31,7 +31,6 @@
     clippy::misrefactored_assign_op,
     clippy::needless_borrow,
     clippy::needless_lifetimes,
-    clippy::needless_option_as_deref,
     clippy::needless_range_loop,
     clippy::needless_return,
     clippy::neg_multiply,
