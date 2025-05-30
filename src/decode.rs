@@ -641,10 +641,7 @@ fn derive_warpmv(
 
 #[inline]
 fn findoddzero(buf: &[u8]) -> bool {
-    buf.iter()
-        .enumerate()
-        .find(|(i, &e)| i & 1 == 1 && e == 0)
-        .is_some()
+    buf.iter().enumerate().any(|(i, &e)| i & 1 == 1 && e == 0)
 }
 
 fn order_palette(
