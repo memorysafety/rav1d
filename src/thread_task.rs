@@ -73,8 +73,7 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
         }
         return 1;
     }
-    let min_frame_idx: c_uint;
-    let cur_frame_idx: c_uint;
+
     let first = ttd.first.load(Ordering::SeqCst);
     let mut reset_frame_idx: c_uint = ttd.reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
     if reset_frame_idx < first {
@@ -109,8 +108,8 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
     if frame_idx < first {
         frame_idx += c.fc.len() as c_uint;
     }
-    min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-    cur_frame_idx = first.wrapping_add(ttd.cur.get());
+    let min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
+    let cur_frame_idx = first.wrapping_add(ttd.cur.get());
     if (ttd.cur.get() as usize) < c.fc.len() && cur_frame_idx < min_frame_idx {
         return 0 as c_int;
     }

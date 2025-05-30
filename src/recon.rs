@@ -1179,7 +1179,6 @@ fn decode_coefs<BD: BitDepth>(
                     .wrapping_mul(qm_tbl[rc as usize] as c_uint)
                     .wrapping_add(16)
                     >> 5;
-                let dq_sat;
 
                 if rc_tok >= 15 << 11 {
                     tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15);
@@ -1202,7 +1201,7 @@ fn decode_coefs<BD: BitDepth>(
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
-                dq_sat = cmp::min(dq as c_int, cf_max + sign as i32);
+                let dq_sat = cmp::min(dq as c_int, cf_max + sign as i32);
                 cf.set(rc, if sign { -dq_sat } else { dq_sat });
 
                 rc = rc_tok as u16 & 0x3ff;

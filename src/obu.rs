@@ -385,13 +385,10 @@ fn parse_seq_hdr(
         }
         hbd
     };
-    let monochrome;
-    if profile != Rav1dProfile::High {
-        monochrome = gb.get_bit() as u8;
-    } else {
-        // Default initialization.
-        monochrome = Default::default();
-    }
+    let monochrome = match profile {
+        Rav1dProfile::High => gb.get_bit() as u8,
+        _ => 0,
+    };
     let color_description_present = gb.get_bit() as u8;
     let pri;
     let trc;
@@ -483,13 +480,10 @@ fn parse_seq_hdr(
     {
         return Err(EINVAL);
     }
-    let separate_uv_delta_q;
-    if monochrome == 0 {
-        separate_uv_delta_q = gb.get_bit() as u8;
-    } else {
-        // Default initialization.
-        separate_uv_delta_q = Default::default();
-    }
+    let separate_uv_delta_q = match monochrome {
+        0 => gb.get_bit() as u8,
+        _ => 0,
+    };
     debug.post(gb, "colorinfo");
 
     let film_grain_present = gb.get_bit() as u8;
@@ -1862,13 +1856,10 @@ fn parse_frame_hdr(
         force_integer_mv = true;
     }
 
-    let frame_id;
-    if seqhdr.frame_id_numbers_present != 0 {
-        frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
-    } else {
-        // Default initialization.
-        frame_id = Default::default();
-    }
+    let frame_id = match seqhdr.frame_id_numbers_present {
+        0 => gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32,
+        _ => 0,
+    };
 
     let frame_size_override = if seqhdr.reduced_still_picture_header != 0 {
         false

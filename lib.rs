@@ -31,7 +31,6 @@
     clippy::module_inception,
     clippy::misrefactored_assign_op,
     clippy::needless_borrow,
-    clippy::needless_late_init,
     clippy::needless_lifetimes,
     clippy::needless_option_as_deref,
     clippy::needless_range_loop,
@@ -56,7 +55,7 @@
     clippy::unneeded_wildcard_pattern,
     clippy::upper_case_acronyms,
     clippy::useless_conversion,
-    clippy::zero_prefixed_literal,
+    clippy::zero_prefixed_literal
 )]
 #![deny(
     unsafe_op_in_unsafe_fn,
