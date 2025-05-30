@@ -18,7 +18,6 @@
     clippy::int_plus_one,
     clippy::into_iter_on_ref,
     clippy::large_const_arrays,
-    clippy::len_without_is_empty,
     clippy::len_zero,
     clippy::let_and_return,
     clippy::manual_div_ceil,
