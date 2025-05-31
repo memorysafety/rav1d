@@ -26,14 +26,13 @@ use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::MemPool;
 use crate::src::send_sync_non_null::SendSyncNonNull;
+use crate::src::unique::Unique;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
-use std::ptr;
 use std::ptr::fn_addr_eq;
-use std::ptr::NonNull;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use to_method::To as _;
@@ -142,16 +141,16 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     // but this way is simpler and more uniform, especially when we move to slices.
     let data = [data0, data1, data2].map(|data| {
         if data.is_empty() {
-            ptr::null_mut()
+            None
         } else {
-            data.as_mut_ptr().cast()
+            Some(Unique::from_ref_mut(data).cast())
         }
     });
 
     // SAFETY: Guaranteed by safety preconditions.
     let p_c = unsafe { &mut *p_c };
     p_c.stride = stride;
-    p_c.data = data.map(NonNull::new);
+    p_c.data = data;
     p_c.allocator_data = Some(SendSyncNonNull::from_box(buf).cast::<c_void>());
     // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
     // so we don't want to drop the `Rav1dPicture` we created for convenience here.

@@ -117,6 +117,7 @@ pub mod src {
     pub(crate) mod relaxed_atomic;
     pub mod send_sync_non_null;
     pub(crate) mod strided;
+    pub mod unique;
     pub(crate) mod with_offset;
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.

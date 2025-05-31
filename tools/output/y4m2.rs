@@ -159,7 +159,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const c_char);
     let mut ptr: *mut u8;
     let hbd = ((*p).p.bpc > 8) as c_int;
-    ptr = (*p).data[0].map_or_else(ptr::null_mut, NonNull::as_ptr) as *mut u8;
+    ptr = (*p).data[0].map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut u8;
     let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
@@ -188,7 +188,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
                         current_block = 13797916685926291137;
                         break;
                     }
-                    ptr = (*p).data[pl as usize].map_or_else(ptr::null_mut, NonNull::as_ptr)
+                    ptr = (*p).data[pl as usize].map_or_else(ptr::null_mut, |data| data.as_ptr())
                         as *mut u8;
                     let mut y_0 = 0;
                     while y_0 < ch {
