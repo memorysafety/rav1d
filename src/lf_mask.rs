@@ -14,6 +14,7 @@ use crate::src::levels::SegmentId;
 use crate::src::levels::TxfmSize;
 use crate::src::relaxed_atomic::RelaxedAtomic;
 use crate::src::tables::dav1d_txfm_dimensions;
+use bytemuck;
 use libc::ptrdiff_t;
 use parking_lot::RwLock;
 use std::cmp;
@@ -149,7 +150,7 @@ fn decomp_tx(
     };
 }
 
-#[inline]
+#[inline(always)]
 fn mask_edges_inter(
     masks: &[[[[RelaxedAtomic<u16>; 2]; 3]; 32]; 2],
     by4: usize,
@@ -261,7 +262,7 @@ fn mask_edges_inter(
     a[..w4].copy_from_slice(txa_slice);
 }
 
-#[inline]
+#[inline(always)]
 fn mask_edges_intra(
     masks: &[[[[RelaxedAtomic<u16>; 2]; 3]; 32]; 2],
     by4: usize,
@@ -452,12 +453,13 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
+            let idx = 4 * level_cache_off;
+            let lvl = &mut *level_cache.index_mut((idx + 0.., ..4 * bw4));
+            let lvl: &mut [[u8; 4]] = bytemuck::cast_slice_mut(lvl);
             for x in 0..bw4 {
-                let idx = 4 * (level_cache_off + x);
                 // `0.., ..2` is for Y
-                let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                lvl[0] = filter_level[0][0][0];
-                lvl[1] = filter_level[1][0][0];
+                lvl[x][0] = filter_level[0][0][0];
+                lvl[x][1] = filter_level[1][0][0];
             }
             level_cache_off += b4_stride;
         }
@@ -490,12 +492,13 @@ pub(crate) fn rav1d_create_lf_mask_intra(
 
     let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
+        let idx = 4 * level_cache_off;
+        let lvl = &mut *level_cache.index_mut((idx + 0.., ..4 * cbw4));
+        let lvl: &mut [[u8; 4]] = bytemuck::cast_slice_mut(lvl);
         for x in 0..cbw4 {
-            let idx = 4 * (level_cache_off + x);
             // `2.., ..2` is for UV
-            let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            lvl[0] = filter_level[2][0][0];
-            lvl[1] = filter_level[3][0][0];
+            lvl[x][2] = filter_level[2][0][0];
+            lvl[x][3] = filter_level[3][0][0];
         }
         level_cache_off += b4_stride;
     }
@@ -550,12 +553,13 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
+            let idx = 4 * level_cache_off;
+            let lvl = &mut *level_cache.index_mut((idx + 0.., ..4 * bw4));
+            let lvl: &mut [[u8; 4]] = bytemuck::cast_slice_mut(lvl);
             for x in 0..bw4 {
-                let idx = 4 * (level_cache_off + x);
-                // `0.., ..2` is for Y
-                let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                lvl[0] = filter_level[0][r#ref][is_gmv];
-                lvl[1] = filter_level[1][r#ref][is_gmv];
+                // 0, 1 is for Y
+                lvl[x][0] = filter_level[0][r#ref][is_gmv];
+                lvl[x][1] = filter_level[1][r#ref][is_gmv];
             }
             level_cache_off += b4_stride;
         }
@@ -599,12 +603,13 @@ pub(crate) fn rav1d_create_lf_mask_inter(
 
     let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
+        let idx = 4 * level_cache_off;
+        let lvl = &mut *level_cache.index_mut((idx + 0.., ..4 * cbw4));
+        let lvl: &mut [[u8; 4]] = bytemuck::cast_slice_mut(lvl);
         for x in 0..cbw4 {
-            let idx = 4 * (level_cache_off + x);
-            // `2.., ..2` is for UV
-            let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            lvl[0] = filter_level[2][r#ref][is_gmv];
-            lvl[1] = filter_level[3][r#ref][is_gmv];
+            // 2, 3 is for UV
+            lvl[x][2] = filter_level[2][r#ref][is_gmv];
+            lvl[x][3] = filter_level[3][r#ref][is_gmv];
         }
         level_cache_off += b4_stride;
     }
