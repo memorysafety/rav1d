@@ -436,7 +436,7 @@ fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut u32,
-    ctx_offsets: Option<&[[LoCtxOffset; 5]; 5]>,
+    ctx_offsets: Option<&[[LoCtxOffset; 32]; 32]>,
     x: u8,
     y: u8,
     stride: u8,
@@ -464,7 +464,7 @@ fn get_lo_ctx(
             mag += level(1, 1);
             *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
-            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)].get();
+            offset = ctx_offsets[y as usize][x as usize].get();
             // The type for `ctx_offsets` guarantees bounds.
             assert!(offset <= 21); // Elided
         }
