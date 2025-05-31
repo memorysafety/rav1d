@@ -202,8 +202,8 @@ fn parse_seq_hdr(
     } else {
         timing_info_present = gb.get_bit() as u8;
         if timing_info_present != 0 {
-            num_units_in_tick = gb.get_bits(32) as u32;
-            time_scale = gb.get_bits(32) as u32;
+            num_units_in_tick = gb.get_bits(32);
+            time_scale = gb.get_bits(32);
             if strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
                 return Err(EINVAL);
             }
@@ -222,7 +222,7 @@ fn parse_seq_hdr(
             decoder_model_info_present = gb.get_bit() as u8;
             if decoder_model_info_present != 0 {
                 encoder_decoder_buffer_delay_length = gb.get_bits(5) as u8 + 1;
-                num_units_in_decoding_tick = gb.get_bits(32) as u32;
+                num_units_in_decoding_tick = gb.get_bits(32);
                 if strict_std_compliance && num_units_in_decoding_tick == 0 {
                     return Err(EINVAL);
                 }
@@ -267,9 +267,9 @@ fn parse_seq_hdr(
                 if op.decoder_model_param_present != 0 {
                     let opi = &mut operating_parameter_info[i as usize];
                     opi.decoder_buffer_delay =
-                        gb.get_bits(encoder_decoder_buffer_delay_length.into()) as u32;
+                        gb.get_bits(encoder_decoder_buffer_delay_length.into());
                     opi.encoder_buffer_delay =
-                        gb.get_bits(encoder_decoder_buffer_delay_length.into()) as u32;
+                        gb.get_bits(encoder_decoder_buffer_delay_length.into());
                     opi.low_delay_mode = gb.get_bit() as u8;
                 }
             }
@@ -385,13 +385,10 @@ fn parse_seq_hdr(
         }
         hbd
     };
-    let monochrome;
-    if profile != Rav1dProfile::High {
-        monochrome = gb.get_bit() as u8;
-    } else {
-        // Default initialization.
-        monochrome = Default::default();
-    }
+    let monochrome = match profile {
+        Rav1dProfile::High => gb.get_bit() as u8,
+        _ => 0,
+    };
     let color_description_present = gb.get_bit() as u8;
     let pri;
     let trc;
@@ -483,13 +480,10 @@ fn parse_seq_hdr(
     {
         return Err(EINVAL);
     }
-    let separate_uv_delta_q;
-    if monochrome == 0 {
-        separate_uv_delta_q = gb.get_bit() as u8;
-    } else {
-        // Default initialization.
-        separate_uv_delta_q = Default::default();
-    }
+    let separate_uv_delta_q = match monochrome {
+        0 => gb.get_bit() as u8,
+        _ => 0,
+    };
     debug.post(gb, "colorinfo");
 
     let film_grain_present = gb.get_bit() as u8;
@@ -822,7 +816,7 @@ fn parse_refidx(
             refidx[i as usize] = gb.get_bits(3) as i8;
         }
         if seqhdr.frame_id_numbers_present != 0 {
-            let delta_ref_frame_id = gb.get_bits(seqhdr.delta_frame_id_n_bits.into()) as u32 + 1;
+            let delta_ref_frame_id = gb.get_bits(seqhdr.delta_frame_id_n_bits.into()) + 1;
             let ref_frame_id = frame_id + (1 << seqhdr.frame_id_n_bits) - delta_ref_frame_id
                 & (1 << seqhdr.frame_id_n_bits) - 1;
             state.refs[refidx[i as usize] as usize]
@@ -1050,7 +1044,7 @@ fn parse_quant(
 
 fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     let mut preskip = 0;
-    let mut last_active_segid = -1 as i8;
+    let mut last_active_segid = -1_i8;
     let d = array::from_fn(|i| {
         let i = i as i8;
         let delta_q;
@@ -1497,17 +1491,15 @@ fn parse_skip_mode(
                     refpoc as c_int,
                     off_before as c_int,
                 ) < 0
-                {
-                    if off_before2 == 0xffffffff
+                    && (off_before2 == 0xffffffff
                         || get_poc_diff(
                             seqhdr.order_hint_n_bits,
                             refpoc as c_int,
                             off_before2 as c_int,
-                        ) > 0
-                    {
-                        off_before2 = refpoc;
-                        off_before2_idx = i;
-                    }
+                        ) > 0)
+                {
+                    off_before2 = refpoc;
+                    off_before2_idx = i;
                 }
             }
 
@@ -1784,15 +1776,14 @@ fn parse_frame_hdr(
     if show_existing_frame != 0 {
         existing_frame_idx = gb.get_bits(3) as u8;
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
-            frame_presentation_delay =
-                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as u32;
+            frame_presentation_delay = gb.get_bits(seqhdr.frame_presentation_delay_length.into());
         } else {
             // Default initialization.
             frame_presentation_delay = Default::default();
         }
         let frame_id;
         if seqhdr.frame_id_numbers_present != 0 {
-            frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
+            frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into());
             state.refs[existing_frame_idx as usize]
                 .p
                 .p
@@ -1830,8 +1821,7 @@ fn parse_frame_hdr(
     let showable_frame;
     if show_frame != 0 {
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
-            frame_presentation_delay =
-                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as u32;
+            frame_presentation_delay = gb.get_bits(seqhdr.frame_presentation_delay_length.into());
         }
         showable_frame = (frame_type != Rav1dFrameType::Key) as u8;
     } else {
@@ -1862,13 +1852,10 @@ fn parse_frame_hdr(
         force_integer_mv = true;
     }
 
-    let frame_id;
-    if seqhdr.frame_id_numbers_present != 0 {
-        frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
-    } else {
-        // Default initialization.
-        frame_id = Default::default();
-    }
+    let frame_id = match seqhdr.frame_id_numbers_present {
+        0 => gb.get_bits(seqhdr.frame_id_n_bits.into()),
+        _ => 0,
+    };
 
     let frame_size_override = if seqhdr.reduced_still_picture_header != 0 {
         false
@@ -1903,7 +1890,7 @@ fn parse_frame_hdr(
                     let in_spatial_layer = seqop.idc >> spatial_id + 8 & 1;
                     if seqop.idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
                         op.buffer_removal_time =
-                            gb.get_bits(seqhdr.buffer_removal_delay_length.into()) as u32;
+                            gb.get_bits(seqhdr.buffer_removal_delay_length.into());
                     }
                 }
             }
@@ -2232,7 +2219,7 @@ fn parse_obus(
             state.n_tiles = 0;
             return Err(EINVAL);
         }
-        if let Err(_) = state.tiles.try_reserve_exact(1) {
+        if state.tiles.try_reserve_exact(1).is_err() {
             return Err(EINVAL);
         }
         state.n_tiles += 1 + hdr.end - hdr.start;
@@ -2287,11 +2274,11 @@ fn parse_obus(
                     let _ = mem::take(&mut state.content_light);
                     let _ = mem::take(&mut state.mastering_display);
                     for i in 0..8 {
-                        if state.refs[i as usize].p.p.frame_hdr.is_some() {
-                            let _ = mem::take(&mut state.refs[i as usize].p);
+                        if state.refs[i].p.p.frame_hdr.is_some() {
+                            let _ = mem::take(&mut state.refs[i].p);
                         }
-                        let _ = mem::take(&mut state.refs[i as usize].segmap);
-                        let _ = mem::take(&mut state.refs[i as usize].refmvs);
+                        let _ = mem::take(&mut state.refs[i].segmap);
+                        let _ = mem::take(&mut state.refs[i].refmvs);
                         let _ = mem::take(&mut state.cdf[i]);
                     }
                     state.frame_flags |= PictureFlags::NEW_SEQUENCE;
@@ -2422,7 +2409,7 @@ fn parse_obus(
                 Some(ObuMetaType::ItutT35) => {
                     let mut payload_size = gb.remaining_len();
                     // Don't take into account all the trailing bits for `payload_size`.
-                    while payload_size > 0 && gb[payload_size as usize - 1] == 0 {
+                    while payload_size > 0 && gb[payload_size - 1] == 0 {
                         payload_size -= 1; // trailing_zero_bit x 8
                     }
                     payload_size -= 1; // trailing_one_bit + trailing_zero_bit x 7
@@ -2435,12 +2422,12 @@ fn parse_obus(
                         payload_size -= 1;
                     }
 
-                    if payload_size <= 0 || gb[payload_size] != 0x80 {
+                    if payload_size == 0 || gb[payload_size] != 0x80 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
-                        let payload = gb.get_bytes(payload_size as usize).into(); // TODO fallible allocation
+                        let payload = gb.get_bytes(payload_size).into(); // TODO fallible allocation
                         let itut_t35 = Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
@@ -2478,12 +2465,14 @@ fn parse_obus(
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 Rav1dFrameType::Intra => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 _ => {}
@@ -2607,7 +2596,8 @@ fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 Rav1dFrameType::Intra => {
@@ -2615,7 +2605,8 @@ fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(state));
+                        skip(state);
+                        return Ok(());
                     }
                 }
                 _ => {}

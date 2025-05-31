@@ -16,7 +16,7 @@ pub fn hex_fdump<BD: BitDepth>(
     h: usize,
     what: &str,
 ) -> io::Result<()> {
-    write!(out, "{}", what)?;
+    write!(out, "{what}")?;
     for y in 0..h {
         let buf = &buf[y * stride..][..w];
         for &x in buf {
@@ -40,7 +40,7 @@ pub fn hex_fdump_pic<BD: BitDepth>(
     h: usize,
     what: &str,
 ) -> io::Result<()> {
-    write!(out, "{}", what)?;
+    write!(out, "{what}")?;
     for y in 0..h {
         let buf = buf + (y as isize * buf.pixel_stride::<BD>());
         let buf = &*buf.slice::<BD>(w);
@@ -64,10 +64,10 @@ pub fn hex_dump_pic<BD: BitDepth>(
 
 #[inline]
 pub fn coef_dump<Coef: Display>(buf: &[Coef], w: usize, h: usize, len: usize, what: &str) {
-    println!("{}", what);
+    println!("{what}");
     for row in buf[..w * h].chunks_exact(w).take(h) {
         for coef in row {
-            print!(" {:0len$}", coef, len = len);
+            print!(" {coef:0len$}");
         }
         println!();
     }
@@ -75,10 +75,10 @@ pub fn coef_dump<Coef: Display>(buf: &[Coef], w: usize, h: usize, len: usize, wh
 
 #[inline]
 pub fn ac_dump(buf: &[i16; 32 * 32], w: usize, h: usize, what: &str) {
-    println!("{}", what);
+    println!("{what}");
     for buf in buf.chunks_exact(w).take(h) {
         for x in buf {
-            print!(" {:03}", x);
+            print!(" {x:03}");
         }
         println!();
     }

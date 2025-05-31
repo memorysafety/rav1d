@@ -276,15 +276,15 @@ fn loop_filter<BD: BitDepth>(
 }
 
 #[derive(FromRepr)]
-enum HV {
+enum Hv {
     H,
     V,
 }
 
 #[derive(FromRepr)]
-enum YUV {
+enum Yuv {
     Y,
-    UV,
+    Uv,
 }
 
 fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
@@ -296,22 +296,22 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
     _wh: c_int,
     bd: BD,
 ) {
-    let hv = HV::from_repr(HV).unwrap();
-    let yuv = YUV::from_repr(YUV).unwrap();
+    let hv = Hv::from_repr(HV).unwrap();
+    let yuv = Yuv::from_repr(YUV).unwrap();
 
     let stride = dst.pixel_stride::<BD>();
     let (stridea, strideb) = match hv {
-        HV::H => (stride, 1),
-        HV::V => (1, stride),
+        Hv::H => (stride, 1),
+        Hv::V => (1, stride),
     };
     let (b4_stridea, b4_strideb) = match hv {
-        HV::H => (b4_stride, 1),
-        HV::V => (1, b4_stride),
+        Hv::H => (b4_stride, 1),
+        Hv::V => (1, b4_stride),
     };
 
     let vm = match yuv {
-        YUV::Y => vmask[0] | vmask[1] | vmask[2],
-        YUV::UV => vmask[0] | vmask[1],
+        Yuv::Y => vmask[0] | vmask[1] | vmask[2],
+        Yuv::Uv => vmask[0] | vmask[1],
     };
     let mut xy = 1u32;
     while vm & !xy.wrapping_sub(1) != 0 {
@@ -333,7 +333,7 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
             let e = lut.0.e[l as usize];
             let i = lut.0.i[l as usize];
             let idx = match yuv {
-                YUV::Y => {
+                Yuv::Y => {
                     let idx = if vmask[2] & xy != 0 {
                         2
                     } else {
@@ -341,7 +341,7 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
                     };
                     4 << idx
                 }
-                YUV::UV => {
+                Yuv::Uv => {
                     let idx = (vmask[1] & xy != 0) as c_int;
                     4 + 2 * idx
                 }
@@ -381,8 +381,8 @@ unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, c
 
 impl Rav1dLoopFilterDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
-        use HV::*;
-        use YUV::*;
+        use Hv::*;
+        use Yuv::*;
         Self {
             loop_filter_sb: LoopFilterYUVDSPContext {
                 y: LoopFilterHVDSPContext {
@@ -390,8 +390,8 @@ impl Rav1dLoopFilterDSPContext {
                     v: loopfilter_sb::Fn::default::<BD, { V as _ }, { Y as _ }>(),
                 },
                 uv: LoopFilterHVDSPContext {
-                    h: loopfilter_sb::Fn::default::<BD, { H as _ }, { UV as _ }>(),
-                    v: loopfilter_sb::Fn::default::<BD, { V as _ }, { UV as _ }>(),
+                    h: loopfilter_sb::Fn::default::<BD, { H as _ }, { Uv as _ }>(),
+                    v: loopfilter_sb::Fn::default::<BD, { V as _ }, { Uv as _ }>(),
                 },
             },
         }

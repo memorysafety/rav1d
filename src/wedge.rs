@@ -374,7 +374,7 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
     master
 }
 
-pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] = {
+pub static dav1d_wedge_masks: [[[[&[u8]; 16]; 2]; 3]; BlockSize::COUNT] = {
     use BlockSize::*;
 
     const master: [[[u8; 64]; 64]; WedgeDirectionType::COUNT] = build_master();
@@ -459,7 +459,7 @@ static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT] = {
+pub static dav1d_ii_masks: [[[&[u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT] = {
     use BlockSize::*;
     use InterIntraPredMode::*;
 

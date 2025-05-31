@@ -1,7 +1,7 @@
 #![deny(unsafe_code)]
 
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -49,7 +49,7 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let n = (points[points.len() - 1][0] as usize) << shift_x;
     scaling[n..][..scaling_size - n].fill(points[points.len() - 1][1]);
 
-    if BD::BPC != BPC::BPC8 {
+    if BD::BPC != Bpc::Bpc8 {
         let pad = 1 << shift_x;
         let rnd = pad >> 1;
         for ps in points.windows(2) {
@@ -59,7 +59,7 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
             let ex = (p1[0] as usize) << shift_x;
             let dx = ex - bx;
             for x in (0..dx).step_by(pad) {
-                let range = scaling[bx + x + pad] as isize - scaling[(bx + x) as usize] as isize;
+                let range = scaling[bx + x + pad] as isize - scaling[bx + x] as isize;
                 let mut r = rnd as isize;
                 for n in 1..pad {
                     r += range;
@@ -133,7 +133,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let seq_hdr = &***out.seq_hdr.as_ref().unwrap();
     let frame_hdr = &***out.frame_hdr.as_ref().unwrap();
     let data = &frame_hdr.film_grain.data;
-    let data_c = &data.clone().into();
+    let data_c = &data.clone();
     let in_data = &r#in.data.as_ref().unwrap().data;
     let out_data = &out.data.as_ref().unwrap().data;
     let w = out.p.w as usize;
@@ -226,7 +226,7 @@ pub(crate) fn rav1d_apply_grain<BD: BitDepth>(
     r#in: &Rav1dPicture,
 ) {
     let mut grain = Default::default();
-    let rows = (out.p.h as usize + FG_BLOCK_SIZE - 1) / FG_BLOCK_SIZE;
+    let rows = (out.p.h as usize).div_ceil(FG_BLOCK_SIZE);
 
     rav1d_prep_grain::<BD>(dsp, out, r#in, &mut grain);
     for row in 0..rows {

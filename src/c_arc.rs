@@ -135,8 +135,8 @@ impl<T: ?Sized> Clone for CArc<T> {
         Self {
             owner: owner.clone(),
             #[cfg(debug_assertions)]
-            base_stable_ref: base_stable_ref.clone(),
-            stable_ref: stable_ref.clone(),
+            base_stable_ref: *base_stable_ref,
+            stable_ref: *stable_ref,
         }
     }
 }

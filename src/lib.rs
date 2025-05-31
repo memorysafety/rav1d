@@ -188,7 +188,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: Option<NonNull<Dav1dSettings>>
 #[cold]
 pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     static initted: Once = Once::new();
-    initted.call_once(|| init_internal());
+    initted.call_once(init_internal);
 
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
@@ -415,15 +415,11 @@ fn output_picture_ready(c: &Rav1dContext, state: &mut Rav1dState, drain: bool) -
             }
             state.cache = mem::take(&mut state.out);
             return false;
-        } else {
-            if state.cache.p.data.is_some() && drain {
-                return true;
-            } else {
-                if state.out.p.data.is_some() {
-                    state.cache = mem::take(&mut state.out);
-                    return false;
-                }
-            }
+        } else if state.cache.p.data.is_some() && drain {
+            return true;
+        } else if state.out.p.data.is_some() {
+            state.cache = mem::take(&mut state.out);
+            return false;
         }
     }
     state.out.p.data.is_some()
@@ -613,7 +609,7 @@ pub(crate) fn rav1d_apply_grain(
     let res = rav1d_picture_alloc_copy(&c.logger, out, in_0.p.w, in_0);
     if res.is_err() {
         let _ = mem::take(out);
-        return res;
+        res
     } else {
         if c.tc.len() > 1 {
             rav1d_task_delayed_fg(c, out, in_0);
@@ -630,8 +626,8 @@ pub(crate) fn rav1d_apply_grain(
                 _ => {}
             }
         }
-        return Ok(());
-    };
+        Ok(())
+    }
 }
 
 /// # Safety
@@ -744,12 +740,11 @@ pub unsafe extern "C" fn dav1d_close(c_out: Option<NonNull<Option<Dav1dContext>>
         return;
     };
     // SAFETY: `c_out` is safe to read from and write to.
-    let c_out = unsafe { c_out.as_mut() };
-    mem::take(c_out).map(|c| {
+    if let Some(c) = unsafe { c_out.as_mut() } {
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         let c = unsafe { c.into_arc() };
         rav1d_close(c);
-    });
+    };
 }
 
 impl Rav1dContext {
@@ -852,7 +847,7 @@ pub unsafe extern "C" fn dav1d_data_create(buf: Option<NonNull<Dav1dData>>, sz: 
         unsafe { buf.as_ptr().write(data) };
         Ok(ptr)
     }()
-    .unwrap_or_else(|_| ptr::null_mut())
+    .unwrap_or(ptr::null_mut())
 }
 
 /// # Safety

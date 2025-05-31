@@ -85,24 +85,24 @@ impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BPC {
-    BPC8,
-    BPC16,
+pub enum Bpc {
+    Bpc8,
+    Bpc16,
 }
 
-impl BPC {
+impl Bpc {
     pub fn from_bitdepth_max(bitdepth_max: c_int) -> Self {
         if bitdepth_max == BitDepth8::new(()).bitdepth_max().into() {
-            Self::BPC8
+            Self::Bpc8
         } else {
-            Self::BPC16
+            Self::Bpc16
         }
     }
 
     pub const fn bitdepth(&self) -> u8 {
         match self {
-            Self::BPC8 => 8,
-            Self::BPC16 => 16,
+            Self::Bpc8 => 8,
+            Self::Bpc16 => 16,
         }
     }
 
@@ -132,7 +132,7 @@ impl BPC {
 }
 
 pub trait BitDepth: Clone + Copy {
-    const BPC: BPC;
+    const BPC: Bpc;
     const BITDEPTH: u8 = Self::BPC.bitdepth();
 
     type Pixel: Copy
@@ -248,7 +248,7 @@ pub struct BitDepth8 {
 }
 
 impl BitDepth for BitDepth8 {
-    const BPC: BPC = BPC::BPC8;
+    const BPC: Bpc = Bpc::Bpc8;
 
     type Pixel = u8;
 
@@ -299,7 +299,7 @@ pub struct BitDepth16 {
 }
 
 impl BitDepth for BitDepth16 {
-    const BPC: BPC = BPC::BPC16;
+    const BPC: Bpc = Bpc::Bpc16;
 
     type Pixel = u16;
 
@@ -387,39 +387,39 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 /// # Args
 ///
 /// * `$decl_fn:path` (optional):
-///     A path to a macro that, given a `fn $fn_name:ident`,
-///     declares and returns an `extern "C" fn`
-///     with the appropriate signature for this `fn`.
-///     This should usually be `mod::decl_fn`,
-///     where the `mod` is defined by [`wrap_fn_ptr!`],
-///     but it doesn't have to be.
+///   A path to a macro that, given a `fn $fn_name:ident`,
+///   declares and returns an `extern "C" fn`
+///   with the appropriate signature for this `fn`.
+///   This should usually be `mod::decl_fn`,
+///   where the `mod` is defined by [`wrap_fn_ptr!`],
+///   but it doesn't have to be.
 ///
-///     \* If omitted, this defaults to [`fn_identity`],
-///     which returns the `fn` given without declaring one inline.
-///     This should be used when the `fn` you are selecting
-///     is already declared elsewhere.
+///   \* If omitted, this defaults to [`fn_identity`],
+///   which returns the `fn` given without declaring one inline.
+///   This should be used when the `fn` you are selecting
+///   is already declared elsewhere.
 ///
 /// * `$BD:ty`:
-///     A `<BD: `[`BitDepth`]`>` generic type parameter.
-///     [`BPC::BPC8`] results in `bpc8` and
-///     [`BPC::BPC16`] results in `bpc16`.
+///   A `<BD: `[`BitDepth`]`>` generic type parameter.
+///   [`Bpc::Bpc8`] results in `bpc8` and
+///   [`Bpc::Bpc16`] results in `bpc16`.
 ///
 /// * `$name:ident`:
-///     The inner name of the asm `fn` to be declared and evaluated to.
-///     This excludes the `dav1d_` prefix and the `_bpc{8,16}_$asm` suffix.
+///   The inner name of the asm `fn` to be declared and evaluated to.
+///   This excludes the `dav1d_` prefix and the `_bpc{8,16}_$asm` suffix.
 ///
 /// * `$asm:ident`:
-///     The asm variant the asm `fn` is named with.
-///     The possible values correspond to the [`CpuFlags`]:
-///     * `x86`, `x86_64`:
-///         * [`sse2`]
-///         * [`ssse3`]
-///         * [`sse41`]
-///     * `x86_64`:
-///         * [`avx2`]
-///         * [`avx512icl`]
-///     * `arm`, `aarch64`:
-///         * [`neon`]
+///   The asm variant the asm `fn` is named with.
+///   The possible values correspond to the [`CpuFlags`]:
+///   * `x86`, `x86_64`:
+///     * [`sse2`]
+///     * [`ssse3`]
+///     * [`sse41`]
+///   * `x86_64`:
+///     * [`avx2`]
+///     * [`avx512icl`]
+///   * `arm`, `aarch64`:
+///     * [`neon`]
 ///
 /// [`wrap_fn_ptr!`]: crate::src::wrap_fn_ptr::wrap_fn_ptr
 /// [`CpuFlags`]: crate::src::cpu::CpuFlags
@@ -436,12 +436,12 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 macro_rules! bd_fn {
     ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
-        use $crate::include::common::bitdepth::BPC;
+        use $crate::include::common::bitdepth::Bpc;
 
         paste! {
             match $BD::BPC {
-                BPC::BPC8 => $decl_fn!(fn [<dav1d_ $name _8bpc_ $asm>]),
-                BPC::BPC16 => $decl_fn!(fn [<dav1d_ $name _16bpc_ $asm>]),
+                Bpc::Bpc8 => $decl_fn!(fn [<dav1d_ $name _8bpc_ $asm>]),
+                Bpc::Bpc16 => $decl_fn!(fn [<dav1d_ $name _16bpc_ $asm>]),
             }
         }
     }};

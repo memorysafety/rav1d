@@ -4,6 +4,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::strided::WithStride;
 use std::mem;
 use std::ops::Deref;
+use std::ptr;
 
 pub trait Pixels {
     /// Length in number of [`u8`] bytes.
@@ -73,7 +74,7 @@ pub trait Pixels {
 
     /// Determine if they reference the same data.
     fn ref_eq(&self, other: &Self) -> bool {
-        self.as_byte_mut_ptr() == other.as_byte_mut_ptr()
+        ptr::eq(self.as_byte_mut_ptr(), other.as_byte_mut_ptr())
     }
 }
 

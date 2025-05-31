@@ -71,10 +71,9 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
         for fc in wrapping_iter(c.fc.iter(), first + ttd.cur.get() as usize) {
             fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::None);
         }
-        return 1;
+        1
     }
-    let min_frame_idx: c_uint;
-    let cur_frame_idx: c_uint;
+
     let first = ttd.first.load(Ordering::SeqCst);
     let mut reset_frame_idx: c_uint = ttd.reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
     if reset_frame_idx < first {
@@ -101,16 +100,14 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
             ttd.cur.set(reset_frame_idx.wrapping_sub(first));
             return curr_found(c, ttd, first as usize);
         }
-    } else {
-        if frame_idx == u32::MAX {
-            return 0 as c_int;
-        }
+    } else if frame_idx == u32::MAX {
+        return 0 as c_int;
     }
     if frame_idx < first {
         frame_idx += c.fc.len() as c_uint;
     }
-    min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-    cur_frame_idx = first.wrapping_add(ttd.cur.get());
+    let min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
+    let cur_frame_idx = first.wrapping_add(ttd.cur.get());
     if (ttd.cur.get() as usize) < c.fc.len() && cur_frame_idx < min_frame_idx {
         return 0 as c_int;
     }
@@ -127,7 +124,7 @@ fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint)
         }
         ttd.cur.update(|cur| cur + 1);
     }
-    return curr_found(c, ttd, first as usize);
+    curr_found(c, ttd, first as usize)
 }
 
 #[inline]
@@ -390,7 +387,7 @@ fn merge_pending(c: &Rav1dContext) -> c_int {
     for fc in c.fc.iter() {
         res |= fc.task_thread.tasks.merge_pending_frame(c) as c_int;
     }
-    return res;
+    res
 }
 
 fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
@@ -536,7 +533,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
         *task_thread_lock = Some(ttd.lock.lock());
         return 1 as c_int;
     }
-    return 0 as c_int;
+    0 as c_int
 }
 
 #[inline]
@@ -611,7 +608,7 @@ fn check_tile(
             t.deps_skip.update(|it| it + 1);
         }
     }
-    return 0;
+    0
 }
 
 #[inline]
@@ -710,19 +707,18 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
         }
     }
     row = ttd.delayed_fg_progress[0].fetch_add(1, Ordering::SeqCst);
-    let _ = task_thread_lock.take();
+    drop(task_thread_lock.take());
     let delayed_fg = ttd.delayed_fg.try_read().unwrap();
     progmax = (delayed_fg.out.p.h + FG_BLOCK_SIZE as i32 - 1) / FG_BLOCK_SIZE as i32;
     loop {
         if (row + 1) < progmax {
             ttd.cond.notify_one();
         } else if row + 1 >= progmax {
-            *task_thread_lock = Some(ttd.lock.lock());
+            let _locked = ttd.lock.lock();
             ttd.delayed_fg_exec.set(0);
             if row >= progmax {
                 break;
             }
-            let _ = task_thread_lock.take();
         }
         {
             let dsp = &Rav1dBitDepthDSPContext::get(delayed_fg.out.p.bpc)
@@ -1289,10 +1285,10 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     TaskType::SuperResolution => {
                         let f = fc.data.try_read().unwrap();
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
-                            if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
-                            }
+                        if frame_hdr.size.width[0] != frame_hdr.size.width[1]
+                            && fc.task_thread.error.load(Ordering::SeqCst) == 0
+                        {
+                            (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
                         }
                         task_type = TaskType::LoopRestoration;
                         continue 'fallthrough;

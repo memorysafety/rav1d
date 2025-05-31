@@ -1,7 +1,7 @@
 #![deny(unsafe_code)]
 
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
@@ -145,8 +145,8 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let bd = BD::from_c(f.bitdepth_max);
 
     let bitdepth_min_8 = match BD::BPC {
-        BPC::BPC8 => 0,
-        BPC::BPC16 => f.cur.p.bpc - 8,
+        Bpc::Bpc8 => 0,
+        Bpc::Bpc16 => f.cur.p.bpc - 8,
     };
     let mut edges: CdefEdgeFlags = if by_start > 0 {
         CdefEdgeFlags::HAVE_BOTTOM | CdefEdgeFlags::HAVE_TOP

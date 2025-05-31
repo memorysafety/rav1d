@@ -327,7 +327,7 @@ impl save_tmvs::Fn {
         assert!(row_start8 >= 0);
         assert!((row_end8 - row_start8) as u32 <= 16);
 
-        let rp = &*rp.as_ref().unwrap();
+        let rp = rp.as_ref().unwrap();
 
         let row_end8 = cmp::min(row_end8, rf.ih8);
         let col_end8 = cmp::min(col_end8, rf.iw8);
@@ -703,10 +703,10 @@ fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
     let max = (1 << 14) - 1;
-    return Mv {
+    Mv {
         y: iclip(y + 8192 + (y >> 31) >> 14, -max, max) as i16,
         x: iclip(x + 8192 + (x >> 31) >> 14, -max, max) as i16,
-    };
+    }
 }
 
 fn add_temporal_candidate(
@@ -1733,7 +1733,7 @@ unsafe extern "C" fn splat_mv_c(
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
     // SAFETY: Length sliced in `splat_mv::Fn::call`.
     let rr = unsafe { slice::from_raw_parts_mut(rr, bh4) };
-    let rr = rr.into_iter().map(|&mut r| {
+    let rr = rr.iter_mut().map(|&mut r| {
         // SAFETY: `r` is from `rf.r.index_mut((ri + bx4.., ..bw4)).as_mut_ptr().sub(bx4)` in `splat_mv::Fn::call`.
         unsafe { slice::from_raw_parts_mut(r.add(bx4), bw4) }
     });

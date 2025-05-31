@@ -1,5 +1,5 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::Bpc;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::clip;
 use crate::include::common::intops::clip_u8;
@@ -265,7 +265,7 @@ fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut Mv, mv_prec: 
         &mut ts_c.msac,
         &mut ts_c.cdf.mv.joint.0,
         MVJoint::all().bits(),
-    ) as u8);
+    ));
 
     let mv_cdf = &mut ts_c.cdf.mv;
 
@@ -402,17 +402,15 @@ fn neg_deinterleave(diff: u8, r#ref: SegmentId, max: u8) -> u8 {
         } else {
             diff
         }
-    } else {
-        if diff <= 2 * (max - r#ref - 1) {
-            if diff & 1 != 0 {
-                r#ref + (diff + 1 >> 1)
-            } else {
-                r#ref - (diff >> 1)
-            }
+    } else if diff <= 2 * (max - r#ref - 1) {
+        if diff & 1 != 0 {
+            r#ref + (diff + 1 >> 1)
         } else {
-            // The C code returns a signed integer which is immediately cast to `uint8_t`
-            max.wrapping_sub(diff + 1)
+            r#ref - (diff >> 1)
         }
+    } else {
+        // The C code returns a signed integer which is immediately cast to `uint8_t`
+        max.wrapping_sub(diff + 1)
     }
 }
 
@@ -630,7 +628,7 @@ fn derive_warpmv(
     }
 
     wmp.r#type = if !rav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.b.x, t.b.y)
-        && !rav1d_get_shear_params(&mut wmp)
+        && !rav1d_get_shear_params(&wmp)
     {
         Rav1dWarpedMotionType::Affine
     } else {
@@ -641,10 +639,7 @@ fn derive_warpmv(
 
 #[inline]
 fn findoddzero(buf: &[u8]) -> bool {
-    buf.iter()
-        .enumerate()
-        .find(|(i, &e)| i & 1 == 1 && e == 0)
-        .is_some()
+    buf.iter().enumerate().any(|(i, &e)| i & 1 == 1 && e == 0)
 }
 
 fn order_palette(
@@ -749,13 +744,13 @@ fn read_pal_indices(
     for i in 1..4 * (w4 + h4) - 1 {
         // top/left-to-bottom/right diagonals ("wave-front")
         let first = cmp::min(i, w4 * 4 - 1);
-        let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
+        let last = (i + 1).saturating_sub(h4 * 4);
         order_palette(pal_tmp, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = rav1d_msac_decode_symbol_adapt8(
                 &mut ts_c.msac,
                 &mut color_map_cdf[ctx[m] as usize],
-                pal_sz as u8 - 1,
+                pal_sz - 1,
             ) as usize;
             pal_tmp[(i - j) * stride + j] = order[m][color_idx];
         }
@@ -810,7 +805,7 @@ fn read_vartx_tree(
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [&t.l, &f.a[t.a]],
-                [bh4 as usize, bw4 as usize],
+                [bh4, bw4],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
                     case.set_disjoint(&dir.tx, TxfmSize::S4x4);
@@ -821,7 +816,7 @@ fn read_vartx_tree(
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&t.l, 1), (&f.a[t.a], 0)],
-                [bh4 as usize, bw4 as usize],
+                [bh4, bw4],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
                     // TODO check unwrap is optimized out
@@ -1254,7 +1249,7 @@ fn decode_b(
                         t.warpmv.matrix[4] = two_d.matrix[2] as i32;
                         t.warpmv.matrix[5] = two_d.matrix[3] as i32 + 0x10000;
                         rav1d_set_affine_mv2d(bw4, bh4, two_d.mv2d, &mut t.warpmv, t.b.x, t.b.y);
-                        rav1d_get_shear_params(&mut t.warpmv);
+                        rav1d_get_shear_params(&t.warpmv);
                         if debug_block_info!(f, t.b) {
                             println!(
                                 "[ {} {} {}\n  {} {} {} ]\n\
@@ -1284,8 +1279,8 @@ fn decode_b(
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
                     |case, dir| {
-                        case.set_disjoint(&dir.filter[0], filter[0].into());
-                        case.set_disjoint(&dir.filter[1], filter[1].into());
+                        case.set_disjoint(&dir.filter[0], filter[0]);
+                        case.set_disjoint(&dir.filter[1], filter[1]);
                         case.set_disjoint(&dir.intra, 0);
                     },
                 );
@@ -1386,8 +1381,7 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                let mut seg_id =
-                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                let mut seg_id = neg_deinterleave(diff, pred_seg_id, last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
@@ -1474,8 +1468,7 @@ fn decode_b(
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                let mut seg_id =
-                    neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                let mut seg_id = neg_deinterleave(diff, pred_seg_id, last_active_seg_id_plus1);
                 if seg_id >= last_active_seg_id_plus1 {
                     seg_id = 0; // error?
                 }
@@ -1616,7 +1609,7 @@ fn decode_b(
         } else if last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             rav1d_calc_lf_values(
-                &mut (*ts.lflvlmem.try_write().unwrap()),
+                &mut ts.lflvlmem.try_write().unwrap(),
                 frame_hdr,
                 &last_delta_lf,
             );
@@ -1667,7 +1660,7 @@ fn decode_b(
         }
 
         // angle delta
-        let y_angle = if b_dim[2] + b_dim[3] >= 2 && y_mode >= VERT_PRED && y_mode <= VERT_LEFT_PRED
+        let y_angle = if b_dim[2] + b_dim[3] >= 2 && (VERT_PRED..=VERT_LEFT_PRED).contains(&y_mode)
         {
             let acdf = &mut ts_c.cdf.m.angle_delta[y_mode as usize - VERT_PRED as usize];
             let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6);
@@ -1727,8 +1720,7 @@ fn decode_b(
                     );
                 }
                 uv_angle = 0;
-            } else if b_dim[2] + b_dim[3] >= 2 && uv_mode >= VERT_PRED && uv_mode <= VERT_LEFT_PRED
-            {
+            } else if b_dim[2] + b_dim[3] >= 2 && (VERT_PRED..=VERT_LEFT_PRED).contains(&uv_mode) {
                 let acdf = &mut ts_c.cdf.m.angle_delta[uv_mode as usize - VERT_PRED as usize];
                 let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6);
                 uv_angle = angle as i8 - 3;
@@ -1799,7 +1791,7 @@ fn decode_b(
                 &mut ts_c.cdf.m.use_filter_intra[bs as usize],
             );
             if is_filter {
-                y_mode = FILTER_PRED as u8;
+                y_mode = FILTER_PRED;
                 y_angle = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.filter_intra.0,
@@ -2244,10 +2236,7 @@ fn decode_b(
             r#ref,
             interintra_type,
         } = if b.skip_mode != 0 {
-            let r#ref = [
-                frame_hdr.skip_mode.refs[0] as i8,
-                frame_hdr.skip_mode.refs[1] as i8,
-            ];
+            let r#ref = [frame_hdr.skip_mode.refs[0], frame_hdr.skip_mode.refs[1]];
             let comp_type = CompInterType::Avg;
             let inter_mode = NEARESTMV_NEARESTMV;
             let drl_idx = DrlProximity::Nearest;
@@ -2574,7 +2563,7 @@ fn decode_b(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.wedge_idx[ctx],
                             15,
-                        ) as u8;
+                        );
                     }
                     comp_type
                 } else {
@@ -2612,8 +2601,11 @@ fn decode_b(
         } else {
             // ref
             let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
-                seg.r#ref as i8 - 1
-            } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
+                seg.r#ref - 1
+            } else if seg
+                .filter(|seg| seg.globalmv != 0 || seg.skip != 0)
+                .is_some()
+            {
                 0
             } else {
                 let ctx1 = av1_get_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
@@ -2841,7 +2833,7 @@ fn decode_b(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_idx[wedge_ctx as usize],
                         15,
-                    ) as u8;
+                    );
                 }
             } else {
                 interintra_mode = Default::default();
@@ -3170,7 +3162,7 @@ fn decode_b(
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
-            [..(bh4 as usize + 1) / 2]
+            [..(bh4 as usize).div_ceil(2)]
         {
             noskip_mask[bx_idx as usize].update(|it| it | mask as u16);
             if bw4 == 32 {
@@ -3465,12 +3457,6 @@ fn decode_sb(
     let mut by8 = 0;
     let ctx = match pass {
         FrameThreadPassState::First(ts_c) => {
-            if false && bl == BlockLevel::Bl64x64 {
-                println!(
-                    "poc={},y={},x={},bl={:?},r={}",
-                    frame_hdr.frame_offset, t.b.y, t.b.x, bl, ts_c.msac.rng,
-                );
-            }
             bx8 = (t.b.x & 31) >> 1;
             by8 = (t.b.y & 31) >> 1;
             Some((
@@ -3487,7 +3473,7 @@ fn decode_sb(
             bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize].into(),
+                dav1d_partition_type_count[bl as usize],
             ) as usize)
             .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
@@ -3887,7 +3873,7 @@ fn setup_tile(
                 0
             });
         ts.frame_thread[p].cf.set(if !frame_thread.cf.is_empty() {
-            let bpc = BPC::from_bitdepth_max(bitdepth_max);
+            let bpc = Bpc::from_bitdepth_max(bitdepth_max);
             bpc.coef_stride(tile_start_off * size_mul[0] as u32 >> (seq_hdr.hbd == 0) as c_int)
         } else {
             0
@@ -4092,7 +4078,7 @@ fn check_trailing_bits_after_symbol_coder(msac: &MsacContext) -> Result<(), ()> 
         return Err(());
     }
 
-    return Ok(());
+    Ok(())
 }
 
 pub(crate) fn rav1d_decode_tile_sbrow(
@@ -4222,7 +4208,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
                 continue;
             }
 
-            let frame_type = frame_hdr.restoration.r#type[p as usize];
+            let frame_type = frame_hdr.restoration.r#type[p];
 
             if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
@@ -4444,7 +4430,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     // TODO: Fallible allocation.
     f.lf.cdef_line_buf.resize(alloc_sz, 0);
 
-    let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
+    let bpc = Bpc::from_bitdepth_max(f.bitdepth_max);
     let y_stride_px = bpc.pxstride(f.cur.stride[0]);
     let uv_stride_px = bpc.pxstride(f.cur.stride[1]);
 
@@ -4657,9 +4643,9 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
 
     let tiling = &frame_hdr.tiling;
 
-    let n_bytes = tiling.n_bytes.try_into().unwrap();
-    let rows: usize = tiling.rows.try_into().unwrap();
-    let cols = tiling.cols.try_into().unwrap();
+    let n_bytes = usize::from(tiling.n_bytes);
+    let rows = usize::from(tiling.rows);
+    let cols = usize::from(tiling.cols);
     let sb128w: usize = f.sb128w.try_into().unwrap();
 
     // parse individual tiles per tile group
@@ -4678,7 +4664,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
             } else {
                 &[]
             }
-            .into_iter()
+            .iter()
             .copied()
             .chain(iter::repeat(0)),
         )
@@ -4709,7 +4695,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
             setup_tile(
                 c,
                 ts,
-                &***f.seq_hdr.as_ref().unwrap(),
+                f.seq_hdr.as_ref().unwrap(),
                 frame_hdr,
                 f.bitdepth_max,
                 f.sb_shift,
@@ -4776,9 +4762,9 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
     let Rav1dFrameHeaderTiling { rows, cols, .. } = frame_hdr.tiling;
-    let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
+    let [rows, cols] = [rows, cols].map(usize::from);
     // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
-    let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
+    let row_start_sb = frame_hdr.tiling.row_start_sb;
     for (tile_row, sbh_start_end) in row_start_sb[..rows + 1].windows(2).take(rows).enumerate() {
         // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
         let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
@@ -4838,15 +4824,17 @@ pub(crate) fn rav1d_decode_frame_exit(
         cf.fill_with(Default::default);
     }
 
-    if retval.is_ok() && c.fc.len() > 1 && c.strict_std_compliance {
-        if f.refp.iter().any(|rf| {
+    if retval.is_ok()
+        && c.fc.len() > 1
+        && c.strict_std_compliance
+        && f.refp.iter().any(|rf| {
             rf.p.frame_hdr.is_some()
                 && rf.progress.as_ref().unwrap()[1].load(Ordering::SeqCst) == FRAME_ERROR
-        }) {
-            retval = Err(EINVAL);
-            task_thread.error.store(1, Ordering::SeqCst);
-            f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
-        }
+        })
+    {
+        retval = Err(EINVAL);
+        task_thread.error.store(1, Ordering::SeqCst);
+        f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
     }
 
     let _ = mem::take(&mut f.refp);
@@ -4893,8 +4881,8 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
             if c.tc.len() > 1 {
                 res = rav1d_task_create_tile_sbrow(fc, &f, 0, 1);
                 drop(f); // release the frame data before waiting for the other threads
-                let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock();
-                (*fc.task_thread.ttd).cond.notify_one();
+                let mut task_thread_lock = fc.task_thread.ttd.lock.lock();
+                fc.task_thread.ttd.cond.notify_one();
                 if res.is_ok() {
                     while fc.task_thread.done[0].load(Ordering::SeqCst) == 0
                         || fc.task_thread.task_counter.load(Ordering::SeqCst) > 0

@@ -132,6 +132,7 @@ def_align!(64, Align64);
 /// A [`Vec`] that uses [`mem::size_of`]`::<C>()` aligned allocations.
 ///
 /// Only works with [`Copy`] types so that we don't have to handle drop logic.
+#[expect(clippy::len_without_is_empty)]
 pub struct AlignedVec<T: Copy, C: AlignedByteChunk> {
     inner: Vec<MaybeUninit<C>>,
 

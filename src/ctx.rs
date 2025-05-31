@@ -96,7 +96,7 @@ impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAUL
         V: Clone + Copy,
     {
         let mut buf = buf.index_mut(self.offset..self.offset + self.len);
-        small_memset::<V, UP_TO, WITH_DEFAULT>(&mut *buf, val);
+        small_memset::<V, UP_TO, WITH_DEFAULT>(&mut buf, val);
     }
 }
 

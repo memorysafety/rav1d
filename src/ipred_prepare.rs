@@ -355,5 +355,5 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 .as_::<BD::Pixel>();
         }
     }
-    return mode;
+    mode
 }
