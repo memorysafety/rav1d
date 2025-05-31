@@ -219,7 +219,7 @@ fn picture_alloc_with_edges(
     p: &mut Rav1dPicture,
     w: c_int,
     h: c_int,
-    seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
     frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     bpc: u8,
     p_allocator: &Rav1dPicAllocator,
@@ -229,7 +229,7 @@ fn picture_alloc_with_edges(
         return Err(EGeneric);
     }
     assert!(bpc > 0 && bpc <= 16);
-    let pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
+    let pic = p_allocator.alloc_picture_data(w, h, seq_hdr, frame_hdr)?;
     *p = pic;
 
     Ok(())
@@ -263,16 +263,15 @@ pub(crate) fn rav1d_thread_picture_alloc(
     bpc: u8,
     itut_t35: Vec<Rav1dITUTT35>,
 ) -> Rav1dResult {
-    let p = &mut f.sr_cur;
+    let p = &mut f.content.sr_cur;
     let have_frame_mt = fc.len() > 1;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     picture_alloc_with_edges(
         logger,
         &mut p.p,
-        frame_hdr.size.width[1],
-        frame_hdr.size.height,
+        f.frame_hdr.size.width[1],
+        f.frame_hdr.size.height,
         f.seq_hdr.clone(),
-        f.frame_hdr.clone(),
+        Some(f.frame_hdr.clone()),
         bpc,
         allocator,
     )?;
@@ -282,13 +281,13 @@ pub(crate) fn rav1d_thread_picture_alloc(
         content_light,
         mastering_display,
         Rav1dITUTT35::to_immut(itut_t35),
-        f.tiles[0].data.m.clone(),
+        f.content.tiles[0].data.m.clone(),
     );
 
     // Don't clear these flags from `c.frame_flags` if the frame is not going to be output.
     // This way they will be added to the next visible frame too.
-    let flags_mask = if (frame_hdr.show_frame != 0 || output_invisible_frames)
-        && max_spatial_id == frame_hdr.spatial_id
+    let flags_mask = if (f.frame_hdr.show_frame != 0 || output_invisible_frames)
+        && max_spatial_id == f.frame_hdr.spatial_id
     {
         PictureFlags::empty()
     } else {
@@ -296,8 +295,8 @@ pub(crate) fn rav1d_thread_picture_alloc(
     };
     p.flags = *frame_flags;
     *frame_flags &= flags_mask;
-    p.visible = frame_hdr.show_frame != 0;
-    p.showable = frame_hdr.showable_frame != 0;
+    p.visible = f.frame_hdr.show_frame != 0;
+    p.showable = f.frame_hdr.showable_frame != 0;
     p.progress = if have_frame_mt {
         Some(Default::default())
     } else {
@@ -317,7 +316,7 @@ pub(crate) fn rav1d_picture_alloc_copy(
         dst,
         w,
         src.p.h,
-        src.seq_hdr.clone(),
+        src.seq_hdr.clone().unwrap(),
         src.frame_hdr.clone(),
         src.p.bpc,
         &src.data.as_ref().unwrap().allocator,

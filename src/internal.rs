@@ -757,7 +757,7 @@ pub(crate) struct Rav1dFrameContext {
     /// Index in [`Rav1dContext::fc`]
     pub index: usize,
 
-    pub data: RwLock<Rav1dFrameData>,
+    pub data: RwLock<Rav1dFrameDataMaybeHeaders>,
     pub in_cdf: RwLock<CdfThreadContext>,
     pub task_thread: Rav1dFrameContextTaskThread,
     pub frame_thread_progress: Rav1dFrameContextFrameThreadProgress,
@@ -791,9 +791,7 @@ impl Rav1dFrameContext {
 
 #[derive(Default)]
 #[repr(C)]
-pub(crate) struct Rav1dFrameData {
-    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
-    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+pub(crate) struct Rav1dFrameContent {
     pub refp: [Rav1dThreadPicture; 7],
     // during block coding / reconstruction
     pub cur: Rav1dPicture,
@@ -847,18 +845,71 @@ pub(crate) struct Rav1dFrameData {
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
+#[derive(Default)]
+#[repr(C)]
+pub(crate) struct Rav1dFrameDataMaybeHeaders {
+    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+    pub content: Rav1dFrameContent,
+}
+
+#[repr(C)]
+pub(crate) struct Rav1dFrameData {
+    pub seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
+    pub frame_hdr: Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>,
+    pub content: Rav1dFrameContent,
+}
+
+impl Rav1dFrameDataMaybeHeaders {
+    pub fn assert_has_headers<'a>(&'a self) -> &'a Rav1dFrameData {
+        if self.seq_hdr.as_ref().is_none() {
+            panic!("required sequence header past this point");
+        }
+
+        if self.frame_hdr.as_ref().is_none() {
+            panic!("required frame header past this point");
+        }
+
+        // Safety: we just asserted that seq_hdr and frame_hdr are Some, and Option<Arc<T>> has the
+        // same layout as Arc<T>. further, `Rav1dFrameData` and `Rav1dFrameDataWithHeaders` have
+        // the same layout with repr(C) ensuring their field ordering is identical.
+        unsafe { std::mem::transmute(self) }
+    }
+
+    pub fn assert_has_headers_mut<'a>(&'a mut self) -> &'a mut Rav1dFrameData {
+        if self.seq_hdr.as_ref().is_none() {
+            panic!("required sequence header past this point");
+        }
+
+        if self.frame_hdr.as_ref().is_none() {
+            panic!("required frame header past this point");
+        }
+
+        // Safety: we just asserted that seq_hdr and frame_hdr are Some, and Option<Arc<T>> has the
+        // same layout as Arc<T>. further, `Rav1dFrameData` and `Rav1dFrameDataWithHeaders` have
+        // the same layout with repr(C) ensuring their field ordering is identical.
+        // Same as `assert_has_headers` overall; we have the sole `&mut self`, so we maintain
+        // exclusivity with the returned `&'a mut` ref returned here.
+        unsafe { std::mem::transmute(self) }
+    }
+}
+
+impl<'a> From<&'a mut Rav1dFrameData> for &'a mut Rav1dFrameDataMaybeHeaders {
+    fn from(v: &'a mut Rav1dFrameData) -> Self {
+        // Safety: as an implementation detail of Rust today, Arc<T> is just a glorified
+        // NonNull<ArcInner<T>>. this will be niche elided into a `Some` when transmuted to
+        // `Option<Arc<T>>`. this is not guaranteed to remain so, and `Arc<T, A>` with non-ZST
+        // allocators will trivially violate this.
+        //
+        // to repeat: safe only as an implementation detail of Rust to date.
+        unsafe { std::mem::transmute(v) }
+    }
+}
+
 impl Rav1dFrameData {
     pub fn bd_fn(&self) -> &'static Rav1dFrameContextBdFn {
-        let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
+        let bpc = BPC::from_bitdepth_max(self.content.bitdepth_max);
         Rav1dFrameContextBdFn::get(bpc)
-    }
-
-    pub fn frame_hdr(&self) -> &Rav1dFrameHeader {
-        self.frame_hdr.as_ref().unwrap()
-    }
-
-    pub fn seq_hdr(&self) -> &Rav1dSequenceHeader {
-        self.seq_hdr.as_ref().unwrap()
     }
 }
 

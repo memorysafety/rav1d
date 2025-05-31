@@ -153,28 +153,28 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     src: [Rav1dPictureDataComponentOffset; 3],
     sby: c_int,
 ) {
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
 
     let have_tt = (c.tc.len() > 1) as c_int;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset_y = 8 * (sby != 0) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let tt_off = have_tt * sby * (4 << seq_hdr.sb128);
-    let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
+    let sr_cur_data = &f.content.sr_cur.p.data.as_ref().unwrap().data;
     let dst = array::from_fn::<_, 3, _>(|i| {
         let data = &sr_cur_data[i];
-        let offset =
-            f.lf.lr_lpf_line[i].wrapping_add_signed(tt_off as isize * data.pixel_stride::<BD>());
+        let offset = f.content.lf.lr_lpf_line[i]
+            .wrapping_add_signed(tt_off as isize * data.pixel_stride::<BD>());
         Rav1dPictureDataComponentOffset { data, offset }
     });
 
     // TODO Also check block level restore type to reduce copying.
-    let restore_planes = f.lf.restore_planes;
+    let restore_planes = f.content.lf.restore_planes;
 
     if seq_hdr.cdef != 0 || restore_planes.contains(LrRestorePlanes::Y) {
-        let h = f.cur.p.h;
-        let w = f.bw << 2;
+        let h = f.content.cur.p.h;
+        let w = f.content.bw << 2;
         let row_h = cmp::min((sby + 1) << 6 + seq_hdr.sb128, h - 1);
         let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
         if restore_planes.contains(LrRestorePlanes::Y) || resize == 0 {
@@ -182,7 +182,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                 c,
                 WithOffset {
                     data: WithStride {
-                        buf: &f.lf.lr_line_buf,
+                        buf: &f.content.lf.lr_line_buf,
                         stride: dst[0].stride(),
                     },
                     offset: dst[0].offset,
@@ -197,22 +197,23 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                 0,
                 1,
                 frame_hdr,
-                f.dsp,
-                f.resize_step,
-                f.resize_start,
+                f.content.dsp,
+                f.content.resize_step,
+                f.content.resize_start,
                 bd,
             );
         }
         if have_tt != 0 && resize != 0 {
             let cdef_off_y = (sby * 4) as isize * src[0].pixel_stride::<BD>();
-            let cdef_plane_y_sz = 4 * f.sbh as isize * src[0].pixel_stride::<BD>();
+            let cdef_plane_y_sz = 4 * f.content.sbh as isize * src[0].pixel_stride::<BD>();
             let y_span = cdef_plane_y_sz - src[0].pixel_stride::<BD>();
-            let cdef_line_start = (f.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
+            let cdef_line_start =
+                (f.content.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
                 WithOffset {
                     data: WithStride {
-                        buf: &f.lf.cdef_line_buf,
+                        buf: &f.content.lf.cdef_line_buf,
                         stride: src[0].stride(),
                     },
                     offset: cdef_line_start + (cdef_off_y - cmp::min(y_span, 0)) as usize,
@@ -227,20 +228,20 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                 0,
                 0,
                 frame_hdr,
-                f.dsp,
-                f.resize_step,
-                f.resize_start,
+                f.content.dsp,
+                f.content.resize_step,
+                f.content.resize_start,
                 bd,
             );
         }
     }
     if (seq_hdr.cdef != 0 || restore_planes.intersects(LrRestorePlanes::UV))
-        && f.cur.p.layout != Rav1dPixelLayout::I400
+        && f.content.cur.p.layout != Rav1dPixelLayout::I400
     {
-        let ss_ver = (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let ss_hor = (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
-        let h_0 = f.cur.p.h + ss_ver >> ss_ver;
-        let w_0 = f.bw << 2 - ss_hor;
+        let ss_ver = (f.content.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let ss_hor = (f.content.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
+        let h_0 = f.content.cur.p.h + ss_ver >> ss_ver;
+        let w_0 = f.content.bw << 2 - ss_hor;
         let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128 as c_int, h_0 - 1);
         let offset_uv = offset_y >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
@@ -251,7 +252,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     c,
                     WithOffset {
                         data: WithStride {
-                            buf: &f.lf.lr_line_buf,
+                            buf: &f.content.lf.lr_line_buf,
                             stride: dst[1].stride(),
                         },
                         offset: dst[1].offset,
@@ -266,22 +267,22 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     ss_hor,
                     1,
                     frame_hdr,
-                    f.dsp,
-                    f.resize_step,
-                    f.resize_start,
+                    f.content.dsp,
+                    f.content.resize_step,
+                    f.content.resize_start,
                     bd,
                 );
             }
             if have_tt != 0 && resize != 0 {
-                let cdef_plane_uv_sz = 4 * f.sbh as isize * src[1].pixel_stride::<BD>();
+                let cdef_plane_uv_sz = 4 * f.content.sbh as isize * src[1].pixel_stride::<BD>();
                 let uv_span = cdef_plane_uv_sz - src[1].pixel_stride::<BD>();
                 let cdef_line_start =
-                    (f.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
+                    (f.content.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
                     WithOffset {
                         data: WithStride {
-                            buf: &f.lf.cdef_line_buf,
+                            buf: &f.content.lf.cdef_line_buf,
                             stride: src[1].stride(),
                         },
                         offset: cdef_line_start + (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
@@ -296,9 +297,9 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     ss_hor,
                     0,
                     frame_hdr,
-                    f.dsp,
-                    f.resize_step,
-                    f.resize_start,
+                    f.content.dsp,
+                    f.content.resize_step,
+                    f.content.resize_start,
                     bd,
                 );
             }
@@ -309,7 +310,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     c,
                     WithOffset {
                         data: WithStride {
-                            buf: &f.lf.lr_line_buf,
+                            buf: &f.content.lf.lr_line_buf,
                             stride: dst[2].stride(),
                         },
                         offset: dst[2].offset,
@@ -324,22 +325,22 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     ss_hor,
                     1,
                     frame_hdr,
-                    f.dsp,
-                    f.resize_step,
-                    f.resize_start,
+                    f.content.dsp,
+                    f.content.resize_step,
+                    f.content.resize_start,
                     bd,
                 );
             }
             if have_tt != 0 && resize != 0 {
-                let cdef_plane_uv_sz = 4 * f.sbh as isize * src[2].pixel_stride::<BD>();
+                let cdef_plane_uv_sz = 4 * f.content.sbh as isize * src[2].pixel_stride::<BD>();
                 let uv_span = cdef_plane_uv_sz - src[2].pixel_stride::<BD>();
                 let cdef_line_start =
-                    (f.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
+                    (f.content.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
                     WithOffset {
                         data: WithStride {
-                            buf: &f.lf.cdef_line_buf,
+                            buf: &f.content.lf.cdef_line_buf,
                             stride: src[2].stride(),
                         },
                         offset: cdef_line_start + (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
@@ -354,9 +355,9 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
                     ss_hor,
                     0,
                     frame_hdr,
-                    f.dsp,
-                    f.resize_step,
-                    f.resize_start,
+                    f.content.dsp,
+                    f.content.resize_step,
+                    f.content.resize_start,
                     bd,
                 );
             }
@@ -376,7 +377,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
     endy4: usize,
 ) {
     // filter edges between columns (e.g. block1 | block2)
-    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let lf_sb = &f.content.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     let y_dst = |x| y_dst + x * 4;
     y_dst(w).as_ptr::<BD>(); // Bounds check
@@ -416,7 +417,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let lf_sb = &f.content.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     let y_dst = |i| y_dst + (i as isize * 4 * y_dst.pixel_stride::<BD>());
     y_dst(len - 1).as_ptr::<BD>(); // Bounds check
@@ -447,7 +448,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
     ss_ver: c_int,
 ) {
     // filter edges between columns (e.g. block1 | block2)
-    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let lf_sb = &f.content.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     let u_dst = |x| u_dst + x * 4;
     let v_dst = |x| v_dst + x * 4;
@@ -493,7 +494,7 @@ fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
-    let lf_sb = &f.dsp.lf.loop_filter_sb;
+    let lf_sb = &f.content.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
     let u_dst = |i| u_dst + (i as isize * 4 * u_dst.pixel_stride::<BD>());
     let v_dst = |i| v_dst + (i as isize * 4 * v_dst.pixel_stride::<BD>());
@@ -521,38 +522,38 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     sby: c_int,
     start_of_tile_row: c_int,
 ) {
-    let lflvl = &f.lf.mask[lflvl_offset..];
+    let lflvl = &f.content.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = ((sby & is_sb64) as u32) << 4;
     let sbsz = 32 >> is_sb64;
     let sbl2 = 5 - is_sb64;
-    let halign = (f.bh + 31 & !31) as usize;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let halign = (f.content.bh + 31 & !31) as usize;
+    let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let vmask = 16 >> ss_ver;
     let hmask = 16 >> ss_hor;
     let vmax = (1 as c_uint) << vmask;
     let hmax = (1 as c_uint) << hmask;
-    let endy4 = starty4 + cmp::min(f.h4 - sby * sbsz, sbsz) as u32;
+    let endy4 = starty4 + cmp::min(f.content.h4 - sby * sbsz, sbsz) as u32;
     let uv_endy4 = (endy4 + ss_ver as u32) >> ss_ver;
     let mut lpf_y_idx = (sby << sbl2) as usize;
     let mut lpf_uv_idx = (sby << sbl2 - ss_ver) as usize;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
 
     // fix lpf strength at tile col boundaries
     let mut tile_col = 1;
     loop {
         let mut x = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
-        if x << sbl2 >= f.bw {
+        if x << sbl2 >= f.content.bw {
             break;
         }
         let bx4: c_int = if x & is_sb64 != 0 { 16 } else { 0 };
         let cbx4 = bx4 >> ss_hor;
         x >>= is_sb64;
         let y_hmask = &lflvl[x as usize].filter_y[0][bx4 as usize];
-        let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge.get(
+        let (lpf_y, lpf_uv) = f.content.lf.tx_lpf_right_edge.get(
             lpf_y_idx..lpf_y_idx + (endy4 - starty4) as usize,
             lpf_uv_idx..lpf_uv_idx + (uv_endy4 - (starty4 >> ss_ver)) as usize,
         );
@@ -568,7 +569,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             y_hmask[cmp::min(idx, lpf_y[(y - starty4) as usize] as usize)][sidx]
                 .update(|it| it | smask);
         }
-        if f.cur.p.layout != Rav1dPixelLayout::I400 {
+        if f.content.cur.p.layout != Rav1dPixelLayout::I400 {
             let uv_hmask = &lflvl[x as usize].filter_uv[0][cbx4 as usize];
             for y in starty4 >> ss_ver..uv_endy4 {
                 let uv_mask: u32 = 1 << y;
@@ -588,10 +589,10 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 
     // fix lpf strength at tile row boundaries
     if start_of_tile_row != 0 {
-        let mut a = &f.a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
-        for x in 0..f.sb128w {
+        let mut a = &f.content.a[(f.content.sb128w * (start_of_tile_row - 1)) as usize..];
+        for x in 0..f.content.sb128w {
             let y_vmask = &lflvl[x as usize].filter_y[1][starty4 as usize];
-            let w = cmp::min(32, f.w4 - (x << 5)) as u32;
+            let w = cmp::min(32, f.content.w4 - (x << 5)) as u32;
             for i in 0..w {
                 let mask: u32 = 1 << i;
                 let sidx = (mask >= 0x10000) as usize;
@@ -604,7 +605,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 y_vmask[cmp::min(idx, *a[0].tx_lpf_y.index(i as usize) as usize)][sidx]
                     .update(|it| it | smask);
             }
-            if f.cur.p.layout != Rav1dPixelLayout::I400 {
+            if f.content.cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
                 let uv_vmask = &lflvl[x as usize].filter_uv[1][(starty4 >> ss_ver) as usize];
                 for i in 0..cw {
@@ -621,20 +622,20 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             a = &a[1..];
         }
     }
-    let lflvl = &f.lf.mask[lflvl_offset..];
+    let lflvl = &f.content.lf.mask[lflvl_offset..];
     let lvl = WithOffset {
-        data: &f.lf.level,
-        offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
+        data: &f.content.lf.level,
+        offset: 4 * f.content.b4_stride as usize * (sby * sbsz) as usize,
     };
     have_left = false;
-    for x in 0..f.sb128w as usize {
+    for x in 0..f.content.sb128w as usize {
         filter_plane_cols_y::<BD>(
             f,
             have_left,
             lvl + 4 * x * 32,
             &lflvl[x].filter_y[0],
             py + x * 128,
-            cmp::min(32, f.w4 - x as c_int * 32) as usize,
+            cmp::min(32, f.content.w4 - x as c_int * 32) as usize,
             starty4 as usize,
             endy4 as usize,
         );
@@ -644,11 +645,11 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         return;
     }
     let lvl = WithOffset {
-        data: &f.lf.level,
-        offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
+        data: &f.content.lf.level,
+        offset: 4 * f.content.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
     have_left = false;
-    for x in 0..f.sb128w as usize {
+    for x in 0..f.content.sb128w as usize {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
@@ -656,7 +657,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             &lflvl[x].filter_uv[0],
             pu + x * (128 >> ss_hor),
             pv + x * (128 >> ss_hor),
-            (cmp::min(32, f.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
+            (cmp::min(32, f.content.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
             starty4 as usize >> ss_ver,
             uv_endy4 as usize,
             ss_ver,
@@ -671,57 +672,57 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     lflvl_offset: usize,
     sby: c_int,
 ) {
-    let lflvl = &f.lf.mask[lflvl_offset..];
+    let lflvl = &f.content.lf.mask[lflvl_offset..];
 
     // Don't filter outside the frame
     let have_top = sby > 0;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &f.seq_hdr;
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
-    let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
+    let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let endy4: c_uint = (starty4 + cmp::min(f.content.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
     let lvl = WithOffset {
-        data: &f.lf.level,
-        offset: 4 * f.b4_stride as usize * (sby * sbsz) as usize,
+        data: &f.content.lf.level,
+        offset: 4 * f.content.b4_stride as usize * (sby * sbsz) as usize,
     };
-    for x in 0..f.sb128w as usize {
+    for x in 0..f.content.sb128w as usize {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
             lvl + 4 * x * 32,
-            f.b4_stride as usize,
+            f.content.b4_stride as usize,
             &lflvl[x].filter_y[1],
             p[0] + 128 * x,
-            cmp::min(32, f.w4 - x as c_int * 32) as usize,
+            cmp::min(32, f.content.w4 - x as c_int * 32) as usize,
             starty4 as usize,
             endy4 as usize,
         );
     }
 
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
 
     let lvl = WithOffset {
-        data: &f.lf.level,
-        offset: 4 * f.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
+        data: &f.content.lf.level,
+        offset: 4 * f.content.b4_stride as usize * (sby * sbsz >> ss_ver) as usize,
     };
     let [_, pu, pv] = p;
-    for x in 0..f.sb128w as usize {
+    for x in 0..f.content.sb128w as usize {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
             lvl + 4 * x * (32 >> ss_hor),
-            f.b4_stride as usize,
+            f.content.b4_stride as usize,
             &lflvl[x].filter_uv[1],
             pu + (x * 128 >> ss_hor),
             pv + (x * 128 >> ss_hor),
-            (cmp::min(32 as c_int, f.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
+            (cmp::min(32 as c_int, f.content.w4 - x as c_int * 32) + ss_hor >> ss_hor) as usize,
             starty4 as usize >> ss_ver,
             uv_endy4 as usize,
             ss_hor,

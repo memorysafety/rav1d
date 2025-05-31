@@ -53,10 +53,10 @@ impl loopfilter_sb::Fn {
         // SAFETY: `lvl.offset` is in bounds, just checked above.
         let lvl_ptr = unsafe { lvl.data.as_mut_ptr().add(lvl.offset) };
         let lvl_ptr = lvl_ptr.cast::<[u8; 4]>();
-        let b4_stride = f.b4_stride;
-        let lut = &f.lf.lim_lut;
+        let b4_stride = f.content.b4_stride;
+        let lut = &f.content.lf.lim_lut;
         let w = w as c_int;
-        let bd = f.bitdepth_max;
+        let bd = f.content.bitdepth_max;
         let dst = FFISafe::new(&dst);
         let lvl = FFISafe::new(&lvl);
         // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.

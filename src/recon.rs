@@ -121,7 +121,7 @@ macro_rules! debug_block_info {
         use crate::src::internal::Bxy;
 
         let tb: Bxy = $tb;
-        false && $f.frame_hdr.as_ref().unwrap().frame_offset == 2 && tb.debug_block_info()
+        false && $f.frame_hdr.frame_offset == 2 && tb.debug_block_info()
     }};
 }
 pub(crate) use debug_block_info;
@@ -538,9 +538,9 @@ fn decode_coefs<BD: BitDepth>(
     let dc_sign_ctx;
     let dc_sign;
     let mut dc_dq;
-    let ts = &f.ts[ts];
+    let ts = &f.content.ts[ts];
     let chroma = plane != 0;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
@@ -550,7 +550,7 @@ fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout);
+    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.content.cur.p.layout);
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx.get() as usize],
@@ -749,6 +749,7 @@ fn decode_coefs<BD: BitDepth>(
     let cf_len = sw * 4 * sh * 4;
     let cf = match cf {
         CfSelect::Frame(offset) => &mut *f
+            .content
             .frame_thread
             .cf
             .mut_slice_as((offset as usize.., ..cf_len)),
@@ -1065,12 +1066,12 @@ fn decode_coefs<BD: BitDepth>(
 
     // residual and sign
     let dq = match ts.dq.get() {
-        TileStateRef::Frame => &f.dq,
+        TileStateRef::Frame => &f.content.dq,
         TileStateRef::Local => &ts.dqmem,
     };
     let dq_tbl = &dq[b.seg_id.get()][plane];
     let qm_tbl = if *txtp < IDTX {
-        f.qm[tx as usize][plane]
+        f.content.qm[tx as usize][plane]
     } else {
         None
     };
@@ -1078,7 +1079,7 @@ fn decode_coefs<BD: BitDepth>(
     let cf_max = !(!127u32
         << (match BD::BPC {
             BPC::BPC8 => 8,
-            BPC::BPC16 => f.cur.p.bpc,
+            BPC::BPC16 => f.content.cur.p.bpc,
         })) as i32;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
@@ -1266,7 +1267,7 @@ fn decode_coefs<BD: BitDepth>(
 
 #[derive(Clone, Copy)]
 enum CfSelect {
-    /// Use `f.frame_thread.cf` at the specified offset.
+    /// Use `f.content.frame_thread.cf` at the specified offset.
     Frame(u32),
 
     /// Use `t.cf`.
@@ -1286,9 +1287,9 @@ fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut y_dst: Option<Rav1dPictureDataComponentOffset>,
 ) {
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
 
-    let ts = &f.ts[t.ts];
+    let ts = &f.content.ts[t.ts];
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
     let txw = t_dim.w;
     let txh = t_dim.h;
@@ -1316,7 +1317,7 @@ fn read_coef_tree<BD: BitDepth>(
             y_dst,
         );
         t.b.x += txsw as c_int;
-        if txw >= txh && t.b.x < f.bw {
+        if txw >= txh && t.b.x < f.content.bw {
             read_coef_tree::<BD>(
                 f,
                 t,
@@ -1333,7 +1334,7 @@ fn read_coef_tree<BD: BitDepth>(
         }
         t.b.x -= txsw as c_int;
         t.b.y += txsh as c_int;
-        if txh >= txw && t.b.y < f.bh {
+        if txh >= txw && t.b.y < f.content.bh {
             y_dst = y_dst.map(|dst| dst + (4 * txsh as isize * dst.pixel_stride::<BD>()));
             read_coef_tree::<BD>(
                 f,
@@ -1349,7 +1350,7 @@ fn read_coef_tree<BD: BitDepth>(
                 y_dst,
             );
             t.b.x += txsw as c_int;
-            if txw >= txh && t.b.x < f.bw {
+            if txw >= txh && t.b.x < f.content.bw {
                 read_coef_tree::<BD>(
                     f,
                     t,
@@ -1392,7 +1393,7 @@ fn read_coef_tree<BD: BitDepth>(
                 debug_block_info!(f, t.b),
                 &mut t.scratch,
                 &mut t.cf,
-                &mut f.a[t.a].lcoef.index_mut(bx4..bx4 + txw as usize),
+                &mut f.content.a[t.a].lcoef.index_mut(bx4..bx4 + txw as usize),
                 &mut t.l.lcoef.index_mut(by4..by4 + txh as usize),
                 ytx,
                 bs,
@@ -1409,10 +1410,10 @@ fn read_coef_tree<BD: BitDepth>(
                 );
             }
             CaseSet::<16, true>::many(
-                [&t.l.lcoef, &f.a[t.a].lcoef],
+                [&t.l.lcoef, &f.content.a[t.a].lcoef],
                 [
-                    cmp::min(txh as c_int, f.bh - t.b.y) as usize,
-                    cmp::min(txw as c_int, f.bw - t.b.x) as usize,
+                    cmp::min(txh as c_int, f.content.bh - t.b.y) as usize,
+                    cmp::min(txw as c_int, f.content.bw - t.b.x) as usize,
                 ],
                 [by4, bx4],
                 |case, dir| {
@@ -1428,11 +1429,12 @@ fn read_coef_tree<BD: BitDepth>(
             });
             if t.frame_thread.pass == 1 {
                 let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                f.frame_thread.cbi[cbi_idx as usize].set(CodedBlockInfo::new(eob as i16, txtp));
+                f.content.frame_thread.cbi[cbi_idx as usize]
+                    .set(CodedBlockInfo::new(eob as i16, txtp));
             }
         } else {
             let cbi_idx = ts.frame_thread[0].cbi_idx.get_update(|i| i + 1);
-            let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
+            let cbi = f.content.frame_thread.cbi[cbi_idx as usize].get();
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -1443,7 +1445,11 @@ fn read_coef_tree<BD: BitDepth>(
                     CfSelect::Frame(offset) => {
                         let len =
                             cmp::min(t_dim.h as usize, 8) * 4 * cmp::min(t_dim.w as usize, 8) * 4;
-                        &mut *f.frame_thread.cf.mut_slice_as((offset as usize.., ..len))
+                        &mut *f
+                            .content
+                            .frame_thread
+                            .cf
+                            .mut_slice_as((offset as usize.., ..len))
                     }
                     CfSelect::Task => t.cf.select_mut::<BD>(),
                 };
@@ -1456,7 +1462,8 @@ fn read_coef_tree<BD: BitDepth>(
                         "dq",
                     );
                 }
-                f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(y_dst, cf, eob, bd);
+                f.content.dsp.itx.itxfm_add[ytx as usize][txtp as usize]
+                    .call::<BD>(y_dst, cf, eob, bd);
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump_pic::<BD>(y_dst, t_dim.w as usize * 4, t_dim.h as usize * 4, "recon");
                 }
@@ -1472,8 +1479,8 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) {
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as u8;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
+    let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as u8;
+    let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as u8;
     let bx4 = t.b.x as usize & 31;
     let by4 = t.b.y as usize & 31;
     let cbx4 = bx4 >> ss_hor;
@@ -1483,13 +1490,13 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let bh4 = b_dim[1];
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
+    let has_chroma = f.content.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
 
     if b.skip != 0 {
         CaseSet::<32, false>::many(
-            [&t.l, &f.a[t.a]],
+            [&t.l, &f.content.a[t.a]],
             [bh4 as usize, bw4 as usize],
             [by4, bx4],
             |case, dir| {
@@ -1498,7 +1505,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
         );
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
+                [&t.l, &f.content.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4, cbx4],
                 |case, dir| {
@@ -1511,9 +1518,9 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
         return;
     }
 
-    let ts = &f.ts[t.ts];
-    let w4 = cmp::min(bw4 as c_int, f.bw - t.b.x) as u8;
-    let h4 = cmp::min(bh4 as c_int, f.bh - t.b.y) as u8;
+    let ts = &f.content.ts[t.ts];
+    let w4 = cmp::min(bw4 as c_int, f.content.bw - t.b.x) as u8;
+    let h4 = cmp::min(bh4 as c_int, f.content.bh - t.b.y) as u8;
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
@@ -1575,7 +1582,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                &mut f.a[t.a].lcoef.index_mut((a_start.., ..a_len)),
+                                &mut f.content.a[t.a].lcoef.index_mut((a_start.., ..a_len)),
                                 &mut t.l.lcoef.index_mut((l_start.., ..l_len)),
                                 intra.tx,
                                 bs,
@@ -1592,13 +1599,13 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 );
                             }
                             let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                            f.frame_thread.cbi[cbi_idx as usize]
+                            f.content.frame_thread.cbi[cbi_idx as usize]
                                 .set(CodedBlockInfo::new(eob as i16, txtp));
                             CaseSet::<16, true>::many(
-                                [&t.l.lcoef, &f.a[t.a].lcoef],
+                                [&t.l.lcoef, &f.content.a[t.a].lcoef],
                                 [
-                                    cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
-                                    cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
+                                    cmp::min(t_dim.h as i32, f.content.bh - t.b.y) as usize,
+                                    cmp::min(t_dim.w as i32, f.content.bw - t.b.x) as usize,
                                 ],
                                 [by4 + y as usize, bx4 + x as usize],
                                 |case, dir| {
@@ -1644,7 +1651,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                         };
                         let a_start = cbx4 + x as usize;
                         let a_len = uv_t_dim.w as usize;
-                        let a_ccoef = &f.a[t.a].ccoef[pl];
+                        let a_ccoef = &f.content.a[t.a].ccoef[pl];
                         let l_start = cby4 + y as usize;
                         let l_len = uv_t_dim.h as usize;
                         let l_ccoef = &t.l.ccoef[pl];
@@ -1673,7 +1680,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                         }
                         let cbi_idx = ts.frame_thread[1].cbi_idx.get_update(|i| i + 1);
-                        f.frame_thread.cbi[cbi_idx as usize]
+                        f.content.frame_thread.cbi[cbi_idx as usize]
                             .set(CodedBlockInfo::new(eob as i16, txtp));
                         ts.frame_thread[1]
                             .cf
@@ -1683,11 +1690,11 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
                             [
                                 cmp::min(
                                     uv_t_dim.h as i32,
-                                    f.bh - t.b.y + ss_ver as c_int >> ss_ver,
+                                    f.content.bh - t.b.y + ss_ver as c_int >> ss_ver,
                                 ) as usize,
                                 cmp::min(
                                     uv_t_dim.w as i32,
-                                    f.bw - t.b.x + ss_hor as c_int >> ss_hor,
+                                    f.content.bw - t.b.x + ss_hor as c_int >> ss_hor,
                                 ) as usize,
                             ],
                             [cby4 + y as usize, cbx4 as usize + x as usize],
@@ -1734,12 +1741,12 @@ fn mc<BD: BitDepth>(
     refidx: usize,
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
     let ref_data = &refp.p.data.as_ref().unwrap().data;
-    let cur_data = &f.cur.data.as_ref().unwrap().data;
+    let cur_data = &f.content.cur.data.as_ref().unwrap().data;
 
-    let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (pl != 0 && f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (pl != 0 && f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     let mvx = mv.x as c_int;
@@ -1747,18 +1754,18 @@ fn mc<BD: BitDepth>(
     let mx = mvx & 15 >> (ss_hor == 0) as c_int;
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
 
-    if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
+    if refp.p.p.w == f.content.cur.p.w && refp.p.p.h == f.content.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
         let dy = by * v_mul + (mvy >> 3 + ss_ver);
         let w;
         let h;
 
         if !ref_data[0].ref_eq(&cur_data[0]) {
-            w = f.cur.p.w + ss_hor >> ss_hor;
-            h = f.cur.p.h + ss_ver >> ss_ver;
+            w = f.content.cur.p.w + ss_hor >> ss_hor;
+            h = f.content.cur.p.h + ss_ver >> ss_ver;
         } else {
-            w = f.bw * 4 >> ss_hor;
-            h = f.bh * 4 >> ss_ver;
+            w = f.content.bw * 4 >> ss_hor;
+            h = f.content.bh * 4 >> ss_ver;
         }
         let r#ref = if dx < (mx != 0) as c_int * 3
             || dy < (my != 0) as c_int * 3
@@ -1766,7 +1773,7 @@ fn mc<BD: BitDepth>(
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
             let emu_edge_buf = emu_edge.buf_mut::<BD>();
-            f.dsp.mc.emu_edge.call::<BD>(
+            f.content.dsp.mc.emu_edge.call::<BD>(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
                 w as intptr_t,
@@ -1793,14 +1800,14 @@ fn mc<BD: BitDepth>(
         let my = my << (ss_ver == 0) as u8;
         match dst {
             MaybeTempPixels::NonTemp { dst } => {
-                f.dsp.mc.mc[filter_2d].call::<BD>(dst, r#ref, w, h, mx, my, bd);
+                f.content.dsp.mc.mc[filter_2d].call::<BD>(dst, r#ref, w, h, mx, my, bd);
             }
             MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
-                f.dsp.mc.mct[filter_2d].call::<BD>(tmp, r#ref, w, h, mx, my, bd);
+                f.content.dsp.mc.mct[filter_2d].call::<BD>(tmp, r#ref, w, h, mx, my, bd);
             }
         }
     } else {
-        assert!(!ptr::eq(refp, &f.sr_cur));
+        assert!(!ptr::eq(refp, &f.content.sr_cur));
 
         let orig_pos_y = (by * v_mul << 4) + mvy * (1 << (ss_ver == 0) as c_int);
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
@@ -1810,12 +1817,12 @@ fn mc<BD: BitDepth>(
             apply_sign64(((tmp.abs() + 128) >> 8) as c_int, tmp) + 32
         };
 
-        let pos_x = scale_mv(orig_pos_x, f.svc[refidx][0].scale);
-        let pos_y = scale_mv(orig_pos_y, f.svc[refidx][1].scale);
+        let pos_x = scale_mv(orig_pos_x, f.content.svc[refidx][0].scale);
+        let pos_y = scale_mv(orig_pos_y, f.content.svc[refidx][1].scale);
         let left = pos_x >> 10;
         let top = pos_y >> 10;
-        let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
-        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx][1].step >> 10) + 1;
+        let right = (pos_x + (bw4 * h_mul - 1) * (*f).content.svc[refidx][0].step >> 10) + 1;
+        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).content.svc[refidx][1].step >> 10) + 1;
 
         if debug_block_info!(f, b) {
             println!(
@@ -1823,12 +1830,12 @@ fn mc<BD: BitDepth>(
                 left,
                 top,
                 orig_pos_x,
-                f.svc[refidx][0].scale,
+                f.content.svc[refidx][0].scale,
                 refidx,
                 right - left,
                 bottom - top,
-                f.svc[refidx][0].step,
-                f.svc[refidx][1].step,
+                f.content.svc[refidx][0].step,
+                f.content.svc[refidx][1].step,
             );
         }
 
@@ -1836,7 +1843,7 @@ fn mc<BD: BitDepth>(
         let h = refp.p.p.h + ss_ver >> ss_ver;
         let r#ref = if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
             let emu_edge_buf = emu_edge.buf_mut::<BD>();
-            f.dsp.mc.emu_edge.call::<BD>(
+            f.content.dsp.mc.emu_edge.call::<BD>(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
                 w as intptr_t,
@@ -1864,14 +1871,16 @@ fn mc<BD: BitDepth>(
         let h = bh4 * v_mul;
         let mx = pos_x & 0x3ff;
         let my = pos_y & 0x3ff;
-        let dx = f.svc[refidx][0].step;
-        let dy = f.svc[refidx][1].step;
+        let dx = f.content.svc[refidx][0].step;
+        let dy = f.content.svc[refidx][1].step;
         match dst {
             MaybeTempPixels::NonTemp { dst } => {
-                f.dsp.mc.mc_scaled[filter_2d].call::<BD>(dst, r#ref, w, h, mx, my, dx, dy, bd);
+                f.content.dsp.mc.mc_scaled[filter_2d]
+                    .call::<BD>(dst, r#ref, w, h, mx, my, dx, dy, bd);
             }
             MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
-                f.dsp.mc.mct_scaled[filter_2d].call::<BD>(tmp, r#ref, w, h, mx, my, dx, dy, bd);
+                f.content.dsp.mc.mct_scaled[filter_2d]
+                    .call::<BD>(tmp, r#ref, w, h, mx, my, dx, dy, bd);
             }
         }
     }
@@ -1894,11 +1903,11 @@ fn obmc<BD: BitDepth>(
     let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
     let scratch = t.scratch.inter_mut();
     let lap = scratch.lap_inter.lap_mut::<BD>();
-    let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (pl != 0 && f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (pl != 0 && f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    let ts = &f.ts[t.ts];
+    let ts = &f.content.ts[t.ts];
 
     if t.b.y > ts.tiling.row_start
         && (pl == 0 || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
@@ -1907,7 +1916,7 @@ fn obmc<BD: BitDepth>(
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
             // only odd blocks are considered for overlap handling, hence +1
-            let a_r = *f.rf.r.index(r[0] + t.b.x as usize + x as usize + 1);
+            let a_r = *f.content.rf.r.index(r[0] + t.b.x as usize + x as usize + 1);
             let a_b_dim = a_r.bs.dimensions();
             let step4 = clip(a_b_dim[0], 2, 16);
 
@@ -1933,12 +1942,13 @@ fn obmc<BD: BitDepth>(
                     t.b.y,
                     pl,
                     a_r.mv.mv[0],
-                    &f.refp[a_r.r#ref.r#ref[0] as usize - 1],
+                    &f.content.refp[a_r.r#ref.r#ref[0] as usize - 1],
                     a_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
-                        [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
+                    dav1d_filter_2d
+                        [*f.content.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
+                        [*f.content.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
-                f.dsp.mc.blend_h.call::<BD>(
+                f.content.dsp.mc.blend_h.call::<BD>(
                     dst + (x * h_mul) as usize,
                     lap,
                     h_mul * ow4 as c_int,
@@ -1955,7 +1965,11 @@ fn obmc<BD: BitDepth>(
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
             // only odd blocks are considered for overlap handling, hence +1
-            let l_r = *f.rf.r.index(r[y as usize + 1 + 1] + t.b.x as usize - 1);
+            let l_r = *f
+                .content
+                .rf
+                .r
+                .index(r[y as usize + 1 + 1] + t.b.x as usize - 1);
             let l_b_dim = l_r.bs.dimensions();
             let step4 = clip(l_b_dim[1], 2, 16);
 
@@ -1981,12 +1995,12 @@ fn obmc<BD: BitDepth>(
                     t.b.y + y,
                     pl,
                     l_r.mv.mv[0],
-                    &f.refp[l_r.r#ref.r#ref[0] as usize - 1],
+                    &f.content.refp[l_r.r#ref.r#ref[0] as usize - 1],
                     l_r.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
-                f.dsp.mc.blend_v.call::<BD>(
+                f.content.dsp.mc.blend_v.call::<BD>(
                     dst + (y * v_mul) as isize * dst.pixel_stride::<BD>(),
                     lap,
                     h_mul * ow4 as c_int,
@@ -2011,11 +2025,11 @@ fn warp_affine<BD: BitDepth>(
     wmp: &Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
     let abcd = &wmp.abcd.get();
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
     let ref_data = &refp.p.data.as_ref().unwrap().data;
 
-    let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (pl != 0 && f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (pl != 0 && f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     assert!(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0);
@@ -2043,7 +2057,7 @@ fn warp_affine<BD: BitDepth>(
 
             let r#ref = if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf = emu_edge.buf_mut::<BD>();
-                f.dsp.mc.emu_edge.call::<BD>(
+                f.content.dsp.mc.emu_edge.call::<BD>(
                     15,
                     15,
                     width as intptr_t,
@@ -2069,13 +2083,22 @@ fn warp_affine<BD: BitDepth>(
                     ref mut tmp,
                     tmp_stride,
                 } => {
-                    f.dsp
-                        .mc
-                        .warp8x8t
-                        .call(&mut tmp[x..], tmp_stride, r#ref, abcd, mx, my, bd);
+                    f.content.dsp.mc.warp8x8t.call(
+                        &mut tmp[x..],
+                        tmp_stride,
+                        r#ref,
+                        abcd,
+                        mx,
+                        my,
+                        bd,
+                    );
                 }
                 MaybeTempPixels::NonTemp { dst } => {
-                    f.dsp.mc.warp8x8.call(dst + x, r#ref, abcd, mx, my, bd);
+                    f.content
+                        .dsp
+                        .mc
+                        .warp8x8
+                        .call(dst + x, r#ref, abcd, mx, my, bd);
                 }
             }
         }
@@ -2101,24 +2124,24 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     b: &Av1Block,
     intra: &Av1BlockIntra,
 ) {
-    let bd = BD::from_c(f.bitdepth_max);
-    let cur_data = &f.cur.data.as_ref().unwrap().data;
-    let ts = &f.ts[t.ts];
+    let bd = BD::from_c(f.content.bitdepth_max);
+    let cur_data = &f.content.cur.data.as_ref().unwrap().data;
+    let ts = &f.content.ts[t.ts];
 
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
-    let w4 = cmp::min(bw4, f.bw - t.b.x);
-    let h4 = cmp::min(bh4, f.bh - t.b.y);
+    let w4 = cmp::min(bw4, f.content.bw - t.b.x);
+    let h4 = cmp::min(bh4, f.content.bh - t.b.y);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
+    let has_chroma = f.content.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
     let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
@@ -2128,7 +2151,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
 
-    let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
+    let intra_edge_filter = f.seq_hdr.intra_edge_filter;
     let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
 
     for init_y in (0..h4).step_by(16) {
@@ -2145,7 +2168,8 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                     let frame_thread = &ts.frame_thread[p];
                     let len = (bw4 * bh4 * 8) as u32;
                     let pal_idx = frame_thread.pal_idx.get_update(|i| i + len);
-                    &*f.frame_thread
+                    &*f.content
+                        .frame_thread
                         .pal_idx
                         .index((pal_idx as usize.., ..len as usize))
                 } else {
@@ -2154,13 +2178,15 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                 let pal = if t.frame_thread.pass != 0 {
                     let x = t.b.x as usize;
                     let y = t.b.y as usize;
-                    let index =
-                        ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-                    &*f.frame_thread.pal.index::<BD>(index)
+                    let index = ((y >> 1) + (x & 1)) * (f.content.b4_stride as usize >> 1)
+                        + (x >> 1)
+                        + (y & 1);
+                    &*f.content.frame_thread.pal.index::<BD>(index)
                 } else {
                     scratch.interintra_edge_pal.pal.buf::<BD>()
                 };
-                f.dsp
+                f.content
+                    .dsp
                     .ipred
                     .pal_pred
                     .call::<BD>(y_dst, &pal[0], pal_idx, bw4 * 4, bh4 * 4);
@@ -2169,7 +2195,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                 }
             }
 
-            let intra_flags = sm_flag(&f.a[t.a], bx4 as usize)
+            let intra_flags = sm_flag(&f.content.a[t.a], bx4 as usize)
                 | sm_flag(&mut t.l, by4 as usize)
                 | intra_edge_filter_flag;
             let sb_has_tr = if (init_x + 16) < w4 {
@@ -2213,11 +2239,11 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 !(x > init_x || (!sb_has_bl && y + t_dim.h as c_int >= sub_h4)),
                             ),
                         ]);
-                        let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                            let sby = t.b.y >> f.sb_shift;
-                            let offset = f.ipred_edge_off as isize * 0
-                                + (f.sb128w * 128 * (sby - 1)) as isize;
-                            Some((&f.ipred_edge, offset))
+                        let top_sb_edge_slice = if t.b.y & f.content.sb_step - 1 == 0 {
+                            let sby = t.b.y >> f.content.sb_shift;
+                            let offset = f.content.ipred_edge_off as isize * 0
+                                + (f.content.sb128w * 128 * (sby - 1)) as isize;
+                            Some((&f.content.ipred_edge, offset))
                         } else {
                             None
                         };
@@ -2247,15 +2273,15 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             edge_offset,
                             bd,
                         );
-                        f.dsp.ipred.intra_pred[m as usize].call(
+                        f.content.dsp.ipred.intra_pred[m as usize].call(
                             y_dst,
                             edge_array,
                             edge_offset,
                             t_dim.w as c_int * 4,
                             t_dim.h as c_int * 4,
                             angle | intra_flags,
-                            4 * f.bw - 4 * t.b.x,
-                            4 * f.bh - 4 * t.b.y,
+                            4 * f.content.bw - 4 * t.b.x,
+                            4 * f.content.bh - 4 * t.b.y,
                             bd,
                         );
 
@@ -2295,12 +2321,13 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 cmp::min(t_dim.h, 8) as u32 * 4 * cmp::min(t_dim.w, 8) as u32 * 4;
                             let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                             cf_guard = f
+                                .content
                                 .frame_thread
                                 .cf
                                 .mut_slice_as((cf_idx as usize.., ..len as usize));
                             cf = &mut *cf_guard;
                             let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                            let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
+                            let cbi = f.content.frame_thread.cbi[cbi_idx as usize].get();
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -2314,7 +2341,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                &mut f.a[t.a]
+                                &mut f.content.a[t.a]
                                     .lcoef
                                     .index_mut(a_start..a_start + t_dim.w as usize),
                                 &mut t.l.lcoef.index_mut(l_start..l_start + t_dim.h as usize),
@@ -2337,10 +2364,10 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                             CaseSet::<16, true>::many(
-                                [&t.l, &f.a[t.a]],
+                                [&t.l, &f.content.a[t.a]],
                                 [
-                                    cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
-                                    cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
+                                    cmp::min(t_dim.h as i32, f.content.bh - t.b.y) as usize,
+                                    cmp::min(t_dim.w as i32, f.content.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
@@ -2358,7 +2385,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                     "dq",
                                 );
                             }
-                            f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize]
+                            f.content.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize]
                                 .call::<BD>(y_dst, cf, eob, bd);
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump_pic::<BD>(
@@ -2371,7 +2398,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                     } else if t.frame_thread.pass == 0 {
                         CaseSet::<16, false>::many(
-                            [&t.l, &f.a[t.a]],
+                            [&t.l, &f.content.a[t.a]],
                             [t_dim.h as usize, t_dim.w as usize],
                             [(by4 + y) as usize, (bx4 + x) as usize],
                             |case, dir| {
@@ -2393,7 +2420,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                 continue;
             }
 
-            let stride = f.cur.stride[1];
+            let stride = f.content.cur.stride[1];
 
             if intra.uv_mode == CFL_PRED {
                 assert!(init_x == 0 && init_y == 0);
@@ -2410,8 +2437,8 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
 
                 let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
                 let furthest_b = (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
-                let layout = f.cur.p.layout.try_into().unwrap();
-                f.dsp.ipred.cfl_ac[layout].call::<BD>(
+                let layout = f.content.cur.p.layout.try_into().unwrap();
+                f.content.dsp.ipred.cfl_ac[layout].call::<BD>(
                     ac,
                     y_src,
                     cbw4 - (furthest_r >> ss_hor),
@@ -2424,11 +2451,11 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         continue;
                     }
                     let mut angle = 0;
-                    let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
-                        let sby = t.b.y >> f.sb_shift;
-                        let offset = (f.ipred_edge_off * (pl + 1)) as isize
-                            + (f.sb128w * 128 * (sby - 1)) as isize;
-                        Some((&f.ipred_edge, offset))
+                    let top_sb_edge_slice = if t.b.y & !ss_ver & f.content.sb_step - 1 == 0 {
+                        let sby = t.b.y >> f.content.sb_shift;
+                        let offset = (f.content.ipred_edge_off * (pl + 1)) as isize
+                            + (f.content.sb128w * 128 * (sby - 1)) as isize;
+                        Some((&f.content.ipred_edge, offset))
                     } else {
                         None
                     };
@@ -2461,7 +2488,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         edge_offset,
                         bd,
                     );
-                    f.dsp.ipred.cfl_pred[m as usize].call(
+                    f.content.dsp.ipred.cfl_pred[m as usize].call(
                         uv_dst,
                         edge_array,
                         edge_offset,
@@ -2487,18 +2514,20 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
             } else if intra.pal_sz[1] != 0 {
                 let uv_dstoff = 4
                     * ((t.b.x >> ss_hor) as isize
-                        + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
+                        + (t.b.y >> ss_ver) as isize * BD::pxstride(f.content.cur.stride[1]));
                 let (pal, pal_idx) = if t.frame_thread.pass != 0 {
                     let p = (t.frame_thread.pass & 1) as usize;
                     let x = t.b.x as usize;
                     let y = t.b.y as usize;
-                    let index =
-                        ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+                    let index = ((y >> 1) + (x & 1)) * (f.content.b4_stride as usize >> 1)
+                        + (x >> 1)
+                        + (y & 1);
                     let len = (cbw4 * cbh4 * 8) as u32;
                     let pal_idx_offset = ts.frame_thread[p].pal_idx.get_update(|i| i + len);
                     (
-                        &*f.frame_thread.pal.index::<BD>(index),
-                        &*f.frame_thread
+                        &*f.content.frame_thread.pal.index::<BD>(index),
+                        &*f.content
+                            .frame_thread
                             .pal_idx
                             .index((pal_idx_offset as usize.., ..len as usize)),
                     )
@@ -2512,10 +2541,13 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
 
                 for pl in 1..3 {
                     let uv = cur_data[pl].with_offset::<BD>() + uv_dstoff;
-                    f.dsp
-                        .ipred
-                        .pal_pred
-                        .call::<BD>(uv, &pal[pl], pal_idx, cbw4 * 4, cbh4 * 4);
+                    f.content.dsp.ipred.pal_pred.call::<BD>(
+                        uv,
+                        &pal[pl],
+                        pal_idx,
+                        cbw4 * 4,
+                        cbh4 * 4,
+                    );
                     if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                         hex_dump_pic::<BD>(
                             uv,
@@ -2528,20 +2560,20 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
             }
 
             let sm_uv_fl =
-                sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
+                sm_uv_flag(&f.content.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
             let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
                 true
             } else if init_y != 0 {
                 false
             } else {
-                intra_edge_flags.contains(EdgeFlags::I420_TOP_HAS_RIGHT >> f.cur.p.layout)
+                intra_edge_flags.contains(EdgeFlags::I420_TOP_HAS_RIGHT >> f.content.cur.p.layout)
             };
             let uv_sb_has_bl = if init_x != 0 {
                 false
             } else if init_y + 16 >> ss_ver < ch4 {
                 true
             } else {
-                intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.cur.p.layout)
+                intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.content.cur.p.layout)
             };
             let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
             for pl in 0..2 {
@@ -2577,11 +2609,12 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 !(x > init_x >> ss_hor
                                     || !uv_sb_has_bl && y + uv_t_dim.h as c_int >= sub_ch4),
                             );
-                            let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
-                                let sby = t.b.y >> f.sb_shift;
-                                let offset = (f.ipred_edge_off * (1 + pl)) as isize
-                                    + (f.sb128w * 128 * (sby - 1)) as isize;
-                                Some((&f.ipred_edge, offset))
+                            let top_sb_edge_slice = if t.b.y & !ss_ver & f.content.sb_step - 1 == 0
+                            {
+                                let sby = t.b.y >> f.content.sb_shift;
+                                let offset = (f.content.ipred_edge_off * (1 + pl)) as isize
+                                    + (f.content.sb128w * 128 * (sby - 1)) as isize;
+                                Some((&f.content.ipred_edge, offset))
                             } else {
                                 None
                             };
@@ -2621,15 +2654,15 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 bd,
                             );
                             angle |= intra_edge_filter_flag;
-                            f.dsp.ipred.intra_pred[m as usize].call(
+                            f.content.dsp.ipred.intra_pred[m as usize].call(
                                 uv_dst,
                                 edge_array,
                                 edge_offset,
                                 uv_t_dim.w as c_int * 4,
                                 uv_t_dim.h as c_int * 4,
                                 angle | sm_uv_fl,
-                                4 * f.bw + ss_hor - 4 * (t.b.x & !ss_hor) >> ss_hor,
-                                4 * f.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
+                                4 * f.content.bw + ss_hor - 4 * (t.b.x & !ss_hor) >> ss_hor,
+                                4 * f.content.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
                                 bd,
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
@@ -2667,18 +2700,19 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let len = uv_t_dim.w as u32 * 4 * uv_t_dim.h as u32 * 4;
                                 let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                                 cf_guard = f
+                                    .content
                                     .frame_thread
                                     .cf
                                     .mut_slice_as((cf_idx as usize.., ..len as usize));
                                 cf = &mut *cf_guard;
                                 let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                                let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
+                                let cbi = f.content.frame_thread.cbi[cbi_idx as usize].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
                                 let mut cf_ctx: u8 = 0;
                                 let a_start = (cbx4 + x) as usize;
-                                let a_ccoef = &f.a[t.a].ccoef[pl];
+                                let a_ccoef = &f.content.a[t.a].ccoef[pl];
                                 let l_start = (cby4 + y) as usize;
                                 let l_ccoef = &t.l.ccoef[pl];
                                 eob = decode_coefs::<BD>(
@@ -2714,10 +2748,14 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                 CaseSet::<16, true>::many(
                                     [l_ccoef, a_ccoef],
                                     [
-                                        cmp::min(uv_t_dim.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
-                                            as usize,
-                                        cmp::min(uv_t_dim.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
-                                            as usize,
+                                        cmp::min(
+                                            uv_t_dim.h as i32,
+                                            f.content.bh - t.b.y + ss_ver >> ss_ver,
+                                        ) as usize,
+                                        cmp::min(
+                                            uv_t_dim.w as i32,
+                                            f.content.bw - t.b.x + ss_hor >> ss_hor,
+                                        ) as usize,
                                     ],
                                     [(cby4 + y) as usize, (cbx4 + x) as usize],
                                     |case, dir| {
@@ -2735,7 +2773,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
+                                f.content.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
                                     .call::<BD>(uv_dst, cf, eob, bd);
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump_pic::<BD>(
@@ -2748,7 +2786,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             }
                         } else if t.frame_thread.pass == 0 {
                             CaseSet::<16, false>::many(
-                                [&t.l, &f.a[t.a]],
+                                [&t.l, &f.content.a[t.a]],
                                 [uv_t_dim.h as usize, uv_t_dim.w as usize],
                                 [(cby4 + y) as usize, (cbx4 + x) as usize],
                                 |case, dir| {
@@ -2778,30 +2816,31 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     b: &Av1Block,
     inter: &Av1BlockInter,
 ) -> Result<(), ()> {
-    let bd = BD::from_c(f.bitdepth_max);
-    let cur_data = &f.cur.data.as_ref().unwrap().data;
+    let bd = BD::from_c(f.content.bitdepth_max);
+    let cur_data = &f.content.cur.data.as_ref().unwrap().data;
 
-    let ts = &f.ts[t.ts];
+    let ts = &f.content.ts[t.ts];
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim = bs.dimensions();
     let bw4 = b_dim[0] as c_int;
     let bh4 = b_dim[1] as c_int;
-    let w4 = cmp::min(bw4, f.bw - t.b.x);
-    let h4 = cmp::min(bh4, f.bh - t.b.y);
-    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
+    let w4 = cmp::min(bw4, f.content.bw - t.b.x);
+    let h4 = cmp::min(bh4, f.content.bh - t.b.y);
+    let has_chroma = f.content.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
-    let chr_layout_idx = if f.cur.p.layout == Rav1dPixelLayout::I400 {
+    let chr_layout_idx = if f.content.cur.p.layout == Rav1dPixelLayout::I400 {
         Rav1dPixelLayout::I400
     } else {
-        Rav1dPixelLayout::I444 - f.cur.p.layout
+        Rav1dPixelLayout::I444 - f.content.cur.p.layout
     } as usize;
     let chr_layout_idx_w_mask = f
+        .content
         .cur
         .p
         .layout
@@ -2815,8 +2854,9 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     let mut y_dst = y_dst.with_offset::<BD>()
         + 4 * (t.b.y as isize * y_dst.pixel_stride::<BD>() + t.b.x as isize);
     let uvdstoff = 4
-        * ((t.b.x >> ss_hor) as isize + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+        * ((t.b.x >> ss_hor) as isize
+            + (t.b.y >> ss_ver) as isize * BD::pxstride(f.content.cur.stride[1]));
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.frame_type.is_key_or_intra() {
         // intrabc
         assert!(!frame_hdr.size.super_res.enabled);
@@ -2832,7 +2872,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             t.b.y,
             0,
             inter.nd.one_d.mv[0],
-            &f.sr_cur,
+            &f.content.sr_cur,
             0, // unused
             Filter2d::Bilinear,
         )?;
@@ -2851,7 +2891,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     t.b.y & !ss_ver,
                     pl,
                     inter.nd.one_d.mv[0],
-                    &f.sr_cur,
+                    &f.content.sr_cur,
                     0, // unused
                     Filter2d::Bilinear,
                 )?;
@@ -2867,10 +2907,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         let seg_mask = &mut scratch_inter.seg_mask;
 
         for i in 0..2 {
-            let refp = &f.refp[inter.r#ref[i] as usize];
+            let refp = &f.content.refp[inter.r#ref[i] as usize];
 
             if inter.inter_mode == GLOBALMV_GLOBALMV
-                && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+                && f.content.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
             {
                 warp_affine::<BD>(
                     f,
@@ -2910,15 +2950,16 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         let mut mask = &[][..];
         match comp_inter_type {
             CompInterType::Avg => {
-                f.dsp
+                f.content
+                    .dsp
                     .mc
                     .avg
                     .call::<BD>(y_dst, &tmp[0], &tmp[1], bw4 * 4, bh4 * 4, bd);
             }
             CompInterType::WeightedAvg => {
-                jnt_weight =
-                    f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
-                f.dsp.mc.w_avg.call::<BD>(
+                jnt_weight = f.content.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize]
+                    as c_int;
+                f.content.dsp.mc.w_avg.call::<BD>(
                     y_dst,
                     &tmp[0],
                     &tmp[1],
@@ -2929,7 +2970,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
             }
             CompInterType::Seg => {
-                f.dsp.mc.w_mask[chr_layout_idx_w_mask].call(
+                f.content.dsp.mc.w_mask[chr_layout_idx_w_mask].call(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
@@ -2943,7 +2984,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             CompInterType::Wedge => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
-                f.dsp.mc.mask.call::<BD>(
+                f.content.dsp.mc.mask.call::<BD>(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
                     &tmp[!inter.nd.one_d.mask_sign() as usize],
@@ -2964,10 +3005,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         if has_chroma {
             for pl in 0..2 {
                 for i in 0..2 {
-                    let refp = &f.refp[inter.r#ref[i] as usize];
+                    let refp = &f.content.refp[inter.r#ref[i] as usize];
                     if inter.inter_mode == GLOBALMV_GLOBALMV
                         && cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+                        && f.content.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
                     {
                         warp_affine::<BD>(
                             f,
@@ -3007,7 +3048,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 let uv_dst = cur_data[1 + pl].with_offset::<BD>() + uvdstoff;
                 match comp_inter_type {
                     CompInterType::Avg => {
-                        f.dsp.mc.avg.call::<BD>(
+                        f.content.dsp.mc.avg.call::<BD>(
                             uv_dst,
                             &tmp[0],
                             &tmp[1],
@@ -3017,7 +3058,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::WeightedAvg => {
-                        f.dsp.mc.w_avg.call::<BD>(
+                        f.content.dsp.mc.w_avg.call::<BD>(
                             uv_dst,
                             &tmp[0],
                             &tmp[1],
@@ -3028,7 +3069,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
-                        f.dsp.mc.mask.call::<BD>(
+                        f.content.dsp.mc.mask.call::<BD>(
                             uv_dst,
                             &tmp[inter.nd.one_d.mask_sign() as usize],
                             &tmp[!inter.nd.one_d.mask_sign() as usize],
@@ -3042,11 +3083,12 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else {
-        let refp = &f.refp[inter.r#ref[0] as usize];
+        let refp = &f.content.refp[inter.r#ref[0] as usize];
         let filter_2d = inter.filter2d;
 
         if cmp::min(bw4, bh4) > 1
-            && (inter.inter_mode == GLOBALMV && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+            && (inter.inter_mode == GLOBALMV
+                && f.content.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                 || inter.motion_mode == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
@@ -3093,11 +3135,11 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 mode => mode as IntraPredMode,
             };
             let mut angle = 0;
-            let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                let sby = t.b.y >> f.sb_shift;
-                let offset =
-                    (f.ipred_edge_off * 0) as isize + (f.sb128w * 128 * (sby - 1)) as isize;
-                Some((&f.ipred_edge, offset))
+            let top_sb_edge_slice = if t.b.y & f.content.sb_step - 1 == 0 {
+                let sby = t.b.y >> f.content.sb_shift;
+                let offset = (f.content.ipred_edge_off * 0) as isize
+                    + (f.content.sb128w * 128 * (sby - 1)) as isize;
+                Some((&f.content.ipred_edge, offset))
             } else {
                 None
             };
@@ -3121,7 +3163,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 bd,
             );
             let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
-            f.dsp.ipred.intra_pred[m as usize].call(
+            f.content.dsp.ipred.intra_pred[m as usize].call(
                 Rav1dPictureDataComponentOffset {
                     data: &Rav1dPictureDataComponent::wrap_buf::<BD>(tmp, 4 * bw4 as usize),
                     offset: 0,
@@ -3143,7 +3185,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
-            f.dsp
+            f.content
+                .dsp
                 .mc
                 .blend
                 .call::<BD>(y_dst, tmp, bw4 * 4, bh4 * 4, ii_mask);
@@ -3156,13 +3199,13 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 assert!(ss_hor == 1);
                 let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
                 if bw4 == 1 {
-                    is_sub8x8 &= f.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.content.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                 }
                 if bh4 == ss_ver {
-                    is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.content.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
                 }
                 if bw4 == 1 && bh4 == ss_ver {
-                    is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.content.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                 }
                 r
             } else {
@@ -3175,7 +3218,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 let mut v_off = 0isize;
                 if bw4 == 1 && bh4 == ss_ver {
                     for pl in 0..2 {
-                        let r = *f.rf.r.index(r[0] + t.b.x as usize - 1);
+                        let r = *f.content.rf.r.index(r[0] + t.b.x as usize - 1);
                         mc::<BD>(
                             f,
                             &mut t.scratch.inter_mut().emu_edge,
@@ -3189,15 +3232,16 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y - 1,
                             1 + pl,
                             r.mv.mv[0],
-                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            &f.content.refp[r.r#ref.r#ref[0] as usize - 1],
                             r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 t.tl_4x4_filter
                             } else {
-                                f.frame_thread
+                                f.content
+                                    .frame_thread
                                     .b
                                     .index(
-                                        (t.b.y as usize - 1) * f.b4_stride as usize
+                                        (t.b.y as usize - 1) * f.content.b4_stride as usize
                                             + t.b.x as usize
                                             - 1,
                                     )
@@ -3206,7 +3250,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             },
                         )?;
                     }
-                    v_off = 2 * BD::pxstride(f.cur.stride[1]);
+                    v_off = 2 * BD::pxstride(f.content.cur.stride[1]);
                     h_off = 2;
                 }
                 if bw4 == 1 {
@@ -3214,7 +3258,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         [*t.l.filter[1].index(by4 as usize) as usize]
                         [*t.l.filter[0].index(by4 as usize) as usize];
                     for pl in 0..2 {
-                        let r = *f.rf.r.index(r[1] + t.b.x as usize - 1);
+                        let r = *f.content.rf.r.index(r[1] + t.b.x as usize - 1);
                         mc::<BD>(
                             f,
                             &mut t.scratch.inter_mut().emu_edge,
@@ -3228,15 +3272,18 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y,
                             1 + pl,
                             r.mv.mv[0],
-                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            &f.content.refp[r.r#ref.r#ref[0] as usize - 1],
                             r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 left_filter_2d
                             } else {
-                                f.frame_thread
+                                f.content
+                                    .frame_thread
                                     .b
                                     .index(
-                                        t.b.y as usize * f.b4_stride as usize + t.b.x as usize - 1,
+                                        t.b.y as usize * f.content.b4_stride as usize
+                                            + t.b.x as usize
+                                            - 1,
                                     )
                                     .ii
                                     .filter2d()
@@ -3247,10 +3294,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
                 if bh4 == ss_ver {
                     let top_filter_2d = dav1d_filter_2d
-                        [*f.a[t.a].filter[1].index(bx4 as usize) as usize]
-                        [*f.a[t.a].filter[0].index(bx4 as usize) as usize];
+                        [*f.content.a[t.a].filter[1].index(bx4 as usize) as usize]
+                        [*f.content.a[t.a].filter[0].index(bx4 as usize) as usize];
                     for pl in 0..2 {
-                        let r = *f.rf.r.index(r[0] + t.b.x as usize);
+                        let r = *f.content.rf.r.index(r[0] + t.b.x as usize);
                         mc::<BD>(
                             f,
                             &mut t.scratch.inter_mut().emu_edge,
@@ -3264,15 +3311,16 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y - 1,
                             1 + pl,
                             r.mv.mv[0],
-                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            &f.content.refp[r.r#ref.r#ref[0] as usize - 1],
                             r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 top_filter_2d
                             } else {
-                                f.frame_thread
+                                f.content
+                                    .frame_thread
                                     .b
                                     .index(
-                                        (t.b.y as usize - 1) * f.b4_stride as usize
+                                        (t.b.y as usize - 1) * f.content.b4_stride as usize
                                             + t.b.x as usize,
                                     )
                                     .ii
@@ -3280,7 +3328,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             },
                         )?;
                     }
-                    v_off = 2 * BD::pxstride(f.cur.stride[1]);
+                    v_off = 2 * BD::pxstride(f.content.cur.stride[1]);
                 }
                 for pl in 0..2 {
                     mc::<BD>(
@@ -3304,7 +3352,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             } else {
                 if cmp::min(cbw4, cbh4) > 1
                     && (inter.inter_mode == GLOBALMV
-                        && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                        && f.content.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
@@ -3377,11 +3425,11 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         };
                         let mut angle = 0;
                         let uv_dst = cur_data[1 + pl].with_offset::<BD>() + uvdstoff;
-                        let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                            let sby = t.b.y >> f.sb_shift;
-                            let offset = (f.ipred_edge_off * (pl + 1)) as isize
-                                + (f.sb128w * 128 * (sby - 1)) as isize;
-                            Some((&f.ipred_edge, offset))
+                        let top_sb_edge_slice = if t.b.y & f.content.sb_step - 1 == 0 {
+                            let sby = t.b.y >> f.content.sb_shift;
+                            let offset = (f.content.ipred_edge_off * (pl + 1)) as isize
+                                + (f.content.sb128w * 128 * (sby - 1)) as isize;
+                            Some((&f.content.ipred_edge, offset))
                         } else {
                             None
                         };
@@ -3405,7 +3453,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             bd,
                         );
                         let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
-                        f.dsp.ipred.intra_pred[m as usize].call(
+                        f.content.dsp.ipred.intra_pred[m as usize].call(
                             Rav1dPictureDataComponentOffset {
                                 data: &Rav1dPictureDataComponent::wrap_buf::<BD>(
                                     tmp,
@@ -3422,7 +3470,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             0,
                             bd,
                         );
-                        f.dsp
+                        f.content
+                            .dsp
                             .mc
                             .blend
                             .call::<BD>(uv_dst, tmp, cbw4 * 4, cbh4 * 4, ii_mask);
@@ -3459,7 +3508,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     if b.skip != 0 {
         // reset coef contexts
         CaseSet::<32, false>::many(
-            [&t.l, &f.a[t.a]],
+            [&t.l, &f.content.a[t.a]],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, dir| {
@@ -3468,7 +3517,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         );
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
+                [&t.l, &f.content.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
@@ -3548,19 +3597,20 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let len = uvtx.h as u32 * 4 * uvtx.w as u32 * 4;
                                 let cf_idx = ts.frame_thread[p].cf.get_update(|i| i + len);
                                 cf_guard = f
+                                    .content
                                     .frame_thread
                                     .cf
                                     .mut_slice_as((cf_idx as usize.., ..len as usize));
                                 cf = &mut *cf_guard;
                                 let cbi_idx = ts.frame_thread[p].cbi_idx.get_update(|i| i + 1);
-                                let cbi = f.frame_thread.cbi[cbi_idx as usize].get();
+                                let cbi = f.content.frame_thread.cbi[cbi_idx as usize].get();
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
                                 let mut cf_ctx = 0;
                                 txtp = t.scratch.inter_intra().ac_txtp_map.txtp_map()
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize];
-                                let a_ccoef = &f.a[t.a].ccoef[pl];
+                                let a_ccoef = &f.content.a[t.a].ccoef[pl];
                                 let a_start = (cbx4 + x) as usize;
                                 let l_ccoef = &t.l.ccoef[pl];
                                 let l_start = (cby4 + y) as usize;
@@ -3595,10 +3645,14 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                 CaseSet::<16, true>::many(
                                     [l_ccoef, a_ccoef],
                                     [
-                                        cmp::min(uvtx.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
-                                            as usize,
-                                        cmp::min(uvtx.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
-                                            as usize,
+                                        cmp::min(
+                                            uvtx.h as i32,
+                                            f.content.bh - t.b.y + ss_ver >> ss_ver,
+                                        ) as usize,
+                                        cmp::min(
+                                            uvtx.w as i32,
+                                            f.content.bw - t.b.x + ss_hor >> ss_hor,
+                                        ) as usize,
                                     ],
                                     [(cby4 + y) as usize, (cbx4 + x) as usize],
                                     |case, dir| {
@@ -3616,12 +3670,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
-                                    uv_dst + 4 * x as usize,
-                                    cf,
-                                    eob,
-                                    bd,
-                                );
+                                f.content.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
+                                    .call::<BD>(uv_dst + 4 * x as usize, cf, eob, bd);
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     let uv_dst = uv_dst + (4 * x as usize);
                                     hex_dump_pic::<BD>(
@@ -3658,21 +3708,21 @@ pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         return;
     }
 
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_hdr = &f.frame_hdr;
     if frame_hdr.loopfilter.level_y == [0; 2] {
         return;
     }
 
-    let y = sby * f.sb_step * 4;
-    let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
+    let y = sby * f.content.sb_step * 4;
+    let p = f.content.cur.lf_offsets::<BD>(y);
+    let seq_hdr = &f.seq_hdr;
+    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.content.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
         p,
         mask_offset as usize,
         sby,
-        f.lf.start_of_tile_row[sby as usize] as c_int,
+        f.content.lf.start_of_tile_row[sby as usize] as c_int,
     );
 }
 
@@ -3682,19 +3732,19 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    let y = sby * f.sb_step * 4;
-    let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let y = sby * f.content.sb_step * 4;
+    let p = f.content.cur.lf_offsets::<BD>(y);
+    let seq_hdr = &f.seq_hdr;
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
-    let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let mask_offset = (sby >> (sb128 == 0) as c_int) * f.content.sb128w;
+    let frame_hdr = &f.frame_hdr;
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y != [0; 2])
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, p, mask_offset as usize, sby);
     }
-    if cdef != 0 || !f.lf.restore_planes.is_empty() {
+    if cdef != 0 || !f.content.lf.restore_planes.is_empty() {
         // Store loop filtered pixels required by CDEF / LR.
         rav1d_copy_lpf::<BD>(c, f, p, sby);
     }
@@ -3710,23 +3760,23 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
         return;
     }
 
-    let sbsz = f.sb_step;
+    let sbsz = f.content.sb_step;
     let y = sby * sbsz * 4;
-    let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
-    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
+    let p = f.content.cur.lf_offsets::<BD>(y);
+    let seq_hdr = &f.seq_hdr;
+    let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.content.sb128w;
+    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.content.sb128w;
     let start = sby * sbsz;
     if sby != 0 {
         let p_up = array::from_fn(|i| {
-            let ss_ver = f.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
+            let ss_ver = f.content.cur.p.layout == Rav1dPixelLayout::I420 && i != 0;
             p[i] - ((8 * p[i].pixel_stride::<BD>()) >> ss_ver as u8)
         });
         rav1d_cdef_brow::<BD>(c, tc, f, p_up, prev_mask, start - 2, start, true, sby);
     }
 
-    let n_blks = sbsz - 2 * ((sby + 1) < f.sbh) as c_int;
-    let end = cmp::min(start + n_blks, f.bh);
+    let n_blks = sbsz - 2 * ((sby + 1) < f.content.sbh) as c_int;
+    let end = cmp::min(start + n_blks, f.content.bh);
     rav1d_cdef_brow::<BD>(c, tc, f, p, mask_offset, start, end, false, sby);
 }
 
@@ -3736,34 +3786,34 @@ pub(crate) fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    let bd = BD::from_c(f.bitdepth_max);
+    let bd = BD::from_c(f.content.bitdepth_max);
 
-    let sbsz = f.sb_step;
+    let sbsz = f.content.sb_step;
     let y = sby * sbsz * 4;
-    let p = f.cur.lf_offsets::<BD>(y);
-    let sr_p = f.sr_cur.p.lf_offsets::<BD>(y);
-    let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
+    let p = f.content.cur.lf_offsets::<BD>(y);
+    let sr_p = f.content.sr_cur.p.lf_offsets::<BD>(y);
+    let has_chroma = (f.content.cur.p.layout != Rav1dPixelLayout::I400) as usize;
     for pl in 0..1 + 2 * has_chroma {
-        let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let ss_ver = (pl != 0 && f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver;
         let dst = sr_p[pl];
         let dst = dst - (h_start as isize * dst.pixel_stride::<BD>());
         let src = p[pl];
         let src = src - (h_start as isize * src.pixel_stride::<BD>());
-        let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.sbh) as c_int) >> ss_ver;
-        let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
-        let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
-        let src_w = 4 * f.bw + ss_hor >> ss_hor;
-        let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
+        let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.content.sbh) as c_int) >> ss_ver;
+        let ss_hor = (pl != 0 && f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+        let dst_w = f.content.sr_cur.p.p.w + ss_hor >> ss_hor;
+        let src_w = 4 * f.content.bw + ss_hor >> ss_hor;
+        let img_h = f.content.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
 
-        f.dsp.mc.resize.call::<BD>(
+        f.content.dsp.mc.resize.call::<BD>(
             WithOffset::pic(dst),
             src,
             dst_w as usize,
             (cmp::min(img_h, h_end) + h_start) as usize,
             src_w as usize,
-            f.resize_step[(pl != 0) as usize],
-            f.resize_start[(pl != 0) as usize],
+            f.content.resize_step[(pl != 0) as usize],
+            f.content.resize_start[(pl != 0) as usize],
             bd,
         );
     }
@@ -3781,8 +3831,8 @@ pub(crate) fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     {
         return;
     }
-    let y = sby * f.sb_step * 4;
-    let sr_p = f.sr_cur.p.lf_offsets::<BD>(y);
+    let y = sby * f.content.sb_step * 4;
+    let sr_p = f.content.sr_cur.p.lf_offsets::<BD>(y);
     rav1d_lr_sbrow::<BD>(c, f, sr_p, sby);
 }
 
@@ -3794,53 +3844,52 @@ pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
 ) {
     rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    if seq_hdr.cdef != 0 {
+    if f.seq_hdr.cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(c, f, t, sby);
     }
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
+    if f.frame_hdr.size.width[0] != f.frame_hdr.size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(c, f, t, sby);
     }
-    if !f.lf.restore_planes.is_empty() {
+    if !f.content.lf.restore_planes.is_empty() {
         rav1d_filter_sbrow_lr::<BD>(c, f, t, sby);
     }
 }
 
 pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut Rav1dTaskContext) {
-    let cur_data = &f.cur.data.as_ref().unwrap().data;
+    let cur_data = &f.content.cur.data.as_ref().unwrap().data;
 
-    let ts = &f.ts[t.ts];
-    let sby = t.b.y >> f.sb_shift;
-    let sby_off = f.sb128w * 128 * sby;
+    let ts = &f.content.ts[t.ts];
+    let sby = t.b.y >> f.content.sb_shift;
+    let sby_off = f.content.sb128w * 128 * sby;
     let x_off = ts.tiling.col_start;
 
     let y = &cur_data[0];
     let y = y.with_offset::<BD>()
         + x_off as usize * 4
-        + ((t.b.y + f.sb_step) * 4 - 1) as isize * y.pixel_stride::<BD>();
-    let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
+        + ((t.b.y + f.content.sb_step) * 4 - 1) as isize * y.pixel_stride::<BD>();
+    let ipred_edge_off = (f.content.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
     let n = 4 * (ts.tiling.col_end - x_off) as usize;
     BD::pixel_copy(
-        &mut f.ipred_edge.mut_slice_as((ipred_edge_off.., ..n)),
+        &mut f.content.ipred_edge.mut_slice_as((ipred_edge_off.., ..n)),
         &y.slice::<BD>(n),
         n,
     );
 
-    if f.cur.p.layout != Rav1dPixelLayout::I400 {
-        let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    if f.content.cur.p.layout != Rav1dPixelLayout::I400 {
+        let ss_ver = (f.content.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let ss_hor = (f.content.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
 
         let uv_off = (x_off * 4 >> ss_hor) as isize
-            + (((t.b.y + f.sb_step) * 4 >> ss_ver) - 1) as isize * BD::pxstride(f.cur.stride[1]);
+            + (((t.b.y + f.content.sb_step) * 4 >> ss_ver) - 1) as isize
+                * BD::pxstride(f.content.cur.stride[1]);
         for pl in 1..3 {
             let ipred_edge_off =
-                (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
+                (f.content.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
             let n = 4 * (ts.tiling.col_end - x_off) as usize >> ss_hor;
             let uv = &cur_data[pl];
             let uv = uv.with_offset::<BD>() + uv_off;
             BD::pixel_copy(
-                &mut f.ipred_edge.mut_slice_as((ipred_edge_off.., ..n)),
+                &mut f.content.ipred_edge.mut_slice_as((ipred_edge_off.., ..n)),
                 &uv.slice::<BD>(n),
                 n,
             );
@@ -3859,8 +3908,8 @@ pub(crate) fn rav1d_copy_pal_block_y<BD: BitDepth>(
     let pal = if t.frame_thread.pass != 0 {
         let x = t.b.x as usize;
         let y = t.b.y as usize;
-        let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-        &f.frame_thread.pal.index::<BD>(index)[0]
+        let index = ((y >> 1) + (x & 1)) * (f.content.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+        &f.content.frame_thread.pal.index::<BD>(index)[0]
     } else {
         &t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()[0]
     };
@@ -3884,8 +3933,8 @@ pub(crate) fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     let pal = if t.frame_thread.pass != 0 {
         let x = t.b.x as usize;
         let y = t.b.y as usize;
-        let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
-        &*f.frame_thread.pal.index::<BD>(index)
+        let index = ((y >> 1) + (x & 1)) * (f.content.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+        &*f.content.frame_thread.pal.index::<BD>(index)
     } else {
         t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()
     };
@@ -3933,7 +3982,7 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
         if pl {
             t.pal_sz_uv[0][bx4]
         } else {
-            *f.a[t.a].pal_sz.index(bx4)
+            *f.content.a[t.a].pal_sz.index(bx4)
         }
     } else {
         0
@@ -4008,9 +4057,9 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
 
     // parse new entries
     let pal = if t.frame_thread.pass != 0 {
-        let pal_start = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
+        let pal_start = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.content.b4_stride >> 1)
             + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize;
-        &mut f.frame_thread.pal.index_mut::<BD>(pal_start)[pli]
+        &mut f.content.frame_thread.pal.index_mut::<BD>(pal_start)[pli]
     } else {
         &mut t
             .scratch
@@ -4021,13 +4070,14 @@ pub(crate) fn rav1d_read_pal_plane<BD: BitDepth>(
     };
     let pal = &mut pal[..pal_sz];
     if i < pal.len() {
-        let mut prev = rav1d_msac_decode_bools(&mut ts_c.msac, f.cur.p.bpc) as u16;
+        let mut prev = rav1d_msac_decode_bools(&mut ts_c.msac, f.content.cur.p.bpc) as u16;
         pal[i] = prev.as_::<BD::Pixel>();
         i += 1;
 
         if i < pal.len() {
-            let mut bits = f.cur.p.bpc + rav1d_msac_decode_bools(&mut ts_c.msac, 2) as u8 - 3;
-            let max = (1 << f.cur.p.bpc) - 1;
+            let mut bits =
+                f.content.cur.p.bpc + rav1d_msac_decode_bools(&mut ts_c.msac, 2) as u8 - 3;
+            let max = (1 << f.content.cur.p.bpc) - 1;
 
             loop {
                 let delta = rav1d_msac_decode_bools(&mut ts_c.msac, bits) as u16;
@@ -4105,8 +4155,8 @@ pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
 
     // V pal coding
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal.index_mut::<BD>(
-            (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
+        &mut f.content.frame_thread.pal.index_mut::<BD>(
+            (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.content.b4_stride >> 1)
                 + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize,
         )[2]
     } else {
@@ -4119,10 +4169,10 @@ pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
     };
     let pal = &mut pal[..pal_sz as usize];
     if rav1d_msac_decode_bool_equi(&mut ts_c.msac) {
-        let bits = f.cur.p.bpc + rav1d_msac_decode_bools(&mut ts_c.msac, 2) as u8 - 4;
-        let mut prev = rav1d_msac_decode_bools(&mut ts_c.msac, f.cur.p.bpc) as u16;
+        let bits = f.content.cur.p.bpc + rav1d_msac_decode_bools(&mut ts_c.msac, 2) as u8 - 4;
+        let mut prev = rav1d_msac_decode_bools(&mut ts_c.msac, f.content.cur.p.bpc) as u16;
         pal[0] = prev.as_::<BD::Pixel>();
-        let max = (1 << f.cur.p.bpc) - 1;
+        let max = (1 << f.content.cur.p.bpc) - 1;
         for pal in &mut pal[1..] {
             let mut delta = rav1d_msac_decode_bools(&mut ts_c.msac, bits) as i16;
             if delta != 0 && rav1d_msac_decode_bool_equi(&mut ts_c.msac) {
@@ -4132,7 +4182,9 @@ pub(crate) fn rav1d_read_pal_uv<BD: BitDepth>(
             *pal = prev.as_::<BD::Pixel>();
         }
     } else {
-        pal.fill_with(|| rav1d_msac_decode_bools(&mut ts_c.msac, f.cur.p.bpc).as_::<BD::Pixel>());
+        pal.fill_with(|| {
+            rav1d_msac_decode_bools(&mut ts_c.msac, f.content.cur.p.bpc).as_::<BD::Pixel>()
+        });
     }
     if debug_block_info!(f, t.b) {
         print!("Post-pal[pl=2]: r={} ", ts_c.msac.rng);
