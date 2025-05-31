@@ -89,11 +89,13 @@ fn backup2x8<BD: BitDepth>(
     flag: Backup2x8Flags,
 ) {
     let x_off = x_off as isize;
+    // Precomputing optimizes better.
+    let stride_0 = src[0].pixel_stride::<BD>();
 
     if flag.contains(Backup2x8Flags::Y) {
         for y in 0..8 {
             let y_dst = &mut dst[0][y];
-            let y_src = src[0] + (y as isize * src[0].pixel_stride::<BD>() + x_off - 2);
+            let y_src = src[0] + (y as isize * stride_0 + x_off - 2);
             let y_len = y_dst.len();
             BD::pixel_copy(y_dst, &y_src.slice::<BD>(y_len), y_len);
         }
@@ -105,12 +107,17 @@ fn backup2x8<BD: BitDepth>(
 
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
+    let strides = [
+        stride_0,
+        src[1].pixel_stride::<BD>(),
+        src[2].pixel_stride::<BD>(),
+    ];
 
     let x_off = x_off >> ss_hor;
     for y in 0..8 >> ss_ver {
         for pl in 1..3 {
             let uv_dst = &mut dst[pl][y];
-            let uv_src = src[pl] + (y as isize * src[pl].pixel_stride::<BD>() + x_off - 2);
+            let uv_src = src[pl] + (y as isize * strides[pl] + x_off - 2);
             let uv_len = uv_dst.len();
             BD::pixel_copy(uv_dst, &uv_src.slice::<BD>(uv_len), uv_len);
         }
@@ -337,10 +344,13 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
                                 f.dsp.cdef.fb[0].call::<BD>(
-                                    bptrs[0],
+                                    bptrs[0].data,
+                                    bptrs[0].offset,
                                     &lr_bak[bit as usize][0],
-                                    top,
-                                    bot,
+                                    top.data,
+                                    top.offset,
+                                    &bot.data,
+                                    bot.offset,
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
@@ -351,10 +361,13 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                             }
                         } else if y_sec_lvl != 0 {
                             f.dsp.cdef.fb[0].call::<BD>(
-                                bptrs[0],
+                                bptrs[0].data,
+                                bptrs[0].offset,
                                 &lr_bak[bit as usize][0],
-                                top,
-                                bot,
+                                top.data,
+                                top.offset,
+                                &bot.data,
+                                bot.offset,
                                 0,
                                 y_sec_lvl,
                                 0,
@@ -437,10 +450,13 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 });
 
                                 f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
-                                    bptrs[pl],
+                                    bptrs[pl].data,
+                                    bptrs[pl].offset,
                                     &lr_bak[bit as usize][pl],
-                                    top,
-                                    bot,
+                                    top.data,
+                                    top.offset,
+                                    &bot.data,
+                                    bot.offset,
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl,
                                     uvdir,
