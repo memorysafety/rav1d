@@ -1779,7 +1779,8 @@ fn mc<BD: BitDepth>(
             );
             let stride = 192;
             Rav1dPictureDataComponentOffset {
-                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                // SAFETY: Lifetime extension forces `buf` to outlive it.
+                data: &unsafe { Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride) },
                 offset: stride * (my != 0) as usize * 3 + (mx != 0) as usize * 3,
             }
         } else {
@@ -1852,7 +1853,8 @@ fn mc<BD: BitDepth>(
             }
             let stride = 320;
             Rav1dPictureDataComponentOffset {
-                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                // SAFETY: Lifetime extension forces `buf` to outlive it.
+                data: &unsafe { Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride) },
                 offset: stride * 3 + 3,
             }
         } else {
@@ -1920,10 +1922,13 @@ fn obmc<BD: BitDepth>(
                     t.b,
                     MaybeTempPixels::NonTemp {
                         dst: Rav1dPictureDataComponentOffset {
-                            data: &Rav1dPictureDataComponent::wrap_buf::<BD>(
-                                lap,
-                                ow4 as usize * h_mul as usize,
-                            ),
+                            // SAFETY: Lifetime extension forces `buf` to outlive it.
+                            data: &unsafe {
+                                Rav1dPictureDataComponent::wrap_buf::<BD>(
+                                    lap,
+                                    ow4 as usize * h_mul as usize,
+                                )
+                            },
                             offset: 0,
                         },
                     },
@@ -1968,10 +1973,13 @@ fn obmc<BD: BitDepth>(
                     t.b,
                     MaybeTempPixels::NonTemp {
                         dst: Rav1dPictureDataComponentOffset {
-                            data: &Rav1dPictureDataComponent::wrap_buf::<BD>(
-                                lap,
-                                ow4 as usize * h_mul as usize,
-                            ),
+                            // SAFETY: Lifetime extension forces `buf` to outlive it.
+                            data: &unsafe {
+                                Rav1dPictureDataComponent::wrap_buf::<BD>(
+                                    lap,
+                                    ow4 as usize * h_mul as usize,
+                                )
+                            },
                             offset: 0,
                         },
                     },
@@ -2056,7 +2064,10 @@ fn warp_affine<BD: BitDepth>(
                 );
                 let stride = 32;
                 Rav1dPictureDataComponentOffset {
-                    data: &Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride),
+                    // SAFETY: Lifetime extension forces `buf` to outlive it.
+                    data: &unsafe {
+                        Rav1dPictureDataComponent::wrap_buf::<BD>(emu_edge_buf, stride)
+                    },
                     offset: stride * 3 + 3,
                 }
             } else {
@@ -3123,7 +3134,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
             f.dsp.ipred.intra_pred[m as usize].call(
                 Rav1dPictureDataComponentOffset {
-                    data: &Rav1dPictureDataComponent::wrap_buf::<BD>(tmp, 4 * bw4 as usize),
+                    // SAFETY: Lifetime extension forces `buf` to outlive it.
+                    data: &unsafe {
+                        Rav1dPictureDataComponent::wrap_buf::<BD>(tmp, 4 * bw4 as usize)
+                    },
                     offset: 0,
                 },
                 tl_edge_array,
@@ -3407,10 +3421,13 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
                         f.dsp.ipred.intra_pred[m as usize].call(
                             Rav1dPictureDataComponentOffset {
-                                data: &Rav1dPictureDataComponent::wrap_buf::<BD>(
-                                    tmp,
-                                    4 * cbw4 as usize,
-                                ),
+                                // SAFETY: Lifetime extension forces `buf` to outlive it.
+                                data: &unsafe {
+                                    Rav1dPictureDataComponent::wrap_buf::<BD>(
+                                        tmp,
+                                        4 * cbw4 as usize,
+                                    )
+                                },
                                 offset: 0,
                             },
                             tl_edge_array,
