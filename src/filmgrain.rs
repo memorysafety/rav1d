@@ -11,7 +11,6 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::assume::assume;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
@@ -26,6 +25,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::hint::assert_unchecked;
 use std::mem;
 use std::ops::Add;
 use std::ops::Shl;
@@ -448,8 +448,8 @@ fn generate_grain_uv_rust<BD: BitDepth>(
                         // The optimizer is not smart enough to deduce this on its own.
                         // SAFETY: The above static check checks all maximum index possibilities.
                         unsafe {
-                            assume(luma_y < GRAIN_HEIGHT + 1 - 1);
-                            assume(luma_x < GRAIN_WIDTH - 1);
+                            assert_unchecked(luma_y < GRAIN_HEIGHT + 1 - 1);
+                            assert_unchecked(luma_x < GRAIN_WIDTH - 1);
                         }
                         for i in 0..1 + is_sub.y as usize {
                             for j in 0..1 + is_sub.x as usize {
