@@ -1,10 +1,10 @@
-use crate::src::assume::assume;
 use crate::src::const_fn::const_for;
 use crate::src::enum_map::DefaultValue;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::hint::assert_unchecked;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct InRange<T, const MIN: u128, const MAX: u128>(T);
@@ -41,7 +41,7 @@ where
 
     pub fn get(self) -> T {
         // SAFETY: Checked in `Self::new`.
-        unsafe { assume(self.in_bounds()) };
+        unsafe { assert_unchecked(self.in_bounds()) };
         self.0
     }
 }

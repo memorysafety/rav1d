@@ -18,7 +18,6 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::assume::assume;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
@@ -95,6 +94,7 @@ use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::hint::assert_unchecked;
 use std::ops::BitOr;
 use std::ptr;
 use to_method::To as _;
@@ -729,7 +729,7 @@ fn decode_coefs<BD: BitDepth>(
             // both of which are powers of 2.
             // `cf_len` is a power of 2 since it's from `1 << n`, etc.
             // Thus, `& (self.0.len() - 1)` is the same as `% self.0.len()`.
-            unsafe { assume(i < self.0.len()) };
+            unsafe { assert_unchecked(i < self.0.len()) };
             i
         }
 

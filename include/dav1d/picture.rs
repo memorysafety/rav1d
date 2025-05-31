@@ -15,7 +15,6 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::src::assume::assume;
 use crate::src::c_arc::RawArc;
 use crate::src::disjoint_mut::AsMutPtr;
 use crate::src::disjoint_mut::DisjointImmutGuard;
@@ -35,6 +34,7 @@ use libc::uintptr_t;
 use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::hint::assert_unchecked;
 use std::mem;
 use std::ptr::NonNull;
 use std::sync::Arc;
@@ -212,7 +212,7 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
         // Normally we'd store this as a slice so the compiler would know,
         // but since it's a ptr due to `DisjointMut`, we explicitly assume it here.
         // SAFETY: We already checked this in `Self::new`.
-        unsafe { assume(this.ptr.cast::<AlignedPixelChunk>().is_aligned()) };
+        unsafe { assert_unchecked(this.ptr.cast::<AlignedPixelChunk>().is_aligned()) };
 
         this.ptr.as_ptr()
     }
@@ -220,7 +220,7 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
     #[inline] // Inline so callers can see the assume.
     fn len(&self) -> usize {
         // SAFETY: We already checked this in `Self::new`.
-        unsafe { assume(self.len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0) };
+        unsafe { assert_unchecked(self.len % RAV1D_PICTURE_GUARANTEED_MULTIPLE == 0) };
         self.len
     }
 }
