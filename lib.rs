@@ -137,11 +137,11 @@ pub mod src {
     mod looprestoration;
     mod lr_apply;
     mod mc;
-    mod mem;
     mod msac;
     mod obu;
     mod pal;
     mod picture;
+    mod pool;
     mod qm;
     mod recon;
     mod refmvs;

@@ -24,7 +24,7 @@ use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
-use crate::src::mem::MemPool;
+use crate::src::pool::MemPool;
 use crate::src::send_sync_non_null::SendSyncNonNull;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
