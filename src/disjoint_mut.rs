@@ -611,6 +611,7 @@ impl Debug for Bounds {
 }
 
 impl Bounds {
+    #[cfg(any(debug_assertions, test))]
     fn overlaps(&self, other: &Bounds) -> bool {
         let a = &self.range;
         let b = &other.range;
@@ -1092,7 +1093,7 @@ fn test_pointer_write_release() {
     let mut v: DisjointMut<Vec<[u8; 4]>> = Default::default();
     v.resize(10, [0u8; 4]);
 
-    let borrow = unsafe { v.index(0..) };
+    let borrow = v.index(0..);
     let ptr = v.as_mut_ptr().wrapping_offset(3) as *mut u8;
     unsafe {
         ptr.wrapping_offset(2).write(42);
@@ -1105,8 +1106,8 @@ fn test_pointer_write_release() {
     // assert_eq!(borrow[3][2], 0);
 
     // We are fine to re-borrow at this point now that the write is done.
-    assert_eq!(unsafe { v.index(4)[0] }, 0);
-    assert_eq!(unsafe { v.index(3)[2] }, 42);
+    assert_eq!(v.index(4)[0], 0);
+    assert_eq!(v.index(3)[2], 42);
 }
 
 #[test]
