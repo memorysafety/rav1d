@@ -611,6 +611,7 @@ impl Debug for Bounds {
 }
 
 impl Bounds {
+    #[cfg(any(debug_assertions, test))]
     fn overlaps(&self, other: &Bounds) -> bool {
         let a = &self.range;
         let b = &other.range;
