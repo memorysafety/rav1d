@@ -797,33 +797,74 @@ fn decode_coefs<BD: BitDepth>(
         let shift;
         let shift2;
         let mask;
-        let slwh_zero;
+        let end: usize;
         match tx_class {
             TxClass::TwoD => {
                 shift = slh + 2;
                 shift2 = 0;
                 mask = (4 << slh) - 1;
-                slwh_zero = slw;
+                // We need to zero part of `levels`. We want to calulate the end
+                // of the slice to zero in a way that rust can elide the bounds
+                // check. The size of the `levels` array is 1088 bytes.
+                //
+                // The original calculation here:
+                // `end = stride as usize * ((4 << slw) as usize + 2)`
+                //
+                // We know:
+                //  - `stride = 4 << slh`, where `slh <= 3`.
+                //    Therefore, `stride <= 32`.
+                //
+                //  - `slw <= 3`. Therefore, `4 << slw <= 32`
+                //
+                // Therefore, we have the maximum `end` value as
+                //  `32 * (32 + 2) = 1088`
+                // Therefore, no bounds check should be required to slice `levels`.
+                //
+                // However, as of nightly 2025-05-01, rustc had a lot of trouble
+                // proving that to itself. Here we give it a hand. First, we
+                // rearrange:
+                //    `stride * ((4 << slw) + 2)`
+                //  `= (4 << slh) * ((4 << slw) + 2)`
+                // This gets a lot easier if we shift from << to *2^x
+                //  `= (4 * 2^slh) * (4 * 2^slw + 2)`
+                //  `= (2^(slh+2)) * (2^(slw+2) + 2)`
+                //  `= 2^(slh+2) * 2(slw + 2) + 2^(slh+2)*2`
+                //  `= 2^(slh+slw+4) + 2^(slh+3)`
+                //  `= 16 * 2^(slh+slw) + 8*2^slh`
+                //  `= 16 << (slh + slw) + 8 << slh`
+                //
+                // With suitable asserts, rustc can handle this.
+                //
+                // Interestingly, regardless of `slw`, these two terms don't have overlapping bits,
+                // so we can replace the + with a bitwise or
+                //  `= 16 << (slh + slw) | 8 << slh`
+                // However, this confuses rustc again! So we just use an add!
+                let term1: usize = 16 << (slw + slh);
+                assert!(term1 <= 1024); // Elided
+                let term2: usize = 8 << slh;
+                assert!(term2 <= 64); // Elided
+                end = term1 + term2;
             }
             TxClass::H => {
                 shift = slh + 2;
                 shift2 = 0;
                 mask = (4 << slh) - 1;
-                slwh_zero = slh;
+                end = stride as usize * ((4 << slh) as usize + 2);
             }
             TxClass::V => {
                 shift = slw + 2;
                 shift2 = slh + 2;
                 mask = (4 << slw) - 1;
-                slwh_zero = slw;
+                end = stride as usize * ((4 << slw) as usize + 2);
             }
         }
 
-        // Optimizes better than `.fill(0)`,
-        // which doesn't elide the bounds check, inline, or vectorize.
-        for i in 0..stride as usize * ((4 << slwh_zero) as usize + 2) {
-            levels[i] = 0;
-        }
+        // `.fill(0)` will become a call the the platform C library's `bzero` or `memset` function.
+        // That is likely to be a version optimised for the specific CPU with appropriate vectoring.
+        //
+        // The value of `end` is known statically to not exceed the size of `levels`,
+        // so there's also no bounds check.
+        levels[..end].fill(0);
 
         let mut rc;
         let mut x;
