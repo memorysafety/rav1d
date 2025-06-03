@@ -7,7 +7,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::levels::Mv;
 use std::ffi::c_int;
 
-static div_lut: [u16; 257] = [
+static DIV_LUT: [u16; 257] = [
     16384, 16320, 16257, 16194, 16132, 16070, 16009, 15948, 15888, 15828, 15768, 15709, 15650,
     15592, 15534, 15477, 15420, 15364, 15308, 15252, 15197, 15142, 15087, 15033, 14980, 14926,
     14873, 14821, 14769, 14717, 14665, 14614, 14564, 14513, 14463, 14413, 14364, 14315, 14266,
@@ -45,7 +45,7 @@ fn resolve_divisor_32(d: u32) -> (c_int, c_int) {
         e << 8 - shift
     };
     // Use f as lookup into the precomputed table of multipliers
-    (shift + 14, div_lut[f as usize] as c_int)
+    (shift + 14, DIV_LUT[f as usize] as c_int)
 }
 
 pub(crate) fn rav1d_get_shear_params(wm: &Rav1dWarpedMotionParams) -> bool {
@@ -82,7 +82,7 @@ fn resolve_divisor_64(d: u64) -> (c_int, c_int) {
         e << 8 - shift
     };
     // Use f as lookup into the precomputed table of multipliers
-    (shift + 14, div_lut[f as usize] as c_int)
+    (shift + 14, DIV_LUT[f as usize] as c_int)
 }
 
 fn get_mult_shift_ndiag(px: i64, idet: c_int, shift: c_int) -> c_int {

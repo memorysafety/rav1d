@@ -118,10 +118,10 @@ cfg_if! {
 }
 pub type Arg = c_uint;
 
-static short_opts: [c_char; 11] =
+static SHORT_OPTS: [c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"i:o:vql:s:\0") };
 
-static mut long_opts: [option; 25] = [
+static mut LONG_OPTS: [option; 25] = [
     {
         option {
             name: b"input\0" as *const u8 as *const c_char,
@@ -369,18 +369,18 @@ unsafe fn error(
 ) {
     let mut n;
     n = 0 as c_int;
-    while !(long_opts[n as usize].name).is_null() {
-        if long_opts[n as usize].val == option {
+    while !(LONG_OPTS[n as usize].name).is_null() {
+        if LONG_OPTS[n as usize].val == option {
             break;
         }
         n += 1;
     }
-    if (long_opts[n as usize].name).is_null() {
+    if (LONG_OPTS[n as usize].name).is_null() {
         unreachable!();
     }
-    let long_name = CStr::from_ptr(long_opts[n as usize].name).to_str().unwrap();
-    let optname = if long_opts[n as usize].val < 256 {
-        format!("-{}/--{}", long_opts[n as usize].val, long_name)
+    let long_name = CStr::from_ptr(LONG_OPTS[n as usize].name).to_str().unwrap();
+    let optname = if LONG_OPTS[n as usize].val < 256 {
+        format!("-{}/--{}", LONG_OPTS[n as usize].val, long_name)
     } else {
         format!("--{}", long_name)
     };
@@ -452,7 +452,7 @@ unsafe fn parse_optional_fraction(
 // TODO: add other architectures supported by dav1d
 cfg_if! {
     if #[cfg(any(target_arch = "arm"))] {
-        static mut cpu_mask_tbl: [EnumParseTable; 3] = [
+        static mut CPU_MASK_TBL: [EnumParseTable; 3] = [
             {
                 EnumParseTable {
                     str_0: b"neon\0" as *const u8 as *const c_char,
@@ -473,7 +473,7 @@ cfg_if! {
             },
         ];
     } else if #[cfg(any(target_arch = "aarch64"))] {
-        static mut cpu_mask_tbl: [EnumParseTable; 5] = [
+        static mut CPU_MASK_TBL: [EnumParseTable; 5] = [
             {
                 EnumParseTable {
                     str_0: b"neon\0" as *const u8 as *const c_char,
@@ -506,7 +506,7 @@ cfg_if! {
             },
         ];
     } else if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        static mut cpu_mask_tbl: [EnumParseTable; 6] = [
+        static mut CPU_MASK_TBL: [EnumParseTable; 6] = [
             {
                 EnumParseTable {
                     str_0: b"sse2\0" as *const u8 as *const c_char,
@@ -545,7 +545,7 @@ cfg_if! {
             },
         ];
     } else if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
-        static mut cpu_mask_tbl: [EnumParseTable; 1] = [
+        static mut CPU_MASK_TBL: [EnumParseTable; 1] = [
             {
                 EnumParseTable {
                     str_0: b"rvv\0" as *const u8 as *const c_char,
@@ -554,11 +554,11 @@ cfg_if! {
             },
         ];
     } else {
-        static mut cpu_mask_tbl: [EnumParseTable; 0] = [];
+        static mut CPU_MASK_TBL: [EnumParseTable; 0] = [];
     }
 }
 
-static mut inloop_filters_tbl: [EnumParseTable; 8] = [
+static mut INLOOP_FILTERS_TBL: [EnumParseTable; 8] = [
     {
         EnumParseTable {
             str_0: b"none\0" as *const u8 as *const c_char,
@@ -609,7 +609,7 @@ static mut inloop_filters_tbl: [EnumParseTable; 8] = [
     },
 ];
 
-static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
+static mut DECODE_FRAME_TYPE_TBL: [EnumParseTable; 4] = [
     {
         EnumParseTable {
             str_0: b"all\0" as *const u8 as *const c_char,
@@ -701,8 +701,8 @@ pub unsafe fn parse(
         o = getopt_long(
             argc,
             argv,
-            short_opts.as_ptr(),
-            long_opts.as_ptr(),
+            SHORT_OPTS.as_ptr(),
+            LONG_OPTS.as_ptr(),
             0 as *mut c_int,
         );
         if !(o != -1) {
@@ -814,7 +814,7 @@ pub unsafe fn parse(
             269 => {
                 dav1d_set_cpu_flags_mask(parse_enum(
                     optarg,
-                    cpu_mask_tbl.as_ptr(),
+                    CPU_MASK_TBL.as_ptr(),
                     (::core::mem::size_of::<[EnumParseTable; 6]>() as c_ulong)
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as c_ulong)
                         as c_int,
@@ -833,7 +833,7 @@ pub unsafe fn parse(
             272 => {
                 (*lib_settings).inloop_filters = parse_enum(
                     optarg,
-                    inloop_filters_tbl.as_ptr(),
+                    INLOOP_FILTERS_TBL.as_ptr(),
                     (::core::mem::size_of::<[EnumParseTable; 8]>() as c_ulong)
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as c_ulong)
                         as c_int,
@@ -844,7 +844,7 @@ pub unsafe fn parse(
             273 => {
                 (*lib_settings).decode_frame_type = parse_enum(
                     optarg,
-                    decode_frame_type_tbl.as_ptr(),
+                    DECODE_FRAME_TYPE_TBL.as_ptr(),
                     (::core::mem::size_of::<[EnumParseTable; 4]>() as c_ulong)
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as c_ulong)
                         as c_int,

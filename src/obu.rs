@@ -698,7 +698,7 @@ fn tile_log2(sz: c_int, tgt: c_int) -> u8 {
     k
 }
 
-static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
+static DEFAULT_MODE_REF_DELTAS: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
     mode_delta: [0, 0],
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
@@ -1268,7 +1268,7 @@ fn parse_loopfilter(
         sharpness = 0;
         mode_ref_delta_enabled = 1;
         mode_ref_delta_update = 1;
-        mode_ref_deltas = default_mode_ref_deltas.clone();
+        mode_ref_deltas = DEFAULT_MODE_REF_DELTAS.clone();
     } else {
         level_y = [gb.get_bits(6) as u8, gb.get_bits(6) as u8];
         if seqhdr.monochrome == 0 && (level_y[0] != 0 || level_y[1] != 0) {
@@ -1282,7 +1282,7 @@ fn parse_loopfilter(
         sharpness = gb.get_bits(3) as u8;
 
         if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-            mode_ref_deltas = default_mode_ref_deltas.clone();
+            mode_ref_deltas = DEFAULT_MODE_REF_DELTAS.clone();
         } else {
             let r#ref = refidx[primary_ref_frame as usize];
             mode_ref_deltas = state.refs[r#ref as usize]

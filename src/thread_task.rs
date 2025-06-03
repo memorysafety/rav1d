@@ -69,7 +69,7 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
     fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
         for fc in wrapping_iter(c.fc.iter(), first + ttd.cur.get() as usize) {
-            fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::None);
+            fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::NONE);
         }
         return 1;
     }
@@ -204,7 +204,7 @@ impl Rav1dTasks {
         cond_signal: c_int,
     ) {
         // insert task back into task queue
-        let mut prev_t = Rav1dTaskIndex::None;
+        let mut prev_t = Rav1dTaskIndex::NONE;
         let mut t = self.head.load(Ordering::SeqCst);
         while t.is_some() {
             'next: {
@@ -264,7 +264,7 @@ impl Rav1dTasks {
             prev_t = t;
             t = self.index(t).next();
         }
-        self.insert_tasks_between(c, first, last, prev_t, Rav1dTaskIndex::None, cond_signal);
+        self.insert_tasks_between(c, first, last, prev_t, Rav1dTaskIndex::NONE, cond_signal);
     }
 
     fn push(&self, task: Rav1dTask) -> Rav1dTaskIndex {
@@ -294,7 +294,7 @@ impl Rav1dTasks {
                 .compare_exchange(t, next_t, Ordering::SeqCst, Ordering::SeqCst)
                 .ok()?;
         }
-        self.index(t).set_next(Rav1dTaskIndex::None);
+        self.index(t).set_next(Rav1dTaskIndex::NONE);
         Some(self.index(t).without_next())
     }
 
@@ -354,7 +354,7 @@ impl Rav1dFrameContextTaskThread {
 pub struct Rav1dTaskIndex(Option<NonZeroU32>);
 
 impl Rav1dTaskIndex {
-    pub const None: Self = Self(None);
+    pub const NONE: Self = Self(None);
 
     // Return the zero-based index into the task queue vector or `None`
     pub fn raw_index(self) -> Option<u32> {
@@ -828,7 +828,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     }
                     let t = tasks.index(t_idx);
                     if t.type_0 == TaskType::Init {
-                        break 'found (fc, t_idx, Rav1dTaskIndex::None);
+                        break 'found (fc, t_idx, Rav1dTaskIndex::NONE);
                     }
                     if t.type_0 == TaskType::InitCdf {
                         // XXX This can be a simple else, if adding tasks of both
@@ -848,7 +848,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             fc.task_thread
                                 .error
                                 .fetch_or((p1 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            break 'found (fc, t_idx, Rav1dTaskIndex::None);
+                            break 'found (fc, t_idx, Rav1dTaskIndex::NONE);
                         }
                     }
                 }

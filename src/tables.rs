@@ -74,7 +74,7 @@ pub struct TxfmInfo {
     pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT]; 2] = [
+pub static DAV1D_AL_PART_CTX: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -91,7 +91,7 @@ pub static dav1d_al_part_ctx: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT];
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = {
+pub static DAV1D_BLOCK_SIZES: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = {
     use BlockSize::*;
 
     const DEFAULT: BlockSize = BlockSize::Bs128x128;
@@ -160,7 +160,7 @@ pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLev
     ]
 };
 
-static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
+static DAV1D_BLOCK_DIMENSIONS: [[u8; 4]; BlockSize::COUNT] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -188,11 +188,11 @@ static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
 impl BlockSize {
     #[inline]
     pub fn dimensions(self) -> &'static [u8; 4] {
-        &dav1d_block_dimensions[self as usize]
+        &DAV1D_BLOCK_DIMENSIONS[self as usize]
     }
 }
 
-pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
+pub static DAV1D_TXFM_DIMENSIONS: [TxfmInfo; TxfmSize::COUNT] = {
     use TxfmSize::*;
     [
         TxfmInfo {
@@ -388,7 +388,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; TxfmSize::COUNT] = {
     ]
 };
 
-pub static dav1d_max_txfm_size_for_bs: [[TxfmSize; 4]; BlockSize::COUNT] = {
+pub static DAV1D_MAX_TXFM_SIZE_FOR_BS: [[TxfmSize; 4]; BlockSize::COUNT] = {
     use TxfmSize::*;
     const DEFAULT: TxfmSize = DefaultValue::DEFAULT;
     [
@@ -417,7 +417,7 @@ pub static dav1d_max_txfm_size_for_bs: [[TxfmSize; 4]; BlockSize::COUNT] = {
     ]
 };
 
-pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
+pub static DAV1D_TXTP_FROM_UVMODE: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     let mut tbl = [0; N_UV_INTRA_PRED_MODES];
     tbl[DC_PRED as usize] = DCT_DCT;
     tbl[VERT_PRED as usize] = ADST_DCT;
@@ -435,7 +435,7 @@ pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     tbl
 };
 
-pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_MODES] = {
+pub static DAV1D_COMP_INTER_PRED_MODES: [[InterPredMode; 2]; N_COMP_INTER_PRED_MODES] = {
     let mut tbl = [[0; 2]; 8];
     tbl[NEARESTMV_NEARESTMV as usize] = [NEARESTMV, NEARESTMV];
     tbl[NEARMV_NEARMV as usize] = [NEARMV, NEARMV];
@@ -448,7 +448,7 @@ pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_M
     tbl
 };
 
-pub static dav1d_partition_type_count: [u8; BlockLevel::COUNT] = [
+pub static DAV1D_PARTITION_TYPE_COUNT: [u8; BlockLevel::COUNT] = [
     BlockPartition::COUNT as u8 - 3,
     BlockPartition::COUNT as u8 - 1,
     BlockPartition::COUNT as u8 - 1,
@@ -456,7 +456,7 @@ pub static dav1d_partition_type_count: [u8; BlockLevel::COUNT] = [
     BlockPartition::N_SUB8X8_PARTITIONS as u8 - 1,
 ];
 
-pub static dav1d_tx_types_per_set: [u8; 40] = [
+pub static DAV1D_TX_TYPES_PER_SET: [u8; 40] = [
     IDTX as u8,
     DCT_DCT as u8,
     ADST_ADST as u8,
@@ -499,11 +499,11 @@ pub static dav1d_tx_types_per_set: [u8; 40] = [
     FLIPADST_ADST as u8,
 ];
 
-pub static dav1d_ymode_size_context: [u8; BlockSize::COUNT] = [
+pub static DAV1D_YMODE_SIZE_CONTEXT: [u8; BlockSize::COUNT] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
-pub static dav1d_lo_ctx_offsets: [[[u8; 5]; 5]; 3] = [
+pub static DAV1D_LO_CTX_OFFSETS: [[[u8; 5]; 5]; 3] = [
     [
         [0, 1, 6, 6, 21],
         [1, 6, 6, 21, 21],
@@ -527,7 +527,7 @@ pub static dav1d_lo_ctx_offsets: [[[u8; 5]; 5]; 3] = [
     ],
 ];
 
-pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
+pub static DAV1D_SKIP_CTX: [[u8; 5]; 5] = [
     [1, 2, 2, 2, 3],
     [2, 4, 4, 4, 5],
     [2, 4, 4, 4, 5],
@@ -535,7 +535,7 @@ pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
     [3, 5, 5, 5, 6],
 ];
 
-pub static dav1d_tx_type_class: [TxClass; N_TX_TYPES_PLUS_LL] = [
+pub static DAV1D_TX_TYPE_CLASS: [TxClass; N_TX_TYPES_PLUS_LL] = [
     TxClass::TwoD,
     TxClass::TwoD,
     TxClass::TwoD,
@@ -555,7 +555,7 @@ pub static dav1d_tx_type_class: [TxClass; N_TX_TYPES_PLUS_LL] = [
     TxClass::TwoD,
 ];
 
-pub const dav1d_filter_2d: [[Filter2d; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = {
+pub const DAV1D_FILTER_2D: [[Filter2d; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = {
     use Filter2d::*;
 
     const DEFAULT: Filter2d = Filter2d::Regular8Tap;
@@ -568,7 +568,7 @@ pub const dav1d_filter_2d: [[Filter2d; Rav1dFilterMode::N_FILTERS]; Rav1dFilterM
     ]
 };
 
-pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; Filter2d::COUNT] = [
+pub const DAV1D_FILTER_DIR: [[Rav1dFilterMode; 2]; Filter2d::COUNT] = [
     [Rav1dFilterMode::Regular8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Smooth8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Sharp8Tap, Rav1dFilterMode::Regular8Tap],
@@ -581,7 +581,7 @@ pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; Filter2d::COUNT] = [
     [Rav1dFilterMode::Bilinear, Rav1dFilterMode::Bilinear],
 ];
 
-pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
+pub static DAV1D_FILTER_MODE_TO_Y_MODE: [u8; 5] = [
     DC_PRED as u8,
     VERT_PRED as u8,
     HOR_PRED as u8,
@@ -589,14 +589,14 @@ pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
     DC_PRED as u8,
 ];
 
-pub static dav1d_intra_mode_context: [u8; N_INTRA_PRED_MODES] =
+pub static DAV1D_INTRA_MODE_CONTEXT: [u8; N_INTRA_PRED_MODES] =
     [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
-pub static dav1d_wedge_ctx_lut: [u8; BlockSize::COUNT] = [
+pub static DAV1D_WEDGE_CTX_LUT: [u8; BlockSize::COUNT] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
-pub const cfl_allowed_mask: c_uint = {
+pub const CFL_ALLOWED_MASK: c_uint = {
     use BlockSize::*;
 
     1 << Bs32x32 as u8
@@ -615,7 +615,7 @@ pub const cfl_allowed_mask: c_uint = {
         | 1 << Bs4x4 as u8
 };
 
-pub const wedge_allowed_mask: c_uint = {
+pub const WEDGE_ALLOWED_MASK: c_uint = {
     use BlockSize::*;
 
     1 << Bs32x32 as u8
@@ -629,7 +629,7 @@ pub const wedge_allowed_mask: c_uint = {
         | 1 << Bs8x8 as u8
 };
 
-pub const interintra_allowed_mask: c_uint = {
+pub const INTERINTRA_ALLOWED_MASK: c_uint = {
     use BlockSize::*;
 
     1 << Bs32x32 as u8
@@ -651,7 +651,7 @@ impl Default for Rav1dWarpedMotionParams {
     }
 }
 
-pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
+pub static DAV1D_CDEF_DIRECTIONS: [[i8; 2]; 12] = [
     [1 * 12 + 0, 2 * 12 + 0],
     [1 * 12 + 0, 2 * 12 - 1],
     [-1 * 12 + 1, -2 * 12 + 2],
@@ -666,7 +666,7 @@ pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
     [0 * 12 + 1, -1 * 12 + 2],
 ];
 
-pub static dav1d_sgr_params: Align4<[[u16; 2]; 16]> = Align4([
+pub static DAV1D_SGR_PARAMS: Align4<[[u16; 2]; 16]> = Align4([
     [140, 3236],
     [112, 2158],
     [93, 1618],

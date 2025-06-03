@@ -52,14 +52,14 @@ pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
     }
 }
 
-static av1_mode_conv: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = {
+static AV1_MODE_CONV: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = {
     let mut a = [[[0; 2]; 2]; N_INTRA_PRED_MODES];
     a[DC_PRED as usize] = [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]];
     a[PAETH_PRED as usize] = [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]];
     a
 };
 
-static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
+static AV1_MODE_TO_ANGLE_MAP: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -77,7 +77,7 @@ struct Av1IntraPredictionEdge {
     pub needs: Needs,
 }
 
-static av1_intra_prediction_edges: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MODES] = {
+static AV1_INTRA_PREDICTION_EDGES: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MODES] = {
     const LEFT: Needs = Needs::LEFT;
     const TOP: Needs = Needs::TOP;
     const TOP_LEFT: Needs = Needs::TOP_LEFT;
@@ -189,7 +189,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
 
     match mode {
         VERT_PRED..=VERT_LEFT_PRED => {
-            *angle = av1_mode_to_angle_map[(mode - VERT_PRED) as usize] as c_int + 3 * *angle;
+            *angle = AV1_MODE_TO_ANGLE_MAP[(mode - VERT_PRED) as usize] as c_int + 3 * *angle;
             if *angle <= 90 {
                 mode = if *angle < 90 && have_top {
                     Z1_PRED
@@ -207,20 +207,20 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
         DC_PRED | PAETH_PRED => {
-            mode = av1_mode_conv[mode as usize][have_left as usize][have_top as usize];
+            mode = AV1_MODE_CONV[mode as usize][have_left as usize][have_top as usize];
         }
         _ => {}
     }
 
     // `dst_top` starts with either the top or top-left sample depending on whether have_left is true
     let dst_top = if have_top
-        && (av1_intra_prediction_edges[mode as usize]
+        && (AV1_INTRA_PREDICTION_EDGES[mode as usize]
             .needs
             .contains(Needs::TOP)
-            || av1_intra_prediction_edges[mode as usize]
+            || AV1_INTRA_PREDICTION_EDGES[mode as usize]
                 .needs
                 .contains(Needs::TOP_LEFT)
-            || av1_intra_prediction_edges[mode as usize]
+            || AV1_INTRA_PREDICTION_EDGES[mode as usize]
                 .needs
                 .contains(Needs::LEFT)
                 && !have_left)
@@ -237,7 +237,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         &[]
     };
 
-    if av1_intra_prediction_edges[mode as usize]
+    if AV1_INTRA_PREDICTION_EDGES[mode as usize]
         .needs
         .contains(Needs::LEFT)
     {
@@ -262,7 +262,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 sz,
             );
         }
-        if av1_intra_prediction_edges[mode as usize]
+        if AV1_INTRA_PREDICTION_EDGES[mode as usize]
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
@@ -286,7 +286,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if av1_intra_prediction_edges[mode as usize]
+    if AV1_INTRA_PREDICTION_EDGES[mode as usize]
         .needs
         .contains(Needs::TOP)
     {
@@ -310,7 +310,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 sz,
             );
         }
-        if av1_intra_prediction_edges[mode as usize]
+        if AV1_INTRA_PREDICTION_EDGES[mode as usize]
             .needs
             .contains(Needs::TOP_RIGHT)
         {
@@ -333,7 +333,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if av1_intra_prediction_edges[mode as usize]
+    if AV1_INTRA_PREDICTION_EDGES[mode as usize]
         .needs
         .contains(Needs::TOP_LEFT)
     {

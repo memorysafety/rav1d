@@ -219,7 +219,7 @@ impl CpuFlags {
 ///
 /// It is written once by [`dav1d_init_cpu`] in initialization code,
 /// and then subsequently read in [`dav1d_get_cpu_flags`] by other initialization code.
-static rav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
+static RAV1D_CPU_FLAGS: AtomicU32 = AtomicU32::new(0);
 
 /// This is atomic, which has interior mutability,
 /// instead of a `static mut`, since the latter is `unsafe` to access.
@@ -228,24 +228,24 @@ static rav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
 /// so strict safety guarantees about how it's used can't be made.
 /// Other than that, it is also only used in init functions (that call [`dav1d_get_cpu_flags`]),
 /// so it shouldn't be performance sensitive.
-static rav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
+static RAV1D_CPU_FLAGS_MASK: AtomicU32 = AtomicU32::new(!0);
 
 #[inline(always)]
 pub(crate) fn rav1d_get_cpu_flags() -> CpuFlags {
     let flags =
-        rav1d_cpu_flags.load(Ordering::SeqCst) & rav1d_cpu_flags_mask.load(Ordering::SeqCst);
+        RAV1D_CPU_FLAGS.load(Ordering::SeqCst) & RAV1D_CPU_FLAGS_MASK.load(Ordering::SeqCst);
     // Note that `bitflags!` `struct`s are `#[repr(transparent)]`.
     CpuFlags::from_bits_truncate(flags) | CpuFlags::compile_time_detect()
 }
 
 #[cold]
 pub(crate) fn rav1d_init_cpu() {
-    rav1d_cpu_flags.store(CpuFlags::run_time_detect().bits(), Ordering::SeqCst);
+    RAV1D_CPU_FLAGS.store(CpuFlags::run_time_detect().bits(), Ordering::SeqCst);
 }
 
 #[cold]
 pub fn rav1d_set_cpu_flags_mask(mask: c_uint) {
-    rav1d_cpu_flags_mask.store(mask, Ordering::SeqCst);
+    RAV1D_CPU_FLAGS_MASK.store(mask, Ordering::SeqCst);
 }
 
 #[no_mangle]

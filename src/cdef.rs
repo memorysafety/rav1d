@@ -13,7 +13,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
-use crate::tables::dav1d_cdef_directions;
+use crate::tables::DAV1D_CDEF_DIRECTIONS;
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
@@ -284,7 +284,7 @@ fn cdef_filter_block_rust<BD: BitDepth>(
                     let mut min = px;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off1 = dav1d_cdef_directions[dir + 2][k] as isize; // dir
+                        let off1 = DAV1D_CDEF_DIRECTIONS[dir + 2][k] as isize; // dir
                         let p0 = tmp[tmp_index(x, off1)] as c_int;
                         let p1 = tmp[tmp_index(x, -off1)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
@@ -295,8 +295,8 @@ fn cdef_filter_block_rust<BD: BitDepth>(
                         max = cmp::max(p0, max);
                         min = cmp::min(p1 as c_uint, min as c_uint) as c_int;
                         max = cmp::max(p1, max);
-                        let off2 = dav1d_cdef_directions[dir + 4][k] as isize;
-                        let off3 = dav1d_cdef_directions[dir + 0][k] as isize;
+                        let off2 = DAV1D_CDEF_DIRECTIONS[dir + 4][k] as isize;
+                        let off3 = DAV1D_CDEF_DIRECTIONS[dir + 0][k] as isize;
                         let s0 = tmp[tmp_index(x, off2)] as c_int;
                         let s1 = tmp[tmp_index(x, -off2)] as c_int;
                         let s2 = tmp[tmp_index(x, off3)] as c_int;
@@ -330,7 +330,7 @@ fn cdef_filter_block_rust<BD: BitDepth>(
                     let mut sum = 0;
                     let mut pri_tap_k = pri_tap;
                     for k in 0..2 {
-                        let off = dav1d_cdef_directions[dir + 2][k] as isize;
+                        let off = DAV1D_CDEF_DIRECTIONS[dir + 2][k] as isize;
                         let p0 = tmp[tmp_index(x, off)] as c_int;
                         let p1 = tmp[tmp_index(x, -off)] as c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
@@ -351,8 +351,8 @@ fn cdef_filter_block_rust<BD: BitDepth>(
                 let px = dst[x].as_::<c_int>();
                 let mut sum = 0;
                 for k in 0..2 {
-                    let off1 = dav1d_cdef_directions[dir + 4][k] as isize;
-                    let off2 = dav1d_cdef_directions[dir + 0][k] as isize;
+                    let off1 = DAV1D_CDEF_DIRECTIONS[dir + 4][k] as isize;
+                    let off2 = DAV1D_CDEF_DIRECTIONS[dir + 0][k] as isize;
                     let s0 = tmp[tmp_index(x, off1)] as c_int;
                     let s1 = tmp[tmp_index(x, -off1)] as c_int;
                     let s2 = tmp[tmp_index(x, off2)] as c_int;
@@ -467,9 +467,9 @@ fn cdef_find_dir_rust<BD: BitDepth>(
     cost[2] *= 105;
     cost[6] *= 105;
 
-    static div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
+    static DIV_TABLE: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
     for n in 0..7 {
-        let d = div_table[n] as c_int;
+        let d = DIV_TABLE[n] as c_int;
         cost[0] += ((partial_sum_diag[0][n] * partial_sum_diag[0][n]
             + partial_sum_diag[0][14 - n] * partial_sum_diag[0][14 - n])
             * d) as c_uint;
@@ -487,7 +487,7 @@ fn cdef_find_dir_rust<BD: BitDepth>(
         }
         *cost_ptr *= 105;
         for m in 0..3 {
-            let d = div_table[2 * m + 1] as c_int;
+            let d = DIV_TABLE[2 * m + 1] as c_int;
             *cost_ptr += ((partial_sum_alt[n][m] * partial_sum_alt[n][m]
                 + partial_sum_alt[n][10 - m] * partial_sum_alt[n][10 - m])
                 * d) as c_uint;

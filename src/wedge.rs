@@ -330,7 +330,7 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         Vert,
     }
 
-    const wedge_master_border: [[u8; 8]; WedgeMasterLineType::COUNT] = [
+    const WEDGE_MASTER_BORDER: [[u8; 8]; WedgeMasterLineType::COUNT] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
@@ -342,7 +342,7 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Vertical as usize] = insert_border(
             master[WedgeDirectionType::Vertical as usize],
             y,
-            &wedge_master_border[WedgeMasterLineType::Vert as usize],
+            &WEDGE_MASTER_BORDER[WedgeMasterLineType::Vert as usize],
             32,
         );
     });
@@ -351,13 +351,13 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y,
-            &wedge_master_border[WedgeMasterLineType::Even as usize],
+            &WEDGE_MASTER_BORDER[WedgeMasterLineType::Even as usize],
             ctr,
         );
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y + 1,
-            &wedge_master_border[WedgeMasterLineType::Odd as usize],
+            &WEDGE_MASTER_BORDER[WedgeMasterLineType::Odd as usize],
             ctr - 1,
         );
     });
@@ -374,23 +374,23 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
     master
 }
 
-pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] = {
+pub static DAV1D_WEDGE_MASKS: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] = {
     use BlockSize::*;
 
-    const master: [[[u8; 64]; 64]; WedgeDirectionType::COUNT] = build_master();
-    const wedge_codebook_16: WedgeCodeBook = WedgeCodeBook::build();
+    const MASTER: [[[u8; 64]; 64]; WedgeDirectionType::COUNT] = build_master();
+    const WEDGE_CODEBOOK_16: WedgeCodeBook = WedgeCodeBook::build();
 
     let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; BlockSize::COUNT];
 
     macro_rules! fill {
         ($w:literal x $h:literal, $signs:expr) => {{
-            static wedge_masks: WedgeMasks<
+            static WEDGE_MASKS: WedgeMasks<
                 { $w * $h },
                 { ($w / 2) * $h },
                 { ($w / 2) * ($h / 2) },
-            > = WedgeMasks::fill2d_16x2($w, $h, &master, wedge_codebook_16.get($w, $h), $signs);
+            > = WedgeMasks::fill2d_16x2($w, $h, &MASTER, WEDGE_CODEBOOK_16.get($w, $h), $signs);
             paste! {
-                masks[[<Bs $w x $h>] as usize] = wedge_masks.slice();
+                masks[[<Bs $w x $h>] as usize] = WEDGE_MASKS.slice();
             }
         }};
     }
@@ -408,7 +408,7 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] 
     masks
 };
 
-static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
+static II_DC_MASK: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
 const N_II_PRED_MODES: usize = InterIntraPredMode::COUNT - 1;
 
@@ -419,7 +419,7 @@ const fn build_nondc_ii_masks<const N: usize>(
 ) -> [[u8; N]; N_II_PRED_MODES] {
     use InterIntraPredMode::*;
 
-    const ii_weights_1d: [u8; 32] = [
+    const II_WEIGHTS_1D: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
     ];
@@ -429,37 +429,37 @@ const fn build_nondc_ii_masks<const N: usize>(
     const_for!(y in 0..h => {
         let off = y * w;
         const_for!(i in 0..w => {
-            masks[Vert as usize - 1][off + i] = ii_weights_1d[y * step];
+            masks[Vert as usize - 1][off + i] = II_WEIGHTS_1D[y * step];
         });
         const_for!(x in 0..w => {
-            masks[Smooth as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
-            masks[Hor as usize - 1][off + x] = ii_weights_1d[x * step];
+            masks[Smooth as usize - 1][off + x] = II_WEIGHTS_1D[const_min!(x, y) * step];
+            masks[Hor as usize - 1][off + x] = II_WEIGHTS_1D[x * step];
         });
     });
 
     masks
 }
 
-static ii_nondc_mask_32x32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_32X32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(32, 32, 1));
-static ii_nondc_mask_16x32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_16X32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(16, 32, 1));
-static ii_nondc_mask_16x16: Align64<[[u8; 16 * 16]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_16X16: Align64<[[u8; 16 * 16]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(16, 16, 2));
-static ii_nondc_mask_8x32: Align64<[[u8; 8 * 32]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_8X32: Align64<[[u8; 8 * 32]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(8, 32, 1));
-static ii_nondc_mask_8x16: Align64<[[u8; 8 * 16]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_8X16: Align64<[[u8; 8 * 16]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(8, 16, 2));
-static ii_nondc_mask_8x8: Align64<[[u8; 8 * 8]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_8X8: Align64<[[u8; 8 * 8]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(8, 8, 4));
-static ii_nondc_mask_4x16: Align64<[[u8; 4 * 16]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_4X16: Align64<[[u8; 4 * 16]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(4, 16, 2));
-static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_4X8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
     Align32(build_nondc_ii_masks(4, 8, 4));
-static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
+static II_NONDC_MASK_4X4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT] = {
+pub static DAV1D_II_MASKS: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT] = {
     use BlockSize::*;
     use InterIntraPredMode::*;
 
@@ -469,10 +469,10 @@ pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; Blo
         ($h:literal x $w:literal) => {{
             let mut a = [&[] as &'static [u8]; InterIntraPredMode::COUNT];
             paste! {
-                a[Dc as usize] = &ii_dc_mask.0;
-                a[Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[Vert as usize - 1];
-                a[Hor as usize] = &[<ii_nondc_mask _ $h x $w>].0[Hor as usize - 1];
-                a[Smooth as usize] = &[<ii_nondc_mask _ $h x $w>].0[Smooth as usize - 1];
+                a[Dc as usize] = &II_DC_MASK.0;
+                a[Vert as usize] = &[<II_NONDC_MASK _ $h X $w>].0[Vert as usize - 1];
+                a[Hor as usize] = &[<II_NONDC_MASK _ $h X $w>].0[Hor as usize - 1];
+                a[Smooth as usize] = &[<II_NONDC_MASK _ $h X $w>].0[Smooth as usize - 1];
             }
             a
         }};
