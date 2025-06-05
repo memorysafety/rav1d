@@ -51,12 +51,12 @@ pub struct Demuxer {
 
 pub type IvfInputContext = DemuxerPriv;
 
-static probe_data: [u8; 12] = [
+static PROBE_DATA: [u8; 12] = [
     b'D', b'K', b'I', b'F', 0, 0, 0x20, 0, b'A', b'V', b'0', b'1',
 ];
 
 unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
-    (*(data as *const [u8; 12]) == probe_data) as c_int
+    (*(data as *const [u8; 12]) == PROBE_DATA) as c_int
 }
 
 unsafe fn rl32(p: *const u8) -> c_uint {

@@ -13,7 +13,7 @@ use crate::levels::BlockSize;
 use crate::levels::SegmentId;
 use crate::levels::TxfmSize;
 use crate::relaxed_atomic::RelaxedAtomic;
-use crate::tables::dav1d_txfm_dimensions;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
 use libc::ptrdiff_t;
 use parking_lot::RwLock;
 use std::cmp;
@@ -108,7 +108,7 @@ fn decomp_tx(
     tx_masks: &[u16; 2],
 ) {
     debug_assert!(depth <= 2);
-    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[from as usize];
 
     let y0 = (y_off * t_dim.h) as usize;
     let x0 = (x_off * t_dim.w) as usize;
@@ -162,7 +162,7 @@ fn mask_edges_inter(
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[max_tx as usize];
 
     // See [`decomp_tx`]'s docs for the `txa` arg.
 
@@ -272,7 +272,7 @@ fn mask_edges_intra(
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
     let twl4c = cmp::min(2, twl4);
@@ -351,7 +351,7 @@ fn mask_edges_chroma(
     ss_hor: usize,
     ss_ver: usize,
 ) {
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
     let twl4c = (twl4 != 0) as u8;

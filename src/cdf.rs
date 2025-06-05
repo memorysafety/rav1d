@@ -16,7 +16,7 @@ use crate::levels::TxfmSize;
 use crate::levels::N_COMP_INTER_PRED_MODES;
 use crate::levels::N_INTRA_PRED_MODES;
 use crate::levels::N_UV_INTRA_PRED_MODES;
-use crate::tables::dav1d_partition_type_count;
+use crate::tables::DAV1D_PARTITION_TYPE_COUNT;
 use parking_lot::RwLock;
 use parking_lot::RwLockWriteGuard;
 use std::cmp;
@@ -235,7 +235,7 @@ struct CdfDefaultContext {
     pub kfym: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
 }
 
-static default_cdf: CdfDefaultContext = CdfDefaultContext {
+static DEFAULT_CDF: CdfDefaultContext = CdfDefaultContext {
     coef: [
         CdfCoefContext {
             eob_bin_16: Align16(cdf2d([
@@ -5006,7 +5006,7 @@ pub(crate) fn rav1d_cdf_thread_update(
         );
     }
     for k in 0..BlockLevel::COUNT {
-        update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
+        update_cdf_2d!(4, DAV1D_PARTITION_TYPE_COUNT[k] as usize, m.partition[k]);
     }
     update_cdf_2d!(6, 15, m.cfl_alpha);
     update_cdf_2d!(2, 15, m.txtp_inter1);
@@ -5098,14 +5098,14 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
         CdfThreadContext::Cdf(src) => src.cdf.try_read().unwrap().clone(),
         &CdfThreadContext::QCat(i) => CdfContext {
             // `i` is the sum of 3 `bool`s
-            coef: default_cdf.coef[i as usize & 3].clone(),
-            m: default_cdf.m.clone(),
-            mi: default_cdf.mi.clone(),
+            coef: DEFAULT_CDF.coef[i as usize & 3].clone(),
+            m: DEFAULT_CDF.m.clone(),
+            mi: DEFAULT_CDF.mi.clone(),
             mv: CdfMvContext {
-                comp: [default_cdf.mv.comp.clone(), default_cdf.mv.comp.clone()],
-                joint: default_cdf.mv.joint.clone(),
+                comp: [DEFAULT_CDF.mv.comp.clone(), DEFAULT_CDF.mv.comp.clone()],
+                joint: DEFAULT_CDF.mv.joint.clone(),
             },
-            kfym: default_cdf.kfym.clone(),
+            kfym: DEFAULT_CDF.kfym.clone(),
         },
     }
 }

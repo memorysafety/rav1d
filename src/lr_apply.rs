@@ -12,7 +12,7 @@ use crate::looprestoration::LooprestorationParams;
 use crate::looprestoration::LooprestorationParamsSgr;
 use crate::looprestoration::LrEdgeFlags;
 use crate::strided::Strided as _;
-use crate::tables::dav1d_sgr_params;
+use crate::tables::DAV1D_SGR_PARAMS;
 use assert_matches::assert_matches;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
@@ -85,7 +85,7 @@ fn lr_stripe<BD: BitDepth>(
         lr_fn = f.dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
         let sgr_idx = assert_matches!(lr.r#type, Rav1dRestorationType::SgrProj(idx) => idx);
-        let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
+        let sgr_params = &DAV1D_SGR_PARAMS[sgr_idx as usize];
         *params.sgr_mut() = LooprestorationParamsSgr {
             s0: sgr_params[0] as u32,
             s1: sgr_params[1] as u32,

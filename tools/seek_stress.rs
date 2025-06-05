@@ -1,4 +1,3 @@
-#![allow(non_upper_case_globals)]
 #![allow(clippy::all)]
 
 mod compat; // mod compat
@@ -80,24 +79,24 @@ unsafe fn get_seed() -> c_uint {
         .wrapping_add(ts.tv_nsec as c_ulonglong) as c_uint;
 }
 
-static mut xs_state: [u32; 4] = [0; 4];
+static mut XS_STATE: [u32; 4] = [0; 4];
 
 unsafe fn xor128_srand(seed: c_uint) {
-    xs_state[0] = seed;
-    xs_state[1] = seed & 0xffff0000 | !seed & 0xffff;
-    xs_state[2] = !seed & 0xffff0000 | seed & 0xffff;
-    xs_state[3] = !seed;
+    XS_STATE[0] = seed;
+    XS_STATE[1] = seed & 0xffff0000 | !seed & 0xffff;
+    XS_STATE[2] = !seed & 0xffff0000 | seed & 0xffff;
+    XS_STATE[3] = !seed;
 }
 
 unsafe fn xor128_rand() -> c_int {
-    let x: u32 = xs_state[0];
+    let x: u32 = XS_STATE[0];
     let t: u32 = x ^ x << 11;
-    xs_state[0] = xs_state[1];
-    xs_state[1] = xs_state[2];
-    xs_state[2] = xs_state[3];
-    let mut w: u32 = xs_state[3];
+    XS_STATE[0] = XS_STATE[1];
+    XS_STATE[1] = XS_STATE[2];
+    XS_STATE[2] = XS_STATE[3];
+    let mut w: u32 = XS_STATE[3];
     w = w ^ w >> 19 ^ (t ^ t >> 8);
-    xs_state[3] = w;
+    XS_STATE[3] = w;
     return w as c_int >> 1;
 }
 

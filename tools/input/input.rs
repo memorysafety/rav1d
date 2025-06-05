@@ -57,7 +57,7 @@ pub struct Demuxer {
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 
-static mut demuxers: [*const Demuxer; 4] = unsafe {
+static mut DEMUXERS: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,
         &annexb_demuxer as *const Demuxer,
@@ -80,15 +80,15 @@ pub unsafe fn input_open(
     let mut i;
     if !name.is_null() {
         i = 0 as c_int;
-        while !(demuxers[i as usize]).is_null() {
-            if strcmp((*demuxers[i as usize]).name, name) == 0 {
-                impl_0 = demuxers[i as usize];
+        while !(DEMUXERS[i as usize]).is_null() {
+            if strcmp((*DEMUXERS[i as usize]).name, name) == 0 {
+                impl_0 = DEMUXERS[i as usize];
                 break;
             } else {
                 i += 1;
             }
         }
-        if (demuxers[i as usize]).is_null() {
+        if (DEMUXERS[i as usize]).is_null() {
             fprintf(
                 stderr(),
                 b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const c_char,
@@ -99,8 +99,8 @@ pub unsafe fn input_open(
     } else {
         let mut probe_sz = 0;
         i = 0 as c_int;
-        while !(demuxers[i as usize]).is_null() {
-            probe_sz = cmp::max(probe_sz, (*demuxers[i as usize]).probe_sz);
+        while !(DEMUXERS[i as usize]).is_null() {
+            probe_sz = cmp::max(probe_sz, (*DEMUXERS[i as usize]).probe_sz);
             i += 1;
         }
         let probe_data: *mut u8 = malloc(probe_sz as usize) as *mut u8;
@@ -140,17 +140,17 @@ pub unsafe fn input_open(
             };
         }
         i = 0 as c_int;
-        while !(demuxers[i as usize]).is_null() {
-            if ((*demuxers[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
+        while !(DEMUXERS[i as usize]).is_null() {
+            if ((*DEMUXERS[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
             {
-                impl_0 = demuxers[i as usize];
+                impl_0 = DEMUXERS[i as usize];
                 break;
             } else {
                 i += 1;
             }
         }
         free(probe_data as *mut c_void);
-        if (demuxers[i as usize]).is_null() {
+        if (DEMUXERS[i as usize]).is_null() {
             fprintf(
                 stderr(),
                 b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const c_char,

@@ -74,19 +74,19 @@ use crate::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::msac::MsacContext;
 use crate::picture::Rav1dThreadPicture;
 use crate::pixels::Pixels as _;
-use crate::scan::dav1d_scans;
+use crate::scan::DAV1D_SCANS;
 use crate::strided::Strided as _;
-use crate::tables::dav1d_filter_2d;
-use crate::tables::dav1d_filter_mode_to_y_mode;
-use crate::tables::dav1d_lo_ctx_offsets;
-use crate::tables::dav1d_skip_ctx;
-use crate::tables::dav1d_tx_type_class;
-use crate::tables::dav1d_tx_types_per_set;
-use crate::tables::dav1d_txfm_dimensions;
-use crate::tables::dav1d_txtp_from_uvmode;
 use crate::tables::TxfmInfo;
-use crate::wedge::dav1d_ii_masks;
-use crate::wedge::dav1d_wedge_masks;
+use crate::tables::DAV1D_FILTER_2D;
+use crate::tables::DAV1D_FILTER_MODE_TO_Y_MODE;
+use crate::tables::DAV1D_LO_CTX_OFFSETS;
+use crate::tables::DAV1D_SKIP_CTX;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
+use crate::tables::DAV1D_TXTP_FROM_UVMODE;
+use crate::tables::DAV1D_TX_TYPES_PER_SET;
+use crate::tables::DAV1D_TX_TYPE_CLASS;
+use crate::wedge::DAV1D_II_MASKS;
+use crate::wedge::DAV1D_WEDGE_MASKS;
 use crate::with_offset::WithOffset;
 use assert_matches::debug_assert_matches;
 use libc::intptr_t;
@@ -336,7 +336,7 @@ fn get_skip_ctx(
             cmp::min(ldir & 0x3f, 4) as usize
         }
 
-        dav1d_skip_ctx[ldir(a)][ldir(l)]
+        DAV1D_SKIP_CTX[ldir(a)][ldir(l)]
     };
     InRange::new(skip_ctx).unwrap()
 }
@@ -542,7 +542,7 @@ fn decode_coefs<BD: BitDepth>(
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
 
     if dbg {
@@ -576,7 +576,7 @@ fn decode_coefs<BD: BitDepth>(
         }
         Intra(_) if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
         Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
-        Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        Intra(intra) if chroma => DAV1D_TXTP_FROM_UVMODE[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
         Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
@@ -585,7 +585,7 @@ fn decode_coefs<BD: BitDepth>(
         _ if frame_hdr.segmentation.qidx[b.seg_id.get()] == 0 => DCT_DCT,
         Intra(intra) => {
             let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
-                dav1d_filter_mode_to_y_mode[intra.y_angle as usize]
+                DAV1D_FILTER_MODE_TO_Y_MODE[intra.y_angle as usize]
             } else {
                 intra.y_mode
             };
@@ -596,14 +596,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
                     4,
                 );
-                dav1d_tx_types_per_set[idx as usize + 0]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 0]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra1[t_dim.min as usize][y_mode_nofilt as usize],
                     6,
                 );
-                dav1d_tx_types_per_set[idx as usize + 5]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 5]
             };
             if dbg {
                 println!(
@@ -632,14 +632,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_inter2.0,
                     11,
                 );
-                dav1d_tx_types_per_set[idx as usize + 12]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 12]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter1[t_dim.min as usize],
                     15,
                 );
-                dav1d_tx_types_per_set[idx as usize + 24]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 24]
             };
             if dbg {
                 println!(
@@ -654,7 +654,7 @@ fn decode_coefs<BD: BitDepth>(
     // find end-of-block (eob)
     let tx2dszctx =
         cmp::min(t_dim.lw, TxfmSize::S32x32 as u8) + cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
-    let tx_class = dav1d_tx_type_class[*txtp as usize];
+    let tx_class = DAV1D_TX_TYPE_CLASS[*txtp as usize];
     let chroma = chroma as usize;
     let is_1d = (tx_class != TxClass::TwoD) as usize;
     let eob_bin = match tx2dszctx {
@@ -798,8 +798,8 @@ fn decode_coefs<BD: BitDepth>(
         match tx_class {
             TxClass::TwoD => {
                 let is_rect = tx.is_rect() as usize;
-                lo_ctx_offsets = Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
-                scan = dav1d_scans[tx as usize];
+                lo_ctx_offsets = Some(&DAV1D_LO_CTX_OFFSETS[is_rect + (tx as usize & is_rect)]);
+                scan = DAV1D_SCANS[tx as usize];
                 stride = 4 << slh;
             }
             TxClass::H | TxClass::V => {
@@ -1289,7 +1289,7 @@ fn read_coef_tree<BD: BitDepth>(
     let bd = BD::from_c(f.bitdepth_max);
 
     let ts = &f.ts[t.ts];
-    let t_dim = &dav1d_txfm_dimensions[ytx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[ytx as usize];
     let txw = t_dim.w;
     let txh = t_dim.h;
 
@@ -1298,7 +1298,7 @@ fn read_coef_tree<BD: BitDepth>(
     // Avoids an undefined left shift.
     if depth < 2 && tx_split[depth] != 0 && tx_split[depth] & 1 << y_off * 4 + x_off != 0 {
         let sub = t_dim.sub;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &DAV1D_TXFM_DIMENSIONS[sub as usize];
         let txsw = sub_t_dim.w;
         let txsh = sub_t_dim.h;
 
@@ -1518,8 +1518,8 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
     assert!(b.skip == 0);
-    let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let t_dim = &dav1d_txfm_dimensions[match &b.ii {
+    let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
     } as usize];
@@ -1935,7 +1935,7 @@ fn obmc<BD: BitDepth>(
                     a_r.mv.mv[0],
                     &f.refp[a_r.r#ref.r#ref[0] as usize - 1],
                     a_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
+                    DAV1D_FILTER_2D[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_h.call::<BD>(
@@ -1983,7 +1983,7 @@ fn obmc<BD: BitDepth>(
                     l_r.mv.mv[0],
                     &f.refp[l_r.r#ref.r#ref[0] as usize - 1],
                     l_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
+                    DAV1D_FILTER_2D[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_v.call::<BD>(
@@ -2121,8 +2121,8 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
-    let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
-    let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[intra.tx as usize];
+    let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
 
     // coefficient coding
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2942,7 +2942,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 mask = &seg_mask[..];
             }
             CompInterType::Wedge => {
-                mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
+                mask = DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
                 f.dsp.mc.mask.call::<BD>(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
@@ -2953,7 +2953,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     bd,
                 );
                 if has_chroma {
-                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx]
+                    mask = DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx]
                         [inter.nd.one_d.mask_sign() as usize]
                         [inter.nd.one_d.wedge_idx as usize];
                 }
@@ -3137,10 +3137,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             let ii_mask = match interintra_type {
                 InterIntraType::Blend => {
-                    dav1d_ii_masks[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
+                    DAV1D_II_MASKS[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
                 }
                 InterIntraType::Wedge => {
-                    dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
             f.dsp
@@ -3210,7 +3210,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bw4 == 1 {
-                    let left_filter_2d = dav1d_filter_2d
+                    let left_filter_2d = DAV1D_FILTER_2D
                         [*t.l.filter[1].index(by4 as usize) as usize]
                         [*t.l.filter[0].index(by4 as usize) as usize];
                     for pl in 0..2 {
@@ -3246,7 +3246,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bh4 == ss_ver {
-                    let top_filter_2d = dav1d_filter_2d
+                    let top_filter_2d = DAV1D_FILTER_2D
                         [*f.a[t.a].filter[1].index(bx4 as usize) as usize]
                         [*f.a[t.a].filter[0].index(bx4 as usize) as usize];
                     for pl in 0..2 {
@@ -3357,11 +3357,11 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     // transform size...
                     let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
-                            dav1d_ii_masks[bs as usize][chr_layout_idx]
+                            DAV1D_II_MASKS[bs as usize][chr_layout_idx]
                                 [inter.nd.one_d.interintra_mode.get() as usize]
                         }
                         InterIntraType::Wedge => {
-                            dav1d_wedge_masks[bs as usize][chr_layout_idx][0]
+                            DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx][0]
                                 [inter.nd.one_d.wedge_idx as usize]
                         }
                     };
@@ -3481,8 +3481,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         return Ok(());
     }
 
-    let uvtx = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let ytx = &dav1d_txfm_dimensions[inter.max_ytx as usize];
+    let uvtx = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
+    let ytx = &DAV1D_TXFM_DIMENSIONS[inter.max_ytx as usize];
     let tx_split = [inter.tx_split0 as u16, inter.tx_split1];
 
     for init_y in (0..bh4).step_by(16) {

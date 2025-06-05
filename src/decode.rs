@@ -8,7 +8,7 @@ use crate::cdf::rav1d_cdf_thread_update;
 use crate::cdf::CdfMvComponent;
 use crate::cdf::CdfThreadContext;
 use crate::ctx::CaseSet;
-use crate::dequant_tables::dav1d_dq_tbl;
+use crate::dequant_tables::DAV1D_DQ_TBL;
 use crate::disjoint_mut::DisjointMut;
 use crate::disjoint_mut::DisjointMutSlice;
 use crate::enum_map::enum_map;
@@ -134,7 +134,7 @@ use crate::pal::Rav1dPalDSPContext;
 use crate::picture::rav1d_picture_alloc_copy;
 use crate::picture::rav1d_thread_picture_alloc;
 use crate::picture::Rav1dThreadPicture;
-use crate::qm::dav1d_qm_tbl;
+use crate::qm::DAV1D_QM_TBL;
 use crate::recon::debug_block_info;
 use crate::refmvs::rav1d_refmvs_find;
 use crate::refmvs::rav1d_refmvs_init_frame;
@@ -144,21 +144,21 @@ use crate::refmvs::RefMvsFrame;
 use crate::refmvs::RefMvsMvPair;
 use crate::refmvs::RefMvsRefPair;
 use crate::relaxed_atomic::RelaxedAtomic;
-use crate::tables::cfl_allowed_mask;
-use crate::tables::dav1d_al_part_ctx;
-use crate::tables::dav1d_block_sizes;
-use crate::tables::dav1d_comp_inter_pred_modes;
-use crate::tables::dav1d_filter_2d;
-use crate::tables::dav1d_filter_dir;
-use crate::tables::dav1d_intra_mode_context;
-use crate::tables::dav1d_max_txfm_size_for_bs;
-use crate::tables::dav1d_partition_type_count;
-use crate::tables::dav1d_sgr_params;
-use crate::tables::dav1d_txfm_dimensions;
-use crate::tables::dav1d_wedge_ctx_lut;
-use crate::tables::dav1d_ymode_size_context;
-use crate::tables::interintra_allowed_mask;
-use crate::tables::wedge_allowed_mask;
+use crate::tables::CFL_ALLOWED_MASK;
+use crate::tables::DAV1D_AL_PART_CTX;
+use crate::tables::DAV1D_BLOCK_SIZES;
+use crate::tables::DAV1D_COMP_INTER_PRED_MODES;
+use crate::tables::DAV1D_FILTER_2D;
+use crate::tables::DAV1D_FILTER_DIR;
+use crate::tables::DAV1D_INTRA_MODE_CONTEXT;
+use crate::tables::DAV1D_MAX_TXFM_SIZE_FOR_BS;
+use crate::tables::DAV1D_PARTITION_TYPE_COUNT;
+use crate::tables::DAV1D_SGR_PARAMS;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
+use crate::tables::DAV1D_WEDGE_CTX_LUT;
+use crate::tables::DAV1D_YMODE_SIZE_CONTEXT;
+use crate::tables::INTERINTRA_ALLOWED_MASK;
+use crate::tables::WEDGE_ALLOWED_MASK;
 use crate::thread_task::rav1d_task_create_tile_sbrow;
 use crate::thread_task::rav1d_task_frame_init;
 use crate::thread_task::FRAME_ERROR;
@@ -183,7 +183,7 @@ fn init_quant_tables(
     qidx: u8,
     dq: &[[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT],
 ) {
-    let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
+    let tbl = &DAV1D_DQ_TBL[seq_hdr.hbd as usize];
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     let len = if segmentation_is_enabled {
@@ -289,7 +289,7 @@ fn read_tx_tree(
 ) {
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
-    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[from as usize];
     let txw = t_dim.lw;
     let txh = t_dim.lh;
     let is_split;
@@ -311,7 +311,7 @@ fn read_tx_tree(
     }
     if is_split && t_dim.max > TxfmSize::S8x8 as _ {
         let sub = t_dim.sub;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &DAV1D_TXFM_DIMENSIONS[sub as usize];
         let txsw = sub_t_dim.w as c_int;
         let txsh = sub_t_dim.h as c_int;
 
@@ -799,7 +799,7 @@ fn read_vartx_tree(
 
     // var-tx tree coding
     let mut tx_split = [0u16; 2];
-    let mut max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    let mut max_ytx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][0];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
@@ -830,10 +830,10 @@ fn read_vartx_tree(
                 },
             );
         }
-        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
     } else {
         assert!(bw4 <= 16 || bh4 <= 16 || max_ytx == TxfmSize::S64x64);
-        let ytx = &dav1d_txfm_dimensions[max_ytx as usize];
+        let ytx = &DAV1D_TXFM_DIMENSIONS[max_ytx as usize];
         let h = ytx.h as usize;
         let w = ytx.w as usize;
         debug_assert_eq!(bh4 % h, 0);
@@ -854,7 +854,7 @@ fn read_vartx_tree(
                 tx_split[0], tx_split[1], ts_c.msac.rng
             );
         }
-        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
     }
     assert!(tx_split[0] & !0x33 == 0);
     let tx_split0 = tx_split[0] as u8;
@@ -1278,7 +1278,7 @@ fn decode_b(
 
                 (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)?;
 
-                let filter = &dav1d_filter_dir[inter.filter2d as usize];
+                let filter = &DAV1D_FILTER_DIR[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
                     [&t.l, ta],
                     [bh4 as usize, bw4 as usize],
@@ -1651,11 +1651,11 @@ fn decode_b(
     // intra/inter-specific stuff
     if intra {
         let ymode_cdf = if frame_hdr.frame_type.is_inter_or_switch() {
-            &mut ts_c.cdf.mi.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
+            &mut ts_c.cdf.mi.y_mode[DAV1D_YMODE_SIZE_CONTEXT[bs as usize] as usize]
         } else {
             &mut ts_c.cdf.kfym
-                [dav1d_intra_mode_context[*ta.mode.index(bx4 as usize) as usize] as usize]
-                [dav1d_intra_mode_context[*t.l.mode.index(by4 as usize) as usize] as usize]
+                [DAV1D_INTRA_MODE_CONTEXT[*ta.mode.index(bx4 as usize) as usize] as usize]
+                [DAV1D_INTRA_MODE_CONTEXT[*t.l.mode.index(by4 as usize) as usize] as usize]
         };
         let y_mode = rav1d_msac_decode_symbol_adapt16(
             &mut ts_c.msac,
@@ -1683,7 +1683,7 @@ fn decode_b(
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
                 cbw4 == 1 && cbh4 == 1
             } else {
-                (cfl_allowed_mask & (1 << bs as u8)) != 0
+                (CFL_ALLOWED_MASK & (1 << bs as u8)) != 0
             };
             let uvmode_cdf = &mut ts_c.cdf.m.uv_mode[cfl_allowed as usize][y_mode as usize];
             uv_mode = rav1d_msac_decode_symbol_adapt16(
@@ -1888,9 +1888,9 @@ fn decode_b(
             b.uvtx = TxfmSize::S4x4;
             b.uvtx
         } else {
-            let mut tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
-            b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            let mut t_dim = &dav1d_txfm_dimensions[tx as usize];
+            let mut tx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][0];
+            b.uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
+            let mut t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TxfmSize::S4x4 as _ {
                 let tctx = get_tx_ctx(ta, &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts_c.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
@@ -1900,7 +1900,7 @@ fn decode_b(
 
                 for _ in 0..depth {
                     tx = t_dim.sub;
-                    t_dim = &dav1d_txfm_dimensions[tx as usize];
+                    t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
                 }
             }
             if debug_block_info!(f, t.b) {
@@ -1908,7 +1908,7 @@ fn decode_b(
             }
             tx
         };
-        let t_dim = &dav1d_txfm_dimensions[tx as usize];
+        let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
 
         let intra = Av1BlockIntra {
             y_mode,
@@ -2398,7 +2398,7 @@ fn decode_b(
                 );
             }
 
-            let im = &dav1d_comp_inter_pred_modes[inter_mode as usize];
+            let im = &DAV1D_COMP_INTER_PRED_MODES[inter_mode as usize];
             let mut drl_idx = DrlProximity::Nearest;
             if inter_mode == NEWMV_NEWMV {
                 if n_mvs > 1 {
@@ -2559,8 +2559,8 @@ fn decode_b(
                 }
                 mask_sign = Default::default();
             } else {
-                comp_type = if wedge_allowed_mask & (1 << bs as u8) != 0 {
-                    let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
+                comp_type = if WEDGE_ALLOWED_MASK & (1 << bs as u8) != 0 {
+                    let ctx = DAV1D_WEDGE_CTX_LUT[bs as usize] as usize;
                     let comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_comp[ctx],
@@ -2812,9 +2812,9 @@ fn decode_b(
             let interintra_mode;
             let interintra_type;
             let mut wedge_idx = Default::default();
-            let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as c_int;
+            let ii_sz_grp = DAV1D_YMODE_SIZE_CONTEXT[bs as usize] as c_int;
             if seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs as u8) != 0
+                && INTERINTRA_ALLOWED_MASK & (1 << bs as u8) != 0
                 && rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.interintra[ii_sz_grp as usize],
@@ -2826,7 +2826,7 @@ fn decode_b(
                     InterIntraPredMode::COUNT as u8 - 1,
                 ) as usize)
                 .expect("valid variant");
-                let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
+                let wedge_ctx = DAV1D_WEDGE_CTX_LUT[bs as usize] as c_int;
                 let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.interintra_wedge[wedge_ctx as usize],
@@ -2850,7 +2850,7 @@ fn decode_b(
             let wedge_idx = wedge_idx;
             if debug_block_info!(f, t.b)
                 && seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs as u8) != 0
+                && INTERINTRA_ALLOWED_MASK & (1 << bs as u8) != 0
             {
                 println!(
                     "Post-interintra[t={:?},m={:?},w={}]: r={}",
@@ -3028,7 +3028,7 @@ fn decode_b(
         } else {
             [frame_hdr.subpel_filter_mode; 2]
         };
-        let filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
+        let filter2d = DAV1D_FILTER_2D[filter[1] as usize][filter[0] as usize];
 
         let VarTx {
             uvtx,
@@ -3487,7 +3487,7 @@ fn decode_sb(
             bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize].into(),
+                DAV1D_PARTITION_TYPE_COUNT[bl as usize].into(),
             ) as usize)
             .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
@@ -3518,7 +3518,7 @@ fn decode_sb(
                 BlockPartition::Split
             };
         }
-        let b = &dav1d_block_sizes[bl as usize][bp as usize];
+        let b = &DAV1D_BLOCK_SIZES[bl as usize][bp as usize];
 
         match bp {
             BlockPartition::None => {
@@ -3709,7 +3709,7 @@ fn decode_sb(
                 f,
                 pass,
                 bl,
-                dav1d_block_sizes[bl as usize][bp as usize][0],
+                DAV1D_BLOCK_SIZES[bl as usize][bp as usize][0],
                 bp,
                 node.h[0],
             )?;
@@ -3767,7 +3767,7 @@ fn decode_sb(
                 f,
                 pass,
                 bl,
-                dav1d_block_sizes[bl as usize][bp as usize][0],
+                DAV1D_BLOCK_SIZES[bl as usize][bp as usize][0],
                 bp,
                 node.v[0],
             )?;
@@ -3784,7 +3784,7 @@ fn decode_sb(
             |case, (dir, dir_index)| {
                 case.set_disjoint(
                     &dir.partition,
-                    dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
+                    DAV1D_AL_PART_CTX[dir_index][bl as usize][bp as usize],
                 );
             },
         );
@@ -3837,7 +3837,7 @@ impl DefaultValue for [u8; 2] {
 }
 
 /// `{ Y+U+V, Y+U } * 4`
-static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
+static SS_SIZE_MUL: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
     I400 => [4, 4],
     I420 => [6, 5],
     I422 => [8, 6],
@@ -3870,7 +3870,7 @@ fn setup_tile(
     let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
     let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
 
-    let size_mul = &ss_size_mul[cur.p.layout];
+    let size_mul = &SS_SIZE_MUL[cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p]
             .pal_idx
@@ -4047,7 +4047,7 @@ fn read_restoration_info(
         Rav1dRestorationType::SgrProj(_) => {
             let sgr_idx =
                 SgrIdx::from_repr(rav1d_msac_decode_bools(&mut ts_c.msac, 4) as usize).unwrap();
-            let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
+            let sgr_params = &DAV1D_SGR_PARAMS[sgr_idx as usize];
             lr.r#type = Rav1dRestorationType::SgrProj(sgr_idx);
             lr.sgr_weights[0] = if sgr_params[0] != 0 {
                 msac_decode_lr_subexp(ts_c, lr_ref.sgr_weights[0], 4, 96)
@@ -4365,7 +4365,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     f.a.resize_with(a_sz as usize, Default::default);
 
     let num_sb128 = f.sb128w * f.sb128h;
-    let size_mul = &ss_size_mul[f.cur.p.layout];
+    let size_mul = &SS_SIZE_MUL[f.cur.p.layout];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let hbd = (seq_hdr.hbd != 0) as c_int;
     if c.fc.len() > 1 {
@@ -4594,9 +4594,9 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
     if frame_hdr.quant.qm != 0 {
         for i in 0..TxfmSize::COUNT {
-            f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
-            f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i];
-            f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i];
+            f.qm[i][0] = DAV1D_QM_TBL[frame_hdr.quant.qm_y as usize][0][i];
+            f.qm[i][1] = DAV1D_QM_TBL[frame_hdr.quant.qm_u as usize][1][i];
+            f.qm[i][2] = DAV1D_QM_TBL[frame_hdr.quant.qm_v as usize][1][i];
         }
     } else {
         f.qm = Default::default();
@@ -4621,19 +4621,19 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
                 });
                 let order = d[0] <= d[1];
 
-                static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
-                static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
+                static QUANT_DIST_WEIGHT: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
+                static QUANT_DIST_LOOKUP_TABLE: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
 
-                let k = quant_dist_weight
+                let k = QUANT_DIST_WEIGHT
                     .into_iter()
                     .position(|weight| {
                         let c = [order, !order].map(|order| weight[order as usize]);
                         let dc: [_; 2] = array::from_fn(|i| d[i] * c[i]);
                         !order && dc[0] < dc[1] || order && dc[0] > dc[1]
                     })
-                    .unwrap_or(quant_dist_weight.len());
+                    .unwrap_or(QUANT_DIST_WEIGHT.len());
 
-                f.jnt_weights[i][j] = quant_dist_lookup_table[k][order as usize];
+                f.jnt_weights[i][j] = QUANT_DIST_LOOKUP_TABLE[k][order as usize];
             }
         }
     }

@@ -823,7 +823,7 @@ fn filter_edge<BD: BitDepth>(
     to: c_int,
     strength: c_int,
 ) {
-    static kernel: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
+    static KERNEL: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
 
     assert!(strength > 0);
     let mut i = 0;
@@ -836,7 +836,7 @@ fn filter_edge<BD: BitDepth>(
         for j in 0..5 {
             s += r#in[in_off.wrapping_add_signed(iclip(i - 2 + j, from, to - 1) as isize)]
                 .as_::<c_int>()
-                * kernel[(strength - 1) as usize][j as usize] as c_int;
+                * KERNEL[(strength - 1) as usize][j as usize] as c_int;
         }
         out[i as usize] = (s + 8 >> 4).as_::<BD::Pixel>();
         i += 1;
@@ -862,14 +862,14 @@ fn upsample_edge<BD: BitDepth>(
     to: c_int,
     bd: BD,
 ) {
-    static kernel: [i8; 4] = [-1, 9, 9, -1];
+    static KERNEL: [i8; 4] = [-1, 9, 9, -1];
     for i in 0..hsz - 1 {
         out[(i * 2) as usize] = r#in[in_off + iclip(i, from, to - 1) as usize];
         let mut s = 0;
         for j in 0..4 {
             s += r#in[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
                 .as_::<c_int>()
-                * kernel[j as usize] as c_int;
+                * KERNEL[j as usize] as c_int;
         }
         out[(i * 2 + 1) as usize] =
             iclip(s + 8 >> 4, 0, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();

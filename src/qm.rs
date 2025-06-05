@@ -3,7 +3,7 @@ use strum::EnumCount;
 use crate::const_fn::const_for;
 use crate::levels::TxfmSize;
 
-static qm_tbl_32x16: [[[u8; 32 * 16]; 2]; 15] = [
+static QM_TBL_32X16: [[[u8; 32 * 16]; 2]; 15] = [
     [
         [
             32, 31, 31, 31, 32, 32, 34, 35, 36, 39, 44, 46, 48, 53, 58, 61, 65, 71, 79, 81, 82, 88,
@@ -827,7 +827,7 @@ static qm_tbl_32x16: [[[u8; 32 * 16]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_32x32_t: [[[u8; (32 * (32 + 1)) / 2]; 2]; 15] = [
+static QM_TBL_32X32_T: [[[u8; (32 * (32 + 1)) / 2]; 2]; 15] = [
     [
         [
             32, 31, 32, 31, 32, 32, 31, 32, 32, 32, 31, 32, 32, 33, 33, 32, 32, 32, 33, 34, 35, 34,
@@ -1738,21 +1738,21 @@ macro_rules! generate_table {
     }};
 }
 
-static qm_tbl_4x4: [[[u8; 4 * 4]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 32, 8, 8);
-static qm_tbl_4x8: [[[u8; 4 * 8]; 2]; 15] = generate_table!(transposed, qm_tbl_8x4, 8, 4);
-static qm_tbl_4x16: [[[u8; 4 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x4, 16, 4);
-static qm_tbl_8x4: [[[u8; 8 * 4]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x16, 16, 4, 4);
-static qm_tbl_8x8: [[[u8; 8 * 8]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 32, 4, 4);
-static qm_tbl_8x16: [[[u8; 8 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x8, 16, 8);
-static qm_tbl_8x32: [[[u8; 8 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x8, 32, 8);
-static qm_tbl_16x4: [[[u8; 16 * 4]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x16, 16, 2, 4);
-static qm_tbl_16x8: [[[u8; 16 * 8]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x16, 16, 2, 2);
-static qm_tbl_16x16: [[[u8; 16 * 16]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 32, 2, 2);
-static qm_tbl_16x32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x16, 32, 16);
-static qm_tbl_32x8: [[[u8; 32 * 8]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x16, 16, 1, 2);
-static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
+static QM_TBL_4X4: [[[u8; 4 * 4]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X32, 32, 8, 8);
+static QM_TBL_4X8: [[[u8; 4 * 8]; 2]; 15] = generate_table!(transposed, QM_TBL_8X4, 8, 4);
+static QM_TBL_4X16: [[[u8; 4 * 16]; 2]; 15] = generate_table!(transposed, QM_TBL_16X4, 16, 4);
+static QM_TBL_8X4: [[[u8; 8 * 4]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X16, 16, 4, 4);
+static QM_TBL_8X8: [[[u8; 8 * 8]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X32, 32, 4, 4);
+static QM_TBL_8X16: [[[u8; 8 * 16]; 2]; 15] = generate_table!(transposed, QM_TBL_16X8, 16, 8);
+static QM_TBL_8X32: [[[u8; 8 * 32]; 2]; 15] = generate_table!(transposed, QM_TBL_32X8, 32, 8);
+static QM_TBL_16X4: [[[u8; 16 * 4]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X16, 16, 2, 4);
+static QM_TBL_16X8: [[[u8; 16 * 8]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X16, 16, 2, 2);
+static QM_TBL_16X16: [[[u8; 16 * 16]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X32, 32, 2, 2);
+static QM_TBL_16X32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, QM_TBL_32X16, 32, 16);
+static QM_TBL_32X8: [[[u8; 32 * 8]; 2]; 15] = generate_table!(subsampled, QM_TBL_32X16, 16, 1, 2);
+static QM_TBL_32X32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, QM_TBL_32X32_T, 32);
 
-pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; TxfmSize::COUNT]; 2]; 16] = {
+pub static DAV1D_QM_TBL: [[[Option<&'static [u8]>; TxfmSize::COUNT]; 2]; 16] = {
     let mut table = [[[None; TxfmSize::COUNT]; 2]; 16];
     const_for!(i in 0..table.len() - 1 => {
         // last row is empty
@@ -1763,21 +1763,21 @@ pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; TxfmSize::COUNT]; 2]; 16] = {
 
             // note that the w/h in the assignment is inverted, this is on purpose
             // because we store coefficients transposed
-            row[R4x8 as usize] = Some(&qm_tbl_8x4[i][j]);
-            row[R8x4 as usize] = Some(&qm_tbl_4x8[i][j]);
-            row[R4x16 as usize] = Some(&qm_tbl_16x4[i][j]);
-            row[R16x4 as usize] = Some(&qm_tbl_4x16[i][j]);
-            row[R8x16 as usize] = Some(&qm_tbl_16x8[i][j]);
-            row[R16x8 as usize] = Some(&qm_tbl_8x16[i][j]);
-            row[R8x32 as usize] = Some(&qm_tbl_32x8[i][j]);
-            row[R32x8 as usize] = Some(&qm_tbl_8x32[i][j]);
-            row[R16x32 as usize] = Some(&qm_tbl_32x16[i][j]);
-            row[R32x16 as usize] = Some(&qm_tbl_16x32[i][j]);
+            row[R4x8 as usize] = Some(&QM_TBL_8X4[i][j]);
+            row[R8x4 as usize] = Some(&QM_TBL_4X8[i][j]);
+            row[R4x16 as usize] = Some(&QM_TBL_16X4[i][j]);
+            row[R16x4 as usize] = Some(&QM_TBL_4X16[i][j]);
+            row[R8x16 as usize] = Some(&QM_TBL_16X8[i][j]);
+            row[R16x8 as usize] = Some(&QM_TBL_8X16[i][j]);
+            row[R8x32 as usize] = Some(&QM_TBL_32X8[i][j]);
+            row[R32x8 as usize] = Some(&QM_TBL_8X32[i][j]);
+            row[R16x32 as usize] = Some(&QM_TBL_32X16[i][j]);
+            row[R32x16 as usize] = Some(&QM_TBL_16X32[i][j]);
 
-            row[S4x4 as usize] = Some(&qm_tbl_4x4[i][j]);
-            row[S8x8 as usize] = Some(&qm_tbl_8x8[i][j]);
-            row[S16x16 as usize] = Some(&qm_tbl_16x16[i][j]);
-            row[S32x32 as usize] = Some(&qm_tbl_32x32[i][j]);
+            row[S4x4 as usize] = Some(&QM_TBL_4X4[i][j]);
+            row[S8x8 as usize] = Some(&QM_TBL_8X8[i][j]);
+            row[S16x16 as usize] = Some(&QM_TBL_16X16[i][j]);
+            row[S32x32 as usize] = Some(&QM_TBL_32X32[i][j]);
 
             row[S64x64 as usize] = row[S32x32 as usize];
             row[R64x32 as usize] = row[S32x32 as usize];

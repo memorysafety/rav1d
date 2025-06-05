@@ -5,7 +5,6 @@
 )]
 #![allow(clippy::derivable_impls, clippy::ptr_eq)]
 #![expect(
-    non_upper_case_globals,
     clippy::absurd_extreme_comparisons, // error by default
     clippy::arc_with_non_send_sync,
     clippy::borrow_deref_ref,
@@ -337,8 +336,8 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: Option<NonNull<Dav1dSettings>>
 
 #[cold]
 pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
-    static initted: Once = Once::new();
-    initted.call_once(|| init_internal());
+    static INITTED: Once = Once::new();
+    INITTED.call_once(|| init_internal());
 
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;

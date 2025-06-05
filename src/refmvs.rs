@@ -692,13 +692,13 @@ fn scan_col(
 
 #[inline]
 fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
-    static div_mult: [u16; 32] = [
+    static DIV_MULT: [u16; 32] = [
         0, 16384, 8192, 5461, 4096, 3276, 2730, 2340, 2048, 1820, 1638, 1489, 1365, 1260, 1170,
         1092, 1024, 963, 910, 862, 819, 780, 744, 712, 682, 655, 630, 606, 585, 564, 546, 528,
     ];
     assert!(den > 0 && den < 32);
     assert!(num > -32 && num < 32);
-    let frac = num * div_mult[den as usize] as i32;
+    let frac = num * DIV_MULT[den as usize] as i32;
     let y = mv.y as i32 * frac;
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
