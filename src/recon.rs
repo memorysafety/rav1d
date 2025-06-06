@@ -485,15 +485,22 @@ fn get_lo_ctx(
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as u32;
 
-    // Note that the first `mag` initialization is moved inside the `match`
-    // so that the different bounds checks can be done inside the `match`,
-    // as putting them outside the `match` in an identical one trips up LLVM.
-    let mut mag;
+    // Stride:
+    //  - In the `H | V` cases, `stride = 16`.
+    //  - In the `TwoD` case, `stride = 4 << slh`.
+    //    Max `slh` is `TxfmSize::S32x32 as u8`, which is 3.
+    //    Max `stride` is `4 << 3 = 32`.
+    //
+    // We access level pairs (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (1, 1), and (2, 0),
+    // which means the maximum index we access is:
+    //  - `2 * 16 + 0 = 32` in the `H | V` cases
+    //  - `2 * 32 + 0 = 64` in the `TwoD` case
+    // Therefore, the caller must ensure that `levels` has at least 33 or 65 elements.
+
+    let mut mag = level(0, 1) + level(1, 0);
     let offset;
     match ctx_offsets {
         Some(ctx_offsets) => {
-            level(2, 1); // Bounds check all at once.
-            mag = level(0, 1) + level(1, 0);
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
             *hi_mag = mag;
@@ -502,8 +509,6 @@ fn get_lo_ctx(
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
-            level(1, 4); // Bounds check all at once.
-            mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
             *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
@@ -923,11 +928,24 @@ fn decode_coefs<BD: BitDepth>(
             debug_assert!(x < 32 && y < 32);
             x %= 32;
             y %= 32;
-            let level_off = if tx_class == TxClass::TwoD {
-                rc_i as usize
-            } else {
-                x as usize * stride as usize + y as usize
+            // The caller of `get_lo_ctx` must ensure that there are at least
+            // 65 elements in `level` in the `TwoD` case, and 33 elements for `H | V`.
+            // The size of `levels` is `32 * 34`, so `level_off` must be such that
+            // - `H | V`: `32 * 34 - level_off >= 33` => `level_off <= 1055`
+            // - `TwoD`: `32 * 34 - level_off >= 65` => `level_off <= 1023`
+            let level_off = match tx_class {
+                // `rc_i` is from `scan[i]`, which has type `Scan`,
+                // which has a max of 1023 by virtue of the type definition.
+                // That's the max from the calculation above.
+                // Therefore, we are okay.
+                TxClass::TwoD => rc_i as usize,
+
+                // Max `x` and `y` are 31 and `stride = 16`.
+                // Therefore, max `level_off` is 527, which is okay.
+                TxClass::H | TxClass::V => x as usize * stride as usize + y as usize,
             };
+            // At this point, we know that `get_lo_ctx` can elide the bounds check on `level`
+            // because it is statically known that `level` has at least 65 elements.
             let level = &mut levels[level_off..];
             ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
             if tx_class == TxClass::TwoD {
@@ -989,6 +1007,10 @@ fn decode_coefs<BD: BitDepth>(
         ctx = if tx_class == TxClass::TwoD {
             0
         } else {
+            // The caller of `get_lo_ctx` must ensure that there are at least
+            // 65 elements in level in the `TwoD` case, and 33 elements for `H | V`.
+            // The size of `levels` is 32 * 34, and we are not offsetting into it,
+            // so this is trivially true.
             get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
         };
         let mut dc_tok =
