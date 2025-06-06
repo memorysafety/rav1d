@@ -69,12 +69,13 @@ impl cdef::Fn {
     /// then the pre-filter data is located in `dst`.
     /// However, the edge pixels above `dst` may be post-filter,
     /// so in order to get access to pre-filter top pixels, use `top`.
+    #[inline]
     pub fn call<BD: BitDepth>(
         &self,
-        dst: Rav1dPictureDataComponentOffset,
+        dst: &Rav1dPictureDataComponentOffset,
         left: &[LeftPixelRow2px<BD::Pixel>; 8],
-        top: CdefTop,
-        bottom: CdefBottom,
+        top: &CdefTop,
+        bottom: &CdefBottom,
         pri_strength: c_int,
         sec_strength: u8,
         dir: c_int,
@@ -87,12 +88,12 @@ impl cdef::Fn {
         let left = ptr::from_ref(left).cast();
         let top_ptr = top.as_ptr::<BD>().cast();
         let bottom_ptr = bottom.wrapping_as_ptr::<BD>().cast();
-        let top = FFISafe::new(&top);
-        let bottom = FFISafe::new(&bottom);
+        let top = FFISafe::new(top);
+        let bottom = FFISafe::new(bottom);
         let sec_strength = sec_strength as c_int;
         let damping = damping as c_int;
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = FFISafe::new(dst);
         // SAFETY: Rust fallback is safe, asm is assumed to do the same.
         unsafe {
             self.get()(
@@ -126,14 +127,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
 impl cdef_dir::Fn {
     pub fn call<BD: BitDepth>(
         &self,
-        dst: Rav1dPictureDataComponentOffset,
+        dst: &Rav1dPictureDataComponentOffset,
         variance: &mut c_uint,
         bd: BD,
     ) -> c_int {
         let dst_ptr = dst.as_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = FFISafe::new(dst);
         // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, variance, bd, dst) }
     }
