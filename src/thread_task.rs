@@ -38,7 +38,6 @@ use parking_lot::RwLockReadGuard;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::mem;
 use std::num::NonZeroU32;
 use std::ops::Add;
 use std::ops::AddAssign;
@@ -512,7 +511,7 @@ pub(crate) fn rav1d_task_delayed_fg(c: &Rav1dContext, out: &mut Rav1dPicture, in
     ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
     ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
     // Release reference to in and out pictures
-    let _ = mem::take(&mut *ttd.delayed_fg.try_write().unwrap());
+    *ttd.delayed_fg.try_write().unwrap() = Default::default();
 }
 
 #[inline]
