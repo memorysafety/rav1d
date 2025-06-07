@@ -525,8 +525,8 @@ pub type LoCtxOffset = InRange<u8, 0, 21>;
 // `[0, 32)` to `[0, 5)`. That involves two `min`s, which LLVM makes into conditional
 // move sequences that have to happen in series before we can actually load the element
 // we want. These add latency. Simply unroll the array: duplicate everything from the 5th
-// row and 5th column out so that we get the same effect  as clamping without the latency.
-// Obviously we pay for it in cache efficiency and binary size, but the  tradeoff seems
+// row and 5th column out so that we get the same effect as clamping without the latency.
+// Obviously we pay for it in cache efficiency and binary size, but the tradeoff seems
 // worth it on older x86_64 systems, and not harmful elsewhere.
 pub static DAV1D_LO_CTX_OFFSETS: [[[LoCtxOffset; 32]; 32]; 3] = {
     const fn extend_offsets(a: [[u8; 5]; 5]) -> [[LoCtxOffset; 32]; 32] {
