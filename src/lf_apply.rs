@@ -159,7 +159,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset_y = 8 * (sby != 0) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let tt_off = have_tt * sby * (4 << seq_hdr.sb128);
     let sr_cur_data = &f.sr_cur.p.data.as_ref().unwrap().data;
     let dst = array::from_fn::<_, 3, _>(|i| {
@@ -523,7 +523,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 ) {
     let lflvl = &f.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = ((sby & is_sb64) as u32) << 4;
     let sbsz = 32 >> is_sb64;
@@ -675,7 +675,7 @@ pub(crate) fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
 
     // Don't filter outside the frame
     let have_top = sby > 0;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;

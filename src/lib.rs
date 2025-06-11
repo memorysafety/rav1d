@@ -506,7 +506,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
-        let seq_hdr = rav1d_parse_sequence_header(data)?.dav1d;
+        let seq_hdr = rav1d_parse_sequence_header(data)?;
         // SAFETY: `out` is safe to write to.
         unsafe { out.as_ptr().write(seq_hdr) };
         Ok(())

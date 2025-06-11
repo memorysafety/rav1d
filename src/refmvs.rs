@@ -14,8 +14,8 @@ use crate::error::Rav1dResult;
 use crate::ffi_safe::FFISafe;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::internal::Bxy;
 use crate::intra_edge::EdgeFlags;
@@ -1600,7 +1600,7 @@ fn save_tmvs_rust(
 
 pub(crate) fn rav1d_refmvs_init_frame(
     rf: &mut RefMvsFrame,
-    seq_hdr: &Rav1dSequenceHeader,
+    seq_hdr: &Dav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
     ref_poc: &[u32; 7],
     ref_ref_poc: &[[u32; 7]; 7],

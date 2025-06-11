@@ -48,12 +48,12 @@ use crate::include::common::intops::clip;
 use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::common::Rav1dDataProps;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
@@ -178,7 +178,7 @@ use std::sync::atomic::Ordering;
 use strum::EnumCount;
 
 fn init_quant_tables(
-    seq_hdr: &Rav1dSequenceHeader,
+    seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
     dq: &[[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT],
@@ -1147,7 +1147,7 @@ fn decode_b(
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
 ) -> Result<(), ()> {
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     use std::fmt;
 
     /// Helper struct for printing a number as a signed hexidecimal value.
@@ -1788,7 +1788,7 @@ fn decode_b(
 
         let mut y_mode = y_mode;
         let mut y_angle = y_angle;
-        let seq_hdr = f.seq_hdr();
+        let seq_hdr = f.seq_hdr.as_ref().unwrap();
         if y_mode == DC_PRED
             && pal_sz[0] == 0
             && cmp::max(b_dim[2], b_dim[3]) <= 3
@@ -3440,7 +3440,7 @@ fn decode_sb(
     let have_h_split = f.bw > t.b.x + hsz;
     let have_v_split = f.bh > t.b.y + hsz;
 
-    let sb128 = f.seq_hdr().sb128 != 0;
+    let sb128 = f.seq_hdr.as_ref().unwrap().sb128 != 0;
     let intra_edge = &IntraEdges::DEFAULT;
 
     if !have_h_split && !have_v_split {
@@ -3847,7 +3847,7 @@ static SS_SIZE_MUL: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
 fn setup_tile(
     c: &Rav1dContext,
     ts: &mut Rav1dTileState,
-    seq_hdr: &Rav1dSequenceHeader,
+    seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     bitdepth_max: i32,
     sb_shift: i32,
@@ -4100,7 +4100,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
 ) -> Result<(), ()> {
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let root_bl = if seq_hdr.sb128 != 0 {
         BlockLevel::Bl128x128
     } else {
@@ -4157,7 +4157,7 @@ pub(crate) fn rav1d_decode_tile_sbrow(
                 root_bl,
                 EdgeIndex::root(),
             )?;
-            if t.b.x & 16 != 0 || f.seq_hdr().sb128 != 0 {
+            if t.b.x & 16 != 0 || f.seq_hdr.as_ref().unwrap().sb128 != 0 {
                 t.a += 1;
             }
         }
@@ -4272,13 +4272,13 @@ pub(crate) fn rav1d_decode_tile_sbrow(
             root_bl,
             EdgeIndex::root(),
         )?;
-        if t.b.x & 16 != 0 || f.seq_hdr().sb128 != 0 {
+        if t.b.x & 16 != 0 || f.seq_hdr.as_ref().unwrap().sb128 != 0 {
             t.a += 1;
             t.lf_mask = t.lf_mask.map(|i| i + 1);
         }
     }
 
-    if f.seq_hdr().ref_frame_mvs != 0
+    if f.seq_hdr.as_ref().unwrap().ref_frame_mvs != 0
         && c.tc.len() > 1
         && f.frame_hdr().frame_type.is_inter_or_switch()
     {
@@ -4366,7 +4366,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
 
     let num_sb128 = f.sb128w * f.sb128h;
     let size_mul = &SS_SIZE_MUL[f.cur.p.layout];
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let hbd = (seq_hdr.hbd != 0) as c_int;
     if c.fc.len() > 1 {
         let mut tile_idx = 0;
@@ -4709,7 +4709,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
             setup_tile(
                 c,
                 ts,
-                &***f.seq_hdr.as_ref().unwrap(),
+                &**f.seq_hdr.as_ref().unwrap(),
                 frame_hdr,
                 f.bitdepth_max,
                 f.sb_shift,
@@ -4786,7 +4786,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
         let sbh_end = cmp::min(sbh_end.into(), f.sbh);
 
         for sby in sbh_start.into()..sbh_end {
-            let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+            let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
@@ -5058,7 +5058,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 || (frame_hdr.size.height * 2) < state.refs[refidx].p.p.p.h
                 || frame_hdr.size.width[0] > state.refs[refidx].p.p.p.w * 16
                 || frame_hdr.size.height > state.refs[refidx].p.p.p.h * 16
-                || seq_hdr.layout != state.refs[refidx].p.p.p.layout
+                || seq_hdr.layout != state.refs[refidx].p.p.p.layout as u32
                 || bpc != state.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {
