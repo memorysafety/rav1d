@@ -24,7 +24,6 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::pixels::Pixels;
 use crate::send_sync_non_null::SendSyncNonNull;
 use crate::strided::Strided;
@@ -104,7 +103,7 @@ pub struct Dav1dPicture {
     pub n_itut_t35: usize,
     pub reserved: [uintptr_t; 4],
     pub frame_hdr_ref: Option<RawArc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // opaque, so we can change this
-    pub seq_hdr_ref: Option<RawArc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // opaque, so we can change this
+    pub seq_hdr_ref: Option<RawArc<Dav1dSequenceHeader>>, // opaque, so we can change this
     pub content_light_ref: Option<RawArc<Rav1dContentLightLevel>>, // opaque, so we can change this
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
     pub itut_t35_ref: Option<RawArc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>>, // opaque, so we can change this
@@ -414,7 +413,7 @@ impl Drop for Rav1dPictureData {
 #[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
-    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub seq_hdr: Option<Arc<Dav1dSequenceHeader>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub data: Option<Arc<Rav1dPictureData>>,
     pub stride: [ptrdiff_t; 2],
@@ -500,7 +499,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
         } = value;
         Self {
             // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
-            seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
+            seq_hdr: seq_hdr.as_ref().map(|arc| (arc.as_ref()).into()),
             // [`DRav1d::from_rav1d`] is called in [`parse_frame_hdr`].
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
@@ -753,7 +752,7 @@ impl Rav1dPicAllocator {
         &self,
         w: c_int,
         h: c_int,
-        seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
+        seq_hdr: Arc<Dav1dSequenceHeader>,
         frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     ) -> Rav1dResult<Rav1dPicture> {
         let pic = Rav1dPicture {

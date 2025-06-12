@@ -31,7 +31,6 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -379,7 +378,7 @@ pub struct Rav1dState {
     /// to a frame worker to be decoded.
     pub(crate) tiles: Vec<Rav1dTileGroup>,
     pub(crate) n_tiles: c_int,
-    pub(crate) seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // TODO(kkysen) Previously pooled.
+    pub(crate) seq_hdr: Option<Arc<Dav1dSequenceHeader>>, // TODO(kkysen) Previously pooled.
     pub(crate) frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // TODO(kkysen) Previously pooled.
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
@@ -792,7 +791,7 @@ impl Rav1dFrameContext {
 #[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
-    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub seq_hdr: Option<Arc<Dav1dSequenceHeader>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub refp: [Rav1dThreadPicture; 7],
     // during block coding / reconstruction
@@ -855,10 +854,6 @@ impl Rav1dFrameData {
 
     pub fn frame_hdr(&self) -> &Rav1dFrameHeader {
         self.frame_hdr.as_ref().unwrap()
-    }
-
-    pub fn seq_hdr(&self) -> &Rav1dSequenceHeader {
-        self.seq_hdr.as_ref().unwrap()
     }
 }
 
