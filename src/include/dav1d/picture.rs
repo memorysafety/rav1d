@@ -759,7 +759,7 @@ impl Rav1dPicAllocator {
             p: Rav1dPictureParameters {
                 w,
                 h,
-                layout: Rav1dPixelLayout::from_repr(seq_hdr.layout as usize).unwrap(),
+                layout: seq_hdr.layout,
                 bpc: 8 + 2 * seq_hdr.hbd,
             },
             seq_hdr: Some(seq_hdr),

@@ -5058,7 +5058,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 || (frame_hdr.size.height * 2) < state.refs[refidx].p.p.p.h
                 || frame_hdr.size.width[0] > state.refs[refidx].p.p.p.w * 16
                 || frame_hdr.size.height > state.refs[refidx].p.p.p.h * 16
-                || seq_hdr.layout != state.refs[refidx].p.p.p.layout as u32
+                || seq_hdr.layout != state.refs[refidx].p.p.p.layout
                 || bpc != state.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {

@@ -472,7 +472,7 @@ fn parse_seq_hdr(
             }
         }
         chr = if ss_hor & ss_ver != 0 {
-            Rav1dChromaSamplePosition::from_repr(gb.get_bits(2) as usize).unwrap()
+            Rav1dChromaSamplePosition::from_repr(gb.get_bits(2)).unwrap()
         } else {
             Rav1dChromaSamplePosition::Unknown
         };
@@ -504,11 +504,11 @@ fn parse_seq_hdr(
         profile: profile as u8,
         max_width,
         max_height,
-        layout: layout as u32,
+        layout,
         pri: pri.into(),
         trc: trc.into(),
         mtrx: mtrx.into(),
-        chr: chr as u32,
+        chr,
         hbd,
         color_range,
         num_operating_points,
@@ -541,8 +541,8 @@ fn parse_seq_hdr(
         order_hint,
         jnt_comp,
         ref_frame_mvs,
-        screen_content_tools: screen_content_tools as u32,
-        force_integer_mv: force_integer_mv as u32,
+        screen_content_tools,
+        force_integer_mv,
         order_hint_n_bits,
         super_res,
         cdef,
@@ -1841,14 +1841,13 @@ fn parse_frame_hdr(
         || gb.get_bit()) as u8;
     debug.post(gb, "frametype_bits");
     let disable_cdf_update = gb.get_bit() as u8;
-    let allow_screen_content_tools =
-        match Rav1dAdaptiveBoolean::from_repr(seqhdr.screen_content_tools as usize).unwrap() {
-            Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
-            Rav1dAdaptiveBoolean::On => true,
-            Rav1dAdaptiveBoolean::Off => false,
-        };
+    let allow_screen_content_tools = match seqhdr.screen_content_tools {
+        Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
+        Rav1dAdaptiveBoolean::On => true,
+        Rav1dAdaptiveBoolean::Off => false,
+    };
     let mut force_integer_mv = if allow_screen_content_tools {
-        match Rav1dAdaptiveBoolean::from_repr(seqhdr.force_integer_mv as usize).unwrap() {
+        match seqhdr.force_integer_mv {
             Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
             Rav1dAdaptiveBoolean::On => true,
             Rav1dAdaptiveBoolean::Off => false,

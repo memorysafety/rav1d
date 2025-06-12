@@ -181,6 +181,7 @@ pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean =
     Rav1dAdaptiveBoolean::Adaptive as Dav1dAdaptiveBoolean;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[repr(u32)]
 pub enum Rav1dAdaptiveBoolean {
     Off = 0,
     On = 1,
@@ -206,7 +207,7 @@ impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
     type Error = ();
 
     fn try_from(value: Dav1dAdaptiveBoolean) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -383,6 +384,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
+#[repr(u32)]
 pub enum Rav1dPixelLayout {
     #[default]
     I400 = 0,
@@ -401,7 +403,7 @@ impl Sub for Rav1dPixelLayout {
     type Output = Rav1dPixelLayout;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self::from_repr((self as u8 - rhs as u8) as usize).unwrap()
+        Self::from_repr(self as u32 - rhs as u32).unwrap()
     }
 }
 
@@ -421,7 +423,7 @@ impl TryFrom<Dav1dPixelLayout> for Rav1dPixelLayout {
     type Error = ();
 
     fn try_from(value: Dav1dPixelLayout) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -731,6 +733,7 @@ pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition =
     Rav1dChromaSamplePosition::Colocated as Dav1dChromaSamplePosition;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[repr(u32)]
 pub enum Rav1dChromaSamplePosition {
     Unknown = 0,
     /// Horizontally co-located with (0, 0) luma sample, vertical position
@@ -751,7 +754,7 @@ impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
     type Error = ();
 
     fn try_from(value: Dav1dChromaSamplePosition) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -950,11 +953,11 @@ pub struct Dav1dSequenceHeader {
     pub profile: u8,
     pub max_width: c_int,
     pub max_height: c_int,
-    pub layout: Dav1dPixelLayout,
+    pub layout: Rav1dPixelLayout,
     pub pri: Dav1dColorPrimaries,
     pub trc: Dav1dTransferCharacteristics,
     pub mtrx: Dav1dMatrixCoefficients,
-    pub chr: Dav1dChromaSamplePosition,
+    pub chr: Rav1dChromaSamplePosition,
     pub hbd: u8,
     pub color_range: u8,
     pub num_operating_points: u8,
@@ -990,8 +993,8 @@ pub struct Dav1dSequenceHeader {
     pub order_hint: u8,
     pub jnt_comp: u8,
     pub ref_frame_mvs: u8,
-    pub screen_content_tools: Dav1dAdaptiveBoolean,
-    pub force_integer_mv: Dav1dAdaptiveBoolean,
+    pub screen_content_tools: Rav1dAdaptiveBoolean,
+    pub force_integer_mv: Rav1dAdaptiveBoolean,
     pub order_hint_n_bits: u8,
     pub super_res: u8,
     pub cdef: u8,
