@@ -5,6 +5,11 @@ use crate::enum_map::enum_map;
 use crate::enum_map::enum_map_ty;
 use crate::enum_map::DefaultValue;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
+use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynEntry;
@@ -32,12 +37,6 @@ use std::ops::Shl;
 use std::ops::Shr;
 use std::ptr;
 use to_method::To;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::include::common::bitdepth::bd_fn;
 
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;

@@ -5,6 +5,13 @@ use crate::enum_map::enum_map;
 use crate::enum_map::enum_map_ty;
 use crate::enum_map::DefaultValue;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
+use crate::include::common::bitdepth::bd_fn;
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -45,15 +52,6 @@ use std::slice;
 use strum::FromRepr;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::include::common::bitdepth::bd_fn;
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-use crate::include::common::bitdepth::bpc_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     dst_ptr: *mut DynPixel,
@@ -1452,14 +1450,11 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
     use super::*;
-
-    use to_method::To;
-
-    #[cfg(feature = "bitdepth_8")]
-    use crate::include::common::bitdepth::BitDepth8;
-
     #[cfg(feature = "bitdepth_16")]
     use crate::include::common::bitdepth::BitDepth16;
+    #[cfg(feature = "bitdepth_8")]
+    use crate::include::common::bitdepth::BitDepth8;
+    use to_method::To;
 
     wrap_fn_ptr!(unsafe extern "C" fn z13_fill(
         dst: *mut DynPixel,
