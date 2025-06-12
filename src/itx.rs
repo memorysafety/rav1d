@@ -1,8 +1,13 @@
-use strum::EnumCount;
-
 use crate::cpu::CpuFlags;
 use crate::enum_map::DefaultValue;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
+use crate::include::common::bitdepth::bd_fn;
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
@@ -50,15 +55,7 @@ use crate::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::num::NonZeroUsize;
 use std::slice;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::include::common::bitdepth::bd_fn;
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::bpc_fn;
+use strum::EnumCount;
 
 pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
 

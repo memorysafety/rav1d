@@ -1,6 +1,7 @@
 use crate::compat::getopt::getopt_long;
 use crate::compat::getopt::option;
 use crate::compat::stdio::stderr;
+use cfg_if::cfg_if;
 use libc::fprintf;
 use libc::memset;
 use libc::strcat;
@@ -40,8 +41,6 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::process::exit;
 use std::ptr::NonNull;
-
-use cfg_if::cfg_if;
 
 extern "C" {
     static mut optarg: *mut c_char;

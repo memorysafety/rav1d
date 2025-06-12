@@ -4,6 +4,11 @@ use crate::align::Align16;
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
+use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -18,12 +23,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use strum::FromRepr;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::include::common::bitdepth::bd_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     dst_ptr: *mut DynPixel,

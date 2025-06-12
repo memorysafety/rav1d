@@ -5,6 +5,13 @@ use crate::cpu::CpuFlags;
 use crate::cursor::CursorMut;
 use crate::disjoint_mut::DisjointMut;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::bd_fn;
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -29,15 +36,6 @@ use to_method::To;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
-
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
-use crate::include::common::bitdepth::bd_fn;
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::bpc_fn;
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -960,7 +958,6 @@ fn sgr_mix_rust<BD: BitDepth>(
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 mod neon {
     use super::*;
-
     use crate::align::Align16;
     use crate::include::common::bitdepth::bd_fn;
     use libc::intptr_t;
@@ -1575,7 +1572,6 @@ mod neon {
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
     use super::*;
-
     use crate::align::Align16;
     use std::array;
     use std::ptr;

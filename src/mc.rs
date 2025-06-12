@@ -6,9 +6,21 @@ use crate::enum_map::enum_map;
 use crate::enum_map::enum_map_ty;
 use crate::enum_map::DefaultValue;
 use crate::ffi_safe::FFISafe;
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
+use crate::include::common::bitdepth::bd_fn;
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::clip;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
@@ -36,18 +48,6 @@ use std::mem;
 use std::ptr;
 use std::slice;
 use to_method::To;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::include::common::bitdepth::bd_fn;
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::{bpc_fn, BPC};
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-use crate::include::common::bitdepth::bpc_fn;
 
 #[inline(never)]
 fn put_rust<BD: BitDepth>(
