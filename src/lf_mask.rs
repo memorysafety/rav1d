@@ -1,4 +1,5 @@
 use crate::align::Align16;
+use crate::align::AlignedVec2;
 use crate::align::ArrayDefault;
 use crate::ctx::CaseSet;
 use crate::disjoint_mut::DisjointMut;
@@ -426,7 +427,7 @@ fn mask_edges_chroma(
 #[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_intra(
     lflvl: &Av1Filter,
-    level_cache: &DisjointMut<Vec<u8>>,
+    level_cache: &DisjointMut<AlignedVec2<u8>>,
     b4_stride: ptrdiff_t,
     filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     b: Bxy,
@@ -520,7 +521,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
 #[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_inter(
     lflvl: &Av1Filter,
-    level_cache: &DisjointMut<Vec<u8>>,
+    level_cache: &DisjointMut<AlignedVec2<u8>>,
     b4_stride: ptrdiff_t,
     filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     r#ref: usize,
