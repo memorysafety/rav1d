@@ -1,3 +1,8 @@
+use std::num::NonZeroUsize;
+use std::{cmp, slice};
+
+use strum::EnumCount;
+
 use crate::cpu::CpuFlags;
 use crate::enum_map::DefaultValue;
 use crate::ffi_safe::FFISafe;
@@ -25,9 +30,6 @@ use crate::levels::{
 };
 use crate::strided::Strided as _;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::num::NonZeroUsize;
-use std::{cmp, slice};
-use strum::EnumCount;
 
 pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);
 

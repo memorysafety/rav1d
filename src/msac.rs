@@ -1,13 +1,15 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::ops::{Deref, DerefMut, Range};
+use std::{mem, ptr, slice};
+
+use cfg_if::cfg_if;
+
 use crate::c_arc::CArc;
 use crate::cpu::CpuFlags;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::{inv_recenter, ulog2};
-use cfg_if::cfg_if;
-use std::ffi::{c_int, c_uint};
-use std::ops::{Deref, DerefMut, Range};
-use std::{mem, ptr, slice};
 
 #[cfg(all(feature = "asm", target_feature = "sse2"))]
 extern "C" {

@@ -1,5 +1,11 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::marker::PhantomData;
+use std::mem::MaybeUninit;
+use std::{cmp, mem, ptr, slice};
+
+use zerocopy::{AsBytes, FromZeroes};
+
 use crate::align::{Align16, AlignedVec64};
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::{DisjointMut, DisjointMutArcSlice, DisjointMutGuard, DisjointMutSlice};
@@ -14,10 +20,6 @@ use crate::internal::Bxy;
 use crate::intra_edge::EdgeFlags;
 use crate::levels::{BlockSize, Mv};
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::marker::PhantomData;
-use std::mem::MaybeUninit;
-use std::{cmp, mem, ptr, slice};
-use zerocopy::{AsBytes, FromZeroes};
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]

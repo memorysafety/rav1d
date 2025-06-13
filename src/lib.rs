@@ -149,6 +149,15 @@ mod thread_task;
 mod warpmv;
 mod wedge;
 
+use std::ffi::{c_char, c_uint, c_void, CStr};
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Once};
+use std::{cmp, mem, ptr, slice, thread};
+
+use parking_lot::Mutex;
+use to_method::To as _;
+
 use crate::c_arc::RawArc;
 use crate::c_box::FnFree;
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
@@ -181,13 +190,6 @@ use crate::obu::{rav1d_parse_obus, rav1d_parse_sequence_header};
 use crate::picture::{rav1d_picture_alloc_copy, PictureFlags};
 use crate::send_sync_non_null::SendSyncNonNull;
 use crate::thread_task::{rav1d_task_delayed_fg, rav1d_worker_task, FRAME_ERROR};
-use parking_lot::Mutex;
-use std::ffi::{c_char, c_uint, c_void, CStr};
-use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Once};
-use std::{cmp, mem, ptr, slice, thread};
-use to_method::To as _;
 
 #[cold]
 fn init_internal() {

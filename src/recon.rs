@@ -1,5 +1,14 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::hint::assert_unchecked;
+use std::ops::BitOr;
+use std::{array, cmp, ptr};
+
+use assert_matches::debug_assert_matches;
+use libc::intptr_t;
+use to_method::To as _;
+
 use crate::cdef_apply::rav1d_cdef_brow;
 use crate::ctx::CaseSet;
 use crate::env::get_uv_inter_txtp;
@@ -41,13 +50,6 @@ use crate::tables::{
 };
 use crate::wedge::{DAV1D_II_MASKS, DAV1D_WEDGE_MASKS};
 use crate::with_offset::WithOffset;
-use assert_matches::debug_assert_matches;
-use libc::intptr_t;
-use std::ffi::{c_int, c_uint};
-use std::hint::assert_unchecked;
-use std::ops::BitOr;
-use std::{array, cmp, ptr};
-use to_method::To as _;
 
 impl Bxy {
     pub fn debug_block_info(&self) -> bool {

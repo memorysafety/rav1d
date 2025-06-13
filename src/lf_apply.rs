@@ -1,5 +1,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::{array, cmp};
+
 use crate::align::{AlignedVec2, AlignedVec64};
 use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
@@ -10,8 +13,6 @@ use crate::lr_apply::LrRestorePlanes;
 use crate::relaxed_atomic::RelaxedAtomic;
 use crate::strided::{Strided as _, WithStride};
 use crate::with_offset::WithOffset;
-use std::ffi::{c_int, c_uint};
-use std::{array, cmp};
 
 /// The loop filter buffer stores 12 rows of pixels.
 /// A superblock block will contain at most 2 stripes.

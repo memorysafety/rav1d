@@ -3,7 +3,6 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::align::{AlignedByteChunk, AlignedVec};
 use std::cell::UnsafeCell;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
@@ -14,7 +13,10 @@ use std::ops::{
 use std::ptr::addr_of_mut;
 use std::sync::Arc;
 use std::{fmt, mem, ptr};
+
 use zerocopy::{AsBytes, FromBytes};
+
+use crate::align::{AlignedByteChunk, AlignedVec};
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -763,13 +765,15 @@ mod release {
 
 #[cfg(debug_assertions)]
 mod debug {
-    use super::*;
-    use parking_lot::Mutex;
     use std::backtrace::{Backtrace, BacktraceStatus};
     use std::fmt::Debug;
     use std::panic::Location;
     use std::thread;
     use std::thread::ThreadId;
+
+    use parking_lot::Mutex;
+
+    use super::*;
 
     #[derive(Debug)]
     pub(super) struct DisjointMutBounds {

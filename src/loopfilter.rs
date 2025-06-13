@@ -1,5 +1,11 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::cmp;
+use std::ffi::c_int;
+
+use libc::ptrdiff_t;
+use strum::FromRepr;
+
 use crate::align::{Align16, AlignedVec2};
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
@@ -17,10 +23,6 @@ use crate::lf_mask::Av1FilterLUT;
 use crate::strided::Strided as _;
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use strum::FromRepr;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     dst_ptr: *mut DynPixel,

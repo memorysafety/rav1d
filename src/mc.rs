@@ -1,5 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::c_int;
+use std::{cmp, iter, mem, ptr, slice};
+
+use to_method::To;
+
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
 use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
@@ -31,9 +36,6 @@ use crate::tables::{
 };
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::ffi::c_int;
-use std::{cmp, iter, mem, ptr, slice};
-use to_method::To;
 
 #[inline(never)]
 fn put_rust<BD: BitDepth>(

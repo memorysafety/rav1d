@@ -1,7 +1,6 @@
-use crate::compat::errno::errno_location;
-#[cfg(target_os = "windows")]
-use crate::compat::stdio::fseeko;
-use crate::compat::stdio::stderr;
+use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::ptr::NonNull;
+
 #[cfg(not(target_os = "windows"))]
 use libc::fseeko;
 use libc::{fclose, feof, fopen, fprintf, fread, strerror};
@@ -11,8 +10,11 @@ use rav1d::include::dav1d::headers::{
     DAV1D_OBU_TILE_GRP,
 };
 use rav1d::{dav1d_data_create, dav1d_data_unref};
-use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
-use std::ptr::NonNull;
+
+use crate::compat::errno::errno_location;
+#[cfg(target_os = "windows")]
+use crate::compat::stdio::fseeko;
+use crate::compat::stdio::stderr;
 
 #[repr(C)]
 pub struct DemuxerPriv {
