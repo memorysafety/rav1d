@@ -1,3 +1,4 @@
+use crate::with_offset::WithOffset;
 use std::marker::PhantomData;
 use std::ptr;
 
@@ -34,5 +35,22 @@ impl<'a, T> FFISafe<'a, T> {
     pub unsafe fn _get_mut(this: *mut Self) -> &'a mut T {
         // SAFETY: `this` originally was a `&'a mut T` in `Self::new_mut`.
         unsafe { &mut *this.cast() }
+    }
+
+    /// # Safety
+    ///
+    /// `this` must have been returned from [`WithOffset::into_ffi_safe`].
+    pub unsafe fn from_with_offset(this: WithOffset<*const FFISafe<'a, T>>) -> WithOffset<&'a T> {
+        // Safety: we required that the caller created `this` using `into_ffi_safe`, which uses `FFISafe::new`.
+        this.map(|data| unsafe { FFISafe::get(data) })
+    }
+}
+
+impl<'a, T> WithOffset<&'a T> {
+    /// Convert `self` to an FFI-safe type.
+    ///
+    /// LLVM is able to better optimize the resulting type than a `*const FFISafe<'a, WithOffset<...>>`.
+    pub fn into_ffi_safe(self) -> WithOffset<*const FFISafe<'a, T>> {
+        self.map(FFISafe::new)
     }
 }

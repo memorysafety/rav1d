@@ -87,18 +87,9 @@ impl cdef::Fn {
         let damping = damping as c_int;
         let bd = bd.into_c();
 
-        let dst = WithOffset {
-            data: FFISafe::new(dst.data),
-            offset: dst.offset,
-        };
-        let top = WithOffset {
-            data: FFISafe::new(top.data),
-            offset: top.offset,
-        };
-        let bottom = WithOffset {
-            data: FFISafe::new(&bottom.data),
-            offset: bottom.offset,
-        };
+        let dst = dst.into_ffi_safe();
+        let top = top.into_ffi_safe();
+        let bottom = bottom.as_ref().into_ffi_safe();
 
         // SAFETY: Rust fallback is safe, asm is assumed to do the same.
         unsafe {
@@ -396,33 +387,24 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
     bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
 ) {
-    let dst = WithOffset {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
-        data: unsafe { FFISafe::get(dst.data) },
-        offset: dst.offset,
-    };
+    // SAFETY: Was passed as `FFISafe::into_ffi_safe(_)` in `cdef::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
 
     // SAFETY: Reverse of cast in `cdef::Fn::call`.
     let left = unsafe { &*left.cast() };
 
-    let top = WithOffset {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
-        data: unsafe { FFISafe::get(top.data) },
-        offset: top.offset,
-    };
+    // SAFETY: Was passed as `FFISafe::into_ffi_safe(_)` in `cdef::Fn::call`.
+    let top = unsafe { FFISafe::from_with_offset(top) };
 
-    let bottom = WithOffset {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `cdef::Fn::call`.
-        data: *unsafe { FFISafe::get(bottom.data) },
-        offset: bottom.offset,
-    };
+    // SAFETY: Was passed as `FFISafe::into_ffi_safe(_)` in `cdef::Fn::call`.
+    let bottom = unsafe { FFISafe::from_with_offset(bottom) };
 
     let bd = BD::from_c(bitdepth_max);
     cdef_filter_block_rust(
         dst,
         left,
         top,
-        bottom,
+        bottom.map(|bot| *bot),
         pri_strength,
         sec_strength,
         dir,

@@ -11,6 +11,21 @@ pub struct WithOffset<T> {
     pub offset: usize,
 }
 
+impl<T> WithOffset<T> {
+    pub fn map<U>(self, map: impl FnOnce(T) -> U) -> WithOffset<U> {
+        WithOffset {
+            data: map(self.data),
+            offset: self.offset,
+        }
+    }
+
+    pub fn as_ref<'a>(&'a self) -> WithOffset<&'a T> {
+        WithOffset {
+            data: &self.data,
+            offset: self.offset,
+        }
+    }
+}
 impl<T> AddAssign<usize> for WithOffset<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     fn add_assign(&mut self, rhs: usize) {
