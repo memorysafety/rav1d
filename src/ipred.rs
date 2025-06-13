@@ -20,7 +20,9 @@ use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel, BPC};
 use crate::include::common::intops::{apply_sign, iclip};
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::dav1d::picture::{
+    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
+};
 use crate::internal::{SCRATCH_AC_TXTP_LEN, SCRATCH_EDGE_LEN};
 use crate::levels::{
     DC_128_PRED, DC_PRED, FILTER_PRED, HOR_PRED, LEFT_DC_PRED, N_IMPL_INTRA_PRED_MODES, PAETH_PRED,
@@ -43,7 +45,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     max_height: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl angular_ipred::Fn {
@@ -63,7 +65,7 @@ impl angular_ipred::Fn {
         let stride = dst.stride();
         let topleft = topleft[topleft_off..].as_ptr().cast();
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = dst.into_ffi_safe();
         // SAFETY: Fallbacks are safe; asm is supposed to do the same, where the fallbacks are:
         // * `fn splat_dc`
         // * `fn ipred_{v,h}_rust`
@@ -98,7 +100,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
-    _y: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _y: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl cfl_ac::Fn {
@@ -113,7 +115,7 @@ impl cfl_ac::Fn {
     ) {
         let y_ptr = y.as_ptr::<BD>().cast();
         let stride = y.stride();
-        let y = FFISafe::new(&y);
+        let y = y.into_ffi_safe();
         // SAFETY: Fallback `fn cfl_ac_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y) }
     }
@@ -129,7 +131,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     alpha: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl cfl_pred::Fn {
@@ -148,7 +150,7 @@ impl cfl_pred::Fn {
         let stride = dst.stride();
         let topleft = topleft[topleft_off..].as_ptr().cast();
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn cfl_pred` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -174,7 +176,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     idx: *const u8,
     w: c_int,
     h: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl pal_pred::Fn {
@@ -192,7 +194,7 @@ impl pal_pred::Fn {
         let stride = dst.stride();
         let pal = pal.as_ptr().cast();
         let idx = idx[..(w * h) as usize / 2].as_ptr();
-        let dst = FFISafe::new(&dst);
+        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn pal_pred_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, stride, pal, idx, w, h, dst) }
     }
@@ -378,12 +380,12 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     _max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
 
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     let dc = dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int;
@@ -405,12 +407,12 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     alpha: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
 
-    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_pred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_pred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn cfl_pred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     let dc = dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int;
@@ -433,10 +435,10 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     _max_height: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
     splat_dc(dst, width, height, dc, bd)
@@ -456,10 +458,10 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     alpha: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_pred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_pred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
     cfl_pred(dst, width, height, dc, ac, alpha, bd)
@@ -500,10 +502,10 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     ipred_v_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -544,10 +546,10 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     ipred_h_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -602,10 +604,10 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(tl_ptr, topleft_off) };
     ipred_paeth_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -653,10 +655,10 @@ unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     ipred_smooth_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -700,10 +702,10 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     ipred_smooth_v_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -747,10 +749,10 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     ipred_smooth_h_rust::<BD>(dst, topleft, topleft_off, width, height)
@@ -1183,10 +1185,10 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft_in = unsafe { reconstruct_topleft::<BD>(topleft_in, topleft_off) };
     let bd = BD::from_c(bitdepth_max);
@@ -1273,10 +1275,10 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `angular_ipred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft_in, topleft_off) };
     let bd = BD::from_c(bitdepth_max);
@@ -1370,10 +1372,10 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
-    y: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    y: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_ac::Fn::call`.
-    let y = *unsafe { FFISafe::get(y) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_ac::Fn::call`.
+    let y = unsafe { FFISafe::from_with_offset(y) };
     let cw = cw as usize;
     let ch = ch as usize;
     cfl_ac_rust::<BD>(ac, y, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
@@ -1415,10 +1417,10 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     idx: *const u8,
     w: c_int,
     h: c_int,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
     // SAFETY: Was passed as `FFISafe::new(dst)` in `pal_pred::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
     let pal = unsafe { &*pal.cast() };
     // SAFETY: Length sliced in `pal_pred::Fn::call`.
@@ -1962,7 +1964,7 @@ mod neon {
         max_height: c_int,
         bitdepth_max: c_int,
         topleft_off: usize,
-        _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _dst: FFISafeRav1dPictureDataComponentOffset,
     ) {
         let dst = dst.cast();
         // SAFETY: Reconstructed from args passed by `angular_ipred::Fn::call`.

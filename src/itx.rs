@@ -15,7 +15,9 @@ use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynCoef, DynPixel};
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::dav1d::picture::{
+    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
+};
 use crate::itx_1d::{
     rav1d_inv_adst16_1d_c, rav1d_inv_adst4_1d_c, rav1d_inv_adst8_1d_c, rav1d_inv_dct16_1d_c,
     rav1d_inv_dct32_1d_c, rav1d_inv_dct4_1d_c, rav1d_inv_dct64_1d_c, rav1d_inv_dct8_1d_c,
@@ -243,10 +245,10 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
     eob: i32,
     bitdepth_max: i32,
     coeff_len: u16,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `itxfm::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `itxfm::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn itxfm::Fn::call` passes `coeff.len()` as `coeff_len`.
     let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len.into()) };
     let bd = BD::from_c(bitdepth_max);
@@ -260,7 +262,7 @@ wrap_fn_ptr!(unsafe extern "C" fn itxfm(
     eob: i32,
     bitdepth_max: i32,
     _coeff_len: u16,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl itxfm::Fn {
@@ -276,7 +278,7 @@ impl itxfm::Fn {
         let coeff_len = coeff.len() as u16;
         let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn inv_txfm_add_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, coeff, eob, bd, coeff_len, dst) }
     }

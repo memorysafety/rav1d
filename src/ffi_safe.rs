@@ -1,6 +1,7 @@
-use crate::with_offset::WithOffset;
 use std::marker::PhantomData;
 use std::ptr;
+
+use crate::with_offset::WithOffset;
 
 /// A type that bypasses `#[warn(improper_ctypes)]` checks of FFI safe types.
 /// This type is meant to roundtrip a reference to a type `T` with lifetime `'a`
@@ -41,13 +42,13 @@ impl<'a, T> FFISafe<'a, T> {
     ///
     /// `this` must have been returned from [`WithOffset::into_ffi_safe`].
     pub unsafe fn from_with_offset(this: WithOffset<*const FFISafe<'a, T>>) -> WithOffset<&'a T> {
-        // Safety: we required that the caller created `this` using `into_ffi_safe`, which uses `FFISafe::new`.
+        // SAFETY: We required that the caller created `this` using `into_ffi_safe`, which uses `FFISafe::new`.
         this.map(|data| unsafe { FFISafe::get(data) })
     }
 }
 
 impl<'a, T> WithOffset<&'a T> {
-    /// Convert `self` to an FFI-safe type.
+    /// Convert `self` into an FFI-safe type.
     ///
     /// LLVM is able to better optimize the resulting type than a `*const FFISafe<'a, WithOffset<...>>`.
     pub fn into_ffi_safe(self) -> WithOffset<*const FFISafe<'a, T>> {
