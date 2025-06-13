@@ -1,5 +1,11 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::{cmp, ptr};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
@@ -21,10 +27,6 @@ use crate::strided::Strided as _;
 use crate::tables::DAV1D_CDEF_DIRECTIONS;
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::ffi::{c_int, c_uint};
-use std::{cmp, ptr};
 
 bitflags! {
     #[repr(transparent)]
@@ -528,8 +530,9 @@ fn cdef_find_dir_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 mod neon {
-    use super::*;
     use std::mem::MaybeUninit;
+
+    use super::*;
 
     wrap_fn_ptr!(unsafe extern "C" fn padding(
         tmp: *mut MaybeUninit<u16>,

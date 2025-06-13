@@ -1,12 +1,14 @@
+use std::ffi::{c_int, c_uint};
+
+use bitflags::bitflags;
+use strum::FromRepr;
+
 use crate::c_arc::RawArc;
 use crate::error::Rav1dError;
 use crate::include::dav1d::picture::{Dav1dPicAllocator, Rav1dPicAllocator};
 use crate::internal::Rav1dContext;
 pub use crate::log::Dav1dLogger;
 use crate::log::Rav1dLogger;
-use bitflags::bitflags;
-use std::ffi::{c_int, c_uint};
-use strum::FromRepr;
 
 pub type Dav1dContext = RawArc<Rav1dContext>;
 

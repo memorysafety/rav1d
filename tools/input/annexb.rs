@@ -1,5 +1,7 @@
-use crate::compat::errno::errno_location;
-use crate::compat::stdio::{fseeko, stderr};
+use std::cmp;
+use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::ptr::NonNull;
+
 use libc::{fclose, fopen, fprintf, fread, strerror};
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::headers::{
@@ -7,9 +9,9 @@ use rav1d::include::dav1d::headers::{
     DAV1D_OBU_TILE_GRP,
 };
 use rav1d::{dav1d_data_create, dav1d_data_unref};
-use std::cmp;
-use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
-use std::ptr::NonNull;
+
+use crate::compat::errno::errno_location;
+use crate::compat::stdio::{fseeko, stderr};
 
 #[repr(C)]
 pub struct DemuxerPriv {

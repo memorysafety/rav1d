@@ -1,5 +1,12 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::{cmp, slice};
+
+use libc::ptrdiff_t;
+use strum::FromRepr;
+use zerocopy::{AsBytes, FromBytes};
+
 use crate::cpu::CpuFlags;
 use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
 use crate::ffi_safe::FFISafe;
@@ -24,11 +31,6 @@ use crate::tables::{
     dav1d_dr_intra_derivative, dav1d_filter_intra_taps, dav1d_sm_weights, filter_fn, FLT_INCR,
 };
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use libc::ptrdiff_t;
-use std::ffi::{c_int, c_uint};
-use std::{cmp, slice};
-use strum::FromRepr;
-use zerocopy::{AsBytes, FromBytes};
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     dst_ptr: *mut DynPixel,
@@ -1426,12 +1428,13 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
+    use to_method::To;
+
     use super::*;
     #[cfg(feature = "bitdepth_16")]
     use crate::include::common::bitdepth::BitDepth16;
     #[cfg(feature = "bitdepth_8")]
     use crate::include::common::bitdepth::BitDepth8;
-    use to_method::To;
 
     wrap_fn_ptr!(unsafe extern "C" fn z13_fill(
         dst: *mut DynPixel,

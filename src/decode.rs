@@ -1,3 +1,10 @@
+use std::ffi::{c_int, c_uint};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::{array, cmp, iter, mem};
+
+use libc::ptrdiff_t;
+use strum::EnumCount;
+
 use crate::align::{Align16, AlignedVec64};
 use crate::c_arc::CArc;
 use crate::cdf::{
@@ -74,11 +81,6 @@ use crate::thread_task::{
     rav1d_task_create_tile_sbrow, rav1d_task_frame_init, FRAME_ERROR, TILE_ERROR,
 };
 use crate::warpmv::{rav1d_find_affine_int, rav1d_get_shear_params, rav1d_set_affine_mv2d};
-use libc::ptrdiff_t;
-use std::ffi::{c_int, c_uint};
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::{array, cmp, iter, mem};
-use strum::EnumCount;
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,

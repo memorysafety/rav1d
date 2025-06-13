@@ -1,3 +1,11 @@
+use std::cmp;
+use std::ffi::c_int;
+use std::mem::MaybeUninit;
+
+use libc::ptrdiff_t;
+use parking_lot::RwLock;
+use zerocopy::FromBytes;
+
 use crate::align::{Align16, AlignedVec2, ArrayDefault};
 use crate::ctx::CaseSet;
 use crate::disjoint_mut::DisjointMut;
@@ -9,12 +17,6 @@ use crate::internal::Bxy;
 use crate::levels::{BlockSize, SegmentId, TxfmSize};
 use crate::relaxed_atomic::RelaxedAtomic;
 use crate::tables::DAV1D_TXFM_DIMENSIONS;
-use libc::ptrdiff_t;
-use parking_lot::RwLock;
-use std::cmp;
-use std::ffi::c_int;
-use std::mem::MaybeUninit;
-use zerocopy::FromBytes;
 
 #[repr(C)]
 pub struct Av1FilterLUT {

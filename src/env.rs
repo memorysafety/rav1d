@@ -1,3 +1,7 @@
+use std::cmp;
+use std::cmp::Ordering;
+use std::ffi::{c_int, c_uint};
+
 use crate::align::Align8;
 use crate::disjoint_mut::{DisjointMut, DisjointMutSlice};
 use crate::include::common::intops::apply_sign;
@@ -11,9 +15,6 @@ use crate::levels::{
 };
 use crate::refmvs::RefMvsCandidate;
 use crate::tables::TxfmInfo;
-use std::cmp;
-use std::cmp::Ordering;
-use std::ffi::{c_int, c_uint};
 
 #[derive(Default)]
 pub struct BlockContext {
