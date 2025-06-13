@@ -1,41 +1,28 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use crate::cpu::CpuFlags;
-use crate::enum_map::enum_map;
-use crate::enum_map::enum_map_ty;
-use crate::enum_map::DefaultValue;
+use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
 use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynEntry;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::DynScaling;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynEntry, DynPixel, DynScaling};
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::dav1d::headers::{
+    Dav1dFilmGrainData, Rav1dFilmGrainData, Rav1dPixelLayoutSubSampled,
+};
+use crate::include::dav1d::picture::{Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset};
 use crate::internal::GrainLut;
 use crate::strided::Strided as _;
 use crate::tables::dav1d_gaussian_sequence;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use libc::intptr_t;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use libc::{intptr_t, ptrdiff_t};
+use std::ffi::{c_int, c_uint};
 use std::hint::assert_unchecked;
-use std::mem;
-use std::ops::Add;
-use std::ops::Shl;
-use std::ops::Shr;
-use std::ptr;
+use std::ops::{Add, Shl, Shr};
+use std::{cmp, mem, ptr};
 use to_method::To;
 
 pub const GRAIN_WIDTH: usize = 82;

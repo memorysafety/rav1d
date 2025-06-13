@@ -1,12 +1,8 @@
 use crate::send_sync_non_null::SendSyncNonNull;
-use std::ffi::c_char;
-use std::ffi::c_uint;
-use std::ffi::c_void;
+use std::ffi::{c_char, c_uint, c_void};
 use std::fmt;
 use std::fmt::Write as _;
-use std::io::stderr;
-use std::io::stdout;
-use std::io::Write as _;
+use std::io::{stderr, stdout, Write as _};
 use std::ptr::fn_addr_eq;
 
 pub type Dav1dLoggerCallback = unsafe extern "C" fn(

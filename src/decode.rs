@@ -1,180 +1,83 @@
-use crate::align::Align16;
-use crate::align::AlignedVec64;
+use crate::align::{Align16, AlignedVec64};
 use crate::c_arc::CArc;
-use crate::cdf::rav1d_cdf_thread_alloc;
-use crate::cdf::rav1d_cdf_thread_copy;
-use crate::cdf::rav1d_cdf_thread_init_static;
-use crate::cdf::rav1d_cdf_thread_update;
-use crate::cdf::CdfMvComponent;
-use crate::cdf::CdfThreadContext;
+use crate::cdf::{
+    rav1d_cdf_thread_alloc, rav1d_cdf_thread_copy, rav1d_cdf_thread_init_static,
+    rav1d_cdf_thread_update, CdfMvComponent, CdfThreadContext,
+};
 use crate::ctx::CaseSet;
 use crate::dequant_tables::DAV1D_DQ_TBL;
-use crate::disjoint_mut::DisjointMut;
-use crate::disjoint_mut::DisjointMutSlice;
-use crate::enum_map::enum_map;
-use crate::enum_map::enum_map_ty;
-use crate::enum_map::DefaultValue;
-use crate::env::av1_get_bwd_ref_1_ctx;
-use crate::env::av1_get_bwd_ref_ctx;
-use crate::env::av1_get_fwd_ref_1_ctx;
-use crate::env::av1_get_fwd_ref_2_ctx;
-use crate::env::av1_get_fwd_ref_ctx;
-use crate::env::av1_get_ref_ctx;
-use crate::env::av1_get_uni_p1_ctx;
-use crate::env::fix_mv_precision;
-use crate::env::gather_left_partition_prob;
-use crate::env::gather_top_partition_prob;
-use crate::env::get_comp_ctx;
-use crate::env::get_comp_dir_ctx;
-use crate::env::get_cur_frame_segid;
-use crate::env::get_drl_context;
-use crate::env::get_filter_ctx;
-use crate::env::get_gmv_2d;
-use crate::env::get_intra_ctx;
-use crate::env::get_jnt_comp_ctx;
-use crate::env::get_mask_comp_ctx;
-use crate::env::get_partition_ctx;
-use crate::env::get_poc_diff;
-use crate::env::get_tx_ctx;
-use crate::env::BlockContext;
-use crate::error::Rav1dError::EINVAL;
-use crate::error::Rav1dError::ENOPROTOOPT;
+use crate::disjoint_mut::{DisjointMut, DisjointMutSlice};
+use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
+use crate::env::{
+    av1_get_bwd_ref_1_ctx, av1_get_bwd_ref_ctx, av1_get_fwd_ref_1_ctx, av1_get_fwd_ref_2_ctx,
+    av1_get_fwd_ref_ctx, av1_get_ref_ctx, av1_get_uni_p1_ctx, fix_mv_precision,
+    gather_left_partition_prob, gather_top_partition_prob, get_comp_ctx, get_comp_dir_ctx,
+    get_cur_frame_segid, get_drl_context, get_filter_ctx, get_gmv_2d, get_intra_ctx,
+    get_jnt_comp_ctx, get_mask_comp_ctx, get_partition_ctx, get_poc_diff, get_tx_ctx, BlockContext,
+};
+use crate::error::Rav1dError::{EINVAL, ENOPROTOOPT};
 use crate::error::Rav1dResult;
 use crate::extensions::OptionError as _;
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BPC;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::clip_u8;
-use crate::include::common::intops::iclip;
+use crate::include::common::intops::{apply_sign64, clip, clip_u8, iclip};
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dTxfmMode;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::headers::SgrIdx;
-use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
+use crate::include::dav1d::headers::{
+    Rav1dFilterMode, Rav1dFrameHeader, Rav1dFrameHeaderTiling, Rav1dPixelLayout,
+    Rav1dRestorationType, Rav1dSequenceHeader, Rav1dTxfmMode, Rav1dWarpedMotionParams,
+    Rav1dWarpedMotionType, SgrIdx, RAV1D_PRIMARY_REF_NONE,
+};
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::internal::Bxy;
-use crate::internal::Rav1dBitDepthDSPContext;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dContextTaskType;
-use crate::internal::Rav1dFrameContext;
-use crate::internal::Rav1dFrameContextFrameThread;
-use crate::internal::Rav1dFrameContextLf;
-use crate::internal::Rav1dFrameData;
-use crate::internal::Rav1dState;
-use crate::internal::Rav1dTaskContext;
-use crate::internal::Rav1dTileState;
-use crate::internal::Rav1dTileStateContext;
-use crate::internal::ScalableMotionParams;
-use crate::internal::ScratchPal;
-use crate::internal::TileStateRef;
-use crate::intra_edge::EdgeFlags;
-use crate::intra_edge::EdgeIndex;
-use crate::intra_edge::IntraEdges;
-use crate::levels::Av1Block;
-use crate::levels::Av1BlockInter;
-use crate::levels::Av1BlockInter1d;
-use crate::levels::Av1BlockInter2d;
-use crate::levels::Av1BlockInterNd;
-use crate::levels::Av1BlockIntra;
-use crate::levels::Av1BlockIntraInter;
-use crate::levels::BlockLevel;
-use crate::levels::BlockPartition;
-use crate::levels::BlockSize;
-use crate::levels::CompInterType;
-use crate::levels::DrlProximity;
-use crate::levels::Filter2d;
-use crate::levels::InterIntraPredMode;
-use crate::levels::InterIntraType;
-use crate::levels::MVJoint;
-use crate::levels::MotionMode;
-use crate::levels::Mv;
-use crate::levels::SegmentId;
-use crate::levels::TxfmSize;
-use crate::levels::CFL_PRED;
-use crate::levels::DC_PRED;
-use crate::levels::FILTER_PRED;
-use crate::levels::GLOBALMV;
-use crate::levels::GLOBALMV_GLOBALMV;
-use crate::levels::NEARESTMV;
-use crate::levels::NEARESTMV_NEARESTMV;
-use crate::levels::NEARMV;
-use crate::levels::NEWMV;
-use crate::levels::NEWMV_NEWMV;
-use crate::levels::N_COMP_INTER_PRED_MODES;
-use crate::levels::N_INTRA_PRED_MODES;
-use crate::levels::N_UV_INTRA_PRED_MODES;
-use crate::levels::VERT_LEFT_PRED;
-use crate::levels::VERT_PRED;
-use crate::lf_mask::rav1d_calc_eih;
-use crate::lf_mask::rav1d_calc_lf_values;
-use crate::lf_mask::rav1d_create_lf_mask_inter;
-use crate::lf_mask::rav1d_create_lf_mask_intra;
-use crate::lf_mask::Av1RestorationUnit;
+use crate::internal::{
+    Bxy, Rav1dBitDepthDSPContext, Rav1dContext, Rav1dContextTaskType, Rav1dFrameContext,
+    Rav1dFrameContextFrameThread, Rav1dFrameContextLf, Rav1dFrameData, Rav1dState,
+    Rav1dTaskContext, Rav1dTileState, Rav1dTileStateContext, ScalableMotionParams, ScratchPal,
+    TileStateRef,
+};
+use crate::intra_edge::{EdgeFlags, EdgeIndex, IntraEdges};
+use crate::levels::{
+    Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
+    Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterType, DrlProximity,
+    Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId, TxfmSize,
+    CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, NEARESTMV, NEARESTMV_NEARESTMV,
+    NEARMV, NEWMV, NEWMV_NEWMV, N_COMP_INTER_PRED_MODES, N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES,
+    VERT_LEFT_PRED, VERT_PRED,
+};
+use crate::lf_mask::{
+    rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
+    Av1RestorationUnit,
+};
 use crate::log::Rav1dLog as _;
 use crate::lr_apply::LrRestorePlanes;
-use crate::msac::rav1d_msac_decode_bool;
-use crate::msac::rav1d_msac_decode_bool_adapt;
-use crate::msac::rav1d_msac_decode_bool_equi;
-use crate::msac::rav1d_msac_decode_bools;
-use crate::msac::rav1d_msac_decode_subexp;
-use crate::msac::rav1d_msac_decode_symbol_adapt16;
-use crate::msac::rav1d_msac_decode_symbol_adapt4;
-use crate::msac::rav1d_msac_decode_symbol_adapt8;
-use crate::msac::rav1d_msac_decode_uniform;
-use crate::msac::MsacContext;
+use crate::msac::{
+    rav1d_msac_decode_bool, rav1d_msac_decode_bool_adapt, rav1d_msac_decode_bool_equi,
+    rav1d_msac_decode_bools, rav1d_msac_decode_subexp, rav1d_msac_decode_symbol_adapt16,
+    rav1d_msac_decode_symbol_adapt4, rav1d_msac_decode_symbol_adapt8, rav1d_msac_decode_uniform,
+    MsacContext,
+};
 use crate::pal::Rav1dPalDSPContext;
-use crate::picture::rav1d_picture_alloc_copy;
-use crate::picture::rav1d_thread_picture_alloc;
-use crate::picture::Rav1dThreadPicture;
+use crate::picture::{rav1d_picture_alloc_copy, rav1d_thread_picture_alloc, Rav1dThreadPicture};
 use crate::qm::DAV1D_QM_TBL;
 use crate::recon::debug_block_info;
-use crate::refmvs::rav1d_refmvs_find;
-use crate::refmvs::rav1d_refmvs_init_frame;
-use crate::refmvs::rav1d_refmvs_tile_sbrow_init;
-use crate::refmvs::RefMvsBlock;
-use crate::refmvs::RefMvsFrame;
-use crate::refmvs::RefMvsMvPair;
-use crate::refmvs::RefMvsRefPair;
+use crate::refmvs::{
+    rav1d_refmvs_find, rav1d_refmvs_init_frame, rav1d_refmvs_tile_sbrow_init, RefMvsBlock,
+    RefMvsFrame, RefMvsMvPair, RefMvsRefPair,
+};
 use crate::relaxed_atomic::RelaxedAtomic;
-use crate::tables::CFL_ALLOWED_MASK;
-use crate::tables::DAV1D_AL_PART_CTX;
-use crate::tables::DAV1D_BLOCK_SIZES;
-use crate::tables::DAV1D_COMP_INTER_PRED_MODES;
-use crate::tables::DAV1D_FILTER_2D;
-use crate::tables::DAV1D_FILTER_DIR;
-use crate::tables::DAV1D_INTRA_MODE_CONTEXT;
-use crate::tables::DAV1D_MAX_TXFM_SIZE_FOR_BS;
-use crate::tables::DAV1D_PARTITION_TYPE_COUNT;
-use crate::tables::DAV1D_SGR_PARAMS;
-use crate::tables::DAV1D_TXFM_DIMENSIONS;
-use crate::tables::DAV1D_WEDGE_CTX_LUT;
-use crate::tables::DAV1D_YMODE_SIZE_CONTEXT;
-use crate::tables::INTERINTRA_ALLOWED_MASK;
-use crate::tables::WEDGE_ALLOWED_MASK;
-use crate::thread_task::rav1d_task_create_tile_sbrow;
-use crate::thread_task::rav1d_task_frame_init;
-use crate::thread_task::FRAME_ERROR;
-use crate::thread_task::TILE_ERROR;
-use crate::warpmv::rav1d_find_affine_int;
-use crate::warpmv::rav1d_get_shear_params;
-use crate::warpmv::rav1d_set_affine_mv2d;
+use crate::tables::{
+    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_COMP_INTER_PRED_MODES,
+    DAV1D_FILTER_2D, DAV1D_FILTER_DIR, DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS,
+    DAV1D_PARTITION_TYPE_COUNT, DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT,
+    DAV1D_YMODE_SIZE_CONTEXT, INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
+};
+use crate::thread_task::{
+    rav1d_task_create_tile_sbrow, rav1d_task_frame_init, FRAME_ERROR, TILE_ERROR,
+};
+use crate::warpmv::{rav1d_find_affine_int, rav1d_get_shear_params, rav1d_set_affine_mv2d};
 use libc::ptrdiff_t;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::iter;
-use std::mem;
-use std::sync::atomic::AtomicI32;
-use std::sync::atomic::Ordering;
+use std::ffi::{c_int, c_uint};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::{array, cmp, iter, mem};
 use strum::EnumCount;
 
 fn init_quant_tables(

@@ -2,8 +2,7 @@ use crate::const_fn::const_for;
 use bitflags::bitflags;
 use std::ffi::c_uint;
 use std::num::NonZero;
-use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::thread::available_parallelism;
 
 #[cfg(not(any(

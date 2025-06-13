@@ -1,15 +1,7 @@
-use crate::compat::getopt::getopt_long;
-use crate::compat::getopt::option;
+use crate::compat::getopt::{getopt_long, option};
 use crate::compat::stdio::stderr;
 use cfg_if::cfg_if;
-use libc::fprintf;
-use libc::memset;
-use libc::strcat;
-use libc::strcmp;
-use libc::strcpy;
-use libc::strncmp;
-use libc::strtod;
-use libc::strtoul;
+use libc::{fprintf, memset, strcat, strcmp, strcpy, strncmp, strtod, strtoul};
 use rav1d::cpu::dav1d_set_cpu_flags_mask;
 #[cfg(any(
     target_arch = "arm",
@@ -18,27 +10,14 @@ use rav1d::cpu::dav1d_set_cpu_flags_mask;
     target_arch = "riscv64"
 ))]
 use rav1d::cpu::CpuFlags;
-use rav1d::dav1d_default_settings;
-use rav1d::dav1d_version;
-use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
-use rav1d::include::dav1d::dav1d::Dav1dSettings;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use std::ffi::c_char;
-use std::ffi::c_double;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_void;
-use std::ffi::CStr;
+use rav1d::include::dav1d::dav1d::{
+    Dav1dDecodeFrameType, Dav1dInloopFilterType, Dav1dSettings, DAV1D_DECODEFRAMETYPE_ALL,
+    DAV1D_DECODEFRAMETYPE_INTRA, DAV1D_DECODEFRAMETYPE_KEY, DAV1D_DECODEFRAMETYPE_REFERENCE,
+    DAV1D_INLOOPFILTER_ALL, DAV1D_INLOOPFILTER_CDEF, DAV1D_INLOOPFILTER_DEBLOCK,
+    DAV1D_INLOOPFILTER_NONE, DAV1D_INLOOPFILTER_RESTORATION,
+};
+use rav1d::{dav1d_default_settings, dav1d_version};
+use std::ffi::{c_char, c_double, c_int, c_uint, c_ulong, c_void, CStr};
 use std::process::exit;
 use std::ptr::NonNull;
 

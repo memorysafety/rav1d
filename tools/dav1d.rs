@@ -16,84 +16,41 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
-use crate::compat::stdio::snprintf;
-use crate::compat::stdio::stderr;
-use crate::dav1d_cli_parse::parse;
-use crate::dav1d_cli_parse::CLISettings;
-use crate::dav1d_cli_parse::REALTIME_CUSTOM;
-use crate::dav1d_cli_parse::REALTIME_DISABLE;
-use crate::input::input::input_close;
-use crate::input::input::input_open;
-use crate::input::input::input_read;
-use crate::input::input::DemuxerContext;
-use crate::output::output::output_close;
-use crate::output::output::output_open;
-use crate::output::output::output_verify;
-use crate::output::output::output_write;
-use crate::output::output::MuxerContext;
-use libc::calloc;
-use libc::fclose;
-use libc::fflush;
-use libc::fileno;
-use libc::fopen;
-use libc::fprintf;
-use libc::fputs;
-use libc::free;
-use libc::isatty;
-use libc::memset;
-use libc::ptrdiff_t;
-use libc::strcpy;
-use libc::strerror;
-use libc::EAGAIN;
-use libc::EINVAL;
-use rav1d::dav1d_close;
-use rav1d::dav1d_data_unref;
-use rav1d::dav1d_get_picture;
-use rav1d::dav1d_open;
-use rav1d::dav1d_parse_sequence_header;
-use rav1d::dav1d_send_data;
-use rav1d::dav1d_version;
-use rav1d::dav1d_version_api;
-use rav1d::include::dav1d::common::Dav1dDataProps;
-use rav1d::include::dav1d::common::Dav1dUserData;
+use crate::compat::stdio::{snprintf, stderr};
+use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_CUSTOM, REALTIME_DISABLE};
+use crate::input::input::{input_close, input_open, input_read, DemuxerContext};
+use crate::output::output::{output_close, output_open, output_verify, output_write, MuxerContext};
+use libc::{
+    calloc, fclose, fflush, fileno, fopen, fprintf, fputs, free, isatty, memset, ptrdiff_t, strcpy,
+    strerror, EAGAIN, EINVAL,
+};
+use rav1d::include::dav1d::common::{Dav1dDataProps, Dav1dUserData};
 use rav1d::include::dav1d::data::Dav1dData;
-use rav1d::include::dav1d::dav1d::Dav1dContext;
-use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dSettings;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use rav1d::include::dav1d::headers::Dav1dTransferCharacteristics;
-use rav1d::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
-use rav1d::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use rav1d::include::dav1d::headers::DAV1D_OFF;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use rav1d::include::dav1d::picture::Dav1dPicAllocator;
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::DAV1D_PICTURE_ALIGNMENT;
+use rav1d::include::dav1d::dav1d::{
+    Dav1dContext, Dav1dLogger, Dav1dSettings, DAV1D_DECODEFRAMETYPE_ALL, DAV1D_INLOOPFILTER_NONE,
+};
+use rav1d::include::dav1d::headers::{
+    Dav1dColorPrimaries, Dav1dSequenceHeader, Dav1dSequenceHeaderOperatingParameterInfo,
+    Dav1dSequenceHeaderOperatingPoint, Dav1dTransferCharacteristics, DAV1D_CHR_UNKNOWN,
+    DAV1D_MC_IDENTITY, DAV1D_OFF, DAV1D_PIXEL_LAYOUT_I400, DAV1D_PIXEL_LAYOUT_I420,
+    DAV1D_PIXEL_LAYOUT_I444,
+};
+use rav1d::include::dav1d::picture::{Dav1dPicAllocator, Dav1dPicture, DAV1D_PICTURE_ALIGNMENT};
 use rav1d::send_sync_non_null::SendSyncNonNull;
-use rav1d::Dav1dResult;
-use rav1d::DAV1D_API_VERSION_MAJOR;
-use rav1d::DAV1D_API_VERSION_MINOR;
-use rav1d::DAV1D_API_VERSION_PATCH;
-use std::ffi::c_char;
-use std::ffi::c_double;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_ulonglong;
-use std::ffi::c_void;
+use rav1d::{
+    dav1d_close, dav1d_data_unref, dav1d_get_picture, dav1d_open, dav1d_parse_sequence_header,
+    dav1d_send_data, dav1d_version, dav1d_version_api, Dav1dResult, DAV1D_API_VERSION_MAJOR,
+    DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH,
+};
+use std::ffi::{c_char, c_double, c_int, c_uint, c_ulonglong, c_void};
 use std::ptr::NonNull;
 use std::time::Duration;
 
 #[cfg(target_os = "windows")]
 unsafe fn get_time_nanos() -> u64 {
-    use windows_sys::Win32::System::Performance::QueryPerformanceCounter;
-    use windows_sys::Win32::System::Performance::QueryPerformanceFrequency;
+    use windows_sys::Win32::System::Performance::{
+        QueryPerformanceCounter, QueryPerformanceFrequency,
+    };
 
     let mut frequency = 0i64;
     QueryPerformanceFrequency(&mut frequency);

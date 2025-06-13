@@ -3,30 +3,18 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::align::AlignedByteChunk;
-use crate::align::AlignedVec;
+use crate::align::{AlignedByteChunk, AlignedVec};
 use std::cell::UnsafeCell;
-use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::ops::Index;
-use std::ops::Range;
-use std::ops::RangeFrom;
-use std::ops::RangeFull;
-use std::ops::RangeInclusive;
-use std::ops::RangeTo;
-use std::ops::RangeToInclusive;
-use std::ptr;
+use std::ops::{
+    Deref, DerefMut, Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+};
 use std::ptr::addr_of_mut;
 use std::sync::Arc;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
+use std::{fmt, mem, ptr};
+use zerocopy::{AsBytes, FromBytes};
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -777,8 +765,7 @@ mod release {
 mod debug {
     use super::*;
     use parking_lot::Mutex;
-    use std::backtrace::Backtrace;
-    use std::backtrace::BacktraceStatus;
+    use std::backtrace::{Backtrace, BacktraceStatus};
     use std::fmt::Debug;
     use std::panic::Location;
     use std::thread;

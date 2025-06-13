@@ -2,28 +2,14 @@ use crate::align::AlignedVec64;
 use crate::const_fn::const_for;
 use crate::disjoint_mut::DisjointMut;
 use crate::env::BlockContext;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::intra_edge::EdgeFlags;
-use crate::levels::IntraPredMode;
-use crate::levels::DC_128_PRED;
-use crate::levels::DC_PRED;
-use crate::levels::FILTER_PRED;
-use crate::levels::HOR_PRED;
-use crate::levels::LEFT_DC_PRED;
-use crate::levels::N_IMPL_INTRA_PRED_MODES;
-use crate::levels::N_INTRA_PRED_MODES;
-use crate::levels::PAETH_PRED;
-use crate::levels::SMOOTH_H_PRED;
-use crate::levels::SMOOTH_PRED;
-use crate::levels::SMOOTH_V_PRED;
-use crate::levels::TOP_DC_PRED;
-use crate::levels::VERT_LEFT_PRED;
-use crate::levels::VERT_PRED;
-use crate::levels::Z1_PRED;
-use crate::levels::Z2_PRED;
-use crate::levels::Z3_PRED;
+use crate::levels::{
+    IntraPredMode, DC_128_PRED, DC_PRED, FILTER_PRED, HOR_PRED, LEFT_DC_PRED,
+    N_IMPL_INTRA_PRED_MODES, N_INTRA_PRED_MODES, PAETH_PRED, SMOOTH_H_PRED, SMOOTH_PRED,
+    SMOOTH_V_PRED, TOP_DC_PRED, VERT_LEFT_PRED, VERT_PRED, Z1_PRED, Z2_PRED, Z3_PRED,
+};
 use crate::strided::Strided as _;
 use bitflags::bitflags;
 use std::cmp;

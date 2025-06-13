@@ -12,12 +12,9 @@ use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::LeftPixelRow;
-use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::{
+    AsPrimitive, BitDepth, DynPixel, LeftPixelRow, ToPrimitive, BPC,
+};
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::strided::Strided as _;
@@ -25,17 +22,11 @@ use crate::tables::dav1d_sgr_x_by_x;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::iter;
-use std::mem;
+use std::ffi::{c_int, c_uint};
 use std::ops::Add;
-use std::slice;
+use std::{cmp, iter, mem, slice};
 use to_method::To;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
-use zerocopy::FromZeroes;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -1573,8 +1564,7 @@ mod neon {
 mod neon {
     use super::*;
     use crate::align::Align16;
-    use std::array;
-    use std::ptr;
+    use std::{array, ptr};
 
     fn rotate<const LEN: usize, const MID: usize>(
         a: &mut [*mut i32; LEN],

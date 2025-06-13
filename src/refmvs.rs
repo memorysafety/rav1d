@@ -1,35 +1,23 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::align::Align16;
-use crate::align::AlignedVec64;
+use crate::align::{Align16, AlignedVec64};
 use crate::cpu::CpuFlags;
-use crate::disjoint_mut::DisjointMut;
-use crate::disjoint_mut::DisjointMutArcSlice;
-use crate::disjoint_mut::DisjointMutGuard;
-use crate::disjoint_mut::DisjointMutSlice;
-use crate::env::fix_mv_precision;
-use crate::env::get_gmv_2d;
-use crate::env::get_poc_diff;
+use crate::disjoint_mut::{DisjointMut, DisjointMutArcSlice, DisjointMutGuard, DisjointMutSlice};
+use crate::env::{fix_mv_precision, get_gmv_2d, get_poc_diff};
 use crate::error::Rav1dResult;
 use crate::ffi_safe::FFISafe;
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::common::intops::{apply_sign, iclip};
+use crate::include::dav1d::headers::{
+    Rav1dFrameHeader, Rav1dSequenceHeader, Rav1dWarpedMotionType,
+};
 use crate::internal::Bxy;
 use crate::intra_edge::EdgeFlags;
-use crate::levels::BlockSize;
-use crate::levels::Mv;
+use crate::levels::{BlockSize, Mv};
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::cmp;
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::MaybeUninit;
-use std::ptr;
-use std::slice;
-use zerocopy::AsBytes;
-use zerocopy::FromZeroes;
+use std::{cmp, mem, ptr, slice};
+use zerocopy::{AsBytes, FromZeroes};
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]

@@ -5,8 +5,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
-use std::ptr::drop_in_place;
-use std::ptr::NonNull;
+use std::ptr::{drop_in_place, NonNull};
 
 pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<SendSyncNonNull<c_void>>);
 

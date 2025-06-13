@@ -1,24 +1,17 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::align::AlignedVec2;
-use crate::align::AlignedVec64;
+use crate::align::{AlignedVec2, AlignedVec64};
 use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::{Rav1dFrameHeader, Rav1dPixelLayout};
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::internal::Rav1dBitDepthDSPContext;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dFrameData;
+use crate::internal::{Rav1dBitDepthDSPContext, Rav1dContext, Rav1dFrameData};
 use crate::lr_apply::LrRestorePlanes;
 use crate::relaxed_atomic::RelaxedAtomic;
-use crate::strided::Strided as _;
-use crate::strided::WithStride;
+use crate::strided::{Strided as _, WithStride};
 use crate::with_offset::WithOffset;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
+use std::{array, cmp};
 
 /// The loop filter buffer stores 12 rows of pixels.
 /// A superblock block will contain at most 2 stripes.
