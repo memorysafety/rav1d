@@ -1,12 +1,9 @@
 #![deny(unsafe_code)]
 
 use crate::align::ArrayDefault;
-use crate::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::filmgrain::FG_BLOCK_SIZE;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
-use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::filmgrain::{Rav1dFilmGrainDSPContext, FG_BLOCK_SIZE};
+use crate::include::common::bitdepth::{BitDepth, BPC};
+use crate::include::dav1d::headers::{Rav1dMatrixCoefficients, Rav1dPixelLayout};
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::internal::GrainBD;
 use crate::strided::Strided as _;

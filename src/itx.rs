@@ -8,53 +8,25 @@ use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynCoef, DynPixel};
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::itx_1d::rav1d_inv_adst16_1d_c;
-use crate::itx_1d::rav1d_inv_adst4_1d_c;
-use crate::itx_1d::rav1d_inv_adst8_1d_c;
-use crate::itx_1d::rav1d_inv_dct16_1d_c;
-use crate::itx_1d::rav1d_inv_dct32_1d_c;
-use crate::itx_1d::rav1d_inv_dct4_1d_c;
-use crate::itx_1d::rav1d_inv_dct64_1d_c;
-use crate::itx_1d::rav1d_inv_dct8_1d_c;
-use crate::itx_1d::rav1d_inv_flipadst16_1d_c;
-use crate::itx_1d::rav1d_inv_flipadst4_1d_c;
-use crate::itx_1d::rav1d_inv_flipadst8_1d_c;
-use crate::itx_1d::rav1d_inv_identity16_1d_c;
-use crate::itx_1d::rav1d_inv_identity32_1d_c;
-use crate::itx_1d::rav1d_inv_identity4_1d_c;
-use crate::itx_1d::rav1d_inv_identity8_1d_c;
-use crate::itx_1d::rav1d_inv_wht4_1d_c;
-use crate::levels::TxfmSize;
-use crate::levels::TxfmType;
-use crate::levels::ADST_ADST;
-use crate::levels::ADST_DCT;
-use crate::levels::ADST_FLIPADST;
-use crate::levels::DCT_ADST;
-use crate::levels::DCT_DCT;
-use crate::levels::DCT_FLIPADST;
-use crate::levels::FLIPADST_ADST;
-use crate::levels::FLIPADST_DCT;
-use crate::levels::FLIPADST_FLIPADST;
-use crate::levels::H_ADST;
-use crate::levels::H_DCT;
-use crate::levels::H_FLIPADST;
-use crate::levels::IDTX;
-use crate::levels::N_TX_TYPES_PLUS_LL;
-use crate::levels::V_ADST;
-use crate::levels::V_DCT;
-use crate::levels::V_FLIPADST;
-use crate::levels::WHT_WHT;
+use crate::itx_1d::{
+    rav1d_inv_adst16_1d_c, rav1d_inv_adst4_1d_c, rav1d_inv_adst8_1d_c, rav1d_inv_dct16_1d_c,
+    rav1d_inv_dct32_1d_c, rav1d_inv_dct4_1d_c, rav1d_inv_dct64_1d_c, rav1d_inv_dct8_1d_c,
+    rav1d_inv_flipadst16_1d_c, rav1d_inv_flipadst4_1d_c, rav1d_inv_flipadst8_1d_c,
+    rav1d_inv_identity16_1d_c, rav1d_inv_identity32_1d_c, rav1d_inv_identity4_1d_c,
+    rav1d_inv_identity8_1d_c, rav1d_inv_wht4_1d_c,
+};
+use crate::levels::{
+    TxfmSize, TxfmType, ADST_ADST, ADST_DCT, ADST_FLIPADST, DCT_ADST, DCT_DCT, DCT_FLIPADST,
+    FLIPADST_ADST, FLIPADST_DCT, FLIPADST_FLIPADST, H_ADST, H_DCT, H_FLIPADST, IDTX,
+    N_TX_TYPES_PLUS_LL, V_ADST, V_DCT, V_FLIPADST, WHT_WHT,
+};
 use crate::strided::Strided as _;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::cmp;
 use std::num::NonZeroUsize;
-use std::slice;
+use std::{cmp, slice};
 use strum::EnumCount;
 
 pub type Itx1dFn = fn(c: &mut [i32], stride: NonZeroUsize, min: i32, max: i32);

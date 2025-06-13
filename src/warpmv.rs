@@ -1,8 +1,4 @@
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::u64log2;
-use crate::include::common::intops::ulog2;
+use crate::include::common::intops::{apply_sign, apply_sign64, iclip, u64log2, ulog2};
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::levels::Mv;
 use std::ffi::c_int;

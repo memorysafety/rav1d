@@ -1,5 +1,4 @@
-use atomig::Atom;
-use atomig::Atomic;
+use atomig::{Atom, Atomic};
 use std::sync::atomic::Ordering;
 
 /// A [`Atomic`] type that can only be accessed

@@ -37,8 +37,7 @@
 //! * is far simpler than the `case_set*` implementation, consisting of a `match` and array writes
 //!
 //! [`BlockContext`]: crate::env::BlockContext
-use crate::disjoint_mut::AsMutPtr;
-use crate::disjoint_mut::DisjointMut;
+use crate::disjoint_mut::{AsMutPtr, DisjointMut};
 use std::iter::zip;
 
 /// Perform a `memset` optimized for lengths that are small powers of 2.

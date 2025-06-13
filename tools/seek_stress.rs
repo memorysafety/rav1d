@@ -17,48 +17,25 @@ mod output {
 mod dav1d_cli_parse;
 
 use crate::compat::stdio::stderr;
-use crate::dav1d_cli_parse::parse;
-use crate::dav1d_cli_parse::CLISettings;
-use crate::dav1d_cli_parse::REALTIME_DISABLE;
-use crate::input::input::input_close;
-use crate::input::input::input_open;
-use crate::input::input::input_read;
-use crate::input::input::input_seek;
-use crate::input::input::DemuxerContext;
+use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_DISABLE};
+use crate::input::input::{input_close, input_open, input_read, input_seek, DemuxerContext};
 use libc::EAGAIN;
-use rav1d::dav1d_close;
-use rav1d::dav1d_flush;
-use rav1d::dav1d_get_picture;
-use rav1d::dav1d_open;
-use rav1d::dav1d_parse_sequence_header;
-use rav1d::dav1d_picture_unref;
-use rav1d::dav1d_send_data;
-use rav1d::dav1d_version;
-use rav1d::include::dav1d::common::Dav1dDataProps;
-use rav1d::include::dav1d::common::Dav1dUserData;
+use rav1d::include::dav1d::common::{Dav1dDataProps, Dav1dUserData};
 use rav1d::include::dav1d::data::Dav1dData;
-use rav1d::include::dav1d::dav1d::Dav1dContext;
-use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dSettings;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use rav1d::include::dav1d::headers::Dav1dTransferCharacteristics;
-use rav1d::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
-use rav1d::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use rav1d::include::dav1d::headers::DAV1D_OFF;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use rav1d::include::dav1d::picture::Dav1dPicAllocator;
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use std::ffi::c_char;
-use std::ffi::c_double;
-use std::ffi::c_float;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_void;
+use rav1d::include::dav1d::dav1d::{
+    Dav1dContext, Dav1dLogger, Dav1dSettings, DAV1D_DECODEFRAMETYPE_ALL, DAV1D_INLOOPFILTER_NONE,
+};
+use rav1d::include::dav1d::headers::{
+    Dav1dColorPrimaries, Dav1dSequenceHeader, Dav1dSequenceHeaderOperatingParameterInfo,
+    Dav1dSequenceHeaderOperatingPoint, Dav1dTransferCharacteristics, DAV1D_CHR_UNKNOWN,
+    DAV1D_MC_IDENTITY, DAV1D_OFF, DAV1D_PIXEL_LAYOUT_I400,
+};
+use rav1d::include::dav1d::picture::{Dav1dPicAllocator, Dav1dPicture};
+use rav1d::{
+    dav1d_close, dav1d_flush, dav1d_get_picture, dav1d_open, dav1d_parse_sequence_header,
+    dav1d_picture_unref, dav1d_send_data, dav1d_version,
+};
+use std::ffi::{c_char, c_double, c_float, c_int, c_uint, c_void};
 use std::ptr::NonNull;
 
 #[cfg(target_os = "windows")]

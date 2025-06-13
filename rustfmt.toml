@@ -1,2 +1,2 @@
-imports_granularity = "Item"
+imports_granularity = "Module"
 group_imports = "One"

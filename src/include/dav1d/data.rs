@@ -1,7 +1,5 @@
-use crate::c_arc::CArc;
-use crate::c_arc::RawCArc;
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::common::Rav1dDataProps;
+use crate::c_arc::{CArc, RawCArc};
+use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 use std::ptr::NonNull;
 use to_method::To as _;
 

@@ -1,9 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use crate::c_arc::CArc;
-use crate::c_box::CBox;
-use crate::c_box::FnFree;
-use crate::c_box::Free;
+use crate::c_box::{CBox, FnFree, Free};
 use crate::error::Rav1dError::EINVAL;
 use crate::error::Rav1dResult;
 use crate::include::common::validate::validate_input;

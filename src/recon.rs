@@ -4,99 +4,49 @@ use crate::cdef_apply::rav1d_cdef_brow;
 use crate::ctx::CaseSet;
 use crate::env::get_uv_inter_txtp;
 use crate::in_range::InRange;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
-use crate::include::common::dump::ac_dump;
-use crate::include::common::dump::coef_dump;
-use crate::include::common::dump::hex_dump;
-use crate::include::common::dump::hex_dump_pic;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::ulog2;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, ToPrimitive, BPC};
+use crate::include::common::dump::{ac_dump, coef_dump, hex_dump, hex_dump_pic};
+use crate::include::common::intops::{apply_sign64, clip, ulog2};
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::internal::Bxy;
-use crate::internal::Cf;
-use crate::internal::CodedBlockInfo;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dFrameData;
-use crate::internal::Rav1dTaskContext;
-use crate::internal::Rav1dTileStateContext;
-use crate::internal::ScratchEmuEdge;
-use crate::internal::TaskContextScratch;
-use crate::internal::TileStateRef;
+use crate::include::dav1d::headers::{
+    Rav1dPixelLayout, Rav1dPixelLayoutSubSampled, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
+};
+use crate::include::dav1d::picture::{Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset};
+use crate::internal::{
+    Bxy, Cf, CodedBlockInfo, Rav1dContext, Rav1dFrameData, Rav1dTaskContext, Rav1dTileStateContext,
+    ScratchEmuEdge, TaskContextScratch, TileStateRef,
+};
 use crate::intra_edge::EdgeFlags;
-use crate::ipred_prepare::rav1d_prepare_intra_edges;
-use crate::ipred_prepare::sm_flag;
-use crate::ipred_prepare::sm_uv_flag;
-use crate::levels::Av1Block;
-use crate::levels::Av1BlockInter;
-use crate::levels::Av1BlockIntra;
-use crate::levels::Av1BlockIntraInter;
-use crate::levels::BlockSize;
-use crate::levels::CompInterType;
-use crate::levels::Filter2d;
-use crate::levels::InterIntraPredMode;
-use crate::levels::InterIntraType;
-use crate::levels::IntraPredMode;
-use crate::levels::MotionMode;
-use crate::levels::Mv;
-use crate::levels::TxClass;
-use crate::levels::TxfmSize;
-use crate::levels::TxfmType;
-use crate::levels::CFL_PRED;
-use crate::levels::DCT_DCT;
-use crate::levels::DC_PRED;
-use crate::levels::FILTER_PRED;
-use crate::levels::GLOBALMV;
-use crate::levels::GLOBALMV_GLOBALMV;
-use crate::levels::IDTX;
-use crate::levels::SMOOTH_PRED;
-use crate::levels::WHT_WHT;
-use crate::lf_apply::rav1d_copy_lpf;
-use crate::lf_apply::rav1d_loopfilter_sbrow_cols;
-use crate::lf_apply::rav1d_loopfilter_sbrow_rows;
+use crate::ipred_prepare::{rav1d_prepare_intra_edges, sm_flag, sm_uv_flag};
+use crate::levels::{
+    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterType, Filter2d,
+    InterIntraPredMode, InterIntraType, IntraPredMode, MotionMode, Mv, TxClass, TxfmSize, TxfmType,
+    CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, IDTX, SMOOTH_PRED,
+    WHT_WHT,
+};
+use crate::lf_apply::{rav1d_copy_lpf, rav1d_loopfilter_sbrow_cols, rav1d_loopfilter_sbrow_rows};
 use crate::lr_apply::rav1d_lr_sbrow;
-use crate::msac::rav1d_msac_decode_bool_adapt;
-use crate::msac::rav1d_msac_decode_bool_equi;
-use crate::msac::rav1d_msac_decode_bools;
-use crate::msac::rav1d_msac_decode_hi_tok;
-use crate::msac::rav1d_msac_decode_symbol_adapt16;
-use crate::msac::rav1d_msac_decode_symbol_adapt4;
-use crate::msac::rav1d_msac_decode_symbol_adapt8;
-use crate::msac::MsacContext;
+use crate::msac::{
+    rav1d_msac_decode_bool_adapt, rav1d_msac_decode_bool_equi, rav1d_msac_decode_bools,
+    rav1d_msac_decode_hi_tok, rav1d_msac_decode_symbol_adapt16, rav1d_msac_decode_symbol_adapt4,
+    rav1d_msac_decode_symbol_adapt8, MsacContext,
+};
 use crate::picture::Rav1dThreadPicture;
 use crate::pixels::Pixels as _;
 use crate::scan::DAV1D_SCANS;
 use crate::strided::Strided as _;
-use crate::tables::TxfmInfo;
-use crate::tables::DAV1D_FILTER_2D;
-use crate::tables::DAV1D_FILTER_MODE_TO_Y_MODE;
-use crate::tables::DAV1D_LO_CTX_OFFSETS;
-use crate::tables::DAV1D_SKIP_CTX;
-use crate::tables::DAV1D_TXFM_DIMENSIONS;
-use crate::tables::DAV1D_TXTP_FROM_UVMODE;
-use crate::tables::DAV1D_TX_TYPES_PER_SET;
-use crate::tables::DAV1D_TX_TYPE_CLASS;
-use crate::wedge::DAV1D_II_MASKS;
-use crate::wedge::DAV1D_WEDGE_MASKS;
+use crate::tables::{
+    TxfmInfo, DAV1D_FILTER_2D, DAV1D_FILTER_MODE_TO_Y_MODE, DAV1D_LO_CTX_OFFSETS, DAV1D_SKIP_CTX,
+    DAV1D_TXFM_DIMENSIONS, DAV1D_TXTP_FROM_UVMODE, DAV1D_TX_TYPES_PER_SET, DAV1D_TX_TYPE_CLASS,
+};
+use crate::wedge::{DAV1D_II_MASKS, DAV1D_WEDGE_MASKS};
 use crate::with_offset::WithOffset;
 use assert_matches::debug_assert_matches;
 use libc::intptr_t;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
 use std::hint::assert_unchecked;
 use std::ops::BitOr;
-use std::ptr;
+use std::{array, cmp, ptr};
 use to_method::To as _;
 
 impl Bxy {

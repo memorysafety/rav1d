@@ -2,15 +2,11 @@
 
 use crate::align::Align16;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
+use crate::include::dav1d::headers::{Rav1dPixelLayout, Rav1dRestorationType};
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dFrameData;
+use crate::internal::{Rav1dContext, Rav1dFrameData};
 use crate::lf_mask::Av1RestorationUnit;
-use crate::looprestoration::LooprestorationParams;
-use crate::looprestoration::LooprestorationParamsSgr;
-use crate::looprestoration::LrEdgeFlags;
+use crate::looprestoration::{LooprestorationParams, LooprestorationParamsSgr, LrEdgeFlags};
 use crate::strided::Strided as _;
 use crate::tables::DAV1D_SGR_PARAMS;
 use assert_matches::assert_matches;

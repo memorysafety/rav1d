@@ -1,26 +1,20 @@
 #![deny(unsafe_code)]
 
-use crate::align::Align16;
-use crate::align::AlignedVec64;
+use crate::align::{Align16, AlignedVec64};
 use crate::cdef::CdefEdgeFlags;
 use crate::disjoint_mut::DisjointMut;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::{BitDepth, BPC};
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dFrameData;
-use crate::internal::Rav1dTaskContext;
+use crate::internal::{Rav1dContext, Rav1dFrameData, Rav1dTaskContext};
 use crate::pic_or_buf::PicOrBuf;
-use crate::strided::Strided as _;
-use crate::strided::WithStride;
+use crate::strided::{Strided as _, WithStride};
 use crate::with_offset::WithOffset;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
 
 bitflags! {
     #[derive(Clone, Copy)]

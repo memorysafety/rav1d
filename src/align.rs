@@ -9,13 +9,9 @@
 use crate::disjoint_mut::AsMutPtr;
 use std::hint::assert_unchecked;
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::MaybeUninit;
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::ops::Index;
-use std::ops::IndexMut;
-use std::slice;
+use std::ops::{Deref, DerefMut, Index, IndexMut};
+use std::{mem, slice};
 
 /// [`Default`] isn't `impl`emented for all arrays `[T; N]`
 /// because they were implemented before `const` generics

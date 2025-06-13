@@ -3,80 +3,37 @@
 use crate::c_arc::CArc;
 use crate::decode::rav1d_submit_frame;
 use crate::env::get_poc_diff;
-use crate::error::Rav1dError::EINVAL;
-use crate::error::Rav1dError::ENOENT;
-use crate::error::Rav1dError::ERANGE;
+use crate::error::Rav1dError::{EINVAL, ENOENT, ERANGE};
 use crate::error::Rav1dResult;
 use crate::getbits::GetBits;
-use crate::include::common::intops::clip_u8;
-use crate::include::common::intops::ulog2;
+use crate::include::common::intops::{clip_u8, ulog2};
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
-use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
-use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
-use crate::include::dav1d::headers::Rav1dColorPrimaries;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
-use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dFrameHeaderCdef;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDelta;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaLF;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaQ;
-use crate::include::dav1d::headers::Rav1dFrameHeaderFilmGrain;
-use crate::include::dav1d::headers::Rav1dFrameHeaderLoopFilter;
-use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
-use crate::include::dav1d::headers::Rav1dFrameHeaderQuant;
-use crate::include::dav1d::headers::Rav1dFrameHeaderRestoration;
-use crate::include::dav1d::headers::Rav1dFrameHeaderSegmentation;
-use crate::include::dav1d::headers::Rav1dFrameHeaderSuperRes;
-use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
-use crate::include::dav1d::headers::Rav1dFrameSize;
-use crate::include::dav1d::headers::Rav1dFrameSkipMode;
-use crate::include::dav1d::headers::Rav1dFrameType;
-use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Rav1dObuType;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dProfile;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::Rav1dSegmentationData;
-use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
-use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
-use crate::include::dav1d::headers::Rav1dTxfmMode;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
-use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
-use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
-use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
-use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
-use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
-use crate::internal::Rav1dContext;
-use crate::internal::Rav1dState;
-use crate::internal::Rav1dTileGroup;
-use crate::internal::Rav1dTileGroupHeader;
+use crate::include::dav1d::headers::{
+    DRav1d, Dav1dSequenceHeader, Rav1dAdaptiveBoolean, Rav1dChromaSamplePosition,
+    Rav1dColorPrimaries, Rav1dContentLightLevel, Rav1dFilmGrainData, Rav1dFilterMode,
+    Rav1dFrameHeader, Rav1dFrameHeaderCdef, Rav1dFrameHeaderDelta, Rav1dFrameHeaderDeltaLF,
+    Rav1dFrameHeaderDeltaQ, Rav1dFrameHeaderFilmGrain, Rav1dFrameHeaderLoopFilter,
+    Rav1dFrameHeaderOperatingPoint, Rav1dFrameHeaderQuant, Rav1dFrameHeaderRestoration,
+    Rav1dFrameHeaderSegmentation, Rav1dFrameHeaderSuperRes, Rav1dFrameHeaderTiling, Rav1dFrameSize,
+    Rav1dFrameSkipMode, Rav1dFrameType, Rav1dITUTT35, Rav1dLoopfilterModeRefDeltas,
+    Rav1dMasteringDisplay, Rav1dMatrixCoefficients, Rav1dObuType, Rav1dPixelLayout, Rav1dProfile,
+    Rav1dRestorationType, Rav1dSegmentationData, Rav1dSegmentationDataSet, Rav1dSequenceHeader,
+    Rav1dSequenceHeaderOperatingParameterInfo, Rav1dSequenceHeaderOperatingPoint,
+    Rav1dTransferCharacteristics, Rav1dTxfmMode, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
+    RAV1D_MAX_CDEF_STRENGTHS, RAV1D_MAX_OPERATING_POINTS, RAV1D_MAX_TILE_COLS, RAV1D_MAX_TILE_ROWS,
+    RAV1D_PRIMARY_REF_NONE, RAV1D_REFS_PER_FRAME,
+};
+use crate::internal::{Rav1dContext, Rav1dState, Rav1dTileGroup, Rav1dTileGroupHeader};
 use crate::levels::ObuMetaType;
 use crate::log::Rav1dLog as _;
-use crate::picture::rav1d_picture_copy_props;
-use crate::picture::PictureFlags;
+use crate::picture::{rav1d_picture_copy_props, PictureFlags};
 use crate::thread_task::FRAME_ERROR;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::fmt;
-use std::mem;
+use std::ffi::{c_int, c_uint};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::{array, cmp, fmt, mem};
 
 struct Debug {
     enabled: bool,

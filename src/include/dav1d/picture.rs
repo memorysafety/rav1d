@@ -1,47 +1,31 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use crate::c_arc::RawArc;
-use crate::disjoint_mut::AsMutPtr;
-use crate::disjoint_mut::DisjointImmutGuard;
-use crate::disjoint_mut::DisjointMut;
-use crate::disjoint_mut::DisjointMutGuard;
-use crate::disjoint_mut::SliceBounds;
-use crate::error::Dav1dResult;
-use crate::error::Rav1dError;
+use crate::disjoint_mut::{
+    AsMutPtr, DisjointImmutGuard, DisjointMut, DisjointMutGuard, SliceBounds,
+};
 use crate::error::Rav1dError::EINVAL;
-use crate::error::Rav1dResult;
+use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
+use crate::include::dav1d::headers::{
+    DRav1d, Dav1dFrameHeader, Dav1dITUTT35, Dav1dPixelLayout, Dav1dSequenceHeader,
+    Rav1dContentLightLevel, Rav1dFrameHeader, Rav1dITUTT35, Rav1dMasteringDisplay,
+    Rav1dPixelLayout, Rav1dSequenceHeader,
+};
 use crate::pixels::Pixels;
 use crate::send_sync_non_null::SendSyncNonNull;
 use crate::strided::Strided;
 use crate::with_offset::WithOffset;
-use libc::ptrdiff_t;
-use libc::uintptr_t;
-use std::array;
-use std::ffi::c_int;
-use std::ffi::c_void;
+use libc::{ptrdiff_t, uintptr_t};
+use std::ffi::{c_int, c_void};
 use std::hint::assert_unchecked;
-use std::mem;
 use std::ptr::NonNull;
 use std::sync::Arc;
+use std::{array, mem};
 use to_method::To as _;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
-use zerocopy::FromZeroes;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;

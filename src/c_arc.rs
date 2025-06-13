@@ -77,8 +77,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
     fn as_ref(&self) -> &T {
         #[cfg(debug_assertions)]
         {
-            use std::mem;
-            use std::ptr;
+            use std::{mem, ptr};
             use to_method::To;
 
             // Some extra checks to check if our ptrs are definitely invalid.

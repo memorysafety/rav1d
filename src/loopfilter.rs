@@ -9,9 +9,7 @@ use crate::ffi_safe::FFISafe;
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel};
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::internal::Rav1dFrameData;

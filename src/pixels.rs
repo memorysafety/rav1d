@@ -1,5 +1,4 @@
-use crate::disjoint_mut::AsMutPtr;
-use crate::disjoint_mut::DisjointMut;
+use crate::disjoint_mut::{AsMutPtr, DisjointMut};
 use crate::include::common::bitdepth::BitDepth;
 use crate::strided::WithStride;
 use std::mem;

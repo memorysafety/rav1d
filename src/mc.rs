@@ -2,9 +2,7 @@
 
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
-use crate::enum_map::enum_map;
-use crate::enum_map::enum_map_ty;
-use crate::enum_map::DefaultValue;
+use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
 use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
@@ -16,37 +14,25 @@ use crate::include::common::bitdepth::bd_fn;
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bpc_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::BPC;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::internal::COMPINTER_LEN;
-use crate::internal::EMU_EDGE_LEN;
-use crate::internal::SCRATCH_INTER_INTRA_BUF_LEN;
-use crate::internal::SCRATCH_LAP_LEN;
-use crate::internal::SEG_MASK_LEN;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel};
+use crate::include::common::intops::{clip, iclip};
+use crate::include::dav1d::headers::{Rav1dFilterMode, Rav1dPixelLayoutSubSampled};
+use crate::include::dav1d::picture::{Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset};
+use crate::internal::{
+    COMPINTER_LEN, EMU_EDGE_LEN, SCRATCH_INTER_INTRA_BUF_LEN, SCRATCH_LAP_LEN, SEG_MASK_LEN,
+};
 use crate::levels::Filter2d;
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
-use crate::tables::dav1d_mc_subpel_filters;
-use crate::tables::dav1d_mc_warp_filter;
-use crate::tables::dav1d_obmc_masks;
-use crate::tables::dav1d_resize_filter;
+use crate::tables::{
+    dav1d_mc_subpel_filters, dav1d_mc_warp_filter, dav1d_obmc_masks, dav1d_resize_filter,
+};
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use std::cmp;
 use std::ffi::c_int;
-use std::iter;
-use std::mem;
-use std::ptr;
-use std::slice;
+use std::{cmp, iter, mem, ptr, slice};
 use to_method::To;
 
 #[inline(never)]
