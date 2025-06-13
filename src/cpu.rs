@@ -1,9 +1,11 @@
-use crate::const_fn::const_for;
-use bitflags::bitflags;
 use std::ffi::c_uint;
 use std::num::NonZero;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::thread::available_parallelism;
+
+use bitflags::bitflags;
+
+use crate::const_fn::const_for;
 
 #[cfg(not(any(
     target_arch = "x86",

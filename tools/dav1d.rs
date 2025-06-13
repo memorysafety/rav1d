@@ -16,10 +16,10 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
-use crate::compat::stdio::{snprintf, stderr};
-use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_CUSTOM, REALTIME_DISABLE};
-use crate::input::input::{input_close, input_open, input_read, DemuxerContext};
-use crate::output::output::{output_close, output_open, output_verify, output_write, MuxerContext};
+use std::ffi::{c_char, c_double, c_int, c_uint, c_ulonglong, c_void};
+use std::ptr::NonNull;
+use std::time::Duration;
+
 use libc::{
     calloc, fclose, fflush, fileno, fopen, fprintf, fputs, free, isatty, memset, ptrdiff_t, strcpy,
     strerror, EAGAIN, EINVAL,
@@ -42,9 +42,11 @@ use rav1d::{
     dav1d_send_data, dav1d_version, dav1d_version_api, Dav1dResult, DAV1D_API_VERSION_MAJOR,
     DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH,
 };
-use std::ffi::{c_char, c_double, c_int, c_uint, c_ulonglong, c_void};
-use std::ptr::NonNull;
-use std::time::Duration;
+
+use crate::compat::stdio::{snprintf, stderr};
+use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_CUSTOM, REALTIME_DISABLE};
+use crate::input::input::{input_close, input_open, input_read, DemuxerContext};
+use crate::output::output::{output_close, output_open, output_verify, output_write, MuxerContext};
 
 #[cfg(target_os = "windows")]
 unsafe fn get_time_nanos() -> u64 {

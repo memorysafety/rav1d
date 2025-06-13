@@ -1,3 +1,8 @@
+use std::cmp;
+use std::ffi::c_int;
+
+use bitflags::bitflags;
+
 use crate::align::AlignedVec64;
 use crate::const_fn::const_for;
 use crate::disjoint_mut::DisjointMut;
@@ -11,9 +16,6 @@ use crate::levels::{
     SMOOTH_V_PRED, TOP_DC_PRED, VERT_LEFT_PRED, VERT_PRED, Z1_PRED, Z2_PRED, Z3_PRED,
 };
 use crate::strided::Strided as _;
-use bitflags::bitflags;
-use std::cmp;
-use std::ffi::c_int;
 
 #[inline]
 pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {

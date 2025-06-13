@@ -1,14 +1,16 @@
-use crate::compat::errno::errno_location;
-use crate::compat::stdio::{stderr, stdout};
+use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::ptr::NonNull;
+use std::{cmp, ptr};
+
 use libc::{fclose, fopen, fprintf, memcpy, strcmp, strerror, strlen, strtoul};
 use rav1d::dav1d_picture_unref;
 use rav1d::include::dav1d::headers::{
     DAV1D_PIXEL_LAYOUT_I400, DAV1D_PIXEL_LAYOUT_I420, DAV1D_PIXEL_LAYOUT_I444,
 };
 use rav1d::include::dav1d::picture::{Dav1dPicture, Dav1dPictureParameters};
-use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
-use std::ptr::NonNull;
-use std::{cmp, ptr};
+
+use crate::compat::errno::errno_location;
+use crate::compat::stdio::{stderr, stdout};
 
 #[repr(C)]
 pub struct MuxerPriv {

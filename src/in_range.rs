@@ -1,8 +1,9 @@
-use crate::const_fn::const_for;
-use crate::enum_map::DefaultValue;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::hint::assert_unchecked;
+
+use crate::const_fn::const_for;
+use crate::enum_map::DefaultValue;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct InRange<T, const MIN: u128, const MAX: u128>(T);

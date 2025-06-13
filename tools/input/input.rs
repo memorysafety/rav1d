@@ -1,11 +1,13 @@
-use crate::compat::errno::errno_location;
-use crate::compat::stdio::stderr;
+use std::ffi::{c_char, c_int, c_uint, c_void};
+use std::{cmp, mem};
+
 use libc::{
     calloc, fclose, fopen, fprintf, fread, free, malloc, strcmp, strerror, ENOMEM, ENOPROTOOPT,
 };
 use rav1d::include::dav1d::data::Dav1dData;
-use std::ffi::{c_char, c_int, c_uint, c_void};
-use std::{cmp, mem};
+
+use crate::compat::errno::errno_location;
+use crate::compat::stdio::stderr;
 
 extern "C" {
     static ivf_demuxer: Demuxer;

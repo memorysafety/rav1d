@@ -1,5 +1,15 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_void};
+use std::ptr::{fn_addr_eq, NonNull};
+use std::sync::atomic::AtomicU32;
+use std::sync::Arc;
+use std::{mem, ptr};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+use to_method::To as _;
+
 use crate::error::Rav1dError::EGeneric;
 use crate::error::{Dav1dResult, Rav1dResult};
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -15,14 +25,6 @@ use crate::internal::{Rav1dFrameContext, Rav1dFrameData};
 use crate::log::{Rav1dLog as _, Rav1dLogger};
 use crate::pool::MemPool;
 use crate::send_sync_non_null::SendSyncNonNull;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::ffi::{c_int, c_void};
-use std::ptr::{fn_addr_eq, NonNull};
-use std::sync::atomic::AtomicU32;
-use std::sync::Arc;
-use std::{mem, ptr};
-use to_method::To as _;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PictureFlags(u8);

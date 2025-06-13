@@ -1,5 +1,14 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::ops::Add;
+use std::{cmp, iter, mem, slice};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+use to_method::To;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
+
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
 use crate::cursor::CursorMut;
@@ -20,13 +29,6 @@ use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::strided::Strided as _;
 use crate::tables::dav1d_sgr_x_by_x;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::ffi::{c_int, c_uint};
-use std::ops::Add;
-use std::{cmp, iter, mem, slice};
-use to_method::To;
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -948,11 +950,13 @@ fn sgr_mix_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 mod neon {
+    use std::ptr;
+
+    use libc::intptr_t;
+
     use super::*;
     use crate::align::Align16;
     use crate::include::common::bitdepth::bd_fn;
-    use libc::intptr_t;
-    use std::ptr;
 
     wrap_fn_ptr!(unsafe extern "C" fn wiener_filter_h(
         dst: *mut i16,
@@ -1562,9 +1566,10 @@ mod neon {
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
+    use std::{array, ptr};
+
     use super::*;
     use crate::align::Align16;
-    use std::{array, ptr};
 
     fn rotate<const LEN: usize, const MID: usize>(
         a: &mut [*mut i32; LEN],

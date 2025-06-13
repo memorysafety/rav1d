@@ -1,13 +1,14 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::c_box::CBox;
-use crate::error::Rav1dResult;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::ptr::NonNull;
 use std::slice::SliceIndex;
 use std::sync::Arc;
+
+use crate::c_box::CBox;
+use crate::error::Rav1dResult;
 
 pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
     let raw = Arc::into_raw(arc).cast_mut();
@@ -78,6 +79,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         #[cfg(debug_assertions)]
         {
             use std::{mem, ptr};
+
             use to_method::To;
 
             // Some extra checks to check if our ptrs are definitely invalid.

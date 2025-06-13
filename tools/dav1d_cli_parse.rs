@@ -1,5 +1,7 @@
-use crate::compat::getopt::{getopt_long, option};
-use crate::compat::stdio::stderr;
+use std::ffi::{c_char, c_double, c_int, c_uint, c_ulong, c_void, CStr};
+use std::process::exit;
+use std::ptr::NonNull;
+
 use cfg_if::cfg_if;
 use libc::{fprintf, memset, strcat, strcmp, strcpy, strncmp, strtod, strtoul};
 use rav1d::cpu::dav1d_set_cpu_flags_mask;
@@ -17,9 +19,9 @@ use rav1d::include::dav1d::dav1d::{
     DAV1D_INLOOPFILTER_NONE, DAV1D_INLOOPFILTER_RESTORATION,
 };
 use rav1d::{dav1d_default_settings, dav1d_version};
-use std::ffi::{c_char, c_double, c_int, c_uint, c_ulong, c_void, CStr};
-use std::process::exit;
-use std::ptr::NonNull;
+
+use crate::compat::getopt::{getopt_long, option};
+use crate::compat::stdio::stderr;
 
 extern "C" {
     static mut optarg: *mut c_char;

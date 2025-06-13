@@ -16,9 +16,9 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
-use crate::compat::stdio::stderr;
-use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_DISABLE};
-use crate::input::input::{input_close, input_open, input_read, input_seek, DemuxerContext};
+use std::ffi::{c_char, c_double, c_float, c_int, c_uint, c_void};
+use std::ptr::NonNull;
+
 use libc::EAGAIN;
 use rav1d::include::dav1d::common::{Dav1dDataProps, Dav1dUserData};
 use rav1d::include::dav1d::data::Dav1dData;
@@ -35,8 +35,10 @@ use rav1d::{
     dav1d_close, dav1d_flush, dav1d_get_picture, dav1d_open, dav1d_parse_sequence_header,
     dav1d_picture_unref, dav1d_send_data, dav1d_version,
 };
-use std::ffi::{c_char, c_double, c_float, c_int, c_uint, c_void};
-use std::ptr::NonNull;
+
+use crate::compat::stdio::stderr;
+use crate::dav1d_cli_parse::{parse, CLISettings, REALTIME_DISABLE};
+use crate::input::input::{input_close, input_open, input_read, input_seek, DemuxerContext};
 
 #[cfg(target_os = "windows")]
 unsafe fn get_seed() -> c_uint {

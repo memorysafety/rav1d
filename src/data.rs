@@ -1,5 +1,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
 use crate::c_arc::CArc;
 use crate::c_box::{CBox, FnFree, Free};
 use crate::error::Rav1dError::EINVAL;
@@ -8,8 +11,6 @@ use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::send_sync_non_null::SendSyncNonNull;
-use std::ffi::c_void;
-use std::ptr::NonNull;
 
 impl From<CArc<[u8]>> for Rav1dData {
     fn from(data: CArc<[u8]>) -> Self {

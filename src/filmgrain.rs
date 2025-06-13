@@ -1,5 +1,13 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::hint::assert_unchecked;
+use std::ops::{Add, Shl, Shr};
+use std::{cmp, mem, ptr};
+
+use libc::{intptr_t, ptrdiff_t};
+use to_method::To;
+
 use crate::cpu::CpuFlags;
 use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
 use crate::ffi_safe::FFISafe;
@@ -18,12 +26,6 @@ use crate::internal::GrainLut;
 use crate::strided::Strided as _;
 use crate::tables::dav1d_gaussian_sequence;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
-use libc::{intptr_t, ptrdiff_t};
-use std::ffi::{c_int, c_uint};
-use std::hint::assert_unchecked;
-use std::ops::{Add, Shl, Shr};
-use std::{cmp, mem, ptr};
-use to_method::To;
 
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;

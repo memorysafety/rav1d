@@ -1,9 +1,11 @@
+use std::cmp::Ordering;
+
+use paste::paste;
+use strum::EnumCount;
+
 use crate::align::{Align16, Align32, Align64};
 use crate::const_fn::{const_for, const_min};
 use crate::levels::{BlockSize, InterIntraPredMode};
-use paste::paste;
-use std::cmp::Ordering;
-use strum::EnumCount;
 
 #[derive(Clone, Copy, EnumCount)]
 enum WedgeDirectionType {

@@ -1,5 +1,6 @@
-use crate::c_arc::{CArc, RawCArc};
 use std::ptr::NonNull;
+
+use crate::c_arc::{CArc, RawCArc};
 
 #[derive(Default)]
 #[repr(C)]

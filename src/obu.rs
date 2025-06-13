@@ -1,5 +1,10 @@
 #![deny(unsafe_code)]
 
+use std::ffi::{c_int, c_uint};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::{array, cmp, fmt, mem};
+
 use crate::c_arc::CArc;
 use crate::decode::rav1d_submit_frame;
 use crate::env::get_poc_diff;
@@ -30,10 +35,6 @@ use crate::levels::ObuMetaType;
 use crate::log::Rav1dLog as _;
 use crate::picture::{rav1d_picture_copy_props, PictureFlags};
 use crate::thread_task::FRAME_ERROR;
-use std::ffi::{c_int, c_uint};
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::{array, cmp, fmt, mem};
 
 struct Debug {
     enabled: bool,

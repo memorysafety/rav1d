@@ -1,5 +1,12 @@
 #![deny(unsafe_code)]
 
+use std::cmp;
+use std::ffi::c_int;
+
+use assert_matches::assert_matches;
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+
 use crate::align::Align16;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::{Rav1dPixelLayout, Rav1dRestorationType};
@@ -9,11 +16,6 @@ use crate::lf_mask::Av1RestorationUnit;
 use crate::looprestoration::{LooprestorationParams, LooprestorationParamsSgr, LrEdgeFlags};
 use crate::strided::Strided as _;
 use crate::tables::DAV1D_SGR_PARAMS;
-use assert_matches::assert_matches;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
 
 bitflags! {
     #[derive(Clone, Copy, Default)]

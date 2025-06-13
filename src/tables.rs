@@ -1,3 +1,7 @@
+use std::ffi::c_uint;
+
+use strum::EnumCount;
+
 use crate::align::{Align16, Align4, Align64, Align8};
 use crate::enum_map::DefaultValue;
 use crate::include::dav1d::headers::{
@@ -13,8 +17,6 @@ use crate::levels::{
     N_TX_TYPES_PLUS_LL, N_UV_INTRA_PRED_MODES, PAETH_PRED, SMOOTH_H_PRED, SMOOTH_PRED,
     SMOOTH_V_PRED, VERT_LEFT_PRED, VERT_PRED, VERT_RIGHT_PRED, V_ADST, V_DCT, V_FLIPADST,
 };
-use std::ffi::c_uint;
-use strum::EnumCount;
 
 #[repr(C)]
 pub struct TxfmInfo {

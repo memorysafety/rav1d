@@ -1,5 +1,11 @@
 #![deny(unsafe_code)]
 
+use std::cmp;
+use std::ffi::{c_int, c_uint};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+
 use crate::align::{Align16, AlignedVec64};
 use crate::cdef::CdefEdgeFlags;
 use crate::disjoint_mut::DisjointMut;
@@ -11,10 +17,6 @@ use crate::internal::{Rav1dContext, Rav1dFrameData, Rav1dTaskContext};
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::{Strided as _, WithStride};
 use crate::with_offset::WithOffset;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::{c_int, c_uint};
 
 bitflags! {
     #[derive(Clone, Copy)]
