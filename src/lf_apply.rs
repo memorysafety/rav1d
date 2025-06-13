@@ -1,5 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::align::AlignedVec2;
 use crate::align::AlignedVec64;
 use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
@@ -368,7 +369,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
@@ -405,7 +406,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
 fn filter_plane_rows_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
@@ -437,7 +438,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
 fn filter_plane_cols_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
@@ -480,7 +481,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
 fn filter_plane_rows_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
