@@ -1,8 +1,7 @@
-use crate::include::common::intops::inv_recenter;
-use crate::include::common::intops::ulog2;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
 use std::ops::Index;
+
+use crate::include::common::intops::{inv_recenter, ulog2};
 
 #[repr(C)]
 pub struct GetBits<'a> {

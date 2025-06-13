@@ -1,24 +1,21 @@
-use crate::align::Align16;
-use crate::align::ArrayDefault;
-use crate::ctx::CaseSet;
-use crate::disjoint_mut::DisjointMut;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::internal::Bxy;
-use crate::levels::BlockSize;
-use crate::levels::SegmentId;
-use crate::levels::TxfmSize;
-use crate::relaxed_atomic::RelaxedAtomic;
-use crate::tables::DAV1D_TXFM_DIMENSIONS;
-use libc::ptrdiff_t;
-use parking_lot::RwLock;
 use std::cmp;
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
+
+use libc::ptrdiff_t;
+use parking_lot::RwLock;
+
+use crate::align::{Align16, ArrayDefault};
+use crate::ctx::CaseSet;
+use crate::disjoint_mut::DisjointMut;
+use crate::include::common::intops::{clip, iclip};
+use crate::include::dav1d::headers::{
+    Rav1dFrameHeader, Rav1dLoopfilterModeRefDeltas, Rav1dPixelLayout, Rav1dRestorationType,
+};
+use crate::internal::Bxy;
+use crate::levels::{BlockSize, SegmentId, TxfmSize};
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
 
 #[repr(C)]
 pub struct Av1FilterLUT {

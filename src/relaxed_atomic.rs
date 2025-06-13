@@ -1,6 +1,6 @@
-use atomig::Atom;
-use atomig::Atomic;
 use std::sync::atomic::Ordering;
+
+use atomig::{Atom, Atomic};
 
 /// A [`Atomic`] type that can only be accessed
 /// through [`Ordering::Relaxed`] loads and stores,

@@ -3,11 +3,10 @@
 #[cfg(feature = "asm")]
 mod asm {
     use std::collections::HashSet;
-    use std::env;
     use std::fmt::Display;
-    use std::fs;
     use std::path::PathBuf;
     use std::str::FromStr;
+    use std::{env, fs};
 
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum Arch {
