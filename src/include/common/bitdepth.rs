@@ -1,20 +1,10 @@
-use crate::align::Align16;
-use crate::align::Align8;
-use crate::align::ArrayDefault;
+use crate::align::{Align16, Align8, ArrayDefault};
 use crate::include::common::intops::clip;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_void;
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::ops::Add;
-use std::ops::Div;
-use std::ops::Mul;
-use std::ops::Rem;
-use std::ops::Shr;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
+use std::fmt::{Display, Formatter};
+use std::ops::{Add, Div, Mul, Rem, Shr};
+use zerocopy::{AsBytes, FromBytes};
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;

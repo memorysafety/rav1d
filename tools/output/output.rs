@@ -1,25 +1,8 @@
-use crate::compat::stdio::snprintf;
-use crate::compat::stdio::stderr;
-use libc::fprintf;
-use libc::free;
-use libc::malloc;
-use libc::memcpy;
-use libc::strchr;
-use libc::strcmp;
-use libc::strlen;
-use libc::strncmp;
-use libc::ENOMEM;
-use libc::ENOPROTOOPT;
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use std::cmp;
-use std::ffi::c_char;
-use std::ffi::c_int;
-use std::ffi::c_long;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_void;
-use std::mem;
+use crate::compat::stdio::{snprintf, stderr};
+use libc::{fprintf, free, malloc, memcpy, strchr, strcmp, strlen, strncmp, ENOMEM, ENOPROTOOPT};
+use rav1d::include::dav1d::picture::{Dav1dPicture, Dav1dPictureParameters};
+use std::ffi::{c_char, c_int, c_long, c_uint, c_ulong, c_void};
+use std::{cmp, mem};
 
 extern "C" {
     static null_muxer: Muxer;

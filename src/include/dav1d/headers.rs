@@ -2,18 +2,12 @@ use crate::align::ArrayDefault;
 use crate::enum_map::EnumKey;
 use crate::levels::SegmentId;
 use crate::relaxed_atomic::RelaxedAtomic;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
 use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::ops::BitAnd;
-use std::ops::Deref;
-use std::ops::Sub;
+use std::fmt::{Debug, Display, Formatter};
+use std::ops::{BitAnd, Deref, Sub};
 use std::sync::Arc;
-use strum::EnumCount;
-use strum::FromRepr;
+use strum::{EnumCount, FromRepr};
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,

@@ -3,8 +3,7 @@ pub mod stdio;
 
 #[cfg(target_os = "windows")]
 pub mod getopt {
-    use libc::c_char;
-    use libc::c_int;
+    use libc::{c_char, c_int};
 
     #[allow(non_camel_case_types)]
     #[repr(C)]
@@ -28,6 +27,5 @@ pub mod getopt {
 
 #[cfg(not(target_os = "windows"))]
 pub mod getopt {
-    pub use libc::getopt_long;
-    pub use libc::option;
+    pub use libc::{getopt_long, option};
 }

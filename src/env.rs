@@ -1,31 +1,19 @@
 use crate::align::Align8;
-use crate::disjoint_mut::DisjointMut;
-use crate::disjoint_mut::DisjointMutSlice;
+use crate::disjoint_mut::{DisjointMut, DisjointMutSlice};
 use crate::include::common::intops::apply_sign;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::dav1d::headers::{
+    Rav1dFilterMode, Rav1dFrameHeader, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
+};
 use crate::internal::Bxy;
-use crate::levels::BlockLevel;
-use crate::levels::BlockPartition;
-use crate::levels::CompInterType;
-use crate::levels::Mv;
-use crate::levels::SegmentId;
-use crate::levels::TxfmSize;
-use crate::levels::TxfmType;
-use crate::levels::DCT_DCT;
-use crate::levels::H_ADST;
-use crate::levels::H_FLIPADST;
-use crate::levels::IDTX;
-use crate::levels::V_ADST;
-use crate::levels::V_FLIPADST;
+use crate::levels::{
+    BlockLevel, BlockPartition, CompInterType, Mv, SegmentId, TxfmSize, TxfmType, DCT_DCT, H_ADST,
+    H_FLIPADST, IDTX, V_ADST, V_FLIPADST,
+};
 use crate::refmvs::RefMvsCandidate;
 use crate::tables::TxfmInfo;
 use std::cmp;
 use std::cmp::Ordering;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::ffi::{c_int, c_uint};
 
 #[derive(Default)]
 pub struct BlockContext {

@@ -11,16 +11,11 @@ use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::LeftPixelRow2px;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::BPC;
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel, LeftPixelRow2px};
+use crate::include::common::intops::{apply_sign, iclip};
+use crate::include::dav1d::picture::{Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset};
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
 use crate::tables::DAV1D_CDEF_DIRECTIONS;
@@ -28,10 +23,8 @@ use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ptr;
+use std::ffi::{c_int, c_uint};
+use std::{cmp, ptr};
 
 bitflags! {
     #[repr(transparent)]

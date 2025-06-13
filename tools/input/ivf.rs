@@ -1,23 +1,9 @@
 use crate::compat::errno::errno_location;
-use crate::compat::stdio::fseeko;
-use crate::compat::stdio::ftello;
-use crate::compat::stdio::stderr;
-use libc::fclose;
-use libc::fopen;
-use libc::fprintf;
-use libc::fread;
-use libc::ptrdiff_t;
-use libc::strerror;
-use libc::ENOMEM;
-use rav1d::dav1d_data_create;
-use rav1d::dav1d_data_unref;
+use crate::compat::stdio::{fseeko, ftello, stderr};
+use libc::{fclose, fopen, fprintf, fread, ptrdiff_t, strerror, ENOMEM};
 use rav1d::include::dav1d::data::Dav1dData;
-use std::ffi::c_char;
-use std::ffi::c_double;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_void;
+use rav1d::{dav1d_data_create, dav1d_data_unref};
+use std::ffi::{c_char, c_double, c_int, c_uint, c_ulong, c_void};
 use std::ptr::NonNull;
 
 #[repr(C)]

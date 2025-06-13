@@ -1,6 +1,5 @@
 use crate::include::common::bitdepth::BitDepth;
-use std::ops::Deref;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
 pub trait Strided {
     /// Stride in number of [`u8`] bytes.

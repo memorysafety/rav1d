@@ -1,9 +1,7 @@
-use crate::output::output::Muxer;
-use crate::output::output::MuxerPriv;
+use crate::output::output::{Muxer, MuxerPriv};
 use rav1d::dav1d_picture_unref;
 use rav1d::include::dav1d::picture::Dav1dPicture;
-use std::ffi::c_char;
-use std::ffi::c_int;
+use std::ffi::{c_char, c_int};
 use std::ptr::NonNull;
 
 type NullOutputContext = MuxerPriv;
