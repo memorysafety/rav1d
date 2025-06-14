@@ -7,6 +7,7 @@ use std::ops::Sub;
 use std::ops::SubAssign;
 
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub struct WithOffset<T> {
     pub data: T,
     pub offset: usize,
