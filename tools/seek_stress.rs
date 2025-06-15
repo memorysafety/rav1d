@@ -47,10 +47,10 @@ use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use rav1d::include::dav1d::headers::Dav1dTransferCharacteristics;
-use rav1d::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
+use rav1d::include::dav1d::headers::Rav1dAdaptiveBoolean;
+use rav1d::include::dav1d::headers::Rav1dChromaSamplePosition;
+use rav1d::include::dav1d::headers::Rav1dPixelLayout;
 use rav1d::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use rav1d::include::dav1d::headers::DAV1D_OFF;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use std::ffi::c_char;
@@ -192,11 +192,11 @@ unsafe fn seek(
         profile: 0,
         max_width: 0,
         max_height: 0,
-        layout: DAV1D_PIXEL_LAYOUT_I400,
+        layout: Rav1dPixelLayout::I400,
         pri: 0 as Dav1dColorPrimaries,
         trc: 0 as Dav1dTransferCharacteristics,
         mtrx: DAV1D_MC_IDENTITY,
-        chr: DAV1D_CHR_UNKNOWN,
+        chr: Rav1dChromaSamplePosition::Unknown,
         hbd: 0,
         color_range: 0,
         num_operating_points: 0,
@@ -237,8 +237,8 @@ unsafe fn seek(
         order_hint: 0,
         jnt_comp: 0,
         ref_frame_mvs: 0,
-        screen_content_tools: DAV1D_OFF,
-        force_integer_mv: DAV1D_OFF,
+        screen_content_tools: Rav1dAdaptiveBoolean::Off,
+        force_integer_mv: Rav1dAdaptiveBoolean::Off,
         order_hint_n_bits: 0,
         super_res: 0,
         cdef: 0,
