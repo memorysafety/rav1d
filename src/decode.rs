@@ -4428,8 +4428,8 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
                 .pal_idx
                 .resize(pal_idx_sz as usize * 128 * 128 / 8, Default::default());
         } else if !f.frame_thread.pal.is_empty() {
-            let _ = mem::take(&mut f.frame_thread.pal);
-            let _ = mem::take(&mut f.frame_thread.pal_idx);
+            f.frame_thread.pal = Default::default();
+            f.frame_thread.pal_idx = Default::default();
         }
     }
 
@@ -4849,11 +4849,11 @@ pub(crate) fn rav1d_decode_frame_exit(
         }
     }
 
-    let _ = mem::take(&mut f.refp);
-    let _ = mem::take(&mut f.ref_mvs);
-    let _ = mem::take(&mut f.cur);
-    let _ = mem::take(&mut f.sr_cur);
-    let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
+    f.refp = Default::default();
+    f.ref_mvs = Default::default();
+    f.cur = Default::default();
+    f.sr_cur = Default::default();
+    *fc.in_cdf.try_write().unwrap() = Default::default();
     if let Some(frame_hdr) = &f.frame_hdr {
         if frame_hdr.refresh_context != 0 {
             if let Some(progress) = f.out_cdf.progress() {
@@ -4862,15 +4862,15 @@ pub(crate) fn rav1d_decode_frame_exit(
                     Ordering::SeqCst,
                 );
             }
-            let _ = mem::take(&mut f.out_cdf);
+            f.out_cdf = Default::default();
         }
     }
 
-    let _ = mem::take(&mut f.cur_segmap);
-    let _ = mem::take(&mut f.prev_segmap);
-    let _ = mem::take(&mut f.mvs);
-    let _ = mem::take(&mut f.seq_hdr);
-    let _ = mem::take(&mut f.frame_hdr);
+    f.cur_segmap = None;
+    f.prev_segmap = None;
+    f.mvs = None;
+    f.seq_hdr = None;
+    f.frame_hdr = None;
     f.tiles.clear();
     task_thread.finished.store(true, Ordering::SeqCst);
     *task_thread.retval.try_lock().unwrap() = retval.err();
@@ -4966,14 +4966,14 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         if error.is_some() {
             state.cached_error = mem::take(&mut *error);
             state.cached_error_props = out_delayed.p.m.clone();
-            let _ = mem::take(out_delayed);
+            *out_delayed = Default::default();
         } else if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 state.out = out_delayed.clone();
                 state.event_flags |= out_delayed.flags.into();
             }
-            let _ = mem::take(out_delayed);
+            *out_delayed = Default::default();
         }
         (fc, out_delayed, Some(task_thread_lock))
     } else {
@@ -4993,22 +4993,22 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         m: &Rav1dDataProps,
     ) {
         fc.task_thread.error.store(1, Ordering::Relaxed);
-        let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
+        *fc.in_cdf.try_write().unwrap() = Default::default();
         if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
-            let _ = mem::take(&mut f.out_cdf);
+            f.out_cdf = Default::default();
         }
         for i in 0..7 {
             if f.refp[i].p.frame_hdr.is_some() {
-                let _ = mem::take(&mut f.refp[i]);
+                f.refp[i] = Default::default();
             }
-            let _ = mem::take(&mut f.ref_mvs[i]);
+            f.ref_mvs[i] = Default::default();
         }
-        let _ = mem::take(out);
-        let _ = mem::take(&mut f.cur);
-        let _ = mem::take(&mut f.sr_cur);
-        let _ = mem::take(&mut f.mvs);
-        let _ = mem::take(&mut f.seq_hdr);
-        let _ = mem::take(&mut f.frame_hdr);
+        *out = Default::default();
+        f.cur = Default::default();
+        f.sr_cur = Default::default();
+        f.mvs = None;
+        f.seq_hdr = None;
+        f.frame_hdr = None;
         *cached_error_props = m.clone();
 
         f.tiles.clear();
@@ -5062,7 +5062,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 || bpc != state.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {
-                    let _ = mem::take(&mut f.refp[j]);
+                    f.refp[j] = Default::default();
                 }
                 on_error(
                     fc,
@@ -5305,7 +5305,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
             if state.refs[i].p.p.frame_hdr.is_some() {
-                let _ = mem::take(&mut state.refs[i].p);
+                state.refs[i].p = Default::default();
             }
             state.refs[i].p = f.sr_cur.clone();
 
@@ -5316,7 +5316,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
             }
 
             state.refs[i].segmap = f.cur_segmap.clone();
-            let _ = mem::take(&mut state.refs[i].refmvs);
+            state.refs[i].refmvs = None;
             if !frame_hdr.allow_intrabc {
                 state.refs[i].refmvs = f.mvs.clone();
             }
@@ -5328,15 +5328,15 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     if c.fc.len() == 1 {
         let res = rav1d_decode_frame(c, &fc);
         if res.is_err() {
-            let _ = mem::take(&mut state.out);
+            state.out = Default::default();
             for i in 0..8 {
                 if refresh_frame_flags & (1 << i) != 0 {
                     if state.refs[i].p.p.frame_hdr.is_some() {
-                        let _ = mem::take(&mut state.refs[i].p);
+                        state.refs[i].p = Default::default();
                     }
-                    let _ = mem::take(&mut state.cdf[i]);
-                    let _ = mem::take(&mut state.refs[i].segmap);
-                    let _ = mem::take(&mut state.refs[i].refmvs);
+                    state.cdf[i] = Default::default();
+                    state.refs[i].segmap = None;
+                    state.refs[i].refmvs = None;
                 }
             }
             let mut f = fc.data.try_write().unwrap();

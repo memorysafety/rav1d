@@ -2154,13 +2154,13 @@ fn parse_obus(
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if state.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
-                let _ = mem::take(&mut state.refs[i as usize].p);
+                state.refs[i as usize].p = Default::default();
                 state.refs[i as usize].p.p.frame_hdr = state.frame_hdr.clone();
                 state.refs[i as usize].p.p.seq_hdr = state.seq_hdr.clone();
             }
         }
 
-        let _ = mem::take(&mut state.frame_hdr);
+        state.frame_hdr = None;
         state.n_tiles = 0;
     }
 
@@ -2284,15 +2284,15 @@ fn parse_obus(
                     // See 7.5, `operating_parameter_info` is allowed to change in
                     // sequence headers of a single sequence.
                     state.frame_hdr = None;
-                    let _ = mem::take(&mut state.content_light);
-                    let _ = mem::take(&mut state.mastering_display);
+                    state.content_light = None;
+                    state.mastering_display = None;
                     for i in 0..8 {
                         if state.refs[i as usize].p.p.frame_hdr.is_some() {
-                            let _ = mem::take(&mut state.refs[i as usize].p);
+                            state.refs[i as usize].p = Default::default();
                         }
-                        let _ = mem::take(&mut state.refs[i as usize].segmap);
-                        let _ = mem::take(&mut state.refs[i as usize].refmvs);
-                        let _ = mem::take(&mut state.cdf[i]);
+                        state.refs[i as usize].segmap = None;
+                        state.refs[i as usize].refmvs = None;
+                        state.cdf[i] = Default::default();
                     }
                     state.frame_flags |= PictureFlags::NEW_SEQUENCE;
                 }
@@ -2549,17 +2549,16 @@ fn parse_obus(
                 let error = &mut *fc.task_thread.retval.try_lock().unwrap();
                 if error.is_some() {
                     state.cached_error = mem::take(error);
-                    state.cached_error_props = out_delayed.p.m.clone();
-                    let _ = mem::take(out_delayed);
+                    state.cached_error_props = mem::take(out_delayed).p.m;
                 } else if out_delayed.p.data.is_some() {
+                    let out_delayed = mem::take(out_delayed);
                     let progress =
                         out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                     if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR
                     {
-                        state.out = out_delayed.clone();
-                        state.event_flags |= out_delayed.flags.into();
+                        state.out = out_delayed;
+                        state.event_flags |= state.out.flags.into();
                     }
-                    let _ = mem::take(out_delayed);
                 }
                 *out_delayed = state.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 out_delayed.visible = true;
@@ -2589,14 +2588,14 @@ fn parse_obus(
                     }
 
                     if state.refs[i as usize].p.p.frame_hdr.is_some() {
-                        let _ = mem::take(&mut state.refs[i as usize].p);
+                        state.refs[i as usize].p = Default::default();
                     }
                     state.refs[i as usize].p = state.refs[r as usize].p.clone();
 
                     state.cdf[i as usize] = state.cdf[r as usize].clone();
 
                     state.refs[i as usize].segmap = state.refs[r as usize].segmap.clone();
-                    let _ = mem::take(&mut state.refs[i as usize].refmvs);
+                    state.refs[i as usize].refmvs = None;
                 }
             }
             state.frame_hdr = None;
