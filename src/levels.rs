@@ -395,9 +395,43 @@ impl PartialEq for Mv {
     fn eq(&self, other: &Self) -> bool {
         // `#[derive(PartialEq)]` compares per-field with `&&`,
         // which isn't optimized well and isn't coalesced into wider loads.
-        // Comparing all of the bytes at once optimizes better with wider loads.
         // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
+
+        // A very common compare is the is_invalid().
+        // With the default implementation, this becomes two branches, one for each field.
+        //
+        // Comparing all of the bytes at once optimizes better:
+        // self.as_bytes() == other.as_bytes()
+        //
+        // However, on nightly-2025-05-01-aarch64-apple-darwin, while it does avoid a second compare,
+        // it involves two reads from memory of the two array elements,
+        // then it _stores_ them to the stack, then loads them again as a 32 bit,
+        // and the compares that with the constant Mv::INVALID:
+        //
+        // mov w9, #-2147450880 ; load [MIN, MIN] combined invalid mv
+        // ldrh w10, [x3]       ; load mv.y
+        // ldrh w11, [x3, #2]   ; load mv.x
+        // strh w10, [sp, #8]   ; save mv.y to the stack
+        // strh w11, [sp, #10]  ; save mv.x to the stack
+        // ldr w8, [sp, #8]     ; load combined mv from stack
+        // cmp w8, w9           ; compare mv with [MIN, MIN]
+        //
+        // x86_64 code appears similar. This is disappointingly not zero-copy.
+        //
+        // Ideally we want just a single 32-bit read of the two values for self and a single read for other.
+        // Failing that, we would at least like to not round-trip via the stack.
+        //
+        // This is the best I've found so far:
+        [self.y, self.x] == [other.y, other.x]
+
+        // It compiles as follows (in add_spatial_candidate):
+        // mov w11, #-2147450880    ; load [MIN, MIN]
+        // ldrh w10, [x3]           ; load mv.y
+        // ldrh w9, [x3, #2]        ; load mv.x
+        // orr w8, w10, w9, lsl #16 ; combined mv is mv.y << 16 | mv.x
+        // cmp w8, w11              ; compare mv with [MIN, MIN]
+        //
+        // So we still have two loads but we don't then do two saves and a third load!
     }
 }
 
