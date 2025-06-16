@@ -1,5 +1,6 @@
 use crate::align::Align16;
 use crate::align::Align64;
+use crate::align::AlignedVec2;
 use crate::align::AlignedVec64;
 use crate::cdef::Rav1dCdefDSPContext;
 use crate::cdf::CdfContext;
@@ -701,7 +702,7 @@ impl TxLpfRightEdge {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContextLf {
-    pub level: DisjointMut<Vec<u8>>,
+    pub level: DisjointMut<AlignedVec2<u8>>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
