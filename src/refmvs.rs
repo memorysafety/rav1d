@@ -39,7 +39,7 @@ pub struct RefMvsTemporalBlock {
 }
 const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
-#[derive(Clone, Copy, Eq, FromZeroes, AsBytes)]
+#[derive(Clone, Copy, PartialEq, Eq, FromZeroes, AsBytes)]
 // In C, this is packed and is 2 bytes.
 // In Rust, being packed and aligned is tricky
 #[repr(C, align(2))]
@@ -48,16 +48,33 @@ pub struct RefMvsRefPair {
 }
 const _: () = assert!(mem::size_of::<RefMvsRefPair>() == 2);
 
-impl PartialEq for RefMvsRefPair {
-    #[inline(always)]
-    fn eq(&self, other: &Self) -> bool {
-        // `#[derive(PartialEq)]` compares per-field with `&&`,
-        // which isn't optimized well and isn't coalesced into wider loads.
-        // Comparing all of the bytes at once optimizes better with wider loads.
-        // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
-    }
-}
+// It is tempting to implement an `.as_bytes()` based `PartialEq` for `RefMvsRefPair`,
+// but it generates worse code than array equality.
+//
+// With `self.as_bytes() == other.as_bytes()`,
+// code like `else if b.r#ref == r#ref` from `add_spatial_candidate` becomes:
+//
+// (start of function)
+// strh w4, [sp, #6]  ; store the parameter r#ref to the stack
+//
+// (the comparison itself)
+// ldrh w12, [x3, #8] ; load both elements of b.r#ref into w12
+// ldrh w13, [sp, #6] ; load both elements of the parameter r#ref from the stack into w13
+// cmp w12, w13       ; compare
+// b.eq LBB332_17     ; branch
+//
+// A naive array comparison, on the other hand, can reuse the value already in w4:
+//
+// (no save of w4 at the start of the function)
+// (the comparison itself)
+// ldrh w12, [x3, #8] ; load both elements of b.r#ref into the bottom half-word of w12
+//                    ; zeroing the rest of w12.
+// cmp w12, w4, uxth  ; compare w12 with the zero-extended bottom half-word of w4
+// b.ne LBB332_1      ; branch
+//
+// Interestingly, the functions get laid out differently with this change:
+// `b.eq` becomes `b.ne`. If this matters for performance we should hint the cases explictly.
+// (Both samples are nightly-2025-05-01-aarch64-apple-darwin.)
 
 impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
