@@ -95,9 +95,17 @@ impl PartialEq for RefMvsMvPair {
     fn eq(&self, other: &Self) -> bool {
         // `#[derive(PartialEq)]` compares per-field with `&&`,
         // which isn't optimized well and isn't coalesced into wider loads.
-        // Comparing all of the bytes at once optimizes better with wider loads.
         // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
+        // See also the discussion of `PartialEq` for `RefMvsRefPair` and `Mv`,
+        // as that explains why we do an array rather than `.as_bytes()`.
+        //
+        // This can compile down to a single load, e.g. from `add_spatial_candiate`:
+        // ldr x13, [x11, #12]!
+        // cmp x13, x9
+        //
+        // The `.as_bytes()` implementation requires more traffic via the stack.
+        [self.mv[0].y, self.mv[0].x, self.mv[1].y, self.mv[1].x]
+            == [other.mv[0].y, other.mv[0].x, other.mv[1].y, other.mv[1].x]
     }
 }
 
