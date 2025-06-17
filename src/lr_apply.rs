@@ -45,7 +45,7 @@ fn lr_stripe<BD: BitDepth>(
 ) {
     let bd = BD::from_c(f.bitdepth_max);
 
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
@@ -254,7 +254,7 @@ pub(crate) fn rav1d_lr_sbrow<BD: BitDepth>(
     let offset_y = 8 * (sby != 0) as c_int;
     let restore_planes = f.lf.restore_planes;
     let not_last = ((sby + 1) < f.sbh) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     if restore_planes.contains(LrRestorePlanes::Y) {
         let h = f.sr_cur.p.p.h;
         let w = f.sr_cur.p.p.w;

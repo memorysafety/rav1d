@@ -15,6 +15,8 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -47,13 +49,11 @@ use crate::include::dav1d::headers::Rav1dProfile;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::dav1d::headers::DAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
@@ -152,7 +152,7 @@ fn check_trailing_bits(gb: &mut GetBits, strict_std_compliance: bool) -> Rav1dRe
 fn parse_seq_hdr(
     gb: &mut GetBits,
     strict_std_compliance: bool,
-) -> Rav1dResult<Rav1dSequenceHeader> {
+) -> Rav1dResult<Dav1dSequenceHeader> {
     let debug = Debug::new(false, "SEQHDR", gb);
 
     let profile = Rav1dProfile::from_repr(gb.get_bits(3) as usize).ok_or(EINVAL)?;
@@ -167,7 +167,7 @@ fn parse_seq_hdr(
 
     let num_operating_points;
     let mut operating_points =
-        [Rav1dSequenceHeaderOperatingPoint::default(); RAV1D_MAX_OPERATING_POINTS];
+        [Dav1dSequenceHeaderOperatingPoint::default(); DAV1D_MAX_OPERATING_POINTS];
     let timing_info_present;
     let num_units_in_tick;
     let time_scale;
@@ -180,7 +180,7 @@ fn parse_seq_hdr(
     let frame_presentation_delay_length;
     let display_model_info_present;
     let mut operating_parameter_info =
-        [Rav1dSequenceHeaderOperatingParameterInfo::default(); RAV1D_MAX_OPERATING_POINTS];
+        [Dav1dSequenceHeaderOperatingParameterInfo::default(); RAV1D_MAX_OPERATING_POINTS];
     if reduced_still_picture_header != 0 {
         num_operating_points = 1;
         operating_points[0].major_level = gb.get_bits(3) as u8;
@@ -472,7 +472,7 @@ fn parse_seq_hdr(
             }
         }
         chr = if ss_hor & ss_ver != 0 {
-            Rav1dChromaSamplePosition::from_repr(gb.get_bits(2) as usize).unwrap()
+            Rav1dChromaSamplePosition::from_repr(gb.get_bits(2)).unwrap()
         } else {
             Rav1dChromaSamplePosition::Unknown
         };
@@ -500,19 +500,19 @@ fn parse_seq_hdr(
     // point in setting its position properly.
 
     check_trailing_bits(gb, strict_std_compliance)?;
-    Ok(Rav1dSequenceHeader {
-        profile,
+    Ok(Dav1dSequenceHeader {
+        profile: profile as u8,
         max_width,
         max_height,
         layout,
-        pri,
-        trc,
-        mtrx,
+        pri: pri.into(),
+        trc: trc.into(),
+        mtrx: mtrx.into(),
         chr,
         hbd,
         color_range,
         num_operating_points,
-        operating_points,
+        operating_points: operating_points.into(),
         still_picture,
         reduced_still_picture_header,
         timing_info_present,
@@ -557,9 +557,7 @@ fn parse_seq_hdr(
     })
 }
 
-pub(crate) fn rav1d_parse_sequence_header(
-    mut data: &[u8],
-) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
+pub(crate) fn rav1d_parse_sequence_header(mut data: &[u8]) -> Rav1dResult<Dav1dSequenceHeader> {
     let mut res = Err(ENOENT);
 
     while !data.is_empty() {
@@ -599,12 +597,12 @@ pub(crate) fn rav1d_parse_sequence_header(
         data = &data[obu_end..]
     }
 
-    res.map(DRav1d::from_rav1d)
+    res
 }
 
 fn parse_frame_size(
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     refidx: Option<&[i8; RAV1D_REFS_PER_FRAME]>,
     frame_size_override: bool,
     gb: &mut GetBits,
@@ -705,7 +703,7 @@ static DEFAULT_MODE_REF_DELTAS: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 
 fn parse_refidx(
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     frame_ref_short_signaling: u8,
     frame_offset: u8,
     frame_id: u32,
@@ -838,7 +836,7 @@ fn parse_refidx(
 }
 
 fn parse_tiling(
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     size: &Rav1dFrameSize,
     debug: &Debug,
     gb: &mut GetBits,
@@ -959,7 +957,7 @@ fn parse_tiling(
 }
 
 fn parse_quant(
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeaderQuant {
@@ -1246,7 +1244,7 @@ fn parse_delta(
 
 fn parse_loopfilter(
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     all_lossless: bool,
     allow_intrabc: bool,
     primary_ref_frame: u8,
@@ -1328,7 +1326,7 @@ fn parse_loopfilter(
 }
 
 fn parse_cdef(
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     all_lossless: bool,
     allow_intrabc: bool,
     debug: &Debug,
@@ -1365,7 +1363,7 @@ fn parse_cdef(
 }
 
 fn parse_restoration(
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     all_lossless: bool,
     super_res_enabled: bool,
     allow_intrabc: bool,
@@ -1429,7 +1427,7 @@ fn parse_restoration(
 
 fn parse_skip_mode(
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     switchable_comp_refs: u8,
     frame_type: Rav1dFrameType,
     frame_offset: u8,
@@ -1601,7 +1599,7 @@ fn parse_gmv(
 }
 
 fn parse_film_grain_data(
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     seed: c_uint,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFilmGrainData> {
@@ -1711,7 +1709,7 @@ fn parse_film_grain_data(
 
 fn parse_film_grain(
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     show_frame: u8,
     showable_frame: u8,
     frame_type: Rav1dFrameType,
@@ -1770,7 +1768,7 @@ fn parse_film_grain(
 fn parse_frame_hdr(
     c: &Rav1dContext,
     state: &Rav1dState,
-    seqhdr: &Rav1dSequenceHeader,
+    seqhdr: &Dav1dSequenceHeader,
     temporal_id: u8,
     spatial_id: u8,
     gb: &mut GetBits,
@@ -2304,7 +2302,7 @@ fn parse_obus(
                 }
                 _ => {}
             }
-            state.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
+            state.seq_hdr = Some(Arc::new(seq_hdr)); // TODO(kkysen) fallible allocation
         }
         Some(Rav1dObuType::RedundantFrameHdr) if state.frame_hdr.is_some() => {}
         Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr) => {

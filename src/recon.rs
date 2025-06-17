@@ -3687,7 +3687,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
     let y = sby * f.sb_step * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
@@ -3706,7 +3706,7 @@ pub(crate) fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 ) {
     let y = sby * f.sb_step * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
     let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
@@ -3735,7 +3735,7 @@ pub(crate) fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
     let p = f.cur.lf_offsets::<BD>(y);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let start = sby * sbsz;
@@ -3816,7 +3816,7 @@ pub(crate) fn rav1d_filter_sbrow<BD: BitDepth>(
 ) {
     rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     if seq_hdr.cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(c, f, t, sby);
     }

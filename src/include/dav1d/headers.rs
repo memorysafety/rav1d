@@ -181,6 +181,7 @@ pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean =
     Rav1dAdaptiveBoolean::Adaptive as Dav1dAdaptiveBoolean;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[repr(u32)]
 pub enum Rav1dAdaptiveBoolean {
     Off = 0,
     On = 1,
@@ -206,7 +207,7 @@ impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
     type Error = ();
 
     fn try_from(value: Dav1dAdaptiveBoolean) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -383,6 +384,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
+#[repr(u32)]
 pub enum Rav1dPixelLayout {
     #[default]
     I400 = 0,
@@ -401,7 +403,7 @@ impl Sub for Rav1dPixelLayout {
     type Output = Rav1dPixelLayout;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self::from_repr((self as u8 - rhs as u8) as usize).unwrap()
+        Self::from_repr(self as u32 - rhs as u32).unwrap()
     }
 }
 
@@ -421,7 +423,7 @@ impl TryFrom<Dav1dPixelLayout> for Rav1dPixelLayout {
     type Error = ();
 
     fn try_from(value: Dav1dPixelLayout) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -731,6 +733,7 @@ pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition =
     Rav1dChromaSamplePosition::Colocated as Dav1dChromaSamplePosition;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[repr(u32)]
 pub enum Rav1dChromaSamplePosition {
     Unknown = 0,
     /// Horizontally co-located with (0, 0) luma sample, vertical position
@@ -751,7 +754,7 @@ impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
     type Error = ();
 
     fn try_from(value: Dav1dChromaSamplePosition) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
+        Self::from_repr(value).ok_or(())
     }
 }
 
@@ -828,7 +831,7 @@ impl Rav1dITUTT35 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
     pub major_level: u8,
@@ -898,7 +901,7 @@ impl From<Rav1dSequenceHeaderOperatingPoint> for Dav1dSequenceHeaderOperatingPoi
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: u32,
@@ -950,98 +953,15 @@ pub struct Dav1dSequenceHeader {
     pub profile: u8,
     pub max_width: c_int,
     pub max_height: c_int,
-    pub layout: Dav1dPixelLayout,
+    pub layout: Rav1dPixelLayout,
     pub pri: Dav1dColorPrimaries,
     pub trc: Dav1dTransferCharacteristics,
     pub mtrx: Dav1dMatrixCoefficients,
-    pub chr: Dav1dChromaSamplePosition,
-    pub hbd: u8,
-    pub color_range: u8,
-    pub num_operating_points: u8,
-    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
-    pub still_picture: u8,
-    pub reduced_still_picture_header: u8,
-    pub timing_info_present: u8,
-    /// > 0 if defined, 0 otherwise
-    pub num_units_in_tick: u32,
-    /// > 0 if defined, 0 otherwise
-    pub time_scale: u32,
-    pub equal_picture_interval: u8,
-    pub num_ticks_per_picture: u32,
-    pub decoder_model_info_present: u8,
-    pub encoder_decoder_buffer_delay_length: u8,
-    /// > 0 if defined, 0 otherwise
-    pub num_units_in_decoding_tick: u32,
-    pub buffer_removal_delay_length: u8,
-    pub frame_presentation_delay_length: u8,
-    pub display_model_info_present: u8,
-    pub width_n_bits: u8,
-    pub height_n_bits: u8,
-    pub frame_id_numbers_present: u8,
-    pub delta_frame_id_n_bits: u8,
-    pub frame_id_n_bits: u8,
-    pub sb128: u8,
-    pub filter_intra: u8,
-    pub intra_edge_filter: u8,
-    pub inter_intra: u8,
-    pub masked_compound: u8,
-    pub warped_motion: u8,
-    pub dual_filter: u8,
-    pub order_hint: u8,
-    pub jnt_comp: u8,
-    pub ref_frame_mvs: u8,
-    pub screen_content_tools: Dav1dAdaptiveBoolean,
-    pub force_integer_mv: Dav1dAdaptiveBoolean,
-    pub order_hint_n_bits: u8,
-    pub super_res: u8,
-    pub cdef: u8,
-    pub restoration: u8,
-    pub ss_hor: u8,
-    pub ss_ver: u8,
-    pub monochrome: u8,
-    pub color_description_present: u8,
-    pub separate_uv_delta_q: u8,
-    pub film_grain_present: u8,
-    pub operating_parameter_info:
-        [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
-pub enum Rav1dProfile {
-    Main = 0,
-    High = 1,
-    Professional = 2,
-}
-
-impl From<Rav1dProfile> for u8 {
-    fn from(value: Rav1dProfile) -> Self {
-        value as u8
-    }
-}
-
-impl TryFrom<u8> for Rav1dProfile {
-    type Error = ();
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(())
-    }
-}
-
-#[derive(Clone)]
-#[repr(C)]
-pub struct Rav1dSequenceHeader {
-    pub profile: Rav1dProfile,
-    pub max_width: c_int,
-    pub max_height: c_int,
-    pub layout: Rav1dPixelLayout,
-    pub pri: Rav1dColorPrimaries,
-    pub trc: Rav1dTransferCharacteristics,
-    pub mtrx: Rav1dMatrixCoefficients,
     pub chr: Rav1dChromaSamplePosition,
     pub hbd: u8,
     pub color_range: u8,
     pub num_operating_points: u8,
-    pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
+    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
     pub still_picture: u8,
     pub reduced_still_picture_header: u8,
     pub timing_info_present: u8,
@@ -1086,10 +1006,31 @@ pub struct Rav1dSequenceHeader {
     pub separate_uv_delta_q: u8,
     pub film_grain_present: u8,
     pub operating_parameter_info:
-        [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
+        [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
 }
 
-impl Rav1dSequenceHeader {
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dProfile {
+    Main = 0,
+    High = 1,
+    Professional = 2,
+}
+
+impl From<Rav1dProfile> for u8 {
+    fn from(value: Rav1dProfile) -> Self {
+        value as u8
+    }
+}
+
+impl TryFrom<u8> for Rav1dProfile {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
+
+impl Dav1dSequenceHeader {
     /// TODO(kkysen) We should split [`Rav1dSequenceHeader`] into an inner `struct`
     /// without the `operating_parameter_info` field
     /// so that we can just `#[derive(PartialEq, Eq)]` it.
@@ -1203,236 +1144,6 @@ impl Rav1dSequenceHeader {
             && *color_description_present == other.color_description_present
             && *separate_uv_delta_q == other.separate_uv_delta_q
             && *film_grain_present == other.film_grain_present
-    }
-}
-
-impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
-    fn from(value: Dav1dSequenceHeader) -> Self {
-        let Dav1dSequenceHeader {
-            profile,
-            max_width,
-            max_height,
-            layout,
-            pri,
-            trc,
-            mtrx,
-            chr,
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points,
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info,
-        } = value;
-        Self {
-            profile: profile.try_into().unwrap(),
-            max_width,
-            max_height,
-            layout: layout.try_into().unwrap(),
-            pri: pri.try_into().unwrap(),
-            trc: trc.try_into().unwrap(),
-            mtrx: mtrx.try_into().unwrap(),
-            chr: chr.try_into().unwrap(),
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points: operating_points.map(|c| c.into()),
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools: screen_content_tools.try_into().unwrap(),
-            force_integer_mv: force_integer_mv.try_into().unwrap(),
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info: operating_parameter_info.map(|c| c.into()),
-        }
-    }
-}
-
-impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
-    fn from(value: Rav1dSequenceHeader) -> Self {
-        let Rav1dSequenceHeader {
-            profile,
-            max_width,
-            max_height,
-            layout,
-            pri,
-            trc,
-            mtrx,
-            chr,
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points,
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info,
-        } = value;
-        Self {
-            profile: profile.into(),
-            max_width,
-            max_height,
-            layout: layout.into(),
-            pri: pri.into(),
-            trc: trc.into(),
-            mtrx: mtrx.into(),
-            chr: chr.into(),
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points: operating_points.map(|rust| rust.into()),
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools: screen_content_tools.into(),
-            force_integer_mv: force_integer_mv.into(),
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info: operating_parameter_info.map(|rust| rust.into()),
-        }
     }
 }
 

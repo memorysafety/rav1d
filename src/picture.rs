@@ -14,7 +14,6 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -219,7 +218,7 @@ fn picture_alloc_with_edges(
     p: &mut Rav1dPicture,
     w: c_int,
     h: c_int,
-    seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    seq_hdr: Option<Arc<Dav1dSequenceHeader>>,
     frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     bpc: u8,
     p_allocator: &Rav1dPicAllocator,

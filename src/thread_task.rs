@@ -396,7 +396,7 @@ fn merge_pending(c: &Rav1dContext) -> c_int {
 fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let has_deblock = (frame_hdr.loopfilter.level_y != [0; 2]) as c_int;
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = !f.lf.restore_planes.is_empty();
@@ -1230,7 +1230,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
                         }
                         // signal deblock progress
-                        let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+                        let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.loopfilter.level_y != [0; 2] {
                             drop(f);
@@ -1272,7 +1272,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     }
                     TaskType::Cdef => {
                         let f = fc.data.try_read().unwrap();
-                        let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+                        let seq_hdr = &**f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
