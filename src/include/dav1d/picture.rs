@@ -16,6 +16,7 @@ use crate::disjoint_mut::{
 };
 use crate::error::Rav1dError::EINVAL;
 use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
+use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
@@ -338,6 +339,8 @@ impl Rav1dPictureDataComponent {
 }
 
 pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
+pub type FFISafeRav1dPictureDataComponentOffset<'a> =
+    WithOffset<*const FFISafe<'a, Rav1dPictureDataComponent>>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.

@@ -17,7 +17,9 @@ use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel};
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::dav1d::picture::{
+    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
+};
 use crate::internal::Rav1dFrameData;
 use crate::lf_mask::Av1FilterLUT;
 use crate::strided::Strided as _;
@@ -33,8 +35,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _lvl: *const FFISafe<WithOffset<&DisjointMut<AlignedVec2<u8>>>>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
 ) -> ());
 
 impl loopfilter_sb::Fn {
@@ -56,8 +58,8 @@ impl loopfilter_sb::Fn {
         let lut = &f.lf.lim_lut;
         let w = w as c_int;
         let bd = f.bitdepth_max;
-        let dst = FFISafe::new(&dst);
-        let lvl = FFISafe::new(&lvl);
+        let dst = dst.into_ffi_safe();
+        let lvl = lvl.into_ffi_safe();
         // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -366,13 +368,13 @@ unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, c
     lut: &Align16<Av1FilterLUT>,
     wh: c_int,
     bitdepth_max: c_int,
-    dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    lvl: *const FFISafe<WithOffset<&DisjointMut<AlignedVec2<u8>>>>,
+    dst: FFISafeRav1dPictureDataComponentOffset,
+    lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loopfilter_sb::Fn::call`.
-    let dst = *unsafe { FFISafe::get(dst) };
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loopfilter_sb::Fn::call`.
-    let lvl = *unsafe { FFISafe::get(lvl) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
+    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
+    let lvl = unsafe { FFISafe::from_with_offset(lvl) };
     let b4_stride = b4_stride as usize;
     let bd = BD::from_c(bitdepth_max);
     loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, vmask, lvl, b4_stride, lut, wh, bd)
