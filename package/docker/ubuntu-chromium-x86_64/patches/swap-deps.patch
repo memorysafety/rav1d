@@ -1,0 +1,51 @@
+diff --git a/media/filters/BUILD.gn b/media/filters/BUILD.gn
+--- a/media/filters/BUILD.gn
++++ b/media/filters/BUILD.gn
+@@ -151,7 +151,7 @@ source_set("filters") {
+       "dav1d_video_decoder.cc",
+       "dav1d_video_decoder.h",
+     ]
+-    deps += [ "//third_party/dav1d" ]
++    deps += [ "//third_party/rust/rav1d/v1:lib" ]
+   }
+
+   if (media_use_ffmpeg) {
+diff --git a/third_party/libavif/BUILD.gn b/third_party/libavif/BUILD.gn
+--- a/third_party/libavif/BUILD.gn
++++ b/third_party/libavif/BUILD.gn
+@@ -46,6 +46,6 @@ component("libavif") {
+     sources += [ "src/src/codec_dav1d.c" ]
+     include_dirs += [ "../dav1d/libdav1d/include/" ]
+     defines += [ "AVIF_CODEC_DAV1D" ]
+-    deps += [ "//third_party/dav1d" ]
++    deps += [ "//third_party/rust/rav1d/v1:lib" ]
+   }
+ }
+
+diff --git a/media/filters/dav1d_video_decoder.cc b/media/filters/dav1d_video_decoder.cc
+index 02ba3c0a3a..24d93d85ef 100644
+--- a/media/filters/dav1d_video_decoder.cc
++++ b/media/filters/dav1d_video_decoder.cc
+@@ -23,7 +23,7 @@
+ #include "media/base/video_util.h"
+
+ extern "C" {
+-#include "third_party/dav1d/libdav1d/include/dav1d/dav1d.h"
++#include "third_party/rust/rav1d/v1/crate/include/dav1d/dav1d.h"
+ }
+
+ namespace media {
+diff --git a/third_party/libavif/BUILD.gn b/third_party/libavif/BUILD.gn
+index 3484775ca4..7272e655b3 100644
+--- a/third_party/libavif/BUILD.gn
++++ b/third_party/libavif/BUILD.gn
+@@ -44,7 +44,7 @@ component("libavif") {
+
+   if (enable_dav1d_decoder) {
+     sources += [ "src/src/codec_dav1d.c" ]
+-    include_dirs += [ "../dav1d/libdav1d/include/" ]
++    include_dirs += [ "../rust/rav1d/v1/crate/include" ]
+     defines += [ "AVIF_CODEC_DAV1D" ]
+     deps += [ "//third_party/rust/rav1d/v1:lib" ]
+   }
+
