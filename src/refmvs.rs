@@ -18,13 +18,13 @@ use crate::include::dav1d::headers::{
 };
 use crate::internal::Bxy;
 use crate::intra_edge::EdgeFlags;
-use crate::levels::{BlockSize, Mv};
+use crate::levels::{BlockSize, Mv, UnalignedMv};
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
 pub struct RefMvsTemporalBlock {
-    pub mv: Mv,
+    pub mv: UnalignedMv,
     pub r#ref: i8,
 }
 const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
@@ -708,12 +708,13 @@ fn add_temporal_candidate(
     globalmv: Option<(&mut i32, &[Mv; 2])>,
     frame_hdr: &Rav1dFrameHeader,
 ) {
-    if rb.mv.is_invalid() {
+    let rb_mv = rb.mv.into_aligned();
+    if rb_mv.is_invalid() {
         return;
     }
 
     let mut mv = mv_projection(
-        rb.mv,
+        rb_mv,
         rf.pocdiff[r#ref.r#ref[0] as usize - 1] as i32,
         rb.r#ref as i32,
     );
@@ -742,7 +743,7 @@ fn add_temporal_candidate(
             mv: [
                 mv,
                 mv_projection(
-                    rb.mv,
+                    rb_mv,
                     rf.pocdiff[r#ref.r#ref[1] as usize - 1] as i32,
                     rb.r#ref as i32,
                 ),
@@ -1445,7 +1446,7 @@ fn load_tmvs_rust(
         for rp_proj in
             &mut *rp_proj.index_mut(offset + col_start8 as usize..offset + col_end8 as usize)
         {
-            rp_proj.mv = Mv::INVALID;
+            rp_proj.mv = Mv::INVALID.into_unaligned();
         }
     }
     for n in 0..rf.n_mfmvs {
@@ -1473,7 +1474,7 @@ fn load_tmvs_rust(
                     x += 1;
                     continue;
                 }
-                let offset = mv_projection(rb.mv, ref2cur, ref2ref);
+                let offset = mv_projection(rb.mv.into_aligned(), ref2cur, ref2ref);
                 let mut pos_x =
                     x + apply_sign((offset.x as i32).abs() >> 6, offset.x as i32 ^ ref_sign);
                 let pos_y =
@@ -1575,7 +1576,10 @@ fn save_tmvs_rust(
                 let r#ref = cand_b.r#ref.r#ref[i];
                 if r#ref > 0 && ref_sign[r#ref as usize - 1] != 0 && mv.y.abs() | mv.x.abs() < 4096
                 {
-                    Some(RefMvsTemporalBlock { mv, r#ref })
+                    Some(RefMvsTemporalBlock {
+                        mv: mv.into_unaligned(),
+                        r#ref,
+                    })
                 } else {
                     None
                 }
