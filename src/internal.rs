@@ -1,11 +1,11 @@
 use std::ffi::{c_int, c_uint};
-use std::mem;
 use std::ops::{Deref, Range};
-use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32};
 use std::sync::{Arc, OnceLock};
 use std::thread::JoinHandle;
+use std::{cmp, mem};
 
-use atomig::{Atom, Atomic};
+use atomig::Atom;
 use libc::ptrdiff_t;
 use parking_lot::{Condvar, Mutex, RwLock, RwLockReadGuard};
 use strum::FromRepr;
@@ -50,7 +50,7 @@ use crate::recon::{
 };
 use crate::refmvs::{Rav1dRefmvsDSPContext, RefMvsFrame, RefMvsTemporalBlock, RefmvsTile};
 use crate::relaxed_atomic::RelaxedAtomic;
-use crate::thread_task::{Rav1dTaskIndex, Rav1dTasks};
+use crate::thread_task::Rav1dTasks;
 
 #[derive(Default)]
 pub struct Rav1dDSPContext {
@@ -391,7 +391,7 @@ unsafe impl Send for Rav1dContext {}
 // See discussion in https://github.com/memorysafety/rav1d/pull/1329
 unsafe impl Sync for Rav1dContext {}
 
-#[derive(Default)]
+#[derive(Default, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Rav1dTask {
     // frame thread id
@@ -406,8 +406,6 @@ pub struct Rav1dTask {
     pub recon_progress: c_int,
     pub deblock_progress: c_int,
     pub deps_skip: RelaxedAtomic<i32>,
-    // only used in task queue
-    pub next: Atomic<Rav1dTaskIndex>,
 }
 
 impl Rav1dTask {
@@ -421,28 +419,69 @@ impl Rav1dTask {
             ..Default::default()
         }
     }
+}
 
-    pub fn next(&self) -> Rav1dTaskIndex {
-        self.next.load(Ordering::SeqCst)
-    }
-
-    pub fn set_next(&self, next: Rav1dTaskIndex) {
-        self.next.store(next, Ordering::SeqCst)
+impl PartialOrd for Rav1dTask {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
-impl Rav1dTask {
-    pub fn without_next(&self) -> Self {
-        Self {
-            frame_idx: self.frame_idx,
-            tile_idx: self.tile_idx,
-            type_0: self.type_0,
-            sby: self.sby,
-            recon_progress: self.recon_progress,
-            deblock_progress: self.deblock_progress,
-            deps_skip: self.deps_skip.clone(),
-            next: Default::default(),
+impl Ord for Rav1dTask {
+    /// We want `sort` to put tasks in priority order.
+    /// To do that, we return:
+    ///  - `Less`    if `self` is of higher priority than `other`
+    ///  - `Greater` if `self` is of lower priority than `other`
+    ///
+    /// This is farily straightforwardly translated from `insert_tasks` in `task_thread.c`,
+    /// and as such inherits the limitations of that function. Specifically,
+    /// it requires that there are no Init, InitCdf or film grain tasks,
+    /// and that there are no duplicate tasks.
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        // entropy coding precedes other steps
+        if other.type_0 == TaskType::TileEntropy {
+            if self.type_0 > TaskType::TileEntropy {
+                return cmp::Ordering::Greater;
+            }
+            // both are entropy
+            if self.sby > other.sby {
+                return cmp::Ordering::Greater;
+            }
+            if self.sby < other.sby {
+                return cmp::Ordering::Less;
+            }
+            // same sby
+        } else {
+            if self.type_0 == TaskType::TileEntropy {
+                return cmp::Ordering::Less;
+            }
+            if self.sby > other.sby {
+                return cmp::Ordering::Greater;
+            }
+            if self.sby < other.sby {
+                return cmp::Ordering::Less;
+            }
+            // same sby
+            if self.type_0 > other.type_0 {
+                return cmp::Ordering::Greater;
+            }
+            if self.type_0 < other.type_0 {
+                return cmp::Ordering::Less;
+            }
+            // same task type
         }
+
+        // sort by tile-id
+        assert!(
+            self.type_0 == TaskType::TileReconstruction || self.type_0 == TaskType::TileEntropy
+        );
+        assert!(self.type_0 == other.type_0);
+        assert!(other.sby == self.sby);
+        assert!(self.tile_idx != other.tile_idx);
+        if self.tile_idx < other.tile_idx {
+            return cmp::Ordering::Less;
+        }
+        return cmp::Ordering::Greater;
     }
 }
 
@@ -662,13 +701,6 @@ pub struct Rav1dFrameContextLf {
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
     pub restore_planes: LrRestorePlanes,
-}
-
-#[derive(Default)]
-#[repr(C)]
-pub struct Rav1dFrameContextTaskThreadPendingTasks {
-    pub head: Rav1dTaskIndex,
-    pub tail: Rav1dTaskIndex,
 }
 
 #[derive(Default)]
