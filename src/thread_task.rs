@@ -32,115 +32,12 @@ use crate::iter::wrapping_iter;
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
 
-/// This function resets the cur pointer to the first frame theoretically
-/// executable after a task completed (ie. each time we update some progress or
-/// insert some tasks in the queue).
-/// When frame_idx is set, it can be either from a completed task, or from tasks
-/// inserted in the queue, in which case we have to make sure the cur pointer
-/// isn't past this insert.
-/// The special case where frame_idx is UINT_MAX is to handle the reset after
-/// completing a task and locklessly signaling progress. In this case we don't
-/// enter a critical section, which is needed for this function, so we set an
-/// atomic for a delayed handling, happening here. Meaning we can call this
-/// function without any actual update other than what's in the atomic, hence
-/// this special case.
-#[inline]
-fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
-    fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
-        for fc in wrapping_iter(c.fc.iter(), first + ttd.cur.get() as usize) {
-            fc.task_thread.tasks.looked.store(false, Ordering::Relaxed);
-        }
-        return 1;
-    }
-    let min_frame_idx: c_uint;
-    let cur_frame_idx: c_uint;
-    let first = ttd.first.load(Ordering::SeqCst);
-    let mut reset_frame_idx: c_uint = ttd.reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
-    if reset_frame_idx < first {
-        if frame_idx == u32::MAX {
-            return 0 as c_int;
-        }
-        reset_frame_idx = u32::MAX;
-    }
-    if ttd.cur.get() == 0
-        && c.fc[first as usize]
-            .task_thread
-            .tasks
-            .looked
-            .load(Ordering::Relaxed)
-            == false
-    {
-        return 0 as c_int;
-    }
-    if reset_frame_idx != u32::MAX {
-        if frame_idx == u32::MAX {
-            if reset_frame_idx > first.wrapping_add(ttd.cur.get()) {
-                return 0 as c_int;
-            }
-            ttd.cur.set(reset_frame_idx.wrapping_sub(first));
-            return curr_found(c, ttd, first as usize);
-        }
-    } else {
-        if frame_idx == u32::MAX {
-            return 0 as c_int;
-        }
-    }
-    if frame_idx < first {
-        frame_idx += c.fc.len() as c_uint;
-    }
-    min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-    cur_frame_idx = first.wrapping_add(ttd.cur.get());
-    if (ttd.cur.get() as usize) < c.fc.len() && cur_frame_idx < min_frame_idx {
-        return 0 as c_int;
-    }
-    ttd.cur.set(min_frame_idx.wrapping_sub(first));
-    while (ttd.cur.get() as usize) < c.fc.len() {
-        if c.fc[((first + ttd.cur.get()) as usize) % c.fc.len()]
-            .task_thread
-            .tasks
-            .is_empty()
-            == false
-        {
-            break;
-        }
-        ttd.cur.update(|cur| cur + 1);
-    }
-    return curr_found(c, ttd, first as usize);
-}
-
-#[inline]
-fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
-    let first = ttd.first.load(Ordering::SeqCst);
-    if frame_idx < first {
-        frame_idx += n_frames;
-    }
-    let mut last_idx = frame_idx;
-    loop {
-        frame_idx = last_idx;
-        last_idx = ttd.reset_task_cur.swap(frame_idx, Ordering::SeqCst);
-        if !(last_idx < frame_idx) {
-            break;
-        }
-    }
-    if frame_idx == first && ttd.first.load(Ordering::SeqCst) != first {
-        let _ = ttd.reset_task_cur.compare_exchange(
-            frame_idx,
-            u32::MAX,
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-        );
-    }
-}
-
 #[derive(Default)]
 pub struct Rav1dTasks {
     // TODO: probably should be a VecDeque, we need to empty this and I don't think we do yet.
     tasks: RwLock<Vec<Rav1dTask>>,
     pending_tasks: Mutex<Vec<Rav1dTask>>,
     pending_tasks_merge: AtomicBool,
-
-    // Have we looked at any tasks in this set of tasks?
-    pub looked: AtomicBool,
 }
 
 impl Rav1dTasks {
@@ -149,7 +46,7 @@ impl Rav1dTasks {
         if c.flush.load(Ordering::SeqCst) {
             return;
         }
-        reset_task_cur(c, ttd, frame_idx);
+        ttd.mark_and_reset_cur(frame_idx, c.fc.len() as u32);
         if cond_signal != 0 && ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
             ttd.cond.notify_one();
         }
@@ -172,7 +69,6 @@ impl Rav1dTasks {
         self.tasks.try_write().unwrap().clear();
         self.pending_tasks.try_lock().unwrap().clear();
         self.pending_tasks_merge.store(false, Ordering::SeqCst);
-        self.looked.store(false, Ordering::Relaxed);
     }
 
     pub fn remove(&self, t: usize) -> Rav1dTask {
@@ -195,6 +91,8 @@ impl Rav1dTasks {
         let merge = self.pending_tasks_merge.swap(false, Ordering::SeqCst);
         if merge {
             let new_start = self.len();
+            let mut tasks = self.tasks.try_write().unwrap();
+
             {
                 let mut pending_tasks = self.pending_tasks.lock();
                 if pending_tasks.len() == 0 {
@@ -217,7 +115,6 @@ impl Rav1dTasks {
                     // we will get this spurious merge.
                     return false;
                 }
-                let mut tasks = self.tasks.try_write().unwrap();
                 tasks.extend(pending_tasks.drain(..));
             }
 
@@ -230,17 +127,9 @@ impl Rav1dTasks {
             //    by updating the `reset_task_cur` and `cur` variables. Here, as in C,
             //    every task we're merging is for the same frame context, so the arguments are always the same,
             //    and nothing is changed by trying to repeatedly do the same update.
-            {
-                // take a read lock because reset_task_cur takes a read lock also
-                let tasks = self.tasks.try_read().unwrap();
-                let frame_idx = tasks[new_start].frame_idx;
-                self.insert_tasks(c, frame_idx, 0);
-            }
-            {
-                // take a write lock to sort
-                let mut tasks = self.tasks.try_write().unwrap();
-                tasks.sort();
-            }
+            let frame_idx = tasks[new_start].frame_idx;
+            self.insert_tasks(c, frame_idx, 0);
+            tasks.sort();
         }
 
         merge
@@ -666,7 +555,6 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
     let ttd = &*ttd_clone;
 
     fn park<'ttd>(
-        c: &Rav1dContext,
         tc: &mut Rav1dTaskContext,
         ttd: &TaskThreadData,
         task_thread_lock: &mut MutexGuard<'ttd, ()>,
@@ -677,13 +565,13 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
         ttd.cond_signaled.store(0, Ordering::SeqCst);
         ttd.cond.wait(task_thread_lock);
         tc.task_thread.flushed.set(false);
-        reset_task_cur(c, ttd, u32::MAX);
+        ttd.reset_cur_index();
     }
 
     let mut task_thread_lock = Some(ttd.lock.lock());
     'outer: while !tc.task_thread.die.get() {
         if c.flush.load(Ordering::SeqCst) {
-            park(c, &mut tc, ttd, task_thread_lock.as_mut().unwrap());
+            park(&mut tc, ttd, task_thread_lock.as_mut().unwrap());
             continue 'outer;
         }
 
@@ -831,17 +719,16 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         }
                     }
                     // next:
-                    tasks.looked.store(true, Ordering::Relaxed);
                 }
                 ttd.cur.update(|cur| cur + 1);
             }
-            if reset_task_cur(c, ttd, u32::MAX) != 0 {
+            if ttd.reset_cur_index() {
                 continue 'outer;
             }
             if merge_pending(c) != 0 {
                 continue 'outer;
             }
-            park(c, &mut tc, ttd, task_thread_lock.as_mut().unwrap());
+            park(&mut tc, ttd, task_thread_lock.as_mut().unwrap());
             continue 'outer;
         };
         // found:
@@ -881,7 +768,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
                             abort_frame(c, fc, res.and_then(|_| Err(Rav1dError::InvalidArgument)));
-                            reset_task_cur(c, ttd, t.frame_idx);
+                            ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                         } else {
                             t.type_0 = TaskType::InitCdf;
                             if p1_3 != 0 {
@@ -973,7 +860,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
                             abort_frame(c, fc, res_0);
-                            reset_task_cur(c, ttd, t.frame_idx);
+                            ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                             fc.task_thread.init_done.store(1, Ordering::SeqCst);
                         }
                         continue 'outer;
@@ -1006,7 +893,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             t.deps_skip = 0.into();
                             if check_tile(&f, &fc.task_thread, &t, uses_2pass) == 0 {
                                 ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
-                                reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
+                                ttd.mark_new_tasks_for_index(t.frame_idx, c.fc.len() as u32);
                                 if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                     ttd.cond.notify_one();
                                 }
@@ -1021,7 +908,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
                             ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
-                            reset_task_cur(c, ttd, t.frame_idx);
+                            ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                             if frame_hdr.refresh_context != 0
@@ -1113,7 +1000,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                 if error_0 != 0 { TILE_ERROR } else { sby + 1 },
                                 Ordering::SeqCst,
                             );
-                            reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
+                            ttd.mark_new_tasks_for_index(t.frame_idx, c.fc.len() as u32);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
@@ -1152,7 +1039,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                 (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
                             }
                             drop(f);
-                            reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
+                            ttd.mark_new_tasks_for_index(t.frame_idx, c.fc.len() as u32);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
@@ -1222,7 +1109,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                 task_thread_lock = Some(ttd.lock.lock());
                 let num_tasks = fc.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
                 if (sby + 1) < sbh && num_tasks != 0 {
-                    reset_task_cur(c, ttd, t.frame_idx);
+                    ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                     continue 'outer;
                 }
                 if num_tasks == 0
@@ -1243,7 +1130,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     );
                     fc.task_thread.cond.notify_one();
                 }
-                reset_task_cur(c, ttd, t.frame_idx);
+                ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                 continue 'outer;
             }
             // t->type != DAV1D_TASK_TYPE_ENTROPY_PROGRESS
@@ -1277,7 +1164,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
             task_thread_lock = Some(ttd.lock.lock());
             let num_tasks_0 = fc.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
             if (sby + 1) < sbh && num_tasks_0 != 0 {
-                reset_task_cur(c, ttd, t.frame_idx);
+                ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
                 continue 'outer;
             }
             if num_tasks_0 == 0
@@ -1298,7 +1185,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                 );
                 fc.task_thread.cond.notify_one();
             }
-            reset_task_cur(c, ttd, t.frame_idx);
+            ttd.mark_and_reset_cur(t.frame_idx, c.fc.len() as u32);
 
             break 'found_unlocked;
         }

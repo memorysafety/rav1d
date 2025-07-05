@@ -258,13 +258,37 @@ unsafe impl Sync for TaskThreadDataDelayedFg {}
 pub(crate) struct TaskThreadData {
     pub lock: Mutex<()>,
     pub cond: Condvar,
+
+    /// Where we have multiple frame contexts, we keep track of which frame is 'first',
+    /// that is, which of the frames we're working on has the lowest frame number,
+    /// or is closest to the start of the data.
+    ///
+    /// Written only under the task thread lock, [`Self::lock`].
+    /// Read under the lock, except in [`Self::mark_new_tasks_for_index`].
     pub first: AtomicU32,
+
+    /// Say we have several frame contexts. Each context may or may not have tasks,
+    /// and each task may or may not be blocked. Checking if tasks are blocked is not free,
+    /// so if a context has only blocked tasks, we use this variable to note that,
+    /// and then we can start looking from the first unblocked context.
+    ///
+    /// When decoding progress allows us to look again at an earlier context again,
+    /// [`Self::reset_task_cur`] is updated. When we run out of frame contexts,
+    /// or we wake from park, we update this from [`Self::reset_task_cur`].
+    ///
+    /// `cur` is indexed from `first`: if `first = 1` and `cur = 2`,
+    /// then we start looking at frame context 3.
+    ///
+    /// Can only be modified or read under the task thread lock, [`Self::lock`]:
+    /// the atomic is for interior mutability rather than concurrency.
     pub cur: RelaxedAtomic<u32>,
-    /// This is used for delayed reset of the task cur pointer when
-    /// such operation is needed but the thread doesn't enter a critical
-    /// section (typically when executing the next sbrow task locklessly).
-    /// See [`crate::thread_task::reset_task_cur`].
+
+    /// When we note progress, we track where [`Self::cur`] should start from next time.
+    ///
+    /// Can be set without holding the task thread lock, [`Self::lock`].
+    /// Only used under the task thread lock.
     pub reset_task_cur: AtomicU32,
+
     pub cond_signaled: AtomicI32,
     pub delayed_fg_exec: RelaxedAtomic<i32>,
     pub delayed_fg_cond: Condvar,
@@ -282,15 +306,40 @@ impl TaskThreadData {
         // This read-modify-write doesn't need to be an atomic CAS:
         // modifications are protected by the lock that we're holding.
         let first = self.first.load(atomic::Ordering::SeqCst);
-        if first as usize + 1 < n_fc {
-            self.first.fetch_add(1, atomic::Ordering::SeqCst);
+        let new_first = if first as usize + 1 < n_fc {
+            self.first.fetch_add(1, atomic::Ordering::SeqCst) + 1
         } else {
             self.first.store(0, atomic::Ordering::SeqCst);
-        }
-
+            0
+        };
+        // `reset_task_cur` is used to mark the first frame context where, we hope,
+        // there is probably work to be done. When we use it to set `cur`,
+        // we unconditionally subtract `first`, so it may be more than the number of fcs.
+        //
+        // If `reset_task_cur` was the old `first`, it means the old target `cur` value was zero.
+        // The C code detects this and swaps in `u32::MAX`,
+        // which means that we will no longer swap in an updated `cur`.
+        //
+        // The general rule is that if we have potential progress for `fc_i`,
+        // we might also have progress for `fc_i + 1`, `fc_i + 2`, etc.
+        //
+        // If `first` has just incremented, and we subtract the new first from the old
+        // `reset_task_cur`, we will get -1, which equals `u32::MAX` (but needs a wrapping subtract).
+        // So doing nothing should lead to the same behaviour. If we wanted to keep `cur` at 0,
+        // we would need to increment `reset_task_cur` as well.
+        //
+        // If `first` is now zero, `reset_task_cur - first` might be beyond the number of fcs.
+        // This also doesn't actually directly cause a problem: when we reset `cur`,
+        // we only swap in a new `cur` if it's better than our existing `cur`.
+        // If the potential new value is greater than the number of frame contexts,
+        // it will never be swapped in, so the behaviour is identical to setting `u32::MAX`.
+        //
+        // However, the downside of not resetting `cur` is that it makes thread parking more likely,
+        // and if it's at all possible for a thread to be doing something that would be better!
+        // So if `reset_task_cur == first`, swap in `new_first` instead.
         let _ = self.reset_task_cur.compare_exchange(
             first,
-            u32::MAX,
+            new_first,
             atomic::Ordering::SeqCst,
             atomic::Ordering::SeqCst,
         );
@@ -305,6 +354,134 @@ impl TaskThreadData {
         let cur = self.cur.get();
         if cur != 0 && (cur as usize) < n_fc {
             self.cur.set(cur - 1);
+        }
+    }
+
+    /// We probably have several frame contexts. Each context may or may not have tasks,
+    /// and each task may or may not be blocked. Checking if tasks are blocked is not free,
+    /// So when we're looking for a task to do, we try to skip frame contexts that have only blocked tasks.
+    /// We use [`Self::cur`], which is indexed from [`Self::first`].
+    ///
+    /// This marks a frame context as able to do a task.
+    /// The general rule is that a notification for `fc_i` unlocks `fc_i, fc_i+1, fc_i+2 ... n_fc`
+    ///
+    /// The task thread lock, [`Self::lock`], should *not* be held.
+    pub(crate) fn mark_new_tasks_for_index(&self, mut frame_idx: u32, n_fc: u32) {
+        let mut reset_task_cur = self.reset_task_cur.load(atomic::Ordering::SeqCst);
+        loop {
+            let first = self.first.load(atomic::Ordering::SeqCst);
+
+            // `cur` is indexed from `first`: `cur = 0` means we should start looking at the `first` frame context.
+            // `reset_task_cur` is _not_. It is set such that in `reset_cur_index`,
+            // we can unconditionally subtract `first` and get `cur`. To ensure that the property holds,
+            // we may need to add `n_fc` .
+            if frame_idx < first {
+                frame_idx += n_fc;
+            }
+
+            // Only save a new frame index if it's 'better' (that is, closer to `first`)
+            // that what we've saved before.
+            if frame_idx < reset_task_cur {
+                reset_task_cur = match self.reset_task_cur.compare_exchange(
+                    reset_task_cur,
+                    frame_idx,
+                    atomic::Ordering::SeqCst,
+                    atomic::Ordering::SeqCst,
+                ) {
+                    Ok(_) => {
+                        // Check to see if `first` has moved, and if so do the same check as in `advance_first`.
+                        let new_first = self.first.load(atomic::Ordering::SeqCst);
+                        let _ = self.reset_task_cur.compare_exchange(
+                            first,
+                            new_first,
+                            atomic::Ordering::SeqCst,
+                            atomic::Ordering::SeqCst,
+                        );
+                        return;
+                    }
+                    Err(c) => c,
+                };
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Potentially resets [`Self::cur`], if [`Self::reset_task_cur`] indicates that more tasks are available.
+    /// Resets [`Self::reset_task_cur`] to indicate that no new tasks are available.
+    /// Returns true if [`Self::cur`] was moved and thus that more tasks are likely available.
+    ///
+    /// The task thread lock, [`Self::lock`], must be held.
+    pub(crate) fn reset_cur_index(&self) -> bool {
+        // `reset_task_cur` is either an index + `first` if a new task has been marked,
+        // or it's `u32::MAX` if we haven't had any tasks added since the last reset.
+        let new_cur = self.reset_task_cur.swap(u32::MAX, atomic::Ordering::SeqCst);
+
+        // If it's `u32::MAX`, then bail without moving `cur`.
+        if new_cur == u32::MAX {
+            return false;
+        }
+
+        // `cur` is atomic for interior mutability not concurrency, it's ok to cache.
+        let cur = self.cur.get();
+
+        // This is a common case optimisation. If `cur` is at the start, we cannot do better.
+        if cur == 0 {
+            return false;
+        }
+
+        // It should always be the case that `reset_task_cur >= first`. However,
+        // we're not mutating the two variables under the one lock,
+        // nor are we doing something like a 16-byte CAS to keep them consistent,
+        // so it is possible for them to briefly desynchronise.
+        // Handle that with a wrapping subtract, which will create a huge positive u32 value,
+        // which will never be used because it will always be worse than a real `cur`.
+        // Later on, the delayed fg task of the frame, or the init task of the new frame,
+        // will cause new tasks to be created, or another running task will signal progress,
+        // any of which will end up getting our threads going again,
+        // so there shouldn't be any risk of a hang.
+        let new_cur = new_cur.wrapping_sub(self.first.load(atomic::Ordering::SeqCst));
+
+        // If it's better than our existing index, then reset `cur` and say we did something.
+        if new_cur < cur {
+            self.cur.set(new_cur);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Equivalent to [`Self::mark_new_tasks_for_index`],
+    /// then [`Self::reset_cur_index`], but more efficient.
+    ///
+    /// The task thread lock, [`Self::lock`], must be held.
+    pub(crate) fn mark_and_reset_cur(&self, mut frame_idx: u32, n_fc: u32) {
+        // We want to reset `cur` to the better of `frame_idx` or `reset_task_cur`,
+        // if that's an improvement.
+
+        // We must always reset this even if we are about to bail.
+        let reset_cur = self.reset_task_cur.swap(u32::MAX, atomic::Ordering::SeqCst);
+
+        // `cur` is atomic for interior mutability not concurrency, it's ok to cache.
+        let cur = self.cur.get();
+
+        // This is a common case optimisation. If `cur` is at the start, we cannot do better.
+        if cur == 0 {
+            return;
+        }
+
+        let first = self.first.load(atomic::Ordering::SeqCst);
+
+        // This will never be called with `u32::MAX`, so we do not need to special case that.
+        if frame_idx < first {
+            frame_idx += n_fc;
+        }
+
+        let min_reset_cur = u32::min(frame_idx, reset_cur);
+        // See `reset_cur_index` for why `wrapping_sub` is right here.
+        let new_cur = min_reset_cur.wrapping_sub(first);
+        if new_cur < cur {
+            self.cur.set(new_cur);
         }
     }
 }
