@@ -143,6 +143,7 @@ mod pool;
 mod qm;
 mod recon;
 mod refmvs;
+pub mod rust_api;
 mod scan;
 mod tables;
 mod thread_task;
@@ -156,6 +157,7 @@ use std::sync::{Arc, Once};
 use std::{cmp, mem, ptr, slice, thread};
 
 use parking_lot::Mutex;
+pub use rust_api::*;
 use to_method::To as _;
 
 use crate::c_arc::RawArc;

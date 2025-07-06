@@ -42,7 +42,7 @@ pub struct Dav1dDataProps {
 
 #[derive(Clone)]
 #[repr(C)]
-pub(crate) struct Rav1dDataProps {
+pub struct Rav1dDataProps {
     pub timestamp: i64,
     pub duration: i64,
     pub offset: libc::off_t,
