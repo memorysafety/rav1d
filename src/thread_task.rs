@@ -197,15 +197,44 @@ impl Rav1dTasks {
             let new_start = self.len();
             {
                 let mut pending_tasks = self.pending_tasks.lock();
+                if pending_tasks.len() == 0 {
+                    // This is a 'spurious' merge: that is, `merge` is set but the vector is empty.
+                    //
+                    // We always populate the vector under the lock, release the lock, and then set `merge`.
+                    // We do not synchronise the vector and the flag. So it can fall out of alignment, e.g.,
+                    // if we have 2 threads:
+                    //  1. say we begin with `merge` set and tasks in the `pending_tasks` vector.
+                    //  2. thread A begins `merge_pending_frame`, and clears `pending_tasks_merge`.
+                    //  3. thread B goes to add a pending task and takes the vector lock.
+                    //  4. thread A waits on the vector lock.
+                    //  5. thread B inserts some tasks, releases the lock, and sets `pending_tasks_merge`.
+                    //  6. thread A can now take the lock, and drain the vector.
+                    // We now have an empty vector: A has drained both the original contents,
+                    // and the task added by thread B - but `pending_tasks_merge` is true,
+                    // because it was set by B.
+                    //
+                    // So, if `merge_pending_frame` is called before another pending task is added,
+                    // we will get this spurious merge.
+                    return false;
+                }
                 let mut tasks = self.tasks.try_write().unwrap();
                 tasks.extend(pending_tasks.drain(..));
             }
+
+            // Unlike in the C code, we only do a single `insert_tasks`. There are two reasons:
+            //
+            //  - in the C code, the `insert_tasks` is what creates the sorted linked list.
+            //    In the Rust code, the sorting is done via sorting the `Vec` explictly.
+            //
+            //  - The key remaining function of is updating our position in the frame contexts,
+            //    by updating the `reset_task_cur` and `cur` variables. Here, as in C,
+            //    every task we're merging is for the same frame context, so the arguments are always the same,
+            //    and nothing is changed by trying to repeatedly do the same update.
             {
                 // take a read lock because reset_task_cur takes a read lock also
                 let tasks = self.tasks.try_read().unwrap();
-                for t in tasks[new_start..].iter() {
-                    self.insert_tasks(c, t.frame_idx, 0);
-                }
+                let frame_idx = tasks[new_start].frame_idx;
+                self.insert_tasks(c, frame_idx, 0);
             }
             {
                 // take a write lock to sort
