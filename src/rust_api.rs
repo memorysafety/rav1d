@@ -43,6 +43,7 @@ pub mod dav1d {
     use crate::c_arc::CArc;
     use crate::c_box::CBox;
     use crate::error::Rav1dError;
+    use crate::in_range::InRange;
     pub use crate::include::dav1d::dav1d::{
         Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
     };
@@ -75,19 +76,20 @@ pub mod dav1d {
         }
 
         pub fn set_n_threads(&mut self, n_threads: u32) {
-            self.rav1d_settings.n_threads = n_threads;
+            self.rav1d_settings.n_threads = InRange::new(n_threads.try_into().unwrap()).unwrap();
         }
 
         pub fn get_n_threads(&self) -> u32 {
-            self.rav1d_settings.n_threads
+            self.rav1d_settings.n_threads.get() as u32
         }
 
         pub fn set_max_frame_delay(&mut self, max_frame_delay: u32) {
-            self.rav1d_settings.max_frame_delay = max_frame_delay;
+            self.rav1d_settings.max_frame_delay =
+                InRange::new(max_frame_delay.try_into().unwrap()).unwrap();
         }
 
         pub fn get_max_frame_delay(&self) -> u32 {
-            self.rav1d_settings.max_frame_delay
+            self.rav1d_settings.max_frame_delay.get() as u32
         }
 
         pub fn set_apply_grain(&mut self, apply_grain: bool) {
@@ -99,11 +101,12 @@ pub mod dav1d {
         }
 
         pub fn set_operating_point(&mut self, operating_point: u8) {
-            self.rav1d_settings.operating_point = operating_point;
+            self.rav1d_settings.operating_point =
+                InRange::new(operating_point.try_into().unwrap()).unwrap();
         }
 
         pub fn get_operating_point(&self) -> u8 {
-            self.rav1d_settings.operating_point
+            self.rav1d_settings.operating_point.get()
         }
 
         pub fn set_all_layers(&mut self, all_layers: bool) {
@@ -169,8 +172,8 @@ pub mod dav1d {
             rav1d_open(&settings.rav1d_settings).map(|ctx| Decoder {
                 ctx,
                 pending_data: None,
-                n_threads: settings.rav1d_settings.n_threads,
-                max_frame_delay: settings.rav1d_settings.max_frame_delay,
+                n_threads: settings.rav1d_settings.n_threads.get() as u32,
+                max_frame_delay: settings.rav1d_settings.max_frame_delay.get() as u32,
             })
         }
 
@@ -231,7 +234,7 @@ pub mod dav1d {
             let ret = rav1d_send_data(&self.ctx, &mut data);
             if let Err(err) = ret {
                 let ret = err;
-                if matches!(ret, Rav1dError::Again) {
+                if matches!(ret, Rav1dError::TryAgain) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
@@ -242,7 +245,7 @@ pub mod dav1d {
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
                 self.pending_data = Some(data);
-                return Err(Rav1dError::Again);
+                return Err(Rav1dError::TryAgain);
             }
 
             Ok(())
@@ -267,7 +270,7 @@ pub mod dav1d {
             if let Err(err) = ret {
                 let ret = err;
 
-                if matches!(ret, Rav1dError::Again) {
+                if matches!(ret, Rav1dError::TryAgain) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
@@ -278,7 +281,7 @@ pub mod dav1d {
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
                 self.pending_data = Some(data);
-                return Err(Rav1dError::Again);
+                return Err(Rav1dError::TryAgain);
             }
 
             Ok(())
@@ -311,8 +314,8 @@ pub mod dav1d {
             // The only fields this actually needs from Rav1dSettings are n_threads and max_frame_delay so we just pass these in directly
 
             rav1d_get_frame_delay(&Rav1dSettings {
-                n_threads: self.n_threads,
-                max_frame_delay: self.max_frame_delay,
+                n_threads: InRange::new(self.n_threads.try_into().unwrap()).unwrap(),
+                max_frame_delay: InRange::new(self.max_frame_delay.try_into().unwrap()).unwrap(),
                 ..Default::default()
             })
             .unwrap() as u32
