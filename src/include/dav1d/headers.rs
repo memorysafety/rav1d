@@ -379,7 +379,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 /// Pixel layout of a frame.
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default, Debug)]
 pub enum Rav1dPixelLayout {
     /// Monochrome.
     #[default]
