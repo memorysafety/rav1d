@@ -30,6 +30,9 @@ use crate::send_sync_non_null::SendSyncNonNull;
 use crate::strided::Strided;
 use crate::with_offset::WithOffset;
 
+// Number of bytes to align AND pad picture memory buffers by, so that SIMD
+// implementations can over-read by a few bytes, and use aligned read/write
+// instructions.
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
 
