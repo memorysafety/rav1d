@@ -14,7 +14,6 @@ use crate::c_arc::RawArc;
 use crate::disjoint_mut::{
     AsMutPtr, DisjointImmutGuard, DisjointMut, DisjointMutGuard, SliceBounds,
 };
-use crate::error::Rav1dError::InvalidArgument;
 use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::BitDepth;
@@ -719,8 +718,12 @@ impl TryFrom<Dav1dPicAllocator> for Rav1dPicAllocator {
         } = value;
         Ok(Self {
             cookie,
-            alloc_picture_callback: validate_input!(alloc_picture_callback.ok_or(InvalidArgument))?,
-            release_picture_callback: validate_input!(release_picture_callback.ok_or(InvalidArgument))?,
+            alloc_picture_callback: validate_input!(
+                alloc_picture_callback.ok_or(Rav1dError::InvalidArgument)
+            )?,
+            release_picture_callback: validate_input!(
+                release_picture_callback.ok_or(Rav1dError::InvalidArgument)
+            )?,
         })
     }
 }
