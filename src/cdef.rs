@@ -166,6 +166,7 @@ pub fn fill(tmp: &mut [i16], w: usize, h: usize) {
     }
 }
 
+#[expect(clippy::eq_op, reason = "easier to reason about")]
 fn padding<BD: BitDepth>(
     tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
     src: Rav1dPictureDataComponentOffset,
