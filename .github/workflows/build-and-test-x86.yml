@@ -31,7 +31,7 @@ jobs:
         uses: kkysen/cache-apt-pkgs-action@remove-apt-fast-url-shortener
         with:
           packages: meson nasm gcc-multilib
-          version: 1.0 # version of cache to load
+          version: 3.0 # version of cache to load
       - name: git checkout
         uses: actions/checkout@v4
         with:
