@@ -38,7 +38,6 @@
     clippy::needless_return,
     clippy::neg_multiply,
     clippy::nonminimal_bool,
-    clippy::overly_complex_bool_expr, // error by default
     clippy::option_map_unit_fn,
     clippy::partialeq_to_none,
     clippy::precedence,
@@ -58,7 +57,7 @@
     clippy::unneeded_wildcard_pattern,
     clippy::upper_case_acronyms,
     clippy::useless_conversion,
-    clippy::zero_prefixed_literal,
+    clippy::zero_prefixed_literal
 )]
 #![deny(
     unsafe_op_in_unsafe_fn,
