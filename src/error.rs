@@ -1,4 +1,5 @@
 use std::ffi::{c_int, c_uint};
+use std::fmt::{self, Display, Formatter};
 
 use strum::FromRepr;
 
@@ -58,18 +59,24 @@ pub enum Rav1dError {
     UnsupportedBitstream = libc::ENOPROTOOPT as u8,
 }
 
-impl std::fmt::Display for Rav1dError {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Rav1dError {
+    pub const fn as_str(&self) -> &'static str {
         match self {
-            Rav1dError::Again => write!(fmt, "Try again"),
-            Rav1dError::InvalidArgument => write!(fmt, "Invalid argument"),
-            Rav1dError::NotEnoughMemory => write!(fmt, "Not enough memory available"),
-            Rav1dError::UnsupportedBitstream => write!(fmt, "Unsupported bitstream"),
-            Rav1dError::EGeneric => write!(fmt, "Generic error"),
-            Rav1dError::InvalidBuffer => write!(fmt, "Invalid buffer"),
-            Rav1dError::CantOpenFile => write!(fmt, "Can't open file: IO error"),
-            Rav1dError::OutOfRange => write!(fmt, "Out of range"),
+            Rav1dError::Again => "Try again",
+            Rav1dError::InvalidArgument => "Invalid argument",
+            Rav1dError::NotEnoughMemory => "Not enough memory available",
+            Rav1dError::UnsupportedBitstream => "Unsupported bitstream",
+            Rav1dError::EGeneric => "Generic error",
+            Rav1dError::InvalidBuffer => "Invalid buffer",
+            Rav1dError::CantOpenFile => "Can't open file: IO error",
+            Rav1dError::OutOfRange => "Out of range",
         }
+    }
+}
+
+impl Display for Rav1dError {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.as_str())
     }
 }
 
