@@ -26,6 +26,7 @@ pub enum Rav1dError {
     ///
     /// IO error.
     CantOpenFile = libc::EIO as u8,
+
     /// Try again.
     ///
     /// If this is returned by [`Decoder::send_data`] or [`Decoder::send_pending_data`] then there
@@ -35,18 +36,22 @@ pub enum Rav1dError {
     /// If this is returned by [`Decoder::get_picture`] then no decoded frames are pending
     /// currently and more data needs to be sent to the decoder.
     Again = libc::EAGAIN as u8,
+
     /// Not enough memory.
     ///
     /// Not enough memory is currently available for performing this operation.
     NotEnoughMemory = libc::ENOMEM as u8,
+
     /// Invalid argument.
     ///
     /// One of the arguments passed to the function was invalid.
     InvalidArgument = libc::EINVAL as u8,
+
     /// Out of range.
     ///
-    /// Frame size is larger than the limit
+    /// Frame size is larger than the limit.
     OutOfRange = libc::ERANGE as u8,
+
     /// Unsupported bitstream.
     ///
     /// The provided bitstream is not supported by `rav1d`.
