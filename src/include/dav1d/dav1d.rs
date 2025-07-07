@@ -9,6 +9,7 @@ use crate::include::dav1d::picture::{Dav1dPicAllocator, Rav1dPicAllocator};
 use crate::internal::Rav1dContext;
 pub use crate::log::Dav1dLogger;
 use crate::log::Rav1dLogger;
+use crate::validate_input;
 
 pub type Dav1dContext = RawArc<Rav1dContext>;
 
@@ -175,11 +176,20 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
+        validate_input!((n_threads <= 256, Rav1dError::InvalidArgument))?;
+        validate_input!((max_frame_delay <= 256, Rav1dError::InvalidArgument))?;
+        validate_input!((operating_point <= 31, Rav1dError::InvalidArgument))?;
         Ok(Self {
-            n_threads: n_threads.try_into()?,
-            max_frame_delay: max_frame_delay.try_into()?,
-apply_grain: apply_grain != 0,
-operating_point: operating_point.try_into()?,
+            n_threads: n_threads
+                .try_into()
+                .map_err(|_| Rav1dError::InvalidArgument)?,
+            max_frame_delay: max_frame_delay
+                .try_into()
+                .map_err(|_| Rav1dError::InvalidArgument)?,
+            apply_grain: apply_grain != 0,
+            operating_point: operating_point
+                .try_into()
+                .map_err(|_| Rav1dError::InvalidArgument)?,
             all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.try_into()?,
