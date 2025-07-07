@@ -154,18 +154,10 @@ pub mod dav1d {
 
     static_assertions::assert_impl_all!(Settings: Send, Sync);
 
-    impl Default for Settings {
-        fn default() -> Self {
-            Self::new()
-        }
-    }
-
     impl Settings {
         /// Creates a new [`Settings`] instance with default settings.
         pub fn new() -> Self {
-            Self {
-                dav1d_settings: Rav1dSettings::default(),
-            }
+            Self::default()
         }
 
         pub fn set_n_threads(&mut self, n_threads: u32) {
