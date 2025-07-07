@@ -176,10 +176,10 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             reserved: _,
         } = value;
         Ok(Self {
-            n_threads: n_threads as u32,
-            max_frame_delay: max_frame_delay as u32,
-            apply_grain: apply_grain != 0,
-            operating_point: operating_point.try_into().unwrap(),
+            n_threads: n_threads.try_into()?,
+            max_frame_delay: max_frame_delay.try_into()?,
+apply_grain: apply_grain != 0,
+operating_point: operating_point.try_into()?,
             all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.try_into()?,
