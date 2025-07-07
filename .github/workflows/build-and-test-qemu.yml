@@ -41,10 +41,10 @@ jobs:
     name: test on ${{ matrix.target }}
     steps:
       - name: install prerequisites
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: kkysen/cache-apt-pkgs-action@remove-apt-fast-url-shortener
         with:
           packages: ${{ matrix.packages }} qemu-user-static meson nasm
-          version: 1.0 # version of cache to load
+          version: 3.0 # version of cache to load
       - name: git checkout
         uses: actions/checkout@v4
         with:
