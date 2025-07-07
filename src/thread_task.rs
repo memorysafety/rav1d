@@ -14,8 +14,7 @@ use crate::decode::{
     rav1d_decode_frame_exit, rav1d_decode_frame_init, rav1d_decode_frame_init_cdf,
     rav1d_decode_tile_sbrow,
 };
-use crate::error::Rav1dError::{NotEnoughMemory, InvalidArgument};
-use crate::error::Rav1dResult;
+use crate::error::{Rav1dError, Rav1dResult};
 use crate::fg_apply::{rav1d_apply_grain_row, rav1d_prep_grain};
 use crate::filmgrain::FG_BLOCK_SIZE;
 #[cfg(feature = "bitdepth_16")]
@@ -627,9 +626,14 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
 
 #[inline]
 fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
-    fc.task_thread
-        .error
-        .store(if error == Err(InvalidArgument) { 1 } else { -1 }, Ordering::SeqCst);
+    fc.task_thread.error.store(
+        if error == Err(Rav1dError::InvalidArgument) {
+            1
+        } else {
+            -1
+        },
+        Ordering::SeqCst,
+    );
     fc.task_thread.task_counter.store(0, Ordering::SeqCst);
     fc.task_thread.done[0].store(1, Ordering::SeqCst);
     fc.task_thread.done[1].store(1, Ordering::SeqCst);
@@ -993,7 +997,15 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if res.is_err() || p1_3 == TILE_ERROR {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
-                            abort_frame(c, fc, if res.is_err() { res } else { Err(InvalidArgument) });
+                            abort_frame(
+                                c,
+                                fc,
+                                if res.is_err() {
+                                    res
+                                } else {
+                                    Err(Rav1dError::InvalidArgument)
+                                },
+                            );
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
                             t.type_0 = TaskType::InitCdf;
@@ -1010,7 +1022,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if !(c.fc.len() > 1) {
                             unreachable!();
                         }
-                        let mut res_0 = Err(InvalidArgument);
+                        let mut res_0 = Err(Rav1dError::InvalidArgument);
                         let mut f = fc.data.try_write().unwrap();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                             res_0 = rav1d_decode_frame_init_cdf(c, fc, &mut f, &fc.in_cdf());
@@ -1064,8 +1076,11 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                             unreachable!();
                                         }
                                         drop(f);
-                                        let _ =
-                                            rav1d_decode_frame_exit(c, fc, Err(NotEnoughMemory));
+                                        let _ = rav1d_decode_frame_exit(
+                                            c,
+                                            fc,
+                                            Err(Rav1dError::NotEnoughMemory),
+                                        );
                                         fc.task_thread.cond.notify_one();
                                     } else {
                                         drop(
@@ -1169,9 +1184,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     c,
                                     fc,
                                     if error_0 == 1 {
-                                        Err(InvalidArgument)
+                                        Err(Rav1dError::InvalidArgument)
                                     } else if error_0 != 0 {
-                                        Err(NotEnoughMemory)
+                                        Err(Rav1dError::NotEnoughMemory)
                                     } else {
                                         Ok(())
                                     },
@@ -1344,9 +1359,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         c,
                         fc,
                         if error_0 == 1 {
-                            Err(InvalidArgument)
+                            Err(Rav1dError::InvalidArgument)
                         } else if error_0 != 0 {
-                            Err(NotEnoughMemory)
+                            Err(Rav1dError::NotEnoughMemory)
                         } else {
                             Ok(())
                         },
@@ -1399,9 +1414,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     c,
                     fc,
                     if error_0 == 1 {
-                        Err(InvalidArgument)
+                        Err(Rav1dError::InvalidArgument)
                     } else if error_0 != 0 {
-                        Err(NotEnoughMemory)
+                        Err(Rav1dError::NotEnoughMemory)
                     } else {
                         Ok(())
                     },
