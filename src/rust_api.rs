@@ -147,6 +147,7 @@ pub mod dav1d {
 
     /// Settings for creating a new [`Decoder`] instance.
     /// See documentation for native `Dav1dSettings` struct.
+    #[derive(Default)]
     pub struct Settings {
         pub(crate) dav1d_settings: Rav1dSettings,
     }
