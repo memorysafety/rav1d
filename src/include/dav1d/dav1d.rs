@@ -142,8 +142,8 @@ pub struct Dav1dSettings {
 
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
-    pub n_threads: c_int,
-    pub max_frame_delay: c_int,
+    pub n_threads: u32,
+    pub max_frame_delay: u32,
     pub apply_grain: bool,
     pub operating_point: u8,
     pub all_layers: bool,
@@ -176,8 +176,8 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             reserved: _,
         } = value;
         Ok(Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: n_threads as u32,
+            max_frame_delay: max_frame_delay as u32,
             apply_grain: apply_grain != 0,
             operating_point: operating_point.try_into().unwrap(),
             all_layers: all_layers != 0,
@@ -209,8 +209,8 @@ impl From<Rav1dSettings> for Dav1dSettings {
             decode_frame_type,
         } = value;
         Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: n_threads as i32,
+            max_frame_delay: max_frame_delay as i32,
             apply_grain: apply_grain as c_int,
             operating_point: operating_point.into(),
             all_layers: all_layers as c_int,
