@@ -5,7 +5,7 @@ use std::ptr::NonNull;
 
 use crate::c_arc::CArc;
 use crate::c_box::{CBox, FnFree, Free};
-use crate::error::Rav1dError::EINVAL;
+use crate::error::Rav1dError::InvalidArgument;
 use crate::error::Rav1dResult;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -39,7 +39,7 @@ impl Rav1dData {
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult<Self> {
-        let free = validate_input!(free_callback.ok_or(EINVAL))?;
+        let free = validate_input!(free_callback.ok_or(InvalidArgument))?;
         let free = Free { free, cookie };
         // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
         let data = unsafe { CBox::from_c(data, free) };
@@ -56,7 +56,7 @@ impl Rav1dData {
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult {
-        let free = validate_input!(free_callback.ok_or(EINVAL))?;
+        let free = validate_input!(free_callback.ok_or(InvalidArgument))?;
         let free = Free { free, cookie };
         // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
         let user_data = unsafe { CBox::from_c(user_data, free) };
