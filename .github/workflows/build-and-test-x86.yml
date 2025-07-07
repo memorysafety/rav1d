@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: install prerequisites
-        uses: awalsh128/cache-apt-pkgs-action@latest
+        uses: kkysen/cache-apt-pkgs-action@remove-apt-fast-url-shortener
         with:
           packages: meson nasm gcc-multilib
           version: 1.0 # version of cache to load
