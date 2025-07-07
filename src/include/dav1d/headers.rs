@@ -378,12 +378,17 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 }
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+/// Pixel layout of a frame.
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
 pub enum Rav1dPixelLayout {
+    /// Monochrome.
     #[default]
     I400 = 0,
+    /// 4:2:0 planar.
     I420 = 1,
+    /// 4:2:2 planar.
     I422 = 2,
+    /// 4:4:4 planar.
     I444 = 3,
 }
 
@@ -753,7 +758,9 @@ impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
+    /// Maximum content light level (MaxCLL) in candela per square metre.
     pub max_content_light_level: u16,
+    /// Maximum frame average light level (MaxFLL) in candela per square metre.
     pub max_frame_average_light_level: u16,
 }
 
@@ -761,9 +768,13 @@ pub type Dav1dContentLightLevel = Rav1dContentLightLevel;
 
 #[repr(C)]
 pub struct Rav1dMasteringDisplay {
+    /// Red/green/blue XY coordinates of primaries in CIE 1931 color space as 0.16 fixed-point number.
     pub primaries: [[u16; 2]; 3],
+    /// XY coordinates of white point in CIE 1931 color space as 0.16 fixed-point number.
     pub white_point: [u16; 2],
+    /// Maximum luminance in candela per square metre as 24.8 fixed-point number.
     pub max_luminance: u32,
+    /// Minimum luminance in candela per square metre as 18.14 fixed-point number.
     pub min_luminance: u32,
 }
 
