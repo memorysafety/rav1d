@@ -149,7 +149,7 @@ pub mod dav1d {
     /// See documentation for native `Dav1dSettings` struct.
     #[derive(Default)]
     pub struct Settings {
-        pub(crate) dav1d_settings: Rav1dSettings,
+        pub(crate) rav1d_settings: Rav1dSettings,
     }
 
     static_assertions::assert_impl_all!(Settings: Send, Sync);
