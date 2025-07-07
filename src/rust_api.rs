@@ -1,17 +1,3 @@
-#![allow(non_upper_case_globals)]
-#![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
-#![cfg_attr(
-    any(target_arch = "riscv32", target_arch = "riscv64"),
-    feature(stdarch_riscv_feature_detection)
-)]
-#![deny(unsafe_op_in_unsafe_fn)]
-#![allow(clippy::all)]
-#![deny(clippy::undocumented_unsafe_blocks)]
-#![deny(clippy::missing_safety_doc)]
-
-#[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
-compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");
-
 // ---------------------------------------------------------------------------------------
 
 /// Public Rust API.
@@ -83,67 +69,6 @@ pub mod dav1d {
             Some(NonNull::new(ptr).unwrap())
         }
     }
-
-    /// Error enum return by various `dav1d` operations.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    #[non_exhaustive]
-    pub enum Error {
-        /// Try again.
-        ///
-        /// If this is returned by [`Decoder::send_data`] or [`Decoder::send_pending_data`] then there
-        /// are decoded frames pending that first have to be retrieved via [`Decoder::get_picture`]
-        /// before processing any further pending data.
-        ///
-        /// If this is returned by [`Decoder::get_picture`] then no decoded frames are pending
-        /// currently and more data needs to be sent to the decoder.
-        Again,
-        /// Invalid argument.
-        ///
-        /// One of the arguments passed to the function was invalid.
-        InvalidArgument,
-        /// Not enough memory.
-        ///
-        /// Not enough memory is currently available for performing this operation.
-        NotEnoughMemory,
-        /// Unsupported bitstream.
-        ///
-        /// The provided bitstream is not supported by `dav1d`.
-        UnsupportedBitstream,
-        /// Unknown error.
-        UnknownError(Rav1dError),
-    }
-
-    impl From<Rav1dError> for Error {
-        fn from(err: Rav1dError) -> Self {
-            match err {
-                Rav1dError::EAGAIN => Error::Again,
-                Rav1dError::ENOMEM => Error::NotEnoughMemory,
-                Rav1dError::EINVAL => Error::InvalidArgument,
-                Rav1dError::ENOPROTOOPT => Error::UnsupportedBitstream,
-                _ => Error::UnknownError(err),
-            }
-        }
-    }
-
-    impl Error {
-        pub const fn is_again(&self) -> bool {
-            matches!(self, Error::Again)
-        }
-    }
-
-    impl fmt::Display for Error {
-        fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-            match self {
-                Error::Again => write!(fmt, "Try again"),
-                Error::InvalidArgument => write!(fmt, "Invalid argument"),
-                Error::NotEnoughMemory => write!(fmt, "Not enough memory available"),
-                Error::UnsupportedBitstream => write!(fmt, "Unsupported bitstream"),
-                Error::UnknownError(err) => write!(fmt, "Unknown error {err:?}"),
-            }
-        }
-    }
-
-    impl std::error::Error for Error {}
 
     /// Settings for creating a new [`Decoder`] instance.
     /// See documentation for native `Dav1dSettings` struct.
@@ -267,18 +192,18 @@ pub mod dav1d {
 
     impl Decoder {
         /// Creates a new [`Decoder`] instance with given [`Settings`].
-        pub fn with_settings(settings: &Settings) -> Result<Self, Error> {
+        pub fn with_settings(settings: &Settings) -> Result<Self, Rav1dError> {
             match rav1d_open(&settings.dav1d_settings) {
                 Ok(dec) => Ok(Decoder {
                     dec,
                     pending_data: None,
                 }),
-                Err(err) => Err(Error::from(err)),
+                Err(err) => Err(err),
             }
         }
 
         /// Creates a new [`Decoder`] instance with the default settings.
-        pub fn new() -> Result<Self, Error> {
+        pub fn new() -> Result<Self, Rav1dError> {
             Self::with_settings(&Settings::default())
         }
 
@@ -309,7 +234,7 @@ pub mod dav1d {
             offset: Option<i64>,
             timestamp: Option<i64>,
             duration: Option<i64>,
-        ) -> Result<(), Error> {
+        ) -> Result<(), Rav1dError> {
             assert!(
                 self.pending_data.is_none(),
                 "Have pending data that needs to be handled first"
@@ -333,9 +258,8 @@ pub mod dav1d {
 
             let ret = rav1d_send_data(&self.dec, &mut data);
             if let Err(err) = ret {
-                let ret = Error::from(err);
-
-                if ret.is_again() {
+                let ret = err;
+                if matches!(ret, Rav1dError::Again) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
@@ -346,7 +270,7 @@ pub mod dav1d {
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
                 self.pending_data = Some(data);
-                return Err(Error::Again);
+                return Err(Rav1dError::Again);
             }
 
             Ok(())
@@ -359,7 +283,7 @@ pub mod dav1d {
         ///
         /// After this returned `Ok(())` or `Err([Error::Again])` there might be decoded frames
         /// available via [`Decoder::get_picture`].
-        pub fn send_pending_data(&mut self) -> Result<(), Error> {
+        pub fn send_pending_data(&mut self) -> Result<(), Rav1dError> {
             let mut data = match self.pending_data.take() {
                 None => {
                     return Ok(());
@@ -369,9 +293,9 @@ pub mod dav1d {
 
             let ret = rav1d_send_data(&self.dec, &mut data);
             if let Err(err) = ret {
-                let ret = Error::from(err);
+                let ret = err;
 
-                if ret.is_again() {
+                if matches!(ret, Rav1dError::Again) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
@@ -382,7 +306,7 @@ pub mod dav1d {
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
                 self.pending_data = Some(data);
-                return Err(Error::Again);
+                return Err(Rav1dError::Again);
             }
 
             Ok(())
@@ -396,12 +320,12 @@ pub mod dav1d {
         /// To make most use of frame threading this function should only be called once per submitted
         /// input frame and not until it returns `Err([Error::Again])`. Calling it in a loop should
         /// only be done to drain all pending frames at the end.
-        pub fn get_picture(&mut self) -> Result<Picture, Error> {
+        pub fn get_picture(&mut self) -> Result<Picture, Rav1dError> {
             let mut pic: Rav1dPicture = Rav1dPicture::default();
             let ret = rav1d_get_picture(&self.dec, &mut pic);
 
             if let Err(err) = ret {
-                Err(Error::from(err))
+                Err(err)
             } else {
                 let inner = InnerPicture { pic };
                 Ok(Picture {
