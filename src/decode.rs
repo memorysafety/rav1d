@@ -3370,6 +3370,7 @@ fn decode_sb(
     let mut by8 = 0;
     let ctx = match pass {
         FrameThreadPassState::First(ts_c) => {
+            #[expect(clippy::overly_complex_bool_expr, reason = "used for debugging")]
             if false && bl == BlockLevel::Bl64x64 {
                 println!(
                     "poc={},y={},x={},bl={:?},r={}",
