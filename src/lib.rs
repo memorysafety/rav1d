@@ -279,14 +279,8 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 
 #[cold]
 pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
-    validate_input!((
-        s.n_threads >= 0 && s.n_threads <= 256,
-        Rav1dError::InvalidArgument
-    ))?;
-    validate_input!((
-        s.max_frame_delay >= 0 && s.max_frame_delay <= 256,
-        Rav1dError::InvalidArgument
-    ))?;
+    validate_input!((s.n_threads <= 256, Rav1dError::InvalidArgument))?;
+    validate_input!((s.max_frame_delay <= 256, Rav1dError::InvalidArgument))?;
     let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
     Ok(n_fc)
 }
@@ -312,14 +306,8 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     static INITTED: Once = Once::new();
     INITTED.call_once(|| init_internal());
 
-    validate_input!((
-        s.n_threads >= 0 && s.n_threads <= 256,
-        Rav1dError::InvalidArgument
-    ))?;
-    validate_input!((
-        s.max_frame_delay >= 0 && s.max_frame_delay <= 256,
-        Rav1dError::InvalidArgument
-    ))?;
+    validate_input!((s.n_threads <= 256, Rav1dError::InvalidArgument))?;
+    validate_input!((s.max_frame_delay <= 256, Rav1dError::InvalidArgument))?;
     validate_input!((s.operating_point <= 31, Rav1dError::InvalidArgument))?;
     validate_input!((
         !s.allocator.is_default() || s.allocator.cookie.is_none(),
