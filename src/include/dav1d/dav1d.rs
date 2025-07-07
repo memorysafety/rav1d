@@ -80,7 +80,7 @@ impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
     type Error = Rav1dError;
 
     fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(Rav1dError::EINVAL)
+        Self::from_repr(value as usize).ok_or(Rav1dError::InvalidArgument)
     }
 }
 
