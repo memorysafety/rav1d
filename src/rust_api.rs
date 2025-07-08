@@ -168,13 +168,10 @@ pub mod dav1d {
     impl Decoder {
         /// Creates a new [`Decoder`] instance with given [`Settings`].
         pub fn with_settings(settings: &Settings) -> Result<Self, Rav1dError> {
-            match rav1d_open(&settings.rav1d_settings) {
-                Ok(dec) => Ok(Decoder {
-                    ctx: dec,
-                    pending_data: None,
-                }),
-                Err(err) => Err(err),
-            }
+            rav1d_open(&settings.rav1d_settings).map(|ctx| Decoder {
+                ctx,
+                pending_data: None,
+            })
         }
 
         /// Creates a new [`Decoder`] instance with the default settings.
