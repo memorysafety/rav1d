@@ -26,11 +26,11 @@ pub enum Rav1dError {
 
     /// Try again.
     ///
-    /// If this is returned by [`Decoder::send_data`] or [`Decoder::send_pending_data`] then there
-    /// are decoded frames pending that first have to be retrieved via [`Decoder::get_picture`]
+    /// If this is returned by [`rav1d_send_data`], then there
+    /// are decoded frames pending that first have to be retrieved via [`rav1d_get_picture`]
     /// before processing any further pending data.
     ///
-    /// If this is returned by [`Decoder::get_picture`] then no decoded frames are pending
+    /// If this is returned by [`rav1d_get_picture`], then no decoded frames are pending
     /// currently and more data needs to be sent to the decoder.
     TryAgain = libc::EAGAIN as u8,
 
