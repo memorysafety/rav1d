@@ -216,7 +216,7 @@ pub mod dav1d {
             let slice = &*buf;
             let len = slice.len();
 
-            let mut data: Rav1dData = Rav1dData::create(len).unwrap();
+            let mut data = Rav1dData::create(len).unwrap();
             data.data = Some(c_arc::CArc::wrap(c_box::CBox::Rust(buf)).unwrap());
             if let Some(offset) = offset {
                 data.m.offset = offset as libc::off_t;
