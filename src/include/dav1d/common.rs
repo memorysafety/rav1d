@@ -45,7 +45,7 @@ pub struct Dav1dDataProps {
 pub struct Rav1dDataProps {
     pub timestamp: i64,
     pub duration: i64,
-    pub offset: libc::off_t,
+    pub offset: i64,
     pub size: usize,
     pub user_data: Rav1dUserData,
 }
