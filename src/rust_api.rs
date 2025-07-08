@@ -405,7 +405,7 @@ pub mod dav1d {
 
     /// Number of bits per component.
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    pub struct BitsPerComponent(pub usize);
+    pub struct BitsPerComponent(pub u8);
 
     impl Picture {
         /// Stride in pixels of the `component` for the decoded frame.
