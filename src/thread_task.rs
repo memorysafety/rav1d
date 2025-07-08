@@ -627,10 +627,9 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
 #[inline]
 fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
     fc.task_thread.error.store(
-        if error == Err(Rav1dError::InvalidArgument) {
-            1
-        } else {
-            -1
+        match error {
+            Err(Rav1dError::InvalidArgument) => 1,
+            _ => -1,
         },
         Ordering::SeqCst,
     );
@@ -1000,10 +999,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             abort_frame(
                                 c,
                                 fc,
-                                if res.is_err() {
-                                    res
-                                } else {
-                                    Err(Rav1dError::InvalidArgument)
+                                match res {
+                                    Err(err) => Err(err),
+                                    Ok(_) => Err(Rav1dError::InvalidArgument),
                                 },
                             );
                             reset_task_cur(c, ttd, t.frame_idx);
@@ -1079,7 +1077,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                         let _ = rav1d_decode_frame_exit(
                                             c,
                                             fc,
-                                            Err(Rav1dError::NotEnoughMemory),
+                                            Err(Rav1dError::OutOfMemory),
                                         );
                                         fc.task_thread.cond.notify_one();
                                     } else {
@@ -1186,7 +1184,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     if error_0 == 1 {
                                         Err(Rav1dError::InvalidArgument)
                                     } else if error_0 != 0 {
-                                        Err(Rav1dError::NotEnoughMemory)
+                                        Err(Rav1dError::OutOfMemory)
                                     } else {
                                         Ok(())
                                     },
@@ -1361,7 +1359,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if error_0 == 1 {
                             Err(Rav1dError::InvalidArgument)
                         } else if error_0 != 0 {
-                            Err(Rav1dError::NotEnoughMemory)
+                            Err(Rav1dError::OutOfMemory)
                         } else {
                             Ok(())
                         },
@@ -1416,7 +1414,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     if error_0 == 1 {
                         Err(Rav1dError::InvalidArgument)
                     } else if error_0 != 0 {
-                        Err(Rav1dError::NotEnoughMemory)
+                        Err(Rav1dError::OutOfMemory)
                     } else {
                         Ok(())
                     },

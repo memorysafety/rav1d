@@ -213,7 +213,7 @@ fn picture_alloc_with_edges(
 ) -> Rav1dResult {
     if p.data.is_some() {
         writeln!(logger, "Picture already allocated!",);
-        return Err(Rav1dError::EGeneric);
+        return Err(Rav1dError::Other);
     }
     assert!(bpc > 0 && bpc <= 16);
     let pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
