@@ -224,7 +224,7 @@ pub mod dav1d {
             let mut data = Rav1dData::create(len).unwrap();
             data.data = Some(CArc::wrap(CBox::from_box(buf)).unwrap());
             if let Some(offset) = offset {
-                data.m.offset = offset as libc::off_t;
+                data.m.offset = offset;
             }
             if let Some(timestamp) = timestamp {
                 data.m.timestamp = timestamp;
