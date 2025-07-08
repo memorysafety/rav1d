@@ -351,13 +351,14 @@ pub mod dav1d {
         V,
     }
 
-    impl From<usize> for PlanarImageComponent {
-        fn from(index: usize) -> Self {
+    impl TryFrom<usize> for PlanarImageComponent {
+        type Error = Rav1dError;
+        fn try_from(index: usize) -> Result<Self, Self::Error> {
             match index {
-                0 => PlanarImageComponent::Y,
-                1 => PlanarImageComponent::U,
-                2 => PlanarImageComponent::V,
-                _ => panic!("Invalid YUV index: {}", index),
+                0 => Ok(PlanarImageComponent::Y),
+                1 => Ok(PlanarImageComponent::U),
+                2 => Ok(PlanarImageComponent::V),
+                _ => Err(Rav1dError::InvalidArgument),
             }
         }
     }
