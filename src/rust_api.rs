@@ -343,11 +343,11 @@ pub mod dav1d {
     /// Frame component.
     #[derive(Eq, PartialEq, Copy, Clone, Debug)]
     pub enum PlanarImageComponent {
-        /// Y component.
+        /// Y component (Luminance).
         Y,
-        /// U component.
+        /// U component (Chrominance).
         U,
-        /// V component.
+        /// V component (Chrominance).
         V,
     }
 
