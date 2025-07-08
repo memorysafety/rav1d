@@ -831,7 +831,7 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
     }
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), state.frame_thread.next as usize) {
-            let _ = rav1d_decode_frame_exit(c, fc, Err(Rav1dError::EGeneric));
+            let _ = rav1d_decode_frame_exit(c, fc, Err(Rav1dError::Other));
             *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut state.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
