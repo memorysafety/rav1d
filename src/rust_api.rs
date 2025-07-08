@@ -295,7 +295,7 @@ pub mod dav1d {
         /// input frame and not until it returns `Err([Error::Again])`. Calling it in a loop should
         /// only be done to drain all pending frames at the end.
         pub fn get_picture(&mut self) -> Result<Picture, Rav1dError> {
-            let mut pic: Rav1dPicture = Rav1dPicture::default();
+            let mut pic = Rav1dPicture::default();
             let ret = rav1d_get_picture(&self.ctx, &mut pic);
 
             if let Err(err) = ret {
