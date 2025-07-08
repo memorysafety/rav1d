@@ -165,7 +165,7 @@ pub mod dav1d {
     pub struct TryFromEnumError(());
 
     impl Display for TryFromEnumError {
-        fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
             fmt.write_str("Invalid enum value")
         }
     }
