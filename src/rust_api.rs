@@ -387,7 +387,7 @@ pub mod dav1d {
         fn as_ref(&self) -> &[u8] {
             let (stride, height) = self.0.plane_data_geometry(self.1);
             unsafe {
-                std::slice::from_raw_parts(
+                slice::from_raw_parts(
                     self.0.plane_data_ptr(self.1) as *const u8,
                     (stride * height) as usize,
                 )
