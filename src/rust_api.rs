@@ -161,7 +161,7 @@ pub mod dav1d {
 
     /// A `dav1d` decoder instance.
     pub struct Decoder {
-        dec: Arc<Rav1dContext>,
+        ctx: Arc<Rav1dContext>,
         pending_data: Option<Rav1dData>,
     }
 
@@ -170,7 +170,7 @@ pub mod dav1d {
         pub fn with_settings(settings: &Settings) -> Result<Self, Rav1dError> {
             match rav1d_open(&settings.rav1d_settings) {
                 Ok(dec) => Ok(Decoder {
-                    dec,
+                    ctx: dec,
                     pending_data: None,
                 }),
                 Err(err) => Err(err),
@@ -188,7 +188,7 @@ pub mod dav1d {
         ///
         /// All currently pending frames are available afterwards via [`Decoder::get_picture`].
         pub fn flush(&mut self) {
-            rav1d_flush(&self.dec);
+            rav1d_flush(&self.ctx);
             if let Some(mut pending_data) = self.pending_data.take() {
                 let _ = mem::take(&mut pending_data);
             }
@@ -231,7 +231,7 @@ pub mod dav1d {
                 data.m.duration = duration;
             }
 
-            let ret = rav1d_send_data(&self.dec, &mut data);
+            let ret = rav1d_send_data(&self.ctx, &mut data);
             if let Err(err) = ret {
                 let ret = err;
                 if matches!(ret, Rav1dError::Again) {
@@ -266,7 +266,7 @@ pub mod dav1d {
                 Some(data) => data,
             };
 
-            let ret = rav1d_send_data(&self.dec, &mut data);
+            let ret = rav1d_send_data(&self.ctx, &mut data);
             if let Err(err) = ret {
                 let ret = err;
 
@@ -297,7 +297,7 @@ pub mod dav1d {
         /// only be done to drain all pending frames at the end.
         pub fn get_picture(&mut self) -> Result<Picture, Rav1dError> {
             let mut pic: Rav1dPicture = Rav1dPicture::default();
-            let ret = rav1d_get_picture(&self.dec, &mut pic);
+            let ret = rav1d_get_picture(&self.ctx, &mut pic);
 
             if let Err(err) = ret {
                 Err(err)
@@ -311,7 +311,7 @@ pub mod dav1d {
 
         /// Get the decoder delay.
         pub fn get_frame_delay(&self) -> u32 {
-            unsafe { dav1d_get_frame_delay(NonNull::new(&self.dec as *const _ as *mut _)).0 as u32 }
+            unsafe { dav1d_get_frame_delay(NonNull::new(&self.ctx as *const _ as *mut _)).0 as u32 }
         }
     }
 
@@ -320,7 +320,7 @@ pub mod dav1d {
             if let Some(mut pending_data) = self.pending_data.take() {
                 let _ = mem::take(&mut pending_data);
             }
-            rav1d_close(self.dec.clone());
+            rav1d_close(self.ctx.clone());
         }
     }
 
