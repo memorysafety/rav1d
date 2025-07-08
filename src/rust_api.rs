@@ -32,9 +32,8 @@ pub mod dav1d {
 
     // The code below provides a safe API around the rav1d C FFI layer.
 
-    use std::convert::Infallible;
     use std::ffi::c_void;
-    use std::fmt::{Debug, Display, Formatter};
+    use std::fmt::Debug;
     use std::ops::Deref;
     use std::ptr::NonNull;
     use std::sync::Arc;
@@ -159,24 +158,6 @@ pub mod dav1d {
             self.rav1d_settings.decode_frame_type
         }
     }
-
-    /// The error type returned when a conversion from a C enum fails.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    pub struct TryFromEnumError(());
-
-    impl Display for TryFromEnumError {
-        fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
-            fmt.write_str("Invalid enum value")
-        }
-    }
-
-    impl From<Infallible> for TryFromEnumError {
-        fn from(x: Infallible) -> TryFromEnumError {
-            match x {}
-        }
-    }
-
-    impl std::error::Error for TryFromEnumError {}
 
     /// A `dav1d` decoder instance.
     pub struct Decoder {
