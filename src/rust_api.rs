@@ -630,12 +630,6 @@ pub mod dav1d {
         }
     }
 
-    impl Drop for InnerPicture {
-        fn drop(&mut self) {
-            let _ = mem::take(&mut self.pic);
-        }
-    }
-
     impl Debug for Picture {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             f.debug_struct("Picture")
