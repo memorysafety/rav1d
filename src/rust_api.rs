@@ -36,7 +36,7 @@ pub mod dav1d {
     use std::fmt::{Debug, Formatter};
     use std::ops::Deref;
     use std::sync::Arc;
-    use std::{fmt, mem};
+    use std::{fmt, mem, slice};
 
     pub use av_data::pixel;
 
@@ -45,11 +45,6 @@ pub mod dav1d {
     use crate::error::Rav1dError;
     pub use crate::include::dav1d::dav1d::{
         Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
-    };
-    use crate::include::dav1d::headers::{
-        Rav1dChromaSamplePosition, Rav1dColorPrimaries, Rav1dMatrixCoefficients,
-        Rav1dTransferCharacteristics, DAV1D_COLOR_PRI_RESERVED, DAV1D_MC_RESERVED,
-        DAV1D_TRC_RESERVED,
     };
     pub use crate::include::dav1d::headers::{
         Rav1dContentLightLevel as ContentLightLevel, Rav1dMasteringDisplay as MasteringDisplay,
@@ -407,6 +402,19 @@ pub mod dav1d {
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct BitsPerComponent(pub u8);
 
+    impl TryFrom<u8> for BitsPerComponent {
+        type Error = Rav1dError;
+
+        fn try_from(value: u8) -> Result<Self, Self::Error> {
+            match value {
+                0 => Ok(BitsPerComponent(8)),
+                1 => Ok(BitsPerComponent(10)),
+                2 => Ok(BitsPerComponent(12)),
+                _ => Err(Rav1dError::InvalidArgument),
+            }
+        }
+    }
+
     impl Picture {
         /// Stride in pixels of the `component` for the decoded frame.
         pub fn stride(&self, component: PlanarImageComponent) -> u32 {
@@ -457,12 +465,7 @@ pub mod dav1d {
         ///
         /// Check [`Picture::bit_depth`] for the number of storage bits.
         pub fn bits_per_component(&self) -> Option<BitsPerComponent> {
-            match self.inner.pic.seq_hdr.as_ref().unwrap().hbd {
-                0 => Some(BitsPerComponent(8)),
-                1 => Some(BitsPerComponent(10)),
-                2 => Some(BitsPerComponent(12)),
-                _ => None,
-            }
+            BitsPerComponent::try_from(self.inner.pic.seq_hdr.as_ref().unwrap().hbd).ok()
         }
 
         /// Width of the frame.
@@ -510,103 +513,39 @@ pub mod dav1d {
 
         /// Chromaticity coordinates of the source colour primaries.
         pub fn color_primaries(&self) -> pixel::ColorPrimaries {
-            match self.inner.pic.seq_hdr.as_ref().unwrap().pri {
-                Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
-                Rav1dColorPrimaries::UNKNOWN => pixel::ColorPrimaries::Unspecified,
-                Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
-                Rav1dColorPrimaries::BT470BG => pixel::ColorPrimaries::BT470BG,
-                Rav1dColorPrimaries::BT601 => pixel::ColorPrimaries::BT470BG,
-                Rav1dColorPrimaries::SMPTE240 => pixel::ColorPrimaries::ST240M,
-                Rav1dColorPrimaries::FILM => pixel::ColorPrimaries::Film,
-                Rav1dColorPrimaries::BT2020 => pixel::ColorPrimaries::BT2020,
-                Rav1dColorPrimaries::XYZ => pixel::ColorPrimaries::ST428,
-                Rav1dColorPrimaries::SMPTE431 => pixel::ColorPrimaries::P3DCI,
-                Rav1dColorPrimaries::SMPTE432 => pixel::ColorPrimaries::P3Display,
-                Rav1dColorPrimaries::EBU3213 => pixel::ColorPrimaries::Tech3213,
-                Rav1dColorPrimaries(x) => {
-                    if (23..=DAV1D_COLOR_PRI_RESERVED).contains(&(x as u32)) {
-                        pixel::ColorPrimaries::Unspecified
-                    } else {
-                        unreachable!()
-                    }
-                }
-            }
+            self.inner
+                .pic
+                .seq_hdr
+                .as_ref()
+                .unwrap()
+                .pri
+                .try_into()
+                .unwrap()
         }
 
         /// Transfer characteristics function.
         pub fn transfer_characteristic(&self) -> pixel::TransferCharacteristic {
-            match self.inner.pic.seq_hdr.as_ref().unwrap().trc {
-                Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
-                Rav1dTransferCharacteristics::UNKNOWN => pixel::TransferCharacteristic::Unspecified,
-                Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
-                Rav1dTransferCharacteristics::BT470BG => pixel::TransferCharacteristic::BT470BG,
-                Rav1dTransferCharacteristics::BT601 => pixel::TransferCharacteristic::ST170M,
-                Rav1dTransferCharacteristics::SMPTE240 => pixel::TransferCharacteristic::ST240M,
-                Rav1dTransferCharacteristics::LINEAR => pixel::TransferCharacteristic::Linear,
-                Rav1dTransferCharacteristics::LOG100 => {
-                    pixel::TransferCharacteristic::Logarithmic100
-                }
-                Rav1dTransferCharacteristics::LOG100_SQRT10 => {
-                    pixel::TransferCharacteristic::Logarithmic316
-                }
-                Rav1dTransferCharacteristics::IEC61966 => pixel::TransferCharacteristic::SRGB,
-                Rav1dTransferCharacteristics::BT1361 => pixel::TransferCharacteristic::BT1886,
-                Rav1dTransferCharacteristics::SRGB => pixel::TransferCharacteristic::SRGB,
-                Rav1dTransferCharacteristics::BT2020_10BIT => {
-                    pixel::TransferCharacteristic::BT2020Ten
-                }
-                Rav1dTransferCharacteristics::BT2020_12BIT => {
-                    pixel::TransferCharacteristic::BT2020Twelve
-                }
-                Rav1dTransferCharacteristics::SMPTE2084 => {
-                    pixel::TransferCharacteristic::PerceptualQuantizer
-                }
-                Rav1dTransferCharacteristics::SMPTE428 => pixel::TransferCharacteristic::ST428,
-                Rav1dTransferCharacteristics::HLG => pixel::TransferCharacteristic::HybridLogGamma,
-                Rav1dTransferCharacteristics(x) => {
-                    if (19..=DAV1D_TRC_RESERVED).contains(&(x as u32)) {
-                        pixel::TransferCharacteristic::Unspecified
-                    } else {
-                        unreachable!()
-                    }
-                }
-            }
+            self.inner
+                .pic
+                .seq_hdr
+                .as_ref()
+                .unwrap()
+                .trc
+                .try_into()
+                .unwrap()
         }
 
         /// Matrix coefficients used in deriving luma and chroma signals from the
         /// green, blue and red or X, Y and Z primaries.
         pub fn matrix_coefficients(&self) -> pixel::MatrixCoefficients {
-            match self.inner.pic.seq_hdr.as_ref().unwrap().mtrx {
-                Rav1dMatrixCoefficients::IDENTITY => pixel::MatrixCoefficients::Identity,
-                Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
-                Rav1dMatrixCoefficients::UNKNOWN => pixel::MatrixCoefficients::Unspecified,
-                Rav1dMatrixCoefficients::FCC => pixel::MatrixCoefficients::BT470M,
-                Rav1dMatrixCoefficients::BT470BG => pixel::MatrixCoefficients::BT470BG,
-                Rav1dMatrixCoefficients::BT601 => pixel::MatrixCoefficients::BT470BG,
-                Rav1dMatrixCoefficients::SMPTE240 => pixel::MatrixCoefficients::ST240M,
-                Rav1dMatrixCoefficients::SMPTE_YCGCO => pixel::MatrixCoefficients::YCgCo,
-                Rav1dMatrixCoefficients::BT2020_NCL => {
-                    pixel::MatrixCoefficients::BT2020NonConstantLuminance
-                }
-                Rav1dMatrixCoefficients::BT2020_CL => {
-                    pixel::MatrixCoefficients::BT2020ConstantLuminance
-                }
-                Rav1dMatrixCoefficients::SMPTE2085 => pixel::MatrixCoefficients::ST2085,
-                Rav1dMatrixCoefficients::CHROMAT_NCL => {
-                    pixel::MatrixCoefficients::ChromaticityDerivedNonConstantLuminance
-                }
-                Rav1dMatrixCoefficients::CHROMAT_CL => {
-                    pixel::MatrixCoefficients::ChromaticityDerivedConstantLuminance
-                }
-                Rav1dMatrixCoefficients::ICTCP => pixel::MatrixCoefficients::ICtCp,
-                Rav1dMatrixCoefficients(x) => {
-                    if (15..=DAV1D_MC_RESERVED).contains(&(x as u32)) {
-                        pixel::MatrixCoefficients::Unspecified
-                    } else {
-                        unreachable!()
-                    }
-                }
-            }
+            self.inner
+                .pic
+                .seq_hdr
+                .as_ref()
+                .unwrap()
+                .mtrx
+                .try_into()
+                .unwrap()
         }
 
         /// YUV color range.
@@ -619,14 +558,14 @@ pub mod dav1d {
 
         /// Sample position for subsampled chroma.
         pub fn chroma_location(&self) -> pixel::ChromaLocation {
-            // According to y4m mapping declared in dav1d's output/y4m2.c and applied from FFmpeg's yuv4mpegdec.c
-            match self.inner.pic.seq_hdr.as_ref().unwrap().chr {
-                Rav1dChromaSamplePosition::Unknown | Rav1dChromaSamplePosition::Colocated => {
-                    pixel::ChromaLocation::Center
-                }
-                Rav1dChromaSamplePosition::Vertical => pixel::ChromaLocation::Left,
-                Rav1dChromaSamplePosition::_Reserved => unreachable!(),
-            }
+            self.inner
+                .pic
+                .seq_hdr
+                .as_ref()
+                .unwrap()
+                .chr
+                .try_into()
+                .unwrap()
         }
     }
 
