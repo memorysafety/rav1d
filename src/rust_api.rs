@@ -423,7 +423,7 @@ pub mod dav1d {
                 PlanarImageComponent::Y => 0,
                 _ => 1,
             };
-            self.inner.pic.stride[s] as u32
+            self.inner.pic.stride[s].try_into().unwrap()
         }
 
         /// Raw pointer to the data of the `component` for the decoded frame.
