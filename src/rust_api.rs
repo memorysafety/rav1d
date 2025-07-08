@@ -41,6 +41,8 @@ pub mod dav1d {
 
     pub use av_data::pixel;
 
+    use crate::c_arc::CArc;
+    use crate::c_box::CBox;
     use crate::error::Rav1dError;
     pub use crate::include::dav1d::dav1d::{
         Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
@@ -217,7 +219,7 @@ pub mod dav1d {
             let len = slice.len();
 
             let mut data = Rav1dData::create(len).unwrap();
-            data.data = Some(c_arc::CArc::wrap(c_box::CBox::Rust(buf)).unwrap());
+            data.data = Some(CArc::wrap(CBox::from_box(buf)).unwrap());
             if let Some(offset) = offset {
                 data.m.offset = offset as libc::off_t;
             }
