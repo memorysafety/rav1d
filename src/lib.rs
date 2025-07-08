@@ -151,6 +151,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Once};
 use std::{cmp, mem, ptr, slice, thread};
 
+use in_range::InRange;
 use parking_lot::Mutex;
 use to_method::To as _;
 
@@ -229,10 +230,10 @@ pub extern "C" fn dav1d_version_api() -> c_uint {
 impl Default for Rav1dSettings {
     fn default() -> Self {
         Self {
-            n_threads: 0,
-            max_frame_delay: 0,
+            n_threads: InRange::<u16, 0, 256>::new(0).unwrap(),
+            max_frame_delay: InRange::<u16, 0, 256>::new(0).unwrap(),
             apply_grain: true,
-            operating_point: 0,
+            operating_point: InRange::<u8, 0, 31>::new(0).unwrap(),
             all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
@@ -264,13 +265,13 @@ struct NumThreads {
 
 #[cold]
 fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
-    let n_tc = if s.n_threads != 0 {
-        s.n_threads as usize
+    let n_tc = if s.n_threads.get() != 0 {
+        s.n_threads.get() as usize
     } else {
         rav1d_num_logical_processors().get().clamp(1, 256)
     };
-    let n_fc = if s.max_frame_delay != 0 {
-        cmp::min(s.max_frame_delay as usize, n_tc)
+    let n_fc = if s.max_frame_delay.get() != 0 {
+        cmp::min(s.max_frame_delay.get() as usize, n_tc)
     } else {
         cmp::min((n_tc as f64).sqrt().ceil() as usize, 8)
     };
@@ -388,7 +389,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         allocator: s.allocator.clone(),
         logger: s.logger.clone(),
         apply_grain: s.apply_grain,
-        operating_point: s.operating_point,
+        operating_point: s.operating_point.get(),
         all_layers: s.all_layers,
         frame_size_limit,
         strict_std_compliance: s.strict_std_compliance,

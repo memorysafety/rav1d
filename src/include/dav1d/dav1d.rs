@@ -5,6 +5,7 @@ use strum::FromRepr;
 
 use crate::c_arc::RawArc;
 use crate::error::Rav1dError;
+use crate::in_range::InRange;
 use crate::include::dav1d::picture::{Dav1dPicAllocator, Rav1dPicAllocator};
 use crate::internal::Rav1dContext;
 pub use crate::log::Dav1dLogger;
@@ -143,10 +144,10 @@ pub struct Dav1dSettings {
 
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
-    pub n_threads: u32,
-    pub max_frame_delay: u32,
+    pub n_threads: InRange<u16, 0, 256>,
+    pub max_frame_delay: InRange<u16, 0, 256>,
     pub apply_grain: bool,
-    pub operating_point: u8,
+    pub operating_point: InRange<u8, 0, 31>,
     pub all_layers: bool,
     pub frame_size_limit: c_uint,
     pub allocator: Rav1dPicAllocator,
@@ -176,20 +177,25 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
-        validate_input!((n_threads <= 256, Rav1dError::InvalidArgument))?;
-        validate_input!((max_frame_delay <= 256, Rav1dError::InvalidArgument))?;
-        validate_input!((operating_point <= 31, Rav1dError::InvalidArgument))?;
+        validate_input!((
+            n_threads >= 0 && n_threads <= 256,
+            Rav1dError::InvalidArgument
+        ))?;
+        validate_input!((
+            max_frame_delay >= 0 && max_frame_delay <= 256,
+            Rav1dError::InvalidArgument
+        ))?;
+        validate_input!((
+            operating_point >= 0 && operating_point <= 31,
+            Rav1dError::InvalidArgument
+        ))?;
         Ok(Self {
-            n_threads: n_threads
-                .try_into()
-                .map_err(|_| Rav1dError::InvalidArgument)?,
-            max_frame_delay: max_frame_delay
-                .try_into()
-                .map_err(|_| Rav1dError::InvalidArgument)?,
+            n_threads: InRange::<u16, 0, 256>::new(n_threads.try_into().unwrap()).unwrap(),
+            max_frame_delay: InRange::<u16, 0, 256>::new(max_frame_delay.try_into().unwrap())
+                .unwrap(),
             apply_grain: apply_grain != 0,
-            operating_point: operating_point
-                .try_into()
-                .map_err(|_| Rav1dError::InvalidArgument)?,
+            operating_point: InRange::<u8, 0, 31>::new(operating_point.try_into().unwrap())
+                .unwrap(),
             all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.try_into()?,
@@ -219,10 +225,10 @@ impl From<Rav1dSettings> for Dav1dSettings {
             decode_frame_type,
         } = value;
         Self {
-            n_threads: n_threads as i32,
-            max_frame_delay: max_frame_delay as i32,
+            n_threads: n_threads.get() as i32,
+            max_frame_delay: max_frame_delay.get() as i32,
             apply_grain: apply_grain as c_int,
-            operating_point: operating_point.into(),
+            operating_point: operating_point.get().into(),
             all_layers: all_layers as c_int,
             frame_size_limit,
             allocator: allocator.into(),
