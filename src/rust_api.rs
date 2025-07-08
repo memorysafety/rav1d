@@ -1,5 +1,3 @@
-// ---------------------------------------------------------------------------------------
-
 /// Public Rust API.
 ///
 /// This is more or less the same API as <https://crates.io/crates/dav1d>,
