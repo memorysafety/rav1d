@@ -212,7 +212,7 @@ pub mod dav1d {
                 "Have pending data that needs to be handled first"
             );
 
-            let buf: std::boxed::Box<[u8]> = buf.as_ref().to_vec().into_boxed_slice();
+            let buf = buf.as_ref().to_vec().into_boxed_slice();
             let slice = (*buf).as_ref();
             let len = slice.len();
 
