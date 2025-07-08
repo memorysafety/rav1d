@@ -33,9 +33,8 @@ pub mod dav1d {
     // The code below provides a safe API around the rav1d C FFI layer.
 
     use std::ffi::c_void;
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Formatter};
     use std::ops::Deref;
-    use std::ptr::NonNull;
     use std::sync::Arc;
     use std::{fmt, mem};
 
@@ -61,8 +60,8 @@ pub mod dav1d {
     use crate::internal::Rav1dContext;
     use crate::pixels::Pixels;
     use crate::{
-        c_arc, c_box, dav1d_get_frame_delay, rav1d_close, rav1d_flush, rav1d_get_picture,
-        rav1d_open, rav1d_send_data, Rav1dData, Rav1dSettings,
+        rav1d_close, rav1d_flush, rav1d_get_frame_delay, rav1d_get_picture, rav1d_open,
+        rav1d_send_data, Rav1dData, Rav1dSettings,
     };
 
     /// Settings for creating a new [`Decoder`] instance.
@@ -165,6 +164,8 @@ pub mod dav1d {
     pub struct Decoder {
         ctx: Arc<Rav1dContext>,
         pending_data: Option<Rav1dData>,
+        n_threads: u32,
+        max_frame_delay: u32,
     }
 
     impl Decoder {
@@ -173,6 +174,8 @@ pub mod dav1d {
             rav1d_open(&settings.rav1d_settings).map(|ctx| Decoder {
                 ctx,
                 pending_data: None,
+                n_threads: settings.rav1d_settings.n_threads,
+                max_frame_delay: settings.rav1d_settings.max_frame_delay,
             })
         }
 
@@ -310,7 +313,14 @@ pub mod dav1d {
 
         /// Get the decoder delay.
         pub fn get_frame_delay(&self) -> u32 {
-            unsafe { dav1d_get_frame_delay(NonNull::new(&self.ctx as *const _ as *mut _)).0 as u32 }
+            // The only fields this actually needs from Rav1dSettings are n_threads and max_frame_delay so we just pass these in directly
+
+            rav1d_get_frame_delay(&Rav1dSettings {
+                n_threads: self.n_threads,
+                max_frame_delay: self.max_frame_delay,
+                ..Default::default()
+            })
+            .unwrap() as u32
         }
     }
 
@@ -627,7 +637,7 @@ pub mod dav1d {
     }
 
     impl Debug for Picture {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             f.debug_struct("Picture")
                 .field("width", &self.width())
                 .field("height", &self.height())
