@@ -611,7 +611,7 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
     if output_picture_ready(c, state, true) {
         return output_image(c, state, out);
     }
-    Err(Rav1dError::Again)
+    Err(Rav1dError::TryAgain)
 }
 
 fn gen_picture(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResult {
@@ -653,7 +653,7 @@ pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dRe
         state.drain = false;
     }
     if state.in_0.data.is_some() {
-        return Err(Rav1dError::Again);
+        return Err(Rav1dError::TryAgain);
     }
     state.in_0 = in_0.clone();
     let res = gen_picture(c, state);
@@ -701,7 +701,7 @@ pub(crate) fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture) -> Rav
     if c.fc.len() > 1 && drain {
         return drain_picture(c, state, out);
     }
-    Err(Rav1dError::Again)
+    Err(Rav1dError::TryAgain)
 }
 
 /// # Safety

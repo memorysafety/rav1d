@@ -32,7 +32,7 @@ pub enum Rav1dError {
     ///
     /// If this is returned by [`Decoder::get_picture`] then no decoded frames are pending
     /// currently and more data needs to be sent to the decoder.
-    Again = libc::EAGAIN as u8,
+    TryAgain = libc::EAGAIN as u8,
 
     /// Out of memory.
     ///
@@ -58,7 +58,7 @@ pub enum Rav1dError {
 impl Rav1dError {
     pub const fn as_str(&self) -> &'static str {
         match self {
-            Rav1dError::Again => "Try again",
+            Rav1dError::TryAgain => "Try again",
             Rav1dError::InvalidArgument => "Invalid argument",
             Rav1dError::OutOfMemory => "Not enough memory available",
             Rav1dError::UnsupportedBitstream => "Unsupported bitstream",
