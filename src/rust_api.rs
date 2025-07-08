@@ -64,14 +64,6 @@ pub mod dav1d {
         rav1d_open, rav1d_send_data, Rav1dData, Rav1dSettings,
     };
 
-    fn option_nonnull<T>(ptr: *mut T) -> Option<NonNull<T>> {
-        if ptr.is_null() {
-            None
-        } else {
-            Some(NonNull::new(ptr).unwrap())
-        }
-    }
-
     /// Settings for creating a new [`Decoder`] instance.
     /// See documentation for native `Dav1dSettings` struct.
     #[derive(Default)]
@@ -338,9 +330,7 @@ pub mod dav1d {
 
         /// Get the decoder delay.
         pub fn get_frame_delay(&self) -> u32 {
-            unsafe {
-                dav1d_get_frame_delay(option_nonnull(&self.dec as *const _ as *mut _)).0 as u32
-            }
+            unsafe { dav1d_get_frame_delay(NonNull::new(&self.dec as *const _ as *mut _)).0 as u32 }
         }
     }
 
