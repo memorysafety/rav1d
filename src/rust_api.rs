@@ -213,7 +213,7 @@ pub mod dav1d {
             );
 
             let buf = buf.as_ref().to_vec().into_boxed_slice();
-            let slice = (*buf).as_ref();
+            let slice = &*buf;
             let len = slice.len();
 
             let mut data: Rav1dData = Rav1dData::create(len).unwrap();
