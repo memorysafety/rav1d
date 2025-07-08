@@ -41,23 +41,27 @@ pub mod dav1d {
     use std::{fmt, mem};
 
     pub use av_data::pixel;
-    use rav1d::error::Rav1dError;
-    use rav1d::include::dav1d::data::*;
-    use rav1d::include::dav1d::dav1d::*;
-    use rav1d::include::dav1d::headers::*;
-    use rav1d::include::dav1d::picture::*;
 
-    pub use crate::include::dav1d::dav1d::Rav1dInloopFilterType as InloopFilterType;
+    use crate::error::Rav1dError;
+    pub use crate::include::dav1d::dav1d::{
+        Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
+    };
+    use crate::include::dav1d::headers::{
+        Rav1dChromaSamplePosition, Rav1dColorPrimaries, Rav1dMatrixCoefficients,
+        Rav1dTransferCharacteristics, DAV1D_COLOR_PRI_RESERVED, DAV1D_MC_RESERVED,
+        DAV1D_TRC_RESERVED,
+    };
     pub use crate::include::dav1d::headers::{
         Rav1dContentLightLevel as ContentLightLevel, Rav1dMasteringDisplay as MasteringDisplay,
         Rav1dPixelLayout as PixelLayout,
     };
+    use crate::include::dav1d::picture::Rav1dPicture;
     pub use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT as PICTURE_ALIGNMENT;
     use crate::internal::Rav1dContext;
     use crate::pixels::Pixels;
     use crate::{
-        self as rav1d, c_arc, c_box, dav1d_get_frame_delay, rav1d_close, rav1d_flush,
-        rav1d_get_picture, rav1d_open, rav1d_send_data,
+        c_arc, c_box, dav1d_get_frame_delay, rav1d_close, rav1d_flush, rav1d_get_picture,
+        rav1d_open, rav1d_send_data, Rav1dData, Rav1dSettings,
     };
 
     fn option_nonnull<T>(ptr: *mut T) -> Option<NonNull<T>> {
@@ -147,19 +151,19 @@ pub mod dav1d {
             self.rav1d_settings.output_invisible_frames
         }
 
-        pub fn set_inloop_filters(&mut self, inloop_filters: Rav1dInloopFilterType) {
+        pub fn set_inloop_filters(&mut self, inloop_filters: InloopFilterType) {
             self.rav1d_settings.inloop_filters = inloop_filters;
         }
 
-        pub fn get_inloop_filters(&self) -> Rav1dInloopFilterType {
+        pub fn get_inloop_filters(&self) -> InloopFilterType {
             self.rav1d_settings.inloop_filters
         }
 
-        pub fn set_decode_frame_type(&mut self, decode_frame_type: Rav1dDecodeFrameType) {
+        pub fn set_decode_frame_type(&mut self, decode_frame_type: DecodeFrameType) {
             self.rav1d_settings.decode_frame_type = decode_frame_type;
         }
 
-        pub fn get_decode_frame_type(&self) -> Rav1dDecodeFrameType {
+        pub fn get_decode_frame_type(&self) -> DecodeFrameType {
             self.rav1d_settings.decode_frame_type
         }
     }
@@ -448,10 +452,8 @@ pub mod dav1d {
             let height = match component {
                 PlanarImageComponent::Y => self.height(),
                 _ => match self.pixel_layout() {
-                    Rav1dPixelLayout::I420 => (self.height() + 1) / 2,
-                    Rav1dPixelLayout::I400 | Rav1dPixelLayout::I422 | Rav1dPixelLayout::I444 => {
-                        self.height()
-                    }
+                    PixelLayout::I420 => (self.height() + 1) / 2,
+                    PixelLayout::I400 | PixelLayout::I422 | PixelLayout::I444 => self.height(),
                 },
             };
             (self.stride(component), height)
@@ -494,7 +496,7 @@ pub mod dav1d {
         }
 
         /// Pixel layout of the frame.
-        pub fn pixel_layout(&self) -> Rav1dPixelLayout {
+        pub fn pixel_layout(&self) -> PixelLayout {
             self.inner.pic.p.layout
         }
 
