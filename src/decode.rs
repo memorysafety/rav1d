@@ -22,7 +22,7 @@ use crate::env::{
     get_cur_frame_segid, get_drl_context, get_filter_ctx, get_gmv_2d, get_intra_ctx,
     get_jnt_comp_ctx, get_mask_comp_ctx, get_partition_ctx, get_poc_diff, get_tx_ctx, BlockContext,
 };
-use crate::error::Rav1dError::{EINVAL, ENOPROTOOPT};
+use crate::error::Rav1dError::{InvalidArgument, UnsupportedBitstream};
 use crate::error::Rav1dResult;
 use crate::extensions::OptionError as _;
 use crate::include::common::attributes::ctz;
@@ -4594,7 +4594,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 data.len()
             } else {
                 if n_bytes > data.len() {
-                    return Err(EINVAL);
+                    return Err(InvalidArgument);
                 }
                 let (cur_data, rest_data) = CArc::split_at(data, n_bytes);
                 let tile_sz = cur_data
@@ -4605,7 +4605,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                     + 1;
                 data = rest_data;
                 if tile_sz > data.len() {
-                    return Err(EINVAL);
+                    return Err(InvalidArgument);
                 }
                 tile_sz
             };
@@ -4709,7 +4709,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             }
             for col in 0..cols {
                 t.ts = tile_row * cols + col;
-                rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
+                rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| InvalidArgument)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.dsp
@@ -4748,7 +4748,7 @@ pub(crate) fn rav1d_decode_frame_exit(
             rf.p.frame_hdr.is_some()
                 && rf.progress.as_ref().unwrap()[1].load(Ordering::SeqCst) == FRAME_ERROR
         }) {
-            retval = Err(EINVAL);
+            retval = Err(InvalidArgument);
             task_thread.error.store(1, Ordering::SeqCst);
             f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
         }
@@ -4932,7 +4932,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 &mut state.cached_error_props,
                 &state.in_0.m,
             );
-            return Err(ENOPROTOOPT);
+            return Err(UnsupportedBitstream);
         }
     };
 
@@ -4953,7 +4953,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     &mut state.cached_error_props,
                     &state.in_0.m,
                 );
-                return Err(EINVAL);
+                return Err(InvalidArgument);
             }
         }
         for i in 0..7 {
@@ -4976,7 +4976,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     &mut state.cached_error_props,
                     &state.in_0.m,
                 );
-                return Err(EINVAL);
+                return Err(InvalidArgument);
             }
             f.refp[i] = state.refs[refidx].p.clone();
             ref_coded_width[i] = state.refs[refidx]

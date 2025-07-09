@@ -28,7 +28,7 @@ pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType =
 
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
-    pub(crate) struct Rav1dInloopFilterType: u8 {
+    pub struct Rav1dInloopFilterType: u8 {
         const DEBLOCK = 1 << 1;
         const CDEF = 1 << 2;
         const RESTORATION = 1 << 3;
@@ -58,7 +58,7 @@ pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
     Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr, Default)]
-pub(crate) enum Rav1dDecodeFrameType {
+pub enum Rav1dDecodeFrameType {
     /// decode and return all frames
     #[default]
     All = 0,
@@ -80,7 +80,7 @@ impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
     type Error = Rav1dError;
 
     fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(Rav1dError::EINVAL)
+        Self::from_repr(value as usize).ok_or(Rav1dError::InvalidArgument)
     }
 }
 
@@ -142,8 +142,8 @@ pub struct Dav1dSettings {
 
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
-    pub n_threads: c_int,
-    pub max_frame_delay: c_int,
+    pub n_threads: u32,
+    pub max_frame_delay: u32,
     pub apply_grain: bool,
     pub operating_point: u8,
     pub all_layers: bool,
@@ -176,8 +176,8 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             reserved: _,
         } = value;
         Ok(Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: n_threads as u32,
+            max_frame_delay: max_frame_delay as u32,
             apply_grain: apply_grain != 0,
             operating_point: operating_point.try_into().unwrap(),
             all_layers: all_layers != 0,
@@ -209,8 +209,8 @@ impl From<Rav1dSettings> for Dav1dSettings {
             decode_frame_type,
         } = value;
         Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: n_threads as i32,
+            max_frame_delay: max_frame_delay as i32,
             apply_grain: apply_grain as c_int,
             operating_point: operating_point.into(),
             all_layers: all_layers as c_int,
