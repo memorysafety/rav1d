@@ -471,12 +471,12 @@ pub mod dav1d {
 
         /// Width of the frame.
         pub fn width(&self) -> u32 {
-            self.inner.pic.p.w as u32
+            self.inner.pic.p.w.try_into().unwrap()
         }
 
         /// Height of the frame.
         pub fn height(&self) -> u32 {
-            self.inner.pic.p.h as u32
+            self.inner.pic.p.h.try_into().unwrap()
         }
 
         /// Pixel layout of the frame.
