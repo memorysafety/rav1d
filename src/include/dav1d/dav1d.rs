@@ -225,8 +225,8 @@ impl From<Rav1dSettings> for Dav1dSettings {
             decode_frame_type,
         } = value;
         Self {
-            n_threads: n_threads.get() as i32,
-            max_frame_delay: max_frame_delay.get() as i32,
+            n_threads: n_threads.get().into(),
+            max_frame_delay: max_frame_delay.get().into(),
             apply_grain: apply_grain as c_int,
             operating_point: operating_point.get().into(),
             all_layers: all_layers as c_int,
