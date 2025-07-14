@@ -41,7 +41,7 @@ jobs:
     name: test on ${{ matrix.target }}
     steps:
       - name: install prerequisites
-        uses: kkysen/cache-apt-pkgs-action@remove-apt-fast-url-shortener
+        uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: ${{ matrix.packages }} qemu-user-static meson nasm
           version: 3.0 # version of cache to load
