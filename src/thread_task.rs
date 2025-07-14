@@ -996,14 +996,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if res.is_err() || p1_3 == TILE_ERROR {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
-                            abort_frame(
-                                c,
-                                fc,
-                                match res {
-                                    Err(err) => Err(err),
-                                    Ok(_) => Err(Rav1dError::InvalidArgument),
-                                },
-                            );
+                            abort_frame(c, fc, res.and_then(|_| Err(Rav1dError::InvalidArgument)));
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
                             t.type_0 = TaskType::InitCdf;
