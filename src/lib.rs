@@ -266,12 +266,12 @@ struct NumThreads {
 #[cold]
 fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_tc = if s.n_threads.get() != 0 {
-        s.n_threads.get() as usize
+        s.n_threads.get() as usize // TODO propagate `InRange`
     } else {
         rav1d_num_logical_processors().get().clamp(1, 256)
     };
     let n_fc = if s.max_frame_delay.get() != 0 {
-        cmp::min(s.max_frame_delay.get() as usize, n_tc)
+        cmp::min(s.max_frame_delay.get() as usize, n_tc) // TODO propagate `InRange`
     } else {
         cmp::min((n_tc as f64).sqrt().ceil() as usize, 8)
     };
@@ -389,7 +389,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
         allocator: s.allocator.clone(),
         logger: s.logger.clone(),
         apply_grain: s.apply_grain,
-        operating_point: s.operating_point.get(),
+        operating_point: s.operating_point.get(), // TODO propagate `InRange`
         all_layers: s.all_layers,
         frame_size_limit,
         strict_std_compliance: s.strict_std_compliance,
