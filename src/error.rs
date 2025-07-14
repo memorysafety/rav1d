@@ -62,7 +62,7 @@ impl Rav1dError {
             Rav1dError::InvalidArgument => "Invalid argument",
             Rav1dError::OutOfMemory => "Not enough memory available",
             Rav1dError::UnsupportedBitstream => "Unsupported bitstream",
-            Rav1dError::Other => "Generic error",
+            Rav1dError::Other => "Other error",
             Rav1dError::NoSequenceHeader => "No sequence header found",
             Rav1dError::OutOfRange => "Out of range",
         }
