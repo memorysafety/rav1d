@@ -190,12 +190,10 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             Rav1dError::InvalidArgument
         ))?;
         Ok(Self {
-            n_threads: InRange::<u16, 0, 256>::new(n_threads.try_into().unwrap()).unwrap(),
-            max_frame_delay: InRange::<u16, 0, 256>::new(max_frame_delay.try_into().unwrap())
-                .unwrap(),
+            n_threads: InRange::new(n_threads.try_into().unwrap()).unwrap(),
+            max_frame_delay: InRange::new(max_frame_delay.try_into().unwrap()).unwrap(),
             apply_grain: apply_grain != 0,
-            operating_point: InRange::<u8, 0, 31>::new(operating_point.try_into().unwrap())
-                .unwrap(),
+            operating_point: InRange::new(operating_point.try_into().unwrap()).unwrap(),
             all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.try_into()?,
