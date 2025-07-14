@@ -19,10 +19,10 @@ pub enum Rav1dError {
     /// which is more optimal since `0` is no error for [`Dav1dResult`].
     Other = 1,
 
-    /// No sequence header.
+    /// No entity.
     ///
     /// No Sequence Header OBUs were found in the buffer.
-    NoSequenceHeader = libc::ENOENT as u8,
+    NoEntity = libc::ENOENT as u8,
 
     /// Try again.
     ///
@@ -63,7 +63,7 @@ impl Rav1dError {
             Rav1dError::OutOfMemory => "Not enough memory available",
             Rav1dError::UnsupportedBitstream => "Unsupported bitstream",
             Rav1dError::Other => "Other error",
-            Rav1dError::NoSequenceHeader => "No sequence header found",
+            Rav1dError::NoEntity => "No sequence header found",
             Rav1dError::OutOfRange => "Out of range",
         }
     }

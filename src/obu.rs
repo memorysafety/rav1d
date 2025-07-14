@@ -518,7 +518,7 @@ fn parse_seq_hdr(
 pub(crate) fn rav1d_parse_sequence_header(
     mut data: &[u8],
 ) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-    let mut res = Err(Rav1dError::NoSequenceHeader);
+    let mut res = Err(Rav1dError::NoEntity);
 
     while !data.is_empty() {
         let gb = &mut GetBits::new(data);
