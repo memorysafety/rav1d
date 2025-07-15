@@ -74,7 +74,7 @@ impl From<Dav1dDataProps> for Rav1dDataProps {
         Self {
             timestamp,
             duration,
-            offset,
+            offset: offset.into(),
             size,
             user_data: user_data.into(),
         }
@@ -93,7 +93,7 @@ impl From<Rav1dDataProps> for Dav1dDataProps {
         Self {
             timestamp,
             duration,
-            offset,
+            offset: offset.try_into().unwrap(),
             size,
             user_data: user_data.into(),
         }
