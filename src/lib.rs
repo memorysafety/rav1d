@@ -159,8 +159,7 @@ use crate::c_box::FnFree;
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
 use crate::decode::rav1d_decode_frame_exit;
 pub use crate::error::Dav1dResult;
-use crate::error::Rav1dError::{EGeneric, EAGAIN, EINVAL};
-use crate::error::Rav1dResult;
+use crate::error::{Rav1dError, Rav1dResult};
 use crate::extensions::OptionError as _;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -280,8 +279,14 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 
 #[cold]
 pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
-    validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
-    validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
+    validate_input!((
+        s.n_threads >= 0 && s.n_threads <= 256,
+        Rav1dError::InvalidArgument
+    ))?;
+    validate_input!((
+        s.max_frame_delay >= 0 && s.max_frame_delay <= 256,
+        Rav1dError::InvalidArgument
+    ))?;
     let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
     Ok(n_fc)
 }
@@ -293,7 +298,7 @@ pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
 #[cold]
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: Option<NonNull<Dav1dSettings>>) -> Dav1dResult {
     (|| {
-        let s = validate_input!(s.ok_or(EINVAL))?;
+        let s = validate_input!(s.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `s` is safe to `ptr::read`.
         let s = unsafe { s.as_ptr().read() };
         let s = s.try_into()?;
@@ -307,12 +312,18 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     static INITTED: Once = Once::new();
     INITTED.call_once(|| init_internal());
 
-    validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
-    validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
-    validate_input!((s.operating_point <= 31, EINVAL))?;
+    validate_input!((
+        s.n_threads >= 0 && s.n_threads <= 256,
+        Rav1dError::InvalidArgument
+    ))?;
+    validate_input!((
+        s.max_frame_delay >= 0 && s.max_frame_delay <= 256,
+        Rav1dError::InvalidArgument
+    ))?;
+    validate_input!((s.operating_point <= 31, Rav1dError::InvalidArgument))?;
     validate_input!((
         !s.allocator.is_default() || s.allocator.cookie.is_none(),
-        EINVAL
+        Rav1dError::InvalidArgument
     ))?;
 
     // On 32-bit systems, extremely large frame sizes can cause overflows in
@@ -442,8 +453,8 @@ pub unsafe extern "C" fn dav1d_open(
     s: Option<NonNull<Dav1dSettings>>,
 ) -> Dav1dResult {
     (|| {
-        let mut c_out = validate_input!(c_out.ok_or(EINVAL))?;
-        let s = validate_input!(s.ok_or(EINVAL))?;
+        let mut c_out = validate_input!(c_out.ok_or(Rav1dError::InvalidArgument))?;
+        let s = validate_input!(s.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c_out` is safe to write to.
         let c_out = unsafe { c_out.as_mut() };
         // SAFETY: `s` is safe to read from.
@@ -469,9 +480,9 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     sz: usize,
 ) -> Dav1dResult {
     (|| {
-        let out = validate_input!(out.ok_or(EINVAL))?;
-        let ptr = validate_input!(ptr.ok_or(EINVAL))?;
-        validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
+        let out = validate_input!(out.ok_or(Rav1dError::InvalidArgument))?;
+        let ptr = validate_input!(ptr.ok_or(Rav1dError::InvalidArgument))?;
+        validate_input!((sz > 0 && sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
         let seq_hdr = rav1d_parse_sequence_header(data)?.dav1d;
@@ -600,7 +611,7 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
     if output_picture_ready(c, state, true) {
         return output_image(c, state, out);
     }
-    Err(EAGAIN)
+    Err(Rav1dError::TryAgain)
 }
 
 fn gen_picture(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResult {
@@ -638,11 +649,11 @@ pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dRe
     let state = &mut *c.state.try_lock().unwrap();
     if in_0.data.is_some() {
         let sz = in_0.data.as_ref().unwrap().len();
-        validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
+        validate_input!((sz > 0 && sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         state.drain = false;
     }
     if state.in_0.data.is_some() {
-        return Err(EAGAIN);
+        return Err(Rav1dError::TryAgain);
     }
     state.in_0 = in_0.clone();
     let res = gen_picture(c, state);
@@ -662,8 +673,8 @@ pub unsafe extern "C" fn dav1d_send_data(
     r#in: Option<NonNull<Dav1dData>>,
 ) -> Dav1dResult {
     (|| {
-        let c = validate_input!(c.ok_or(EINVAL))?;
-        let r#in = validate_input!(r#in.ok_or(EINVAL))?;
+        let c = validate_input!(c.ok_or(Rav1dError::InvalidArgument))?;
+        let r#in = validate_input!(r#in.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         // It has not yet been passed to `dav1d_close` and thus not to `RawArc::into_arc` yet.
         let c = unsafe { c.as_ref() };
@@ -690,7 +701,7 @@ pub(crate) fn rav1d_get_picture(c: &Rav1dContext, out: &mut Rav1dPicture) -> Rav
     if c.fc.len() > 1 && drain {
         return drain_picture(c, state, out);
     }
-    Err(EAGAIN)
+    Err(Rav1dError::TryAgain)
 }
 
 /// # Safety
@@ -703,8 +714,8 @@ pub unsafe extern "C" fn dav1d_get_picture(
     out: Option<NonNull<Dav1dPicture>>,
 ) -> Dav1dResult {
     (|| {
-        let c = validate_input!(c.ok_or(EINVAL))?;
-        let out = validate_input!(out.ok_or(EINVAL))?;
+        let c = validate_input!(c.ok_or(Rav1dError::InvalidArgument))?;
+        let out = validate_input!(out.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         // It has not yet been passed to `dav1d_close` and thus not to `RawArc::into_arc` yet.
         let c = unsafe { c.as_ref() };
@@ -763,9 +774,9 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     r#in: Option<NonNull<Dav1dPicture>>,
 ) -> Dav1dResult {
     (|| {
-        let c = validate_input!(c.ok_or(EINVAL))?;
-        let out = validate_input!(out.ok_or(EINVAL))?;
-        let r#in = validate_input!(r#in.ok_or(EINVAL))?;
+        let c = validate_input!(c.ok_or(Rav1dError::InvalidArgument))?;
+        let out = validate_input!(out.ok_or(Rav1dError::InvalidArgument))?;
+        let r#in = validate_input!(r#in.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         // It has not yet been passed to `dav1d_close` and thus not to `RawArc::into_arc` yet.
         let c = unsafe { c.as_ref() };
@@ -820,7 +831,7 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
     }
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), state.frame_thread.next as usize) {
-            let _ = rav1d_decode_frame_exit(c, fc, Err(EGeneric));
+            let _ = rav1d_decode_frame_exit(c, fc, Err(Rav1dError::Other));
             *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut state.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
@@ -893,8 +904,8 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     flags: Option<NonNull<Dav1dEventFlags>>,
 ) -> Dav1dResult {
     (|| {
-        let c = validate_input!(c.ok_or(EINVAL))?;
-        let flags = validate_input!(flags.ok_or(EINVAL))?;
+        let c = validate_input!(c.ok_or(Rav1dError::InvalidArgument))?;
+        let flags = validate_input!(flags.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         // It has not yet been passed to `dav1d_close` and thus not to `RawArc::into_arc` yet.
         let c = unsafe { c.as_ref() };
@@ -918,8 +929,8 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     out: Option<NonNull<Dav1dDataProps>>,
 ) -> Dav1dResult {
     (|| {
-        let c = validate_input!(c.ok_or(EINVAL))?;
-        let out = validate_input!(out.ok_or(EINVAL))?;
+        let c = validate_input!(c.ok_or(Rav1dError::InvalidArgument))?;
+        let out = validate_input!(out.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         // It has not yet been passed to `dav1d_close` and thus not to `RawArc::into_arc` yet.
         let c = unsafe { c.as_ref() };
@@ -957,8 +968,8 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: Option<NonNull<Dav1dPicture>>) {
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create(buf: Option<NonNull<Dav1dData>>, sz: usize) -> *mut u8 {
     || -> Rav1dResult<*mut u8> {
-        let buf = validate_input!(buf.ok_or(EINVAL))?;
-        validate_input!((sz <= usize::MAX / 2, EINVAL))?;
+        let buf = validate_input!(buf.ok_or(Rav1dError::InvalidArgument))?;
+        validate_input!((sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         let data = Rav1dData::create(sz)?;
         let data = data.to::<Dav1dData>();
         let ptr = data
@@ -986,9 +997,9 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     user_data: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
-        let buf = validate_input!(buf.ok_or(EINVAL))?;
-        let ptr = validate_input!(ptr.ok_or(EINVAL))?;
-        validate_input!((sz <= usize::MAX / 2, EINVAL))?;
+        let buf = validate_input!(buf.ok_or(Rav1dError::InvalidArgument))?;
+        let ptr = validate_input!(ptr.ok_or(Rav1dError::InvalidArgument))?;
+        validate_input!((sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
         // SAFETY: `ptr`, and thus `data`, is valid to dereference until `free_callback` is called on it, which deallocates it.
@@ -1013,9 +1024,9 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     cookie: Option<SendSyncNonNull<c_void>>,
 ) -> Dav1dResult {
     || -> Rav1dResult {
-        let buf = validate_input!(buf.ok_or(EINVAL))?;
+        let buf = validate_input!(buf.ok_or(Rav1dError::InvalidArgument))?;
         // Note that `dav1d` doesn't do this check, but they do for the similar [`dav1d_data_wrap`].
-        let user_data = validate_input!(user_data.ok_or(EINVAL))?;
+        let user_data = validate_input!(user_data.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `buf` is safe to read from.
         let data_c = unsafe { buf.as_ptr().read() };
         let mut data = data_c.to::<Rav1dData>();

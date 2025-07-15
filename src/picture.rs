@@ -10,8 +10,7 @@ use bitflags::bitflags;
 use libc::ptrdiff_t;
 use to_method::To as _;
 
-use crate::error::Rav1dError::EGeneric;
-use crate::error::{Dav1dResult, Rav1dResult};
+use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::{
@@ -214,7 +213,7 @@ fn picture_alloc_with_edges(
 ) -> Rav1dResult {
     if p.data.is_some() {
         writeln!(logger, "Picture already allocated!",);
-        return Err(EGeneric);
+        return Err(Rav1dError::Other);
     }
     assert!(bpc > 0 && bpc <= 16);
     let pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
