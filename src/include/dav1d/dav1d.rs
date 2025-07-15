@@ -177,16 +177,13 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
+        validate_input!(((0..=256).contains(&n_threads), Rav1dError::InvalidArgument))?;
         validate_input!((
-            n_threads >= 0 && n_threads <= 256,
+            (0..=256).contains(&max_frame_delay),
             Rav1dError::InvalidArgument
         ))?;
         validate_input!((
-            max_frame_delay >= 0 && max_frame_delay <= 256,
-            Rav1dError::InvalidArgument
-        ))?;
-        validate_input!((
-            operating_point >= 0 && operating_point <= 31,
+            (0..32).contains(&operating_point),
             Rav1dError::InvalidArgument
         ))?;
         Ok(Self {
