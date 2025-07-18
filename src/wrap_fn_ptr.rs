@@ -53,7 +53,7 @@ macro_rules! wrap_fn_ptr {
             /// This allows us to add a safer
             /// (type-safe for sure, and increasingly fully safe)
             /// interface for calling a `fn` ptr.
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Clone, Copy)]
             #[repr(transparent)]
             pub struct Fn(FnPtr);
 
