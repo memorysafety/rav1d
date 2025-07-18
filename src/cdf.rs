@@ -145,7 +145,7 @@ impl CdfThreadContext {
         }
     }
 
-    pub fn cdf_write(&self) -> RwLockWriteGuard<CdfContext> {
+    pub fn cdf_write(&self) -> RwLockWriteGuard<'_, CdfContext> {
         match self {
             Self::QCat(_) => panic!("Expected a Cdf"),
             Self::Cdf(cdf) => cdf.cdf.try_write().unwrap(),

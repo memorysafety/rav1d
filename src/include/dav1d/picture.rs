@@ -248,7 +248,7 @@ impl Rav1dPictureDataComponent {
         BD::pxstride(self.byte_len() - (-stride) as usize)
     }
 
-    pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset {
+    pub fn with_offset<BD: BitDepth>(&self) -> Rav1dPictureDataComponentOffset<'_> {
         Rav1dPictureDataComponentOffset {
             data: self,
             offset: self.pixel_offset::<BD>(),
@@ -521,7 +521,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
 }
 
 impl Rav1dPicture {
-    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset; 3] {
+    pub fn lf_offsets<BD: BitDepth>(&self, y: c_int) -> [Rav1dPictureDataComponentOffset<'_>; 3] {
         // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
         // plane here to avoid having additional in-loop branches in various places.
         // We never use those values, so it doesn't really matter what they point
