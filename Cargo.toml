@@ -19,6 +19,7 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 assert_matches = "1.5.0"
 atomig = { version = "0.4.0", features = ["derive"] }
+av-data = "0.4.2"
 bitflags = "2.4.0"
 cfg-if = "1.0.0"
 libc = "0.2"
@@ -26,6 +27,7 @@ parking_lot = "0.12.2"
 paste = "1.0.14"
 raw-cpuid = "11.0.1"
 strum = { version = "0.27", features = ["derive"] }
+static_assertions = "1.0.0"
 to_method = "1.1.0"
 zerocopy = { version = "0.7.32", features = ["derive"] }
 
