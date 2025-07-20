@@ -101,8 +101,7 @@ pub mod dav1d {
         }
 
         pub fn set_operating_point(&mut self, operating_point: u8) {
-            self.rav1d_settings.operating_point =
-                InRange::new(operating_point.try_into().unwrap()).unwrap();
+            self.rav1d_settings.operating_point = InRange::new(operating_point).unwrap();
         }
 
         pub fn get_operating_point(&self) -> u8 {
@@ -463,14 +462,14 @@ pub mod dav1d {
         ///
         /// Check [`Picture::bits_per_component`] for the number of bits that are used.
         pub fn bit_depth(&self) -> usize {
-            self.inner.pic.p.bpc as usize
+            self.inner.pic.p.bpc.into()
         }
 
         /// Bits used per component of the plane data.
         ///
         /// Check [`Picture::bit_depth`] for the number of storage bits.
         pub fn bits_per_component(&self) -> Option<BitsPerComponent> {
-            BitsPerComponent::try_from(self.inner.pic.seq_hdr.as_ref().unwrap().hbd).ok()
+            self.inner.pic.seq_hdr.as_ref().unwrap().hbd.try_into().ok()
         }
 
         /// Width of the frame.
