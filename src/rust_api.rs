@@ -296,9 +296,8 @@ pub mod dav1d {
             if let Err(err) = ret {
                 Err(err)
             } else {
-                let inner = InnerPicture { pic };
                 Ok(Picture {
-                    inner: Arc::new(inner),
+                    inner: Arc::new(pic),
                 })
             }
         }
@@ -327,14 +326,10 @@ pub mod dav1d {
 
     static_assertions::assert_impl_all!(Decoder: Send, Sync);
 
-    struct InnerPicture {
-        pub pic: Rav1dPicture,
-    }
-
     /// A decoded frame.
     #[derive(Clone)]
     pub struct Picture {
-        inner: Arc<InnerPicture>,
+        inner: Arc<Rav1dPicture>,
     }
 
     /// Frame component.
@@ -421,13 +416,13 @@ pub mod dav1d {
                 PlanarImageComponent::Y => 0,
                 _ => 1,
             };
-            self.inner.pic.stride[s].try_into().unwrap()
+            self.inner.stride[s].try_into().unwrap()
         }
 
         /// Raw pointer to the data of the `component` for the decoded frame.
         pub fn plane_data_ptr(&self, component: PlanarImageComponent) -> *mut c_void {
             let index: usize = component.into();
-            self.inner.pic.data.as_ref().unwrap().data[index]
+            self.inner.data.as_ref().unwrap().data[index]
                 .as_byte_mut_ptr()
                 .cast()
         }
@@ -457,36 +452,36 @@ pub mod dav1d {
         ///
         /// Check [`Picture::bits_per_component`] for the number of bits that are used.
         pub fn bit_depth(&self) -> usize {
-            self.inner.pic.p.bpc.into()
+            self.inner.p.bpc.into()
         }
 
         /// Bits used per component of the plane data.
         ///
         /// Check [`Picture::bit_depth`] for the number of storage bits.
         pub fn bits_per_component(&self) -> Option<BitsPerComponent> {
-            self.inner.pic.seq_hdr.as_ref().unwrap().hbd.try_into().ok()
+            self.inner.seq_hdr.as_ref().unwrap().hbd.try_into().ok()
         }
 
         /// Width of the frame.
         pub fn width(&self) -> u32 {
-            self.inner.pic.p.w.try_into().unwrap()
+            self.inner.p.w.try_into().unwrap()
         }
 
         /// Height of the frame.
         pub fn height(&self) -> u32 {
-            self.inner.pic.p.h.try_into().unwrap()
+            self.inner.p.h.try_into().unwrap()
         }
 
         /// Pixel layout of the frame.
         pub fn pixel_layout(&self) -> PixelLayout {
-            self.inner.pic.p.layout
+            self.inner.p.layout
         }
 
         /// Timestamp of the frame.
         ///
         /// This is the same timestamp as the one provided to [`Decoder::send_data`].
         pub fn timestamp(&self) -> Option<i64> {
-            let ts = self.inner.pic.m.timestamp;
+            let ts = self.inner.m.timestamp;
             if ts == i64::MIN {
                 None
             } else {
@@ -499,7 +494,7 @@ pub mod dav1d {
         /// This is the same duration as the one provided to [`Decoder::send_data`] or `0` if none was
         /// provided.
         pub fn duration(&self) -> i64 {
-            self.inner.pic.m.duration
+            self.inner.m.duration
         }
 
         /// Offset of the frame.
@@ -507,38 +502,23 @@ pub mod dav1d {
         /// This is the same offset as the one provided to [`Decoder::send_data`] or `-1` if none was
         /// provided.
         pub fn offset(&self) -> i64 {
-            self.inner.pic.m.offset as i64
+            self.inner.m.offset as i64
         }
 
         /// Chromaticity coordinates of the source colour primaries.
         pub fn color_primaries(&self) -> pixel::ColorPrimaries {
-            self.inner
-                .pic
-                .seq_hdr
-                .as_ref()
-                .unwrap()
-                .pri
-                .try_into()
-                .unwrap()
+            self.inner.seq_hdr.as_ref().unwrap().pri.try_into().unwrap()
         }
 
         /// Transfer characteristics function.
         pub fn transfer_characteristic(&self) -> pixel::TransferCharacteristic {
-            self.inner
-                .pic
-                .seq_hdr
-                .as_ref()
-                .unwrap()
-                .trc
-                .try_into()
-                .unwrap()
+            self.inner.seq_hdr.as_ref().unwrap().trc.try_into().unwrap()
         }
 
         /// Matrix coefficients used in deriving luma and chroma signals from the
         /// green, blue and red or X, Y and Z primaries.
         pub fn matrix_coefficients(&self) -> pixel::MatrixCoefficients {
             self.inner
-                .pic
                 .seq_hdr
                 .as_ref()
                 .unwrap()
@@ -549,7 +529,7 @@ pub mod dav1d {
 
         /// YUV color range.
         pub fn color_range(&self) -> pixel::YUVRange {
-            match self.inner.pic.seq_hdr.as_ref().unwrap().color_range {
+            match self.inner.seq_hdr.as_ref().unwrap().color_range {
                 0 => pixel::YUVRange::Limited,
                 _ => pixel::YUVRange::Full,
             }
@@ -557,14 +537,7 @@ pub mod dav1d {
 
         /// Sample position for subsampled chroma.
         pub fn chroma_location(&self) -> pixel::ChromaLocation {
-            self.inner
-                .pic
-                .seq_hdr
-                .as_ref()
-                .unwrap()
-                .chr
-                .try_into()
-                .unwrap()
+            self.inner.seq_hdr.as_ref().unwrap().chr.try_into().unwrap()
         }
     }
 
