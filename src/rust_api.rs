@@ -160,8 +160,8 @@ pub mod dav1d {
     pub struct Decoder {
         ctx: Arc<Rav1dContext>,
         pending_data: Option<Rav1dData>,
-        n_threads: u32,
-        max_frame_delay: u32,
+        n_threads: InRange<u16, 0, 256>,
+        max_frame_delay: InRange<u16, 0, 256>,
     }
 
     impl Decoder {
@@ -170,8 +170,8 @@ pub mod dav1d {
             rav1d_open(&settings.inner).map(|ctx| Decoder {
                 ctx,
                 pending_data: None,
-                n_threads: settings.inner.n_threads.get() as u32,
-                max_frame_delay: settings.inner.max_frame_delay.get() as u32,
+                n_threads: settings.inner.n_threads,
+                max_frame_delay: settings.inner.max_frame_delay,
             })
         }
 
@@ -306,8 +306,8 @@ pub mod dav1d {
             // The only fields this actually needs from Rav1dSettings are n_threads and max_frame_delay so we just pass these in directly
 
             rav1d_get_frame_delay(&Rav1dSettings {
-                n_threads: InRange::new(self.n_threads.try_into().unwrap()).unwrap(),
-                max_frame_delay: InRange::new(self.max_frame_delay.try_into().unwrap()).unwrap(),
+                n_threads: self.n_threads,
+                max_frame_delay: self.max_frame_delay,
                 ..Default::default()
             })
             .unwrap() as u32
