@@ -64,7 +64,7 @@ pub mod dav1d {
     /// See documentation for native `Dav1dSettings` struct.
     #[derive(Default)]
     pub struct Settings {
-        pub(crate) rav1d_settings: Rav1dSettings,
+        pub(crate) inner: Rav1dSettings,
     }
 
     static_assertions::assert_impl_all!(Settings: Send, Sync);
@@ -76,84 +76,83 @@ pub mod dav1d {
         }
 
         pub fn set_n_threads(&mut self, n_threads: u32) {
-            self.rav1d_settings.n_threads = InRange::new(n_threads.try_into().unwrap()).unwrap();
+            self.inner.n_threads = InRange::new(n_threads.try_into().unwrap()).unwrap();
         }
 
         pub fn get_n_threads(&self) -> u32 {
-            self.rav1d_settings.n_threads.get() as u32
+            self.inner.n_threads.get() as u32
         }
 
         pub fn set_max_frame_delay(&mut self, max_frame_delay: u32) {
-            self.rav1d_settings.max_frame_delay =
-                InRange::new(max_frame_delay.try_into().unwrap()).unwrap();
+            self.inner.max_frame_delay = InRange::new(max_frame_delay.try_into().unwrap()).unwrap();
         }
 
         pub fn get_max_frame_delay(&self) -> u32 {
-            self.rav1d_settings.max_frame_delay.get() as u32
+            self.inner.max_frame_delay.get() as u32
         }
 
         pub fn set_apply_grain(&mut self, apply_grain: bool) {
-            self.rav1d_settings.apply_grain = apply_grain;
+            self.inner.apply_grain = apply_grain;
         }
 
         pub fn get_apply_grain(&self) -> bool {
-            self.rav1d_settings.apply_grain
+            self.inner.apply_grain
         }
 
         pub fn set_operating_point(&mut self, operating_point: u8) {
-            self.rav1d_settings.operating_point = InRange::new(operating_point).unwrap();
+            self.inner.operating_point = InRange::new(operating_point).unwrap();
         }
 
         pub fn get_operating_point(&self) -> u8 {
-            self.rav1d_settings.operating_point.get()
+            self.inner.operating_point.get()
         }
 
         pub fn set_all_layers(&mut self, all_layers: bool) {
-            self.rav1d_settings.all_layers = all_layers;
+            self.inner.all_layers = all_layers;
         }
 
         pub fn get_all_layers(&self) -> bool {
-            self.rav1d_settings.all_layers
+            self.inner.all_layers
         }
 
         pub fn set_frame_size_limit(&mut self, frame_size_limit: u32) {
-            self.rav1d_settings.frame_size_limit = frame_size_limit;
+            self.inner.frame_size_limit = frame_size_limit;
         }
 
         pub fn get_frame_size_limit(&self) -> u32 {
-            self.rav1d_settings.frame_size_limit
+            self.inner.frame_size_limit
         }
 
         pub fn set_strict_std_compliance(&mut self, strict_std_compliance: bool) {
-            self.rav1d_settings.strict_std_compliance = strict_std_compliance;
+            self.inner.strict_std_compliance = strict_std_compliance;
         }
 
         pub fn get_strict_std_compliance(&self) -> bool {
-            self.rav1d_settings.strict_std_compliance
+            self.inner.strict_std_compliance
         }
 
         pub fn set_output_invisible_frames(&mut self, output_invisible_frames: bool) {
-            self.rav1d_settings.output_invisible_frames = output_invisible_frames;
+            self.inner.output_invisible_frames = output_invisible_frames;
         }
 
         pub fn get_output_invisible_frames(&self) -> bool {
-            self.rav1d_settings.output_invisible_frames
+            self.inner.output_invisible_frames
         }
 
         pub fn set_inloop_filters(&mut self, inloop_filters: InloopFilterType) {
-            self.rav1d_settings.inloop_filters = inloop_filters;
+            self.inner.inloop_filters = inloop_filters;
         }
 
         pub fn get_inloop_filters(&self) -> InloopFilterType {
-            self.rav1d_settings.inloop_filters
+            self.inner.inloop_filters
         }
 
         pub fn set_decode_frame_type(&mut self, decode_frame_type: DecodeFrameType) {
-            self.rav1d_settings.decode_frame_type = decode_frame_type;
+            self.inner.decode_frame_type = decode_frame_type;
         }
 
         pub fn get_decode_frame_type(&self) -> DecodeFrameType {
-            self.rav1d_settings.decode_frame_type
+            self.inner.decode_frame_type
         }
     }
 
@@ -168,11 +167,11 @@ pub mod dav1d {
     impl Decoder {
         /// Creates a new [`Decoder`] instance with given [`Settings`].
         pub fn with_settings(settings: &Settings) -> Result<Self, Rav1dError> {
-            rav1d_open(&settings.rav1d_settings).map(|ctx| Decoder {
+            rav1d_open(&settings.inner).map(|ctx| Decoder {
                 ctx,
                 pending_data: None,
-                n_threads: settings.rav1d_settings.n_threads.get() as u32,
-                max_frame_delay: settings.rav1d_settings.max_frame_delay.get() as u32,
+                n_threads: settings.inner.n_threads.get() as u32,
+                max_frame_delay: settings.inner.max_frame_delay.get() as u32,
             })
         }
 
