@@ -630,95 +630,92 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                 let fc = &c.fc[(first + ttd.cur.get()) as usize % c.fc.len()];
                 let tasks = &fc.task_thread.tasks;
                 tasks.merge_pending_frame(c);
-                for t_idx in 0..tasks.len() {
+                'tasks: for t_idx in 0..tasks.len() {
                     let t = tasks.index(t_idx);
-                    'next: {
-                        if t.type_0 == TaskType::InitCdf {
-                            break 'next;
-                        }
-                        if matches!(
-                            t.type_0,
-                            TaskType::TileEntropy | TaskType::TileReconstruction
-                        ) {
-                            // We need to block here because we are seeing rare
-                            // contention. The fields we access out of
-                            // `Rav1dFrameData` are probably ok to read
-                            // concurrently with other tasks writing, but we
-                            // haven't separated out these fields.
-                            let f = fc.data.read();
+                    if t.type_0 == TaskType::InitCdf {
+                        continue 'tasks;
+                    }
+                    if matches!(
+                        t.type_0,
+                        TaskType::TileEntropy | TaskType::TileReconstruction
+                    ) {
+                        // We need to block here because we are seeing rare
+                        // contention. The fields we access out of
+                        // `Rav1dFrameData` are probably ok to read
+                        // concurrently with other tasks writing, but we
+                        // haven't separated out these fields.
+                        let f = fc.data.read();
 
-                            // if not bottom sbrow of tile, this task will be re-added
-                            // after it's finished
-                            if check_tile(&f, &fc.task_thread, &t, (c.fc.len() > 1) as c_int) == 0 {
-                                break 'found (fc, t_idx);
-                            }
-                        } else if t.recon_progress != 0 {
-                            // We need to block here because we are seeing rare
-                            // contention.
-                            let f = fc.data.read();
-                            let p = t.type_0 == TaskType::EntropyProgress;
-                            let error = fc.task_thread.error.load(Ordering::SeqCst);
-                            let done = fc.task_thread.done[p as usize].load(Ordering::SeqCst);
-                            assert!(done == 0 || error != 0, "done: {done}, error: {error}");
-                            let frame_hdr = fc.frame_hdr();
-                            let tile_row_base = frame_hdr.tiling.cols as c_int
-                                * f.frame_thread.next_tile_row[p as usize].get();
-                            if p {
-                                let p1_0 = fc.frame_thread_progress.entropy.load(Ordering::SeqCst);
-                                if p1_0 < t.sby {
-                                    break 'next;
-                                }
-                                fc.task_thread
-                                    .error
-                                    .fetch_or((p1_0 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            }
-                            for tc_0 in 0..frame_hdr.tiling.cols {
-                                let ts = &f.ts[(tile_row_base + tc_0 as c_int) as usize];
-                                let p2 = ts.progress[p as usize].load(Ordering::SeqCst);
-                                if p2 < t.recon_progress {
-                                    break 'next;
-                                }
-                                fc.task_thread
-                                    .error
-                                    .fetch_or((p2 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            }
-                            if (t.sby + 1) < f.sbh {
-                                // add sby+1 to list to replace this one
-                                let next_t = Rav1dTask {
-                                    sby: t.sby + 1,
-                                    recon_progress: t.sby + 2,
-                                    ..t.clone()
-                                };
-                                let ntr = f.frame_thread.next_tile_row[p as usize].get() + 1;
-                                let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
-                                if next_t.sby == start {
-                                    f.frame_thread.next_tile_row[p as usize].set(ntr);
-                                }
-                                drop(t);
-                                fc.task_thread.insert_task(c, next_t, 0);
-                            }
+                        // if not bottom sbrow of tile, this task will be re-added
+                        // after it's finished
+                        if check_tile(&f, &fc.task_thread, &t, (c.fc.len() > 1) as c_int) == 0 {
                             break 'found (fc, t_idx);
-                        } else if t.type_0 == TaskType::Cdef {
-                            let p1_1 = fc.frame_thread_progress.copy_lpf.try_read().unwrap()
-                                [(t.sby - 1 >> 5) as usize]
-                                .load(Ordering::SeqCst);
-                            if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
-                                break 'found (fc, t_idx);
+                        }
+                    } else if t.recon_progress != 0 {
+                        // We need to block here because we are seeing rare
+                        // contention.
+                        let f = fc.data.read();
+                        let p = t.type_0 == TaskType::EntropyProgress;
+                        let error = fc.task_thread.error.load(Ordering::SeqCst);
+                        let done = fc.task_thread.done[p as usize].load(Ordering::SeqCst);
+                        assert!(done == 0 || error != 0, "done: {done}, error: {error}");
+                        let frame_hdr = fc.frame_hdr();
+                        let tile_row_base = frame_hdr.tiling.cols as c_int
+                            * f.frame_thread.next_tile_row[p as usize].get();
+                        if p {
+                            let p1_0 = fc.frame_thread_progress.entropy.load(Ordering::SeqCst);
+                            if p1_0 < t.sby {
+                                continue 'tasks;
                             }
-                        } else {
-                            if t.deblock_progress == 0 {
-                                unreachable!();
+                            fc.task_thread
+                                .error
+                                .fetch_or((p1_0 == TILE_ERROR) as c_int, Ordering::SeqCst);
+                        }
+                        for tc_0 in 0..frame_hdr.tiling.cols {
+                            let ts = &f.ts[(tile_row_base + tc_0 as c_int) as usize];
+                            let p2 = ts.progress[p as usize].load(Ordering::SeqCst);
+                            if p2 < t.recon_progress {
+                                continue 'tasks;
                             }
-                            let p1_2 = fc.frame_thread_progress.deblock.load(Ordering::SeqCst);
-                            if p1_2 >= t.deblock_progress {
-                                fc.task_thread
-                                    .error
-                                    .fetch_or((p1_2 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                                break 'found (fc, t_idx);
+                            fc.task_thread
+                                .error
+                                .fetch_or((p2 == TILE_ERROR) as c_int, Ordering::SeqCst);
+                        }
+                        if (t.sby + 1) < f.sbh {
+                            // add sby+1 to list to replace this one
+                            let next_t = Rav1dTask {
+                                sby: t.sby + 1,
+                                recon_progress: t.sby + 2,
+                                ..t.clone()
+                            };
+                            let ntr = f.frame_thread.next_tile_row[p as usize].get() + 1;
+                            let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
+                            if next_t.sby == start {
+                                f.frame_thread.next_tile_row[p as usize].set(ntr);
                             }
+                            drop(t);
+                            fc.task_thread.insert_task(c, next_t, 0);
+                        }
+                        break 'found (fc, t_idx);
+                    } else if t.type_0 == TaskType::Cdef {
+                        let p1_1 = fc.frame_thread_progress.copy_lpf.try_read().unwrap()
+                            [(t.sby - 1 >> 5) as usize]
+                            .load(Ordering::SeqCst);
+                        if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
+                            break 'found (fc, t_idx);
+                        }
+                    } else {
+                        if t.deblock_progress == 0 {
+                            unreachable!();
+                        }
+                        let p1_2 = fc.frame_thread_progress.deblock.load(Ordering::SeqCst);
+                        if p1_2 >= t.deblock_progress {
+                            fc.task_thread
+                                .error
+                                .fetch_or((p1_2 == TILE_ERROR) as c_int, Ordering::SeqCst);
+                            break 'found (fc, t_idx);
                         }
                     }
-                    // next:
                 }
                 ttd.cur.update(|cur| cur + 1);
             }
