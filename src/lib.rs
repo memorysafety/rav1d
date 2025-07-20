@@ -160,8 +160,7 @@ use crate::c_arc::RawArc;
 use crate::c_box::FnFree;
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
 use crate::decode::rav1d_decode_frame_exit;
-pub use crate::error::Dav1dResult;
-use crate::error::{Rav1dError, Rav1dResult};
+pub use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::extensions::OptionError as _;
 use crate::in_range::InRange;
 #[cfg(feature = "bitdepth_16")]
