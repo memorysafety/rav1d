@@ -230,16 +230,14 @@ pub mod dav1d {
                 data.m.duration = duration;
             }
 
-            let ret = rav1d_send_data(&self.ctx, &mut data);
-            if let Err(err) = ret {
-                let ret = err;
-                if matches!(ret, Rav1dError::TryAgain) {
+            if let Err(err) = rav1d_send_data(&self.ctx, &mut data) {
+                if matches!(err, Rav1dError::TryAgain) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
                 }
 
-                return Err(ret);
+                return Err(err);
             }
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
@@ -265,17 +263,14 @@ pub mod dav1d {
                 Some(data) => data,
             };
 
-            let ret = rav1d_send_data(&self.ctx, &mut data);
-            if let Err(err) = ret {
-                let ret = err;
-
-                if matches!(ret, Rav1dError::TryAgain) {
+            if let Err(err) = rav1d_send_data(&self.ctx, &mut data) {
+                if matches!(err, Rav1dError::TryAgain) {
                     self.pending_data = Some(data);
                 } else {
                     let _ = mem::take(&mut data);
                 }
 
-                return Err(ret);
+                return Err(err);
             }
 
             if data.data.as_ref().is_some_and(|d| d.len() > 0) {
