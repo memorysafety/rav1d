@@ -90,8 +90,8 @@ impl Rav1dTasks {
     fn merge_pending_frame(&self, c: &Rav1dContext) -> bool {
         let merge = self.pending_tasks_merge.swap(false, Ordering::SeqCst);
         if merge {
-            let new_start = self.len();
             let mut tasks = self.tasks.try_write().unwrap();
+            let new_start = tasks.len();
 
             {
                 let mut pending_tasks = self.pending_tasks.lock();
@@ -133,11 +133,6 @@ impl Rav1dTasks {
         }
 
         merge
-    }
-
-    /// How many (non-pending) tasks do we have in the task list?
-    pub fn len(&self) -> usize {
-        self.tasks.try_read().unwrap().len()
     }
 
     /// Are there non-pending tasks in the task list?
@@ -582,7 +577,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
             continue 'outer;
         }
 
-        let (fc, t_idx) = 'found: {
+        let (fc, t_idx, new_t) = 'found: {
             if c.fc.len() > 1 {
                 // run init tasks second
                 'init_tasks: for fc in
@@ -599,7 +594,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
 
                     let t = tasks.index(t_idx);
                     if t.type_0 == TaskType::Init {
-                        break 'found (fc, t_idx);
+                        break 'found (fc, t_idx, None);
                     }
                     if t.type_0 == TaskType::InitCdf {
                         // XXX This can be a simple else, if adding tasks of both
@@ -619,7 +614,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             fc.task_thread
                                 .error
                                 .fetch_or((p1 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            break 'found (fc, t_idx);
+                            break 'found (fc, t_idx, None);
                         }
                     }
                 }
@@ -630,8 +625,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                 let fc = &c.fc[(first + ttd.cur.get()) as usize % c.fc.len()];
                 let tasks = &fc.task_thread.tasks;
                 tasks.merge_pending_frame(c);
-                'tasks: for t_idx in 0..tasks.len() {
-                    let t = tasks.index(t_idx);
+                'tasks: for (t_idx, t) in tasks.tasks.try_read().unwrap().iter().enumerate() {
                     if t.type_0 == TaskType::InitCdf {
                         continue 'tasks;
                     }
@@ -649,7 +643,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         // if not bottom sbrow of tile, this task will be re-added
                         // after it's finished
                         if check_tile(&f, &fc.task_thread, &t, (c.fc.len() > 1) as c_int) == 0 {
-                            break 'found (fc, t_idx);
+                            break 'found (fc, t_idx, None);
                         }
                     } else if t.recon_progress != 0 {
                         // We need to block here because we are seeing rare
@@ -693,16 +687,15 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             if next_t.sby == start {
                                 f.frame_thread.next_tile_row[p as usize].set(ntr);
                             }
-                            drop(t);
-                            fc.task_thread.insert_task(c, next_t, 0);
+                            break 'found (fc, t_idx, Some(next_t));
                         }
-                        break 'found (fc, t_idx);
+                        break 'found (fc, t_idx, None);
                     } else if t.type_0 == TaskType::Cdef {
                         let p1_1 = fc.frame_thread_progress.copy_lpf.try_read().unwrap()
                             [(t.sby - 1 >> 5) as usize]
                             .load(Ordering::SeqCst);
                         if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
-                            break 'found (fc, t_idx);
+                            break 'found (fc, t_idx, None);
                         }
                     } else {
                         if t.deblock_progress == 0 {
@@ -713,7 +706,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             fc.task_thread
                                 .error
                                 .fetch_or((p1_2 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            break 'found (fc, t_idx);
+                            break 'found (fc, t_idx, None);
                         }
                     }
                 }
@@ -731,6 +724,11 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
         // found:
         // remove t from list
         let mut t = fc.task_thread.tasks.remove(t_idx);
+
+        // insert new task into list if one was given
+        if let Some(new_t) = new_t {
+            fc.task_thread.insert_task(c, new_t, 0);
+        }
 
         if t.type_0 > TaskType::InitCdf && fc.task_thread.tasks.is_empty() {
             ttd.cur.update(|cur| cur + 1);
