@@ -1,6 +1,6 @@
 use std::ffi::{c_int, c_uint};
 use std::ops::{Deref, Range};
-use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32};
+use std::sync::atomic::{self, AtomicBool, AtomicI32, AtomicU32};
 use std::sync::{Arc, OnceLock};
 use std::thread::JoinHandle;
 use std::{cmp, mem};
@@ -270,6 +270,43 @@ pub(crate) struct TaskThreadData {
     pub delayed_fg_cond: Condvar,
     pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub delayed_fg: RwLock<TaskThreadDataDelayedFg>,
+}
+
+impl TaskThreadData {
+    /// When we finish a frame we advance [`Self::first`], and we must also adjust [`Self::cur`],
+    /// because `cur` is an offset of `first`.
+    /// We may also need to adjust [`Self::reset_task_cur`].
+    ///
+    /// The task thread lock, [`Self::lock`], must be held and there must be more than 1 frame context.
+    pub(crate) fn advance_first(&self, n_fc: usize) {
+        // This read-modify-write doesn't need to be an atomic CAS:
+        // modifications are protected by the lock that we're holding.
+        let first = self.first.load(atomic::Ordering::SeqCst);
+        if first as usize + 1 < n_fc {
+            self.first.fetch_add(1, atomic::Ordering::SeqCst);
+        } else {
+            self.first.store(0, atomic::Ordering::SeqCst);
+        }
+
+        let _ = self.reset_task_cur.compare_exchange(
+            first,
+            u32::MAX,
+            atomic::Ordering::SeqCst,
+            atomic::Ordering::SeqCst,
+        );
+
+        // We've advanced `first`, so because `cur` is indexed by `first`, we need to retreat it.
+        // There are two exceptions:
+        //  - if `cur` is already 0, we can't go any further back
+        //  - if `cur` is at the end of the frame contexts (`n_fc`), don't move it,
+        //    because we haven't created any new tasks yet.
+        // `cur` is not mutated from multiple threads (it's protected by the lock),
+        // so we don't need an atomic CAS for this read-modify-write.
+        let cur = self.cur.get();
+        if cur != 0 && (cur as usize) < n_fc {
+            self.cur.set(cur - 1);
+        }
+    }
 }
 
 #[derive(Default)]

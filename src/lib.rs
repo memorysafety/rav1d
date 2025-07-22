@@ -552,22 +552,7 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
         }
         let out_delayed = &mut state.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
-            let first = c.task_thread.first.load(Ordering::SeqCst);
-            if first as usize + 1 < c.fc.len() {
-                c.task_thread.first.fetch_add(1, Ordering::SeqCst);
-            } else {
-                c.task_thread.first.store(0, Ordering::SeqCst);
-            }
-            let _ = c.task_thread.reset_task_cur.compare_exchange(
-                first,
-                u32::MAX,
-                Ordering::SeqCst,
-                Ordering::SeqCst,
-            );
-            let cur = c.task_thread.cur.get();
-            if cur != 0 && (cur as usize) < c.fc.len() {
-                c.task_thread.cur.set(cur - 1);
-            }
+            c.task_thread.advance_first(c.fc.len());
             drained = true;
         } else if drained {
             break;
