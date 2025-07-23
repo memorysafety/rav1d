@@ -1,5 +1,5 @@
 [toolchain]
-channel = "nightly-2025-05-01"
+channel = "nightly-2025-04-30"
 
 # Commented out targets to avoid downloading or caching all these during CI
 # runs. See discussion on rav1d PR #1174. Uncomment to cross-compile locally.

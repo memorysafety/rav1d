@@ -679,6 +679,7 @@ pub static DAV1D_SGR_PARAMS: Align4<[[u16; 2]; 16]> = Align4([
     [22, 0],
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
     255, 128, 85, 64, 51, 43, 37, 32, 28, 26, 23, 21, 20, 18, 17, 16, 15, 14, 13, 13, 12, 12, 11,
@@ -692,6 +693,7 @@ pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
     1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
     [
@@ -798,6 +800,7 @@ pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
     ],
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 127, 1, 0, 0, 0, 0],
@@ -995,6 +998,7 @@ pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 0, 0, 2, 127, -1, 0],
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 0, -128, 0, 0, 0, 0],
@@ -1063,6 +1067,7 @@ pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 1, -2, -128, 1, 0, 0],
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
     0, 0, 255, 128, 255, 149, 85, 64, 255, 197, 146, 105, 73, 50, 37, 32, 255, 225, 196, 170, 145,
@@ -1073,6 +1078,7 @@ pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
     32, 29, 27, 25, 22, 20, 18, 16, 15, 13, 12, 10, 9, 8, 7, 6, 6, 5, 5, 4, 4, 4,
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_dr_intra_derivative: [u16; 44] = [
     0, 1023, 0, 547, 372, 0, 0, 273, 215, 0, 178, 151, 0, 132, 116, 0, 102, 0, 90, 80, 0, 71, 64,
@@ -1121,6 +1127,7 @@ const fn gen_filters(f: [[i8; 7]; 8]) -> Align64<[i8; 64]> {
     Align64(a)
 }
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5] = [
     gen_filters([
@@ -1175,6 +1182,7 @@ pub static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5] = [
     ]),
 ];
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([
     0, 0, 19, 0, 25, 14, 5, 0, 28, 22, 16, 11, 7, 3, 0, 0, 30, 27, 24, 21, 18, 15, 12, 10, 8, 6, 4,
@@ -1182,6 +1190,7 @@ pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([
     3, 2, 0, 0, 0, 0, 0, 0, 0, 0,
 ]);
 
+#[rustc_std_internal_symbol]
 #[no_mangle]
 pub static dav1d_gaussian_sequence: [i16; 2048] = [
     56, 568, -180, 172, 124, -84, 172, -64, -900, 24, 820, 224, 1248, 996, 272, -8, -916, -388,

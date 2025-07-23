@@ -14,7 +14,7 @@ repository = "https://github.com/memorysafety/rav1d"
 exclude = ["*.c", "*.h", "*.in", "meson*", "tests/", "doc/", "package/"]
 
 [lib]
-crate-type = ["staticlib", "rlib"]
+crate-type = ["staticlib", "rlib", "cdylib"]
 
 [dependencies]
 assert_matches = "1.5.0"
