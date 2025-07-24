@@ -139,6 +139,7 @@ mod pool;
 mod qm;
 mod recon;
 mod refmvs;
+pub mod rust_api;
 mod scan;
 mod tables;
 mod thread_task;
@@ -152,14 +153,14 @@ use std::sync::{Arc, Once};
 use std::{cmp, mem, ptr, slice, thread};
 
 use parking_lot::Mutex;
+pub use rust_api::*;
 use to_method::To as _;
 
 use crate::c_arc::RawArc;
 use crate::c_box::FnFree;
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
 use crate::decode::rav1d_decode_frame_exit;
-pub use crate::error::Dav1dResult;
-use crate::error::{Rav1dError, Rav1dResult};
+pub use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::extensions::OptionError as _;
 use crate::in_range::InRange;
 #[cfg(feature = "bitdepth_16")]
@@ -279,9 +280,9 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 }
 
 #[cold]
-pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
+pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> usize {
     let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
-    Ok(n_fc)
+    n_fc
 }
 
 /// # Safety
@@ -295,7 +296,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: Option<NonNull<Dav1dSettings>>
         // SAFETY: `s` is safe to `ptr::read`.
         let s = unsafe { s.as_ptr().read() };
         let s = s.try_into()?;
-        rav1d_get_frame_delay(&s).map(|frame_delay| frame_delay as c_uint)
+        Ok(rav1d_get_frame_delay(&s) as c_uint)
     })()
     .into()
 }
