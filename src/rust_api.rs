@@ -302,8 +302,7 @@ impl Decoder {
             n_threads: self.n_threads,
             max_frame_delay: self.max_frame_delay,
             ..Default::default()
-        })
-        .unwrap() as u32
+        }) as u32
     }
 }
 
