@@ -562,14 +562,20 @@ impl Rav1dColorPrimaries {
     pub const SMPTE432: Self = Self(12);
     pub const EBU3213: Self = Self(22);
 
+    fn is_unspecified(self) -> bool {
+        (23..=DAV1D_COLOR_PRI_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dColorPrimaries {
         self.0 as Dav1dColorPrimaries
     }
 }
 
-impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
-    fn from(val: Rav1dColorPrimaries) -> Self {
-        match val {
+impl TryInto<pixel::ColorPrimaries> for Rav1dColorPrimaries {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::ColorPrimaries, Self::Error> {
+        Ok(match self {
             Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
             Rav1dColorPrimaries::UNKNOWN => pixel::ColorPrimaries::Unspecified,
             Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
@@ -582,8 +588,14 @@ impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
             Rav1dColorPrimaries::SMPTE431 => pixel::ColorPrimaries::P3DCI,
             Rav1dColorPrimaries::SMPTE432 => pixel::ColorPrimaries::P3Display,
             Rav1dColorPrimaries::EBU3213 => pixel::ColorPrimaries::Tech3213,
-            _ => pixel::ColorPrimaries::Unspecified,
-        }
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::ColorPrimaries::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
@@ -663,14 +675,20 @@ impl Rav1dTransferCharacteristics {
     pub const SMPTE428: Self = Self(17);
     pub const HLG: Self = Self(18);
 
+    fn is_unspecified(self) -> bool {
+        (19..=DAV1D_TRC_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dTransferCharacteristics {
         self.0 as Dav1dTransferCharacteristics
     }
 }
 
-impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
-    fn from(val: Rav1dTransferCharacteristics) -> Self {
-        match val {
+impl TryInto<pixel::TransferCharacteristic> for Rav1dTransferCharacteristics {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::TransferCharacteristic, Self::Error> {
+        Ok(match self {
             Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
             Rav1dTransferCharacteristics::UNKNOWN => pixel::TransferCharacteristic::Unspecified,
             Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
@@ -694,8 +712,14 @@ impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
             }
             Rav1dTransferCharacteristics::SMPTE428 => pixel::TransferCharacteristic::ST428,
             Rav1dTransferCharacteristics::HLG => pixel::TransferCharacteristic::HybridLogGamma,
-            _ => pixel::TransferCharacteristic::Unspecified,
-        }
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::TransferCharacteristic::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
@@ -757,14 +781,20 @@ impl Rav1dMatrixCoefficients {
     pub const CHROMAT_CL: Self = Self(13);
     pub const ICTCP: Self = Self(14);
 
+    fn is_unspecified(self) -> bool {
+        (15..=DAV1D_MC_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dMatrixCoefficients {
         self.0 as Dav1dMatrixCoefficients
     }
 }
 
-impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
-    fn from(val: Rav1dMatrixCoefficients) -> Self {
-        match val {
+impl TryInto<pixel::MatrixCoefficients> for Rav1dMatrixCoefficients {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::MatrixCoefficients, Self::Error> {
+        Ok(match self {
             Rav1dMatrixCoefficients::IDENTITY => pixel::MatrixCoefficients::Identity,
             Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
             Rav1dMatrixCoefficients::UNKNOWN => pixel::MatrixCoefficients::Unspecified,
@@ -787,8 +817,14 @@ impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
                 pixel::MatrixCoefficients::ChromaticityDerivedConstantLuminance
             }
             Rav1dMatrixCoefficients::ICTCP => pixel::MatrixCoefficients::ICtCp,
-            _ => pixel::MatrixCoefficients::Unspecified,
-        }
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::MatrixCoefficients::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
