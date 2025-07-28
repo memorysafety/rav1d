@@ -350,11 +350,11 @@ fn parse_seq_hdr(
         // Default initialization.
         monochrome = Default::default();
     }
-    let color_description_present = gb.get_bit() as u8;
+    let color_description_present = gb.get_bit();
     let pri;
     let trc;
     let mtrx;
-    if color_description_present != 0 {
+    if color_description_present {
         pri = gb.get_bits(8).try_into().unwrap_or_default();
         trc = gb.get_bits(8).try_into().unwrap_or_default();
         mtrx = gb.get_bits(8).try_into().unwrap_or_default();
