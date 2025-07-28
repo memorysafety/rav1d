@@ -584,7 +584,7 @@ pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT709.to_dav1d();
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::UNSPECIFIED.to_dav1d();
+    Rav1dTransferCharacteristics::Unspecified.to_dav1d();
 pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT470M.to_dav1d();
 pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics =
@@ -594,11 +594,11 @@ pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics =
 pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::SMPTE240.to_dav1d();
 pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::LINEAR.to_dav1d();
+    Rav1dTransferCharacteristics::Linear.to_dav1d();
 pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::LOG100.to_dav1d();
+    Rav1dTransferCharacteristics::Log100.to_dav1d();
 pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::LOG100_SQRT10.to_dav1d();
+    Rav1dTransferCharacteristics::Log100Sqrt10.to_dav1d();
 pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::IEC61966.to_dav1d();
 pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics =
@@ -606,9 +606,9 @@ pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics =
 pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::SRGB.to_dav1d();
 pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT2020_10BIT.to_dav1d();
+    Rav1dTransferCharacteristics::BT2020_10Bit.to_dav1d();
 pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT2020_12BIT.to_dav1d();
+    Rav1dTransferCharacteristics::BT2020_12Bit.to_dav1d();
 pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::SMPTE2084.to_dav1d();
 pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics =
@@ -618,32 +618,32 @@ pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics =
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Rav1dTransferCharacteristics(pub u8);
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dTransferCharacteristics {
+    // `TC_RESERVED_0` from spec.
+    BT709 = 1,
+    Unspecified = 2,
+    // `TC_RESERVED_3` from spec.
+    BT470M = 4,
+    BT470BG = 5,
+    BT601 = 6,
+    SMPTE240 = 7,
+    Linear = 8,
+    Log100 = 9,
+    Log100Sqrt10 = 10,
+    IEC61966 = 11,
+    BT1361 = 12,
+    SRGB = 13,
+    BT2020_10Bit = 14,
+    BT2020_12Bit = 15,
+    SMPTE2084 = 16,
+    SMPTE428 = 17,
+    HLG = 18,
+}
 
 impl Rav1dTransferCharacteristics {
-    pub const _RESERVED_0: Self = Self(0);
-    pub const BT709: Self = Self(1);
-    pub const UNSPECIFIED: Self = Self(2);
-    pub const _RESERVED_3: Self = Self(3);
-    pub const BT470M: Self = Self(4);
-    pub const BT470BG: Self = Self(5);
-    pub const BT601: Self = Self(6);
-    pub const SMPTE240: Self = Self(7);
-    pub const LINEAR: Self = Self(8);
-    pub const LOG100: Self = Self(9);
-    pub const LOG100_SQRT10: Self = Self(10);
-    pub const IEC61966: Self = Self(11);
-    pub const BT1361: Self = Self(12);
-    pub const SRGB: Self = Self(13);
-    pub const BT2020_10BIT: Self = Self(14);
-    pub const BT2020_12BIT: Self = Self(15);
-    pub const SMPTE2084: Self = Self(16);
-    pub const SMPTE428: Self = Self(17);
-    pub const HLG: Self = Self(18);
-
     const fn to_dav1d(self) -> Dav1dTransferCharacteristics {
-        self.0 as Dav1dTransferCharacteristics
+        self as _
     }
 }
 
@@ -657,7 +657,7 @@ impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
     type Error = ();
 
     fn try_from(value: Dav1dTransferCharacteristics) -> Result<Self, Self::Error> {
-        u8::try_from(value).map(Self).map_err(|_| ())
+        Self::from_repr(value as _).ok_or(())
     }
 }
 
