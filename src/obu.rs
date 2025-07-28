@@ -355,22 +355,13 @@ fn parse_seq_hdr(
     let trc;
     let mtrx;
     if color_description_present != 0 {
-        pri = gb
-            .get_bits(8)
-            .try_into()
-            .unwrap_or(Rav1dColorPrimaries::Unspecified);
-        trc = gb
-            .get_bits(8)
-            .try_into()
-            .unwrap_or(Rav1dTransferCharacteristics::Unspecified);
-        mtrx = gb
-            .get_bits(8)
-            .try_into()
-            .unwrap_or(Rav1dMatrixCoefficients::Unspecified);
+        pri = gb.get_bits(8).try_into().unwrap_or_default();
+        trc = gb.get_bits(8).try_into().unwrap_or_default();
+        mtrx = gb.get_bits(8).try_into().unwrap_or_default();
     } else {
-        pri = Rav1dColorPrimaries::Unspecified;
-        trc = Rav1dTransferCharacteristics::Unspecified;
-        mtrx = Rav1dMatrixCoefficients::Unspecified;
+        pri = Default::default();
+        trc = Default::default();
+        mtrx = Default::default();
     }
     let color_range;
     let layout;

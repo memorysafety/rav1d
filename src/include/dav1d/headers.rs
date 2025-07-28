@@ -544,9 +544,10 @@ pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = Rav1dColorPrimaries::EB
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum Rav1dColorPrimaries {
     BT709 = 1,
+    #[default]
     Unspecified = 2,
     BT470M = 4,
     BT470BG = 5,
@@ -618,10 +619,11 @@ pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics =
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum Rav1dTransferCharacteristics {
     // `TC_RESERVED_0` from spec.
     BT709 = 1,
+    #[default]
     Unspecified = 2,
     // `TC_RESERVED_3` from spec.
     BT470M = 4,
@@ -686,10 +688,11 @@ pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::ICt
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum Rav1dMatrixCoefficients {
     Identity = 0,
     BT709 = 1,
+    #[default]
     Unspecified = 2,
     // `MC_RESERVED_3` from spec.
     FCC = 4,
