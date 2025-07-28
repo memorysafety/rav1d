@@ -32,7 +32,7 @@ use crate::with_offset::WithOffset;
 // Number of bytes to align AND pad picture memory buffers by, so that SIMD
 // implementations can over-read by a few bytes, and use aligned read/write
 // instructions.
-pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
+pub const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
 
 #[derive(Default)]
@@ -47,7 +47,7 @@ pub struct Dav1dPictureParameters {
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 #[derive(Clone, Default)]
 #[repr(C)]
-pub(crate) struct Rav1dPictureParameters {
+pub struct Rav1dPictureParameters {
     pub w: c_int,
     pub h: c_int,
     pub layout: Rav1dPixelLayout,
@@ -404,7 +404,7 @@ impl Drop for Rav1dPictureData {
 // on [`Rav1dPictureParameters`] and [`Rav1dPixelLayout`].
 #[derive(Clone, Default)]
 #[repr(C)]
-pub(crate) struct Rav1dPicture {
+pub struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub data: Option<Arc<Rav1dPictureData>>,
@@ -657,7 +657,7 @@ pub struct Dav1dPicAllocator {
 
 #[derive(Clone)]
 #[repr(C)]
-pub(crate) struct Rav1dPicAllocator {
+pub struct Rav1dPicAllocator {
     /// See [`Dav1dPicAllocator::cookie`].
     ///
     /// # Safety

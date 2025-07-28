@@ -359,9 +359,9 @@ fn parse_seq_hdr(
         trc = Rav1dTransferCharacteristics(gb.get_bits(8) as u8);
         mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
     } else {
-        pri = Rav1dColorPrimaries::UNKNOWN;
-        trc = Rav1dTransferCharacteristics::UNKNOWN;
-        mtrx = Rav1dMatrixCoefficients::UNKNOWN;
+        pri = Rav1dColorPrimaries::UNSPECIFIED;
+        trc = Rav1dTransferCharacteristics::UNSPECIFIED;
+        mtrx = Rav1dMatrixCoefficients::UNSPECIFIED;
     }
     let color_range;
     let layout;

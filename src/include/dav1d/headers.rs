@@ -4,10 +4,12 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::{BitAnd, Deref, Sub};
 use std::sync::Arc;
 
+use av_data::pixel;
 use strum::{EnumCount, FromRepr};
 
 use crate::align::ArrayDefault;
 use crate::enum_map::EnumKey;
+use crate::error::Rav1dError;
 use crate::levels::SegmentId;
 use crate::relaxed_atomic::RelaxedAtomic;
 
@@ -379,7 +381,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 /// Pixel layout of a frame.
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default, Debug)]
 pub enum Rav1dPixelLayout {
     /// Monochrome.
     #[default]
@@ -529,7 +531,8 @@ impl Rav1dFrameType {
 
 pub type Dav1dColorPrimaries = c_uint;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = Rav1dColorPrimaries::BT709.to_dav1d();
-pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = Rav1dColorPrimaries::UNKNOWN.to_dav1d();
+pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::UNSPECIFIED.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470M.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470BG.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = Rav1dColorPrimaries::BT601.to_dav1d();
@@ -548,7 +551,7 @@ pub struct Rav1dColorPrimaries(pub u8);
 
 impl Rav1dColorPrimaries {
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const BT470M: Self = Self(4);
     pub const BT470BG: Self = Self(5);
     pub const BT601: Self = Self(6);
@@ -560,8 +563,40 @@ impl Rav1dColorPrimaries {
     pub const SMPTE432: Self = Self(12);
     pub const EBU3213: Self = Self(22);
 
+    fn is_unspecified(self) -> bool {
+        (23..=DAV1D_COLOR_PRI_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dColorPrimaries {
         self.0 as Dav1dColorPrimaries
+    }
+}
+
+impl TryInto<pixel::ColorPrimaries> for Rav1dColorPrimaries {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::ColorPrimaries, Self::Error> {
+        Ok(match self {
+            Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
+            Rav1dColorPrimaries::UNSPECIFIED => pixel::ColorPrimaries::Unspecified,
+            Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
+            Rav1dColorPrimaries::BT470BG => pixel::ColorPrimaries::BT470BG,
+            Rav1dColorPrimaries::BT601 => pixel::ColorPrimaries::BT470BG,
+            Rav1dColorPrimaries::SMPTE240 => pixel::ColorPrimaries::ST240M,
+            Rav1dColorPrimaries::FILM => pixel::ColorPrimaries::Film,
+            Rav1dColorPrimaries::BT2020 => pixel::ColorPrimaries::BT2020,
+            Rav1dColorPrimaries::XYZ => pixel::ColorPrimaries::ST428,
+            Rav1dColorPrimaries::SMPTE431 => pixel::ColorPrimaries::P3DCI,
+            Rav1dColorPrimaries::SMPTE432 => pixel::ColorPrimaries::P3Display,
+            Rav1dColorPrimaries::EBU3213 => pixel::ColorPrimaries::Tech3213,
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::ColorPrimaries::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
@@ -583,7 +618,7 @@ pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT709.to_dav1d();
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::UNKNOWN.to_dav1d();
+    Rav1dTransferCharacteristics::UNSPECIFIED.to_dav1d();
 pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT470M.to_dav1d();
 pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics =
@@ -623,7 +658,7 @@ pub struct Rav1dTransferCharacteristics(pub u8);
 impl Rav1dTransferCharacteristics {
     pub const _RESERVED_0: Self = Self(0);
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const _RESERVED_3: Self = Self(3);
     pub const BT470M: Self = Self(4);
     pub const BT470BG: Self = Self(5);
@@ -641,8 +676,51 @@ impl Rav1dTransferCharacteristics {
     pub const SMPTE428: Self = Self(17);
     pub const HLG: Self = Self(18);
 
+    fn is_unspecified(self) -> bool {
+        (19..=DAV1D_TRC_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dTransferCharacteristics {
         self.0 as Dav1dTransferCharacteristics
+    }
+}
+
+impl TryInto<pixel::TransferCharacteristic> for Rav1dTransferCharacteristics {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::TransferCharacteristic, Self::Error> {
+        Ok(match self {
+            Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
+            Rav1dTransferCharacteristics::UNSPECIFIED => pixel::TransferCharacteristic::Unspecified,
+            Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
+            Rav1dTransferCharacteristics::BT470BG => pixel::TransferCharacteristic::BT470BG,
+            Rav1dTransferCharacteristics::BT601 => pixel::TransferCharacteristic::ST170M,
+            Rav1dTransferCharacteristics::SMPTE240 => pixel::TransferCharacteristic::ST240M,
+            Rav1dTransferCharacteristics::LINEAR => pixel::TransferCharacteristic::Linear,
+            Rav1dTransferCharacteristics::LOG100 => pixel::TransferCharacteristic::Logarithmic100,
+            Rav1dTransferCharacteristics::LOG100_SQRT10 => {
+                pixel::TransferCharacteristic::Logarithmic316
+            }
+            Rav1dTransferCharacteristics::IEC61966 => pixel::TransferCharacteristic::SRGB,
+            Rav1dTransferCharacteristics::BT1361 => pixel::TransferCharacteristic::BT1886,
+            Rav1dTransferCharacteristics::SRGB => pixel::TransferCharacteristic::SRGB,
+            Rav1dTransferCharacteristics::BT2020_10BIT => pixel::TransferCharacteristic::BT2020Ten,
+            Rav1dTransferCharacteristics::BT2020_12BIT => {
+                pixel::TransferCharacteristic::BT2020Twelve
+            }
+            Rav1dTransferCharacteristics::SMPTE2084 => {
+                pixel::TransferCharacteristic::PerceptualQuantizer
+            }
+            Rav1dTransferCharacteristics::SMPTE428 => pixel::TransferCharacteristic::ST428,
+            Rav1dTransferCharacteristics::HLG => pixel::TransferCharacteristic::HybridLogGamma,
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::TransferCharacteristic::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
@@ -663,7 +741,8 @@ impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
 pub type Dav1dMatrixCoefficients = c_uint;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::IDENTITY.to_dav1d();
 pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT709.to_dav1d();
-pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::UNKNOWN.to_dav1d();
+pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::UNSPECIFIED.to_dav1d();
 pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::FCC.to_dav1d();
 pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT470BG.to_dav1d();
 pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT601.to_dav1d();
@@ -690,7 +769,7 @@ pub struct Rav1dMatrixCoefficients(pub u8);
 impl Rav1dMatrixCoefficients {
     pub const IDENTITY: Self = Self(0);
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const _RESERVED_3: Self = Self(3);
     pub const FCC: Self = Self(4);
     pub const BT470BG: Self = Self(5);
@@ -704,8 +783,50 @@ impl Rav1dMatrixCoefficients {
     pub const CHROMAT_CL: Self = Self(13);
     pub const ICTCP: Self = Self(14);
 
+    fn is_unspecified(self) -> bool {
+        (15..=DAV1D_MC_RESERVED).contains(&(self.0 as u32))
+    }
+
     const fn to_dav1d(self) -> Dav1dMatrixCoefficients {
         self.0 as Dav1dMatrixCoefficients
+    }
+}
+
+impl TryInto<pixel::MatrixCoefficients> for Rav1dMatrixCoefficients {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::MatrixCoefficients, Self::Error> {
+        Ok(match self {
+            Rav1dMatrixCoefficients::IDENTITY => pixel::MatrixCoefficients::Identity,
+            Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
+            Rav1dMatrixCoefficients::UNSPECIFIED => pixel::MatrixCoefficients::Unspecified,
+            Rav1dMatrixCoefficients::FCC => pixel::MatrixCoefficients::BT470M,
+            Rav1dMatrixCoefficients::BT470BG => pixel::MatrixCoefficients::BT470BG,
+            Rav1dMatrixCoefficients::BT601 => pixel::MatrixCoefficients::BT470BG,
+            Rav1dMatrixCoefficients::SMPTE240 => pixel::MatrixCoefficients::ST240M,
+            Rav1dMatrixCoefficients::SMPTE_YCGCO => pixel::MatrixCoefficients::YCgCo,
+            Rav1dMatrixCoefficients::BT2020_NCL => {
+                pixel::MatrixCoefficients::BT2020NonConstantLuminance
+            }
+            Rav1dMatrixCoefficients::BT2020_CL => {
+                pixel::MatrixCoefficients::BT2020ConstantLuminance
+            }
+            Rav1dMatrixCoefficients::SMPTE2085 => pixel::MatrixCoefficients::ST2085,
+            Rav1dMatrixCoefficients::CHROMAT_NCL => {
+                pixel::MatrixCoefficients::ChromaticityDerivedNonConstantLuminance
+            }
+            Rav1dMatrixCoefficients::CHROMAT_CL => {
+                pixel::MatrixCoefficients::ChromaticityDerivedConstantLuminance
+            }
+            Rav1dMatrixCoefficients::ICTCP => pixel::MatrixCoefficients::ICtCp,
+            other_value => {
+                if other_value.is_unspecified() {
+                    pixel::MatrixCoefficients::Unspecified
+                } else {
+                    return Err(Rav1dError::InvalidArgument);
+                }
+            }
+        })
     }
 }
 
@@ -745,6 +866,21 @@ pub enum Rav1dChromaSamplePosition {
 impl From<Rav1dChromaSamplePosition> for Dav1dChromaSamplePosition {
     fn from(value: Rav1dChromaSamplePosition) -> Self {
         value as Dav1dChromaSamplePosition
+    }
+}
+
+impl TryInto<pixel::ChromaLocation> for Rav1dChromaSamplePosition {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::ChromaLocation, Self::Error> {
+        // According to y4m mapping declared in dav1d's output/y4m2.c and applied from FFmpeg's yuv4mpegdec.c
+        match self {
+            Rav1dChromaSamplePosition::Unknown | Rav1dChromaSamplePosition::Colocated => {
+                Ok(pixel::ChromaLocation::Center)
+            }
+            Rav1dChromaSamplePosition::Vertical => Ok(pixel::ChromaLocation::Left),
+            Rav1dChromaSamplePosition::_Reserved => Err(Rav1dError::InvalidArgument),
+        }
     }
 }
 
