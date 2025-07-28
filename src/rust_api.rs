@@ -1,6 +1,6 @@
 // This whole module was originally copied from https://github.com/rust-av/dav1d-rs/
 // (specifically https://github.com/rust-av/dav1d-rs/blob/94b1deaa1e25bf29c77bb5cc8a08ddaf7663eede/src/lib.rs)
-// with some modifications.
+// with modifications.
 // `dav1d-rs` is under the MIT license, replicated here:
 
 // MIT License
@@ -24,7 +24,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 use std::ffi::c_void;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;

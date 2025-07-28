@@ -139,6 +139,7 @@ mod pool;
 mod qm;
 mod recon;
 mod refmvs;
+/// This API copies that of `dav1d-rs`, and should function as a drop-in replacement, aside from `dav1d::Error` being renamed to `Rav1dError`
 pub mod rust_api;
 mod scan;
 mod tables;
