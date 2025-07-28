@@ -363,11 +363,14 @@ fn parse_seq_hdr(
             .get_bits(8)
             .try_into()
             .unwrap_or(Rav1dTransferCharacteristics::Unspecified);
-        mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
+        mtrx = gb
+            .get_bits(8)
+            .try_into()
+            .unwrap_or(Rav1dMatrixCoefficients::Unspecified);
     } else {
         pri = Rav1dColorPrimaries::Unspecified;
         trc = Rav1dTransferCharacteristics::Unspecified;
-        mtrx = Rav1dMatrixCoefficients::UNSPECIFIED;
+        mtrx = Rav1dMatrixCoefficients::Unspecified;
     }
     let color_range;
     let layout;
@@ -382,7 +385,7 @@ fn parse_seq_hdr(
         chr = Rav1dChromaSamplePosition::Unknown;
     } else if pri == Rav1dColorPrimaries::BT709
         && trc == Rav1dTransferCharacteristics::SRGB
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
     {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
@@ -442,7 +445,7 @@ fn parse_seq_hdr(
         };
     }
     if strict_std_compliance
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
         && layout != Rav1dPixelLayout::I444
     {
         return Err(Rav1dError::InvalidArgument);

@@ -139,7 +139,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = w + ss_x >> ss_x;
-    let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
+    let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::Identity;
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
 
