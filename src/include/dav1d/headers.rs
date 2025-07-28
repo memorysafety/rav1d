@@ -531,7 +531,8 @@ impl Rav1dFrameType {
 
 pub type Dav1dColorPrimaries = c_uint;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = Rav1dColorPrimaries::BT709.to_dav1d();
-pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = Rav1dColorPrimaries::UNKNOWN.to_dav1d();
+pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::UNSPECIFIED.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470M.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470BG.to_dav1d();
 pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = Rav1dColorPrimaries::BT601.to_dav1d();
@@ -550,7 +551,7 @@ pub struct Rav1dColorPrimaries(pub u8);
 
 impl Rav1dColorPrimaries {
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const BT470M: Self = Self(4);
     pub const BT470BG: Self = Self(5);
     pub const BT601: Self = Self(6);
@@ -577,7 +578,7 @@ impl TryInto<pixel::ColorPrimaries> for Rav1dColorPrimaries {
     fn try_into(self) -> Result<pixel::ColorPrimaries, Self::Error> {
         Ok(match self {
             Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
-            Rav1dColorPrimaries::UNKNOWN => pixel::ColorPrimaries::Unspecified,
+            Rav1dColorPrimaries::UNSPECIFIED => pixel::ColorPrimaries::Unspecified,
             Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
             Rav1dColorPrimaries::BT470BG => pixel::ColorPrimaries::BT470BG,
             Rav1dColorPrimaries::BT601 => pixel::ColorPrimaries::BT470BG,
@@ -617,7 +618,7 @@ pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT709.to_dav1d();
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::UNKNOWN.to_dav1d();
+    Rav1dTransferCharacteristics::UNSPECIFIED.to_dav1d();
 pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics =
     Rav1dTransferCharacteristics::BT470M.to_dav1d();
 pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics =
@@ -657,7 +658,7 @@ pub struct Rav1dTransferCharacteristics(pub u8);
 impl Rav1dTransferCharacteristics {
     pub const _RESERVED_0: Self = Self(0);
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const _RESERVED_3: Self = Self(3);
     pub const BT470M: Self = Self(4);
     pub const BT470BG: Self = Self(5);
@@ -690,7 +691,7 @@ impl TryInto<pixel::TransferCharacteristic> for Rav1dTransferCharacteristics {
     fn try_into(self) -> Result<pixel::TransferCharacteristic, Self::Error> {
         Ok(match self {
             Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
-            Rav1dTransferCharacteristics::UNKNOWN => pixel::TransferCharacteristic::Unspecified,
+            Rav1dTransferCharacteristics::UNSPECIFIED => pixel::TransferCharacteristic::Unspecified,
             Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
             Rav1dTransferCharacteristics::BT470BG => pixel::TransferCharacteristic::BT470BG,
             Rav1dTransferCharacteristics::BT601 => pixel::TransferCharacteristic::ST170M,
@@ -740,7 +741,8 @@ impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
 pub type Dav1dMatrixCoefficients = c_uint;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::IDENTITY.to_dav1d();
 pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT709.to_dav1d();
-pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::UNKNOWN.to_dav1d();
+pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::UNSPECIFIED.to_dav1d();
 pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::FCC.to_dav1d();
 pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT470BG.to_dav1d();
 pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT601.to_dav1d();
@@ -767,7 +769,7 @@ pub struct Rav1dMatrixCoefficients(pub u8);
 impl Rav1dMatrixCoefficients {
     pub const IDENTITY: Self = Self(0);
     pub const BT709: Self = Self(1);
-    pub const UNKNOWN: Self = Self(2);
+    pub const UNSPECIFIED: Self = Self(2);
     pub const _RESERVED_3: Self = Self(3);
     pub const FCC: Self = Self(4);
     pub const BT470BG: Self = Self(5);
@@ -797,7 +799,7 @@ impl TryInto<pixel::MatrixCoefficients> for Rav1dMatrixCoefficients {
         Ok(match self {
             Rav1dMatrixCoefficients::IDENTITY => pixel::MatrixCoefficients::Identity,
             Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
-            Rav1dMatrixCoefficients::UNKNOWN => pixel::MatrixCoefficients::Unspecified,
+            Rav1dMatrixCoefficients::UNSPECIFIED => pixel::MatrixCoefficients::Unspecified,
             Rav1dMatrixCoefficients::FCC => pixel::MatrixCoefficients::BT470M,
             Rav1dMatrixCoefficients::BT470BG => pixel::MatrixCoefficients::BT470BG,
             Rav1dMatrixCoefficients::BT601 => pixel::MatrixCoefficients::BT470BG,
