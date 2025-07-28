@@ -355,11 +355,14 @@ fn parse_seq_hdr(
     let trc;
     let mtrx;
     if color_description_present != 0 {
-        pri = Rav1dColorPrimaries(gb.get_bits(8) as u8);
+        pri = gb
+            .get_bits(8)
+            .try_into()
+            .unwrap_or(Rav1dColorPrimaries::Unspecified);
         trc = Rav1dTransferCharacteristics(gb.get_bits(8) as u8);
         mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
     } else {
-        pri = Rav1dColorPrimaries::UNSPECIFIED;
+        pri = Rav1dColorPrimaries::Unspecified;
         trc = Rav1dTransferCharacteristics::UNSPECIFIED;
         mtrx = Rav1dMatrixCoefficients::UNSPECIFIED;
     }
