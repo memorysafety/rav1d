@@ -666,13 +666,6 @@ pub struct Rav1dFrameContextLf {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Rav1dFrameContextTaskThreadPendingTasks {
-    pub head: Rav1dTaskIndex,
-    pub tail: Rav1dTaskIndex,
-}
-
-#[derive(Default)]
-#[repr(C)]
 pub(crate) struct Rav1dFrameContextTaskThread {
     pub lock: Mutex<()>,
     pub cond: Condvar,
