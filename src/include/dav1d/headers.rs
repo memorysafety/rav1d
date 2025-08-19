@@ -569,31 +569,22 @@ impl Rav1dColorPrimaries {
     }
 }
 
-impl TryInto<pixel::ColorPrimaries> for Rav1dColorPrimaries {
-    type Error = Rav1dError;
-
-    fn try_into(self) -> Result<pixel::ColorPrimaries, Self::Error> {
-        Ok(match self {
+impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
+    fn from(val: Rav1dColorPrimaries) -> Self {
+        match val {
             Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
-            Rav1dColorPrimaries::UNSPECIFIED => pixel::ColorPrimaries::Unspecified,
+            Rav1dColorPrimaries::Unspecified => pixel::ColorPrimaries::Unspecified,
             Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
             Rav1dColorPrimaries::BT470BG => pixel::ColorPrimaries::BT470BG,
             Rav1dColorPrimaries::BT601 => pixel::ColorPrimaries::BT470BG,
             Rav1dColorPrimaries::SMPTE240 => pixel::ColorPrimaries::ST240M,
-            Rav1dColorPrimaries::FILM => pixel::ColorPrimaries::Film,
+            Rav1dColorPrimaries::Film => pixel::ColorPrimaries::Film,
             Rav1dColorPrimaries::BT2020 => pixel::ColorPrimaries::BT2020,
             Rav1dColorPrimaries::XYZ => pixel::ColorPrimaries::ST428,
             Rav1dColorPrimaries::SMPTE431 => pixel::ColorPrimaries::P3DCI,
             Rav1dColorPrimaries::SMPTE432 => pixel::ColorPrimaries::P3Display,
             Rav1dColorPrimaries::EBU3213 => pixel::ColorPrimaries::Tech3213,
-            other_value => {
-                if other_value.is_unspecified() {
-                    pixel::ColorPrimaries::Unspecified
-                } else {
-                    return Err(Rav1dError::InvalidArgument);
-                }
-            }
-        })
+        }
     }
 }
 
@@ -679,27 +670,25 @@ impl Rav1dTransferCharacteristics {
     }
 }
 
-impl TryInto<pixel::TransferCharacteristic> for Rav1dTransferCharacteristics {
-    type Error = Rav1dError;
-
-    fn try_into(self) -> Result<pixel::TransferCharacteristic, Self::Error> {
-        Ok(match self {
+impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
+    fn from(val: Rav1dTransferCharacteristics) -> Self {
+        match val {
             Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
-            Rav1dTransferCharacteristics::UNSPECIFIED => pixel::TransferCharacteristic::Unspecified,
+            Rav1dTransferCharacteristics::Unspecified => pixel::TransferCharacteristic::Unspecified,
             Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
             Rav1dTransferCharacteristics::BT470BG => pixel::TransferCharacteristic::BT470BG,
             Rav1dTransferCharacteristics::BT601 => pixel::TransferCharacteristic::ST170M,
             Rav1dTransferCharacteristics::SMPTE240 => pixel::TransferCharacteristic::ST240M,
-            Rav1dTransferCharacteristics::LINEAR => pixel::TransferCharacteristic::Linear,
-            Rav1dTransferCharacteristics::LOG100 => pixel::TransferCharacteristic::Logarithmic100,
-            Rav1dTransferCharacteristics::LOG100_SQRT10 => {
+            Rav1dTransferCharacteristics::Linear => pixel::TransferCharacteristic::Linear,
+            Rav1dTransferCharacteristics::Log100 => pixel::TransferCharacteristic::Logarithmic100,
+            Rav1dTransferCharacteristics::Log100Sqrt10 => {
                 pixel::TransferCharacteristic::Logarithmic316
             }
             Rav1dTransferCharacteristics::IEC61966 => pixel::TransferCharacteristic::SRGB,
             Rav1dTransferCharacteristics::BT1361 => pixel::TransferCharacteristic::BT1886,
             Rav1dTransferCharacteristics::SRGB => pixel::TransferCharacteristic::SRGB,
-            Rav1dTransferCharacteristics::BT2020_10BIT => pixel::TransferCharacteristic::BT2020Ten,
-            Rav1dTransferCharacteristics::BT2020_12BIT => {
+            Rav1dTransferCharacteristics::BT2020_10Bit => pixel::TransferCharacteristic::BT2020Ten,
+            Rav1dTransferCharacteristics::BT2020_12Bit => {
                 pixel::TransferCharacteristic::BT2020Twelve
             }
             Rav1dTransferCharacteristics::SMPTE2084 => {
@@ -707,14 +696,7 @@ impl TryInto<pixel::TransferCharacteristic> for Rav1dTransferCharacteristics {
             }
             Rav1dTransferCharacteristics::SMPTE428 => pixel::TransferCharacteristic::ST428,
             Rav1dTransferCharacteristics::HLG => pixel::TransferCharacteristic::HybridLogGamma,
-            other_value => {
-                if other_value.is_unspecified() {
-                    pixel::TransferCharacteristic::Unspecified
-                } else {
-                    return Err(Rav1dError::InvalidArgument);
-                }
-            }
-        })
+        }
     }
 }
 
@@ -784,41 +766,30 @@ impl Rav1dMatrixCoefficients {
     }
 }
 
-impl TryInto<pixel::MatrixCoefficients> for Rav1dMatrixCoefficients {
-    type Error = Rav1dError;
-
-    fn try_into(self) -> Result<pixel::MatrixCoefficients, Self::Error> {
-        Ok(match self {
-            Rav1dMatrixCoefficients::IDENTITY => pixel::MatrixCoefficients::Identity,
+impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
+    fn from(val: Rav1dMatrixCoefficients) -> Self {
+        match val {
+            Rav1dMatrixCoefficients::Identity => pixel::MatrixCoefficients::Identity,
             Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
-            Rav1dMatrixCoefficients::UNSPECIFIED => pixel::MatrixCoefficients::Unspecified,
+            Rav1dMatrixCoefficients::Unspecified => pixel::MatrixCoefficients::Unspecified,
             Rav1dMatrixCoefficients::FCC => pixel::MatrixCoefficients::BT470M,
             Rav1dMatrixCoefficients::BT470BG => pixel::MatrixCoefficients::BT470BG,
             Rav1dMatrixCoefficients::BT601 => pixel::MatrixCoefficients::BT470BG,
             Rav1dMatrixCoefficients::SMPTE240 => pixel::MatrixCoefficients::ST240M,
-            Rav1dMatrixCoefficients::SMPTE_YCGCO => pixel::MatrixCoefficients::YCgCo,
-            Rav1dMatrixCoefficients::BT2020_NCL => {
+            Rav1dMatrixCoefficients::SMPTE_YCgCo => pixel::MatrixCoefficients::YCgCo,
+            Rav1dMatrixCoefficients::BT2020NCL => {
                 pixel::MatrixCoefficients::BT2020NonConstantLuminance
             }
-            Rav1dMatrixCoefficients::BT2020_CL => {
-                pixel::MatrixCoefficients::BT2020ConstantLuminance
-            }
+            Rav1dMatrixCoefficients::BT2020CL => pixel::MatrixCoefficients::BT2020ConstantLuminance,
             Rav1dMatrixCoefficients::SMPTE2085 => pixel::MatrixCoefficients::ST2085,
-            Rav1dMatrixCoefficients::CHROMAT_NCL => {
+            Rav1dMatrixCoefficients::ChromatNCL => {
                 pixel::MatrixCoefficients::ChromaticityDerivedNonConstantLuminance
             }
-            Rav1dMatrixCoefficients::CHROMAT_CL => {
+            Rav1dMatrixCoefficients::ChromatCL => {
                 pixel::MatrixCoefficients::ChromaticityDerivedConstantLuminance
             }
-            Rav1dMatrixCoefficients::ICTCP => pixel::MatrixCoefficients::ICtCp,
-            other_value => {
-                if other_value.is_unspecified() {
-                    pixel::MatrixCoefficients::Unspecified
-                } else {
-                    return Err(Rav1dError::InvalidArgument);
-                }
-            }
-        })
+            Rav1dMatrixCoefficients::ICtCp => pixel::MatrixCoefficients::ICtCp,
+        }
     }
 }
 
