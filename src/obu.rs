@@ -350,18 +350,18 @@ fn parse_seq_hdr(
         // Default initialization.
         monochrome = Default::default();
     }
-    let color_description_present = gb.get_bit() as u8;
+    let color_description_present = gb.get_bit();
     let pri;
     let trc;
     let mtrx;
-    if color_description_present != 0 {
-        pri = Rav1dColorPrimaries(gb.get_bits(8) as u8);
-        trc = Rav1dTransferCharacteristics(gb.get_bits(8) as u8);
-        mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
+    if color_description_present {
+        pri = gb.get_bits(8).try_into().unwrap_or_default();
+        trc = gb.get_bits(8).try_into().unwrap_or_default();
+        mtrx = gb.get_bits(8).try_into().unwrap_or_default();
     } else {
-        pri = Rav1dColorPrimaries::UNSPECIFIED;
-        trc = Rav1dTransferCharacteristics::UNSPECIFIED;
-        mtrx = Rav1dMatrixCoefficients::UNSPECIFIED;
+        pri = Default::default();
+        trc = Default::default();
+        mtrx = Default::default();
     }
     let color_range;
     let layout;
@@ -376,7 +376,7 @@ fn parse_seq_hdr(
         chr = Rav1dChromaSamplePosition::Unknown;
     } else if pri == Rav1dColorPrimaries::BT709
         && trc == Rav1dTransferCharacteristics::SRGB
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
     {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
@@ -436,7 +436,7 @@ fn parse_seq_hdr(
         };
     }
     if strict_std_compliance
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
         && layout != Rav1dPixelLayout::I444
     {
         return Err(Rav1dError::InvalidArgument);
