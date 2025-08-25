@@ -648,57 +648,6 @@ impl Ord for Rav1dTask {
     }
 }
 
-#[cfg(false)]
-impl Ord for Rav1dTask {
-    /// We want `sort` to put tasks in priority order.
-    /// To do that, we return:
-    ///  - `Less`    if `self` is of higher priority than `other`
-    ///  - `Greater` if `self` is of lower priority than `other`
-    ///
-    /// This is farily straightforwardly translated from `insert_tasks` in `task_thread.c`,
-    /// and as such inherits the limitations of that function. Specifically,
-    /// it requires that there are no Init, InitCdf or film grain tasks,
-    /// and that there are no duplicate tasks.
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        (self.type_0, self.sby, self.tile_idx).cmp(&(other.type_0, other.sby, other.tile_idx));
-        // entropy coding precedes other steps
-        if other.type_0 == TaskType::TileEntropy {
-            if self.type_0 > TaskType::TileEntropy {
-                return cmp::Ordering::Greater;
-            }
-            // both are entropy
-            let cmp = self.sby.cmp(&other.sby);
-            if !cmp.is_eq() {
-                return cmp;
-            }
-            // same sby
-        } else {
-            if self.type_0 == TaskType::TileEntropy {
-                return cmp::Ordering::Less;
-            }
-            let cmp = self.sby.cmp(&other.sby);
-            if !cmp.is_eq() {
-                return cmp;
-            }
-            // same sby
-            let cmp = self.type_0.cmp(&other.type_0);
-            if !cmp.is_eq() {
-                return cmp;
-            }
-            // same task type
-        }
-
-        // sort by tile-id
-        assert!(
-            self.type_0 == TaskType::TileReconstruction || self.type_0 == TaskType::TileEntropy
-        );
-        assert!(self.type_0 == other.type_0);
-        assert!(other.sby == self.sby);
-        assert!(self.tile_idx != other.tile_idx);
-        self.tile_idx.cmp(&other.tile_idx)
-    }
-}
-
 #[derive(Default)]
 #[repr(C)]
 pub struct ScalableMotionParams {
