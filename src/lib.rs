@@ -796,7 +796,7 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
         c.task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
-        c.task_thread.cond_signaled.store(0, Ordering::SeqCst);
+        c.task_thread.cond_signaled.store(false, Ordering::SeqCst);
     }
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), state.frame_thread.next as usize) {

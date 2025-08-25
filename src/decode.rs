@@ -4553,7 +4553,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
 ) -> Rav1dResult {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
-    if frame_hdr.refresh_context != 0 {
+    if frame_hdr.refresh_context {
         *f.out_cdf.cdf_write() = rav1d_cdf_thread_copy(in_cdf);
     }
 
@@ -4636,7 +4636,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == tiling.update as usize && frame_hdr.refresh_context != 0 {
+            if j == tiling.update as usize && frame_hdr.refresh_context {
                 fc.task_thread.update_set.set(true);
             }
             data = rest_data;
@@ -4759,7 +4759,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     let _ = mem::take(&mut f.sr_cur);
     let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
     if let Some(frame_hdr) = &f.frame_hdr {
-        if frame_hdr.refresh_context != 0 {
+        if frame_hdr.refresh_context {
             if let Some(progress) = f.out_cdf.progress() {
                 progress.store(
                     if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
@@ -4800,7 +4800,7 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
                 let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock();
                 (*fc.task_thread.ttd).cond.notify_one();
                 if res.is_ok() {
-                    while fc.task_thread.done[0].load(Ordering::SeqCst) == 0
+                    while !fc.task_thread.done[0].load(Ordering::SeqCst)
                         || fc.task_thread.task_counter.load(Ordering::SeqCst) > 0
                     {
                         fc.task_thread.cond.wait(&mut task_thread_lock);
@@ -4811,7 +4811,7 @@ pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Ra
             } else {
                 res = rav1d_decode_frame_main(c, &mut f);
                 let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                if res.is_ok() && frame_hdr.refresh_context != 0 && fc.task_thread.update_set.get()
+                if res.is_ok() && frame_hdr.refresh_context && fc.task_thread.update_set.get()
                 {
                     rav1d_cdf_thread_update(
                         frame_hdr,
@@ -4882,7 +4882,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     ) {
         fc.task_thread.error.store(1, Ordering::Relaxed);
         let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
-        if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
+        if f.frame_hdr.as_ref().unwrap().refresh_context {
             let _ = mem::take(&mut f.out_cdf);
         }
         for i in 0..7 {
@@ -4995,7 +4995,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
         let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
         *fc.in_cdf.try_write().unwrap() = state.cdf[pri_ref].clone();
     }
-    if frame_hdr.refresh_context != 0 {
+    if frame_hdr.refresh_context {
         let res = rav1d_cdf_thread_alloc(c.fc.len() > 1);
         match res {
             Err(e) => {
@@ -5189,7 +5189,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     }
 
     // update references etc.
-    let refresh_frame_flags = frame_hdr.refresh_frame_flags as c_uint;
+    let refresh_frame_flags = frame_hdr.refresh_frame_flags;
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
             if state.refs[i].p.p.frame_hdr.is_some() {
@@ -5197,7 +5197,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
             }
             state.refs[i].p = f.sr_cur.clone();
 
-            if frame_hdr.refresh_context != 0 {
+            if frame_hdr.refresh_context {
                 state.cdf[i] = f.out_cdf.clone();
             } else {
                 state.cdf[i] = fc.in_cdf.try_read().unwrap().clone();

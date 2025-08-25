@@ -168,27 +168,22 @@ pub(crate) struct Rav1dTileGroup {
     pub hdr: Rav1dTileGroupHeader,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum TaskType {
-    Init = 0,
-    InitCdf = 1,
-    TileEntropy = 2,
-    EntropyProgress = 3,
-    TileReconstruction = 4,
-    DeblockCols = 5,
-    DeblockRows = 6,
-    Cdef = 7,
-    SuperResolution = 8,
-    LoopRestoration = 9,
-    ReconstructionProgress = 10,
-    FgPrep = 11,
-    FgApply = 12,
-}
-
-impl Default for TaskType {
-    fn default() -> Self {
-        Self::Init
-    }
+    #[default]
+    Init,
+    InitCdf,
+    TileEntropy,
+    EntropyProgress,
+    TileReconstruction,
+    DeblockCols,
+    DeblockRows,
+    Cdef,
+    SuperResolution,
+    LoopRestoration,
+    ReconstructionProgress,
+    FgPrep,
+    FgApply,
 }
 
 #[derive(Default)]
@@ -289,8 +284,8 @@ pub(crate) struct TaskThreadData {
     /// Only used under the task thread lock.
     pub reset_task_cur: AtomicU32,
 
-    pub cond_signaled: AtomicI32,
-    pub delayed_fg_exec: RelaxedAtomic<i32>,
+    pub cond_signaled: AtomicBool,
+    pub delayed_fg_exec: RelaxedAtomic<bool>,
     pub delayed_fg_cond: Condvar,
     pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub delayed_fg: RwLock<TaskThreadDataDelayedFg>,
@@ -641,6 +636,19 @@ impl PartialOrd for Rav1dTask {
     }
 }
 
+impl Rav1dTask {
+    fn cmp_fields(&self) -> impl Ord {
+        (self.type_0, self.sby, self.tile_idx)
+    }
+}
+
+impl Ord for Rav1dTask {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.cmp_fields().cmp(&other.cmp_fields())
+    }
+}
+
+#[cfg(false)]
 impl Ord for Rav1dTask {
     /// We want `sort` to put tasks in priority order.
     /// To do that, we return:
@@ -652,35 +660,30 @@ impl Ord for Rav1dTask {
     /// it requires that there are no Init, InitCdf or film grain tasks,
     /// and that there are no duplicate tasks.
     fn cmp(&self, other: &Self) -> cmp::Ordering {
+        (self.type_0, self.sby, self.tile_idx).cmp(&(other.type_0, other.sby, other.tile_idx));
         // entropy coding precedes other steps
         if other.type_0 == TaskType::TileEntropy {
             if self.type_0 > TaskType::TileEntropy {
                 return cmp::Ordering::Greater;
             }
             // both are entropy
-            if self.sby > other.sby {
-                return cmp::Ordering::Greater;
-            }
-            if self.sby < other.sby {
-                return cmp::Ordering::Less;
+            let cmp = self.sby.cmp(&other.sby);
+            if !cmp.is_eq() {
+                return cmp;
             }
             // same sby
         } else {
             if self.type_0 == TaskType::TileEntropy {
                 return cmp::Ordering::Less;
             }
-            if self.sby > other.sby {
-                return cmp::Ordering::Greater;
-            }
-            if self.sby < other.sby {
-                return cmp::Ordering::Less;
+            let cmp = self.sby.cmp(&other.sby);
+            if !cmp.is_eq() {
+                return cmp;
             }
             // same sby
-            if self.type_0 > other.type_0 {
-                return cmp::Ordering::Greater;
-            }
-            if self.type_0 < other.type_0 {
-                return cmp::Ordering::Less;
+            let cmp = self.type_0.cmp(&other.type_0);
+            if !cmp.is_eq() {
+                return cmp;
             }
             // same task type
         }
@@ -692,10 +695,7 @@ impl Ord for Rav1dTask {
         assert!(self.type_0 == other.type_0);
         assert!(other.sby == self.sby);
         assert!(self.tile_idx != other.tile_idx);
-        if self.tile_idx < other.tile_idx {
-            return cmp::Ordering::Less;
-        }
-        return cmp::Ordering::Greater;
+        self.tile_idx.cmp(&other.tile_idx)
     }
 }
 
@@ -925,7 +925,7 @@ pub(crate) struct Rav1dFrameContextTaskThread {
     pub ttd: Arc<TaskThreadData>,
     pub tasks: Rav1dTasks,
     pub init_done: AtomicI32,
-    pub done: [AtomicI32; 2],
+    pub done: [AtomicBool; 2],
     pub retval: Mutex<Option<Rav1dError>>,
     pub finished: AtomicBool, // true when FrameData.tiles is cleared
     pub update_set: RelaxedAtomic<bool>, // whether we need to update CDF reference

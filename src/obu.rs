@@ -1956,9 +1956,8 @@ fn parse_frame_hdr(
     }
     debug.post(gb, "frametype-specific-bits");
 
-    let refresh_context = (seqhdr.reduced_still_picture_header == 0
-        && disable_cdf_update == 0
-        && !gb.get_bit()) as u8;
+    let refresh_context =
+        seqhdr.reduced_still_picture_header == 0 && disable_cdf_update == 0 && !gb.get_bit();
     debug.post(gb, "refresh_context");
 
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
