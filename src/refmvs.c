@@ -826,7 +826,7 @@ int dav1d_refmvs_init_frame(refmvs_frame *const rf,
         /* Note that sizeof(*rf->r) == 12, but it's accessed using 16-byte unaligned
          * loads in save_tmvs() asm which can overread 4 bytes into rp_proj. */
         dav1d_free_aligned(rf->r);
-        rf->r = dav1d_alloc_aligned(ALLOC_REFMVS, r_sz + rp_proj_sz, 64);
+        rf->r = dav1d_alloc_aligned(r_sz + rp_proj_sz, 64);
         if (!rf->r) {
             rf->n_blocks = 0;
             return DAV1D_ERR(ENOMEM);
