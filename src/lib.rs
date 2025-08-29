@@ -171,7 +171,7 @@ use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 use crate::include::dav1d::data::{Dav1dData, Rav1dData};
 use crate::include::dav1d::dav1d::{
     Dav1dContext, Dav1dEventFlags, Dav1dSettings, Rav1dDecodeFrameType, Rav1dInloopFilterType,
-    Rav1dSettings,
+    Rav1dSettings, DAV1D_MAX_THREADS,
 };
 use crate::include::dav1d::headers::{Dav1dSequenceHeader, Rav1dFilmGrainData};
 use crate::include::dav1d::picture::{Dav1dPicture, Rav1dPicture};
@@ -268,7 +268,9 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_tc = if s.n_threads.get() != 0 {
         s.n_threads.get() as usize // TODO propagate `InRange`
     } else {
-        rav1d_num_logical_processors().get().clamp(1, 256)
+        rav1d_num_logical_processors()
+            .get()
+            .clamp(1, DAV1D_MAX_THREADS.try_into().unwrap())
     };
     let n_fc = if s.max_frame_delay.get() != 0 {
         cmp::min(s.max_frame_delay.get() as usize, n_tc) // TODO propagate `InRange`
