@@ -230,10 +230,10 @@ pub extern "C" fn dav1d_version_api() -> c_uint {
 impl Default for Rav1dSettings {
     fn default() -> Self {
         Self {
-            n_threads: InRange::<u16, 0, 256>::new(0).unwrap(),
-            max_frame_delay: InRange::<u16, 0, 256>::new(0).unwrap(),
+            n_threads: InRange::new(0).unwrap(),
+            max_frame_delay: InRange::new(0).unwrap(),
             apply_grain: true,
-            operating_point: InRange::<u8, 0, 31>::new(0).unwrap(),
+            operating_point: InRange::new(0).unwrap(),
             all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
