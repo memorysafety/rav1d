@@ -16,7 +16,7 @@ pub type Dav1dContext = RawArc<Rav1dContext>;
 
 pub type Dav1dRef = ();
 
-pub const RAV1D_MAX_THREADS: usize = 256;
+pub const RAV1D_MAX_THREADS: usize = 256 * 10;
 pub const RAV1D_MAX_FRAME_DELAY: usize = 256;
 
 pub const DAV1D_MAX_THREADS: c_int = RAV1D_MAX_THREADS as _;

@@ -43,7 +43,7 @@ extern "C" {
 typedef struct Dav1dContext Dav1dContext;
 typedef struct Dav1dRef Dav1dRef;
 
-#define DAV1D_MAX_THREADS 256
+#define DAV1D_MAX_THREADS (256 * 10)
 #define DAV1D_MAX_FRAME_DELAY 256
 
 typedef struct Dav1dLogger {
