@@ -16,6 +16,12 @@ pub type Dav1dContext = RawArc<Rav1dContext>;
 
 pub type Dav1dRef = ();
 
+pub const RAV1D_MAX_THREADS: usize = 256;
+pub const RAV1D_MAX_FRAME_DELAY: usize = 256;
+
+pub const DAV1D_MAX_THREADS: c_int = RAV1D_MAX_THREADS as _;
+pub const DAV1D_MAX_FRAME_DELAY: c_int = RAV1D_MAX_FRAME_DELAY as _;
+
 pub type Dav1dInloopFilterType = c_uint;
 pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType =
     Rav1dInloopFilterType::all().bits() as Dav1dInloopFilterType;
@@ -144,8 +150,8 @@ pub struct Dav1dSettings {
 
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
-    pub n_threads: InRange<u16, 0, 256>,
-    pub max_frame_delay: InRange<u16, 0, 256>,
+    pub n_threads: InRange<u16, 0, { RAV1D_MAX_THREADS as _ }>,
+    pub max_frame_delay: InRange<u16, 0, { RAV1D_MAX_FRAME_DELAY as _ }>,
     pub apply_grain: bool,
     pub operating_point: InRange<u8, 0, 31>,
     pub all_layers: bool,
@@ -177,9 +183,12 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
-        validate_input!(((0..=256).contains(&n_threads), Rav1dError::InvalidArgument))?;
         validate_input!((
-            (0..=256).contains(&max_frame_delay),
+            (0..=DAV1D_MAX_THREADS).contains(&n_threads),
+            Rav1dError::InvalidArgument
+        ))?;
+        validate_input!((
+            (0..=DAV1D_MAX_FRAME_DELAY).contains(&max_frame_delay),
             Rav1dError::InvalidArgument
         ))?;
         validate_input!((
