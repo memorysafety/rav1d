@@ -171,7 +171,7 @@ use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 use crate::include::dav1d::data::{Dav1dData, Rav1dData};
 use crate::include::dav1d::dav1d::{
     Dav1dContext, Dav1dEventFlags, Dav1dSettings, Rav1dDecodeFrameType, Rav1dInloopFilterType,
-    Rav1dSettings,
+    Rav1dSettings, RAV1D_MAX_THREADS,
 };
 use crate::include::dav1d::headers::{Dav1dSequenceHeader, Rav1dFilmGrainData};
 use crate::include::dav1d::picture::{Dav1dPicture, Rav1dPicture};
@@ -230,10 +230,10 @@ pub extern "C" fn dav1d_version_api() -> c_uint {
 impl Default for Rav1dSettings {
     fn default() -> Self {
         Self {
-            n_threads: InRange::<u16, 0, 256>::new(0).unwrap(),
-            max_frame_delay: InRange::<u16, 0, 256>::new(0).unwrap(),
+            n_threads: InRange::new(0).unwrap(),
+            max_frame_delay: InRange::new(0).unwrap(),
             apply_grain: true,
-            operating_point: InRange::<u8, 0, 31>::new(0).unwrap(),
+            operating_point: InRange::new(0).unwrap(),
             all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
@@ -268,7 +268,9 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_tc = if s.n_threads.get() != 0 {
         s.n_threads.get() as usize // TODO propagate `InRange`
     } else {
-        rav1d_num_logical_processors().get().clamp(1, 256)
+        rav1d_num_logical_processors()
+            .get()
+            .clamp(1, RAV1D_MAX_THREADS)
     };
     let n_fc = if s.max_frame_delay.get() != 0 {
         cmp::min(s.max_frame_delay.get() as usize, n_tc) // TODO propagate `InRange`
