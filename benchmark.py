@@ -224,8 +224,8 @@ def main(
                 if first is not None and last is not None:
                     diff_of_diff = abs(first.diff() - last.diff())
                     if diff_of_diff > diff_threshold:
-                        benchmark_range(first_index, mid_index)
                         benchmark_range(mid_index, last_index)
+                        benchmark_range(first_index, mid_index)
                 elif first is not None:
                     benchmark_range(first_index, mid_index)
                 elif last is not None:
