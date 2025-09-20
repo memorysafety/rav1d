@@ -22,3 +22,5 @@ target/
 .gdbinit
 
 .cache/clangd/index
+
+/benchmarks/
