@@ -60,15 +60,25 @@ def main(
 
     resolved_commit = resolve_commit(git, commit)
     head_commit = resolve_commit(git, "HEAD")
+    fix_arm_commit = "9ecc4e4b"
+
+    rust_toolchain_toml = """
+[toolchain]
+channel = "nightly-2025-05-01"
+""".lstrip()
 
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
+    run(git["cherry-pick", "--no-commit", fix_arm_commit])
+    Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
 
     run(cargo["build", "--release", "--target", target])
     run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
     run(ninja["-C", "build"])
 
+    run(git["stash", "push"])
+    run(git["stash", "drop"])
     if resolved_commit != head_commit:
         run(git["checkout", "-"])
     if stashed:
