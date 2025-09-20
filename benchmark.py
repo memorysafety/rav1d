@@ -39,6 +39,7 @@ def main(
     cache: Annotated[bool, Option(help="cache results")] = True,
     commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
 ):
+    # commands used
     git = local["git"]
     rustc = local["rustc"]
     cargo = local["cargo"]
@@ -46,7 +47,35 @@ def main(
     ninja = local["ninja"]
     hyperfine = local["hyperfine"]
 
+    # constants
+    
     dir = Path("benchmarks")
+    
+    fix_arm_commit = "9ecc4e4b"
+
+    rust_toolchain_toml = """
+[toolchain]
+channel = "nightly-2025-05-01"
+""".lstrip()
+    
+    av1d_var = "av1d"
+    threads_var = "threads"
+
+    # resolved constants
+
+    target = host_target(rustc)
+
+    resolved_commit = resolve_commit(git, commit)
+    head_commit = resolve_commit(git, "HEAD")
+    
+    rav1d = Path("target") / target / "release/dav1d"
+    dav1d = Path("build") / "tools/dav1d"
+
+    export_json_path = dir / f"benchmark-{resolved_commit}-{"-".join(str(n) for n in threads)}.json"
+
+    av1ds = [rav1d, dav1d]
+
+    # download (cached) video
 
     video_url = "http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-8bit-1280x720-3363kbps.ivf"
     video_path = Path(urlparse(video_url).path)
@@ -56,17 +85,8 @@ def main(
     if not video_path.exists():
         urlretrieve(video_url, video_path)
     
-    target = host_target(rustc)
-
-    resolved_commit = resolve_commit(git, commit)
-    head_commit = resolve_commit(git, "HEAD")
-    fix_arm_commit = "9ecc4e4b"
-
-    rust_toolchain_toml = """
-[toolchain]
-channel = "nightly-2025-05-01"
-""".lstrip()
-
+    # build commit
+    
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
@@ -83,16 +103,8 @@ channel = "nightly-2025-05-01"
         run(git["checkout", "-"])
     if stashed:
         run(git["stash", "pop"])
-
-    rav1d = Path("target") / target / "release/dav1d"
-    dav1d = Path("build") / "tools/dav1d"
-
-    export_json_path = dir / f"benchmark-{resolved_commit}-{"-".join(str(n) for n in threads)}.json"
-
-    av1d_var = "av1d"
-    threads_var = "threads"
-
-    av1ds = [rav1d, dav1d]
+    
+    # benchmark
 
     if cache and export_json_path.exists():
         print(f"cached {export_json_path}")
