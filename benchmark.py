@@ -7,9 +7,10 @@
 # ]
 # ///
 
+from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Generator
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 import typer
@@ -22,7 +23,15 @@ def run(cmd: LocalCommand | BoundCommand) -> str:
     print(cmd)
     return cmd()
 
-def host_target(rustc: LocalCommand) -> str:
+# commands used
+git = local["git"]
+rustc = local["rustc"]
+cargo = local["cargo"]
+meson = local["meson"]
+ninja = local["ninja"]
+hyperfine = local["hyperfine"]
+
+def host_target() -> str:
     output: str = rustc["-vV"]()
     prefix = "host: "
     for line in output.split("\n"):
@@ -30,27 +39,36 @@ def host_target(rustc: LocalCommand) -> str:
             return line[len(prefix):]
     raise RuntimeError("rustc host target not found")
 
-def resolve_commit(git: LocalCommand, commit: str) -> str:
+def resolve_commit(commit: str) -> str:
     output: str = git["rev-parse", "--short", commit]()
     return output.strip()
 
-def main(
-    threads: Annotated[list[int], Option(help="list of number of threads to test with")],
-    cache: Annotated[bool, Option(help="cache results")] = True,
-    commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
-):
-    # commands used
-    git = local["git"]
-    rustc = local["rustc"]
-    cargo = local["cargo"]
-    meson = local["meson"]
-    ninja = local["ninja"]
-    hyperfine = local["hyperfine"]
+@dataclass
+class Video:
+    url: str
+    path: Path
 
-    # constants
+def download_video(dir: Path) -> Video:
+    url = "http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-8bit-1280x720-3363kbps.ivf"
+    path = Path(urlparse(url).path)
+    path = dir / path.name
+
+    dir.mkdir(exist_ok=True)
+    if not path.exists():
+        urlretrieve(url, path)
     
-    dir = Path("benchmarks")
-    
+    return Video(url=url, path=path)
+
+@dataclass
+class Build:
+    commit: str
+    resolved_commit: str
+    rav1d: Path
+    dav1d: Path
+
+def build_commit(
+    commit: str,
+) -> Build:
     fix_arm_commit = "9ecc4e4b"
 
     rust_toolchain_toml = """
@@ -58,35 +76,11 @@ def main(
 channel = "nightly-2025-05-01"
 """.lstrip()
     
-    av1d_var = "av1d"
-    threads_var = "threads"
+    target = host_target()
+    head_commit = resolve_commit("HEAD")
 
-    # resolved constants
+    resolved_commit = resolve_commit(commit)
 
-    target = host_target(rustc)
-
-    resolved_commit = resolve_commit(git, commit)
-    head_commit = resolve_commit(git, "HEAD")
-    
-    rav1d = Path("target") / target / "release/dav1d"
-    dav1d = Path("build") / "tools/dav1d"
-
-    export_json_path = dir / f"benchmark-{resolved_commit}-{"-".join(str(n) for n in threads)}.json"
-
-    av1ds = [rav1d, dav1d]
-
-    # download (cached) video
-
-    video_url = "http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-8bit-1280x720-3363kbps.ivf"
-    video_path = Path(urlparse(video_url).path)
-    video_path = dir / video_path.name
-
-    dir.mkdir(exist_ok=True)
-    if not video_path.exists():
-        urlretrieve(video_url, video_path)
-    
-    # build commit
-    
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
@@ -103,8 +97,40 @@ channel = "nightly-2025-05-01"
         run(git["checkout", "-"])
     if stashed:
         run(git["stash", "pop"])
+
+    return Build(
+        commit=commit,
+        resolved_commit=resolved_commit,
+        rav1d=Path("target") / target / "release/dav1d",
+        dav1d=Path("build") / "tools/dav1d",
+    )
     
-    # benchmark
+@dataclass
+class Benchmark:
+    commit: str
+    threads: int
+    rav1d_time: float
+    dav1d_time: float
+
+    def diff(self) -> float:
+        return (self.rav1d_time / self.dav1d_time) - 1
+
+    def __str__(self) -> str:
+        percent = self.diff() * 100
+        return f"{self.commit}, {self.threads:3} threads: {percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
+
+def benchmark_build(
+    dir: Path,
+    cache: bool,
+    threads: list[int],
+    video: Video,
+    build: Build,
+) -> Generator[Benchmark, None, None]:
+    av1d_var = "av1d"
+    threads_var = "threads"
+
+    export_json_path = dir / f"benchmark-{build.resolved_commit}-{"-".join(str(n) for n in threads)}.json"
+    av1ds = [build.rav1d, build.dav1d]
 
     if cache and export_json_path.exists():
         print(f"cached {export_json_path}")
@@ -113,7 +139,7 @@ channel = "nightly-2025-05-01"
             "--warmup", "3",
             "--parameter-list", av1d_var, ",".join(str(path) for path in av1ds),
             "--parameter-list", threads_var, ",".join(str(threads) for threads in threads),
-            f"{{{av1d_var}}} -q -i {str(video_path)} -o /dev/null --limit 1000 --threads {{{threads_var}}}",
+            f"{{{av1d_var}}} -q -i {str(video.path)} -o /dev/null --limit 1000 --threads {{{threads_var}}}",
             "--export-json", str(export_json_path)
         ])
     
@@ -121,12 +147,23 @@ channel = "nightly-2025-05-01"
     results = data["results"]
     per_thread = {thread: {result["parameters"]["av1d"]: result for result in results if int(result["parameters"]["threads"]) == thread} for thread in threads}
     for thread, result in per_thread.items():
-        rav1d_time = result[str(rav1d)]["mean"]
-        dav1d_time = result[str(dav1d)]["mean"]
-        diff = rav1d_time / dav1d_time
-        percent = (diff - 1) * 100
-        print(f"{thread:3} threads: {percent:4.1f}%, {rav1d_time:.3f} s, {dav1d_time:.3f} s")
+        yield Benchmark(
+            commit=build.resolved_commit,
+            threads=thread,
+            rav1d_time=result[str(build.rav1d)]["mean"],
+            dav1d_time=result[str(build.dav1d)]["mean"],
+        )
 
+def main(
+    threads: Annotated[list[int], Option(help="list of number of threads to test with")],
+    cache: Annotated[bool, Option(help="cache results")] = True,
+    commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
+):    
+    dir = Path("benchmarks")
+    video = download_video(dir)
+    build = build_commit(commit)
+    for benchmark in benchmark_build(dir, cache, threads, video, build):
+        print(benchmark)
 
 if __name__ == "__main__":
     typer.run(main)
