@@ -94,7 +94,9 @@ channel = "nightly-2025-05-01"
 
     av1ds = [rav1d, dav1d]
 
-    if not cache or not export_json_path.exists():
+    if cache and export_json_path.exists():
+        print(f"cached {export_json_path}")
+    else:
         run(hyperfine[
             "--warmup", "3",
             "--parameter-list", av1d_var, ",".join(str(path) for path in av1ds),
