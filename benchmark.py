@@ -89,6 +89,7 @@ channel = "nightly-2025-05-01"
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
 
     error = None
+    interrupt = None
     try:
         run(cargo["build", "--release", "--target", target])
         run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
@@ -96,6 +97,8 @@ channel = "nightly-2025-05-01"
     except ProcessExecutionError as e:
         error = e
         print(f"skipping {commit} due to build error: {e}")
+    except KeyboardInterrupt as e:
+        interrupt = e
 
     run(git["stash", "push"])
     run(git["stash", "drop"])
@@ -103,6 +106,10 @@ channel = "nightly-2025-05-01"
         run(git["checkout", "-"])
     if stashed:
         run(git["stash", "pop"])
+    
+    # Allow us to reset git state if interrupted.
+    if interrupt is not None:
+        raise interrupt
 
     return Build(
         commit=commit,
