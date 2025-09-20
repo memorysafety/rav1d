@@ -16,11 +16,11 @@ import typer
 from plumbum import local
 from plumbum.commands.base import BoundCommand
 from plumbum.machines.local import LocalCommand
-from typer import Argument, Option
+from typer import Option
 
-def run(cmd: LocalCommand | BoundCommand):
+def run(cmd: LocalCommand | BoundCommand) -> str:
     print(cmd)
-    cmd()
+    return cmd()
 
 def host_target(rustc: LocalCommand) -> str:
     output: str = rustc["-vV"]()
@@ -30,10 +30,16 @@ def host_target(rustc: LocalCommand) -> str:
             return line[len(prefix):]
     raise RuntimeError("rustc host target not found")
 
+def resolve_commit(git: LocalCommand, commit: str) -> str:
+    output: str = git["rev-parse", "--short", commit]()
+    return output.strip()
+
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = False,
+    commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
 ):
+    git = local["git"]
     rustc = local["rustc"]
     cargo = local["cargo"]
     meson = local["meson"]
@@ -52,14 +58,26 @@ def main(
     
     target = host_target(rustc)
 
+    resolved_commit = resolve_commit(git, commit)
+    head_commit = resolve_commit(git, "HEAD")
+
+    stashed = run(git["stash", "push"]).strip() != "No local changes to save"
+    if resolved_commit != head_commit:
+        run(git["checkout", commit])
+
     run(cargo["build", "--release", "--target", target])
     run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
     run(ninja["-C", "build"])
 
+    if resolved_commit != head_commit:
+        run(git["checkout", "-"])
+    if stashed:
+        run(git["stash", "pop"])
+
     rav1d = Path("target") / target / "release/dav1d"
     dav1d = Path("build") / "tools/dav1d"
 
-    export_json_path = dir / f"benchmark-{"-".join(str(n) for n in threads)}.json"
+    export_json_path = dir / f"benchmark-{resolved_commit}-{"-".join(str(n) for n in threads)}.json"
 
     av1d_var = "av1d"
     threads_var = "threads"
