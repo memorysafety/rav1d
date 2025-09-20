@@ -157,13 +157,57 @@ def benchmark_build(
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = True,
-    commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
-):    
+    commit: Annotated[str, Option(help="git commit(s) to benchmark")] = "HEAD",
+    diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01
+):
     dir = Path("benchmarks")
     video = download_video(dir)
-    build = build_commit(commit)
-    for benchmark in benchmark_build(dir, cache, threads, video, build):
-        print(benchmark)
+
+    if ".." not in commit:
+        build = build_commit(commit)
+        for benchmark in benchmark_build(dir, cache, threads, video, build):
+            print(benchmark)
+    else:
+        if len(threads) != 1:
+            raise RuntimeError("can't bisect over multiple threads")
+        thread = threads[0]
+
+        output: str = git["rev-list", commit]()
+        commits = [line.strip() for line in output.strip().split("\n")]
+        
+        benchmark_by_commit: dict[str, Benchmark] = {}
+
+        def benchmark_one(index: int) -> Benchmark:
+            commit = commits[index]
+            if commit in benchmark_by_commit:
+                return benchmark_by_commit[commit]
+            build = build_commit(commit)
+            benchmarks = list(benchmark_build(dir, cache, threads, video, build))
+            assert(len(benchmarks) == 1)
+            benchmark = benchmarks[0]
+            benchmark_by_commit[commit] = benchmark
+            print(f"{index}, {benchmark}")
+            return benchmark
+
+        def benchmark_range(first_index: int, last_index: int):
+            count = last_index - first_index + 1
+            if count <= 0:
+                return
+            elif count == 1:
+                benchmark_one(first_index)
+            else:
+                first = benchmark_one(first_index)
+                last = benchmark_one(last_index)
+                diff_of_diff = abs(first.diff() - last.diff())
+                if diff_of_diff > diff_threshold:
+                    mid_index = (first_index + last_index) // 2
+                    benchmark_range(first_index, mid_index)
+                    benchmark_range(mid_index, last_index)
+        
+        benchmark_range(0, len(commits) - 1)
+
+        for i, commit in enumerate(commits):
+            print(f"{i}, {benchmark_by_commit[commit]}")
 
 if __name__ == "__main__":
     typer.run(main)
