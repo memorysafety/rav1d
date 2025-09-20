@@ -22,10 +22,19 @@ def run(cmd: LocalCommand | BoundCommand):
     print(cmd)
     cmd()
 
+def host_target(rustc: LocalCommand) -> str:
+    output: str = rustc["-vV"]()
+    prefix = "host: "
+    for line in output.split("\n"):
+        if line.startswith(prefix):
+            return line[len(prefix):]
+    raise RuntimeError("rustc host target not found")
+
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = False,
 ):
+    rustc = local["rustc"]
     cargo = local["cargo"]
     meson = local["meson"]
     ninja = local["ninja"]
@@ -40,12 +49,14 @@ def main(
     dir.mkdir(exist_ok=True)
     if not video_path.exists():
         urlretrieve(video_url, video_path)
+    
+    target = host_target(rustc)
 
-    run(cargo["build", "--release"])
+    run(cargo["build", "--release", "--target", target])
     run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
     run(ninja["-C", "build"])
 
-    rav1d = Path("target") / "release/dav1d"
+    rav1d = Path("target") / target / "release/dav1d"
     dav1d = Path("build") / "tools/dav1d"
 
     export_json_path = dir / f"benchmark-{"-".join(str(n) for n in threads)}.json"
