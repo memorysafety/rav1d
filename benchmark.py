@@ -14,7 +14,7 @@ from typing import Annotated, Generator
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 import typer
-from plumbum import local
+from plumbum import ProcessExecutionError, local
 from plumbum.commands.base import BoundCommand
 from plumbum.machines.local import LocalCommand
 from typer import Option
@@ -63,6 +63,7 @@ def download_video(dir: Path) -> Video:
 class Build:
     commit: str
     resolved_commit: str
+    error: None | ProcessExecutionError
     rav1d: Path
     dav1d: Path
 
@@ -87,9 +88,14 @@ channel = "nightly-2025-05-01"
     run(git["cherry-pick", "--no-commit", fix_arm_commit])
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
 
-    run(cargo["build", "--release", "--target", target])
-    run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
-    run(ninja["-C", "build"])
+    error = None
+    try:
+        run(cargo["build", "--release", "--target", target])
+        run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
+        run(ninja["-C", "build"])
+    except ProcessExecutionError as e:
+        error = e
+        print(f"skipping {commit} due to build error: {e}")
 
     run(git["stash", "push"])
     run(git["stash", "drop"])
@@ -101,6 +107,7 @@ channel = "nightly-2025-05-01"
     return Build(
         commit=commit,
         resolved_commit=resolved_commit,
+        error=error,
         rav1d=Path("target") / target / "release/dav1d",
         dav1d=Path("build") / "tools/dav1d",
     )
@@ -126,6 +133,9 @@ def benchmark_build(
     video: Video,
     build: Build,
 ) -> Generator[Benchmark, None, None]:
+    if build.error is not None:
+        return
+
     av1d_var = "av1d"
     threads_var = "threads"
 
@@ -175,16 +185,21 @@ def main(
         output: str = git["rev-list", commit]()
         commits = [line.strip() for line in output.strip().split("\n")]
         
-        benchmark_by_commit: dict[str, Benchmark] = {}
+        benchmark_by_commit: dict[str, None | Benchmark] = {}
 
-        def benchmark_one(index: int) -> Benchmark:
+        def benchmark_one(index: int) -> None | Benchmark:
             commit = commits[index]
             if commit in benchmark_by_commit:
                 return benchmark_by_commit[commit]
             build = build_commit(commit)
             benchmarks = list(benchmark_build(dir, cache, threads, video, build))
-            assert(len(benchmarks) == 1)
-            benchmark = benchmarks[0]
+            if len(benchmarks) == 0:
+                # if there was an error
+                benchmark = None
+            elif len(benchmarks) == 1:
+                benchmark = benchmarks[0]
+            else:
+                assert(False)
             benchmark_by_commit[commit] = benchmark
             print(f"{index}, {benchmark}")
             return benchmark
@@ -196,12 +211,17 @@ def main(
             elif count == 1:
                 benchmark_one(first_index)
             else:
+                mid_index = (first_index + last_index) // 2
                 first = benchmark_one(first_index)
                 last = benchmark_one(last_index)
-                diff_of_diff = abs(first.diff() - last.diff())
-                if diff_of_diff > diff_threshold:
-                    mid_index = (first_index + last_index) // 2
+                if first is not None and last is not None:
+                    diff_of_diff = abs(first.diff() - last.diff())
+                    if diff_of_diff > diff_threshold:
+                        benchmark_range(first_index, mid_index)
+                        benchmark_range(mid_index, last_index)
+                elif first is not None:
                     benchmark_range(first_index, mid_index)
+                elif last is not None:
                     benchmark_range(mid_index, last_index)
         
         benchmark_range(0, len(commits) - 1)
