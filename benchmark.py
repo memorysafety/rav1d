@@ -36,7 +36,7 @@ def resolve_commit(git: LocalCommand, commit: str) -> str:
 
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
-    cache: Annotated[bool, Option(help="cache results")] = False,
+    cache: Annotated[bool, Option(help="cache results")] = True,
     commit: Annotated[str, Option(help="git commit to benchmark")] = "HEAD",
 ):
     git = local["git"]
