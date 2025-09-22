@@ -294,6 +294,8 @@ def main(
         
         benchmark_range(0, len(commits) - 1)
 
+        print()
+        print(f"commit #, commit hash, threads: diff %, rav1d s, dav1d s")
         for i, commit in enumerate(commits):
             if commit in benchmark_by_commit:
                 print(f"{i:4}, {benchmark_by_commit[commit]}")
