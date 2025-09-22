@@ -253,7 +253,7 @@ def main(
         thread = threads[0]
 
         output: str = git["rev-list", commit]()
-        commits = [line.strip() for line in output.strip().split("\n")]
+        commits = [line.strip() for line in output.strip().split("\n")][::-1]
         
         benchmark_by_commit: dict[str, Benchmark] = {}
 
