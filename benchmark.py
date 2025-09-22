@@ -107,6 +107,10 @@ channel = "nightly-2025-05-01"
     target = host_target()
     head_commit = resolve_commit("HEAD")
 
+    rav1d = Path("target") / target / "release/dav1d"
+    dav1d = Path("build") / "tools/dav1d"
+    dav1d_so = Path("build") / "src/libdav1d.so"
+
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
@@ -140,22 +144,22 @@ channel = "nightly-2025-05-01"
     if build.error is not None:
         return build
 
-    rav1d = Path("target") / target / "release/dav1d"
-    dav1d = Path("build") / "tools/dav1d"
-    dav1d_so = Path("build") / "src/libdav1d.so.7"
-
     rav1d.rename(cached_rav1d)
     print(f"cached {cached_rav1d}")
     dav1d.rename(cached_dav1d)
     print(f"cached {cached_dav1d}")
-    shutil.copy(dav1d_so, cached_dav1d_so)
+
+    # Need to handle different versions and symlinks.
+    resolved_dav1d_so = dav1d_so.parent / dav1d_so.readlink()
+    resolved_dav1d_so.resolve().rename(cached_dav1d_so)
+    print(f"cached {cached_dav1d_so}")
+    assert cached_dav1d_so.exists()
 
     # Need to update `dav1d` and `libdav1d.so`
     # to recognize the update name and location of `libdav1d.so`.
     run(patchelf["--set-rpath", "$ORIGIN", cached_dav1d])
-    run(patchelf["--replace-needed", dav1d_so.name, cached_dav1d_so.name, cached_dav1d])
+    run(patchelf["--replace-needed", resolved_dav1d_so.name, cached_dav1d_so.name, cached_dav1d])
     run(patchelf["--set-soname", cached_dav1d_so.name, cached_dav1d_so])
-    print(f"cached {cached_dav1d_so}")
 
     return build
     
