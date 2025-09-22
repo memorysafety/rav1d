@@ -72,6 +72,7 @@ class Build:
 
 def build_commit(
     dir: Path,
+    cache: bool,
     commit: str,
 ) -> Build:
     fix_arm_commit = "9ecc4e4b"
@@ -96,12 +97,12 @@ channel = "nightly-2025-05-01"
         dav1d=cached_dav1d,
     )
 
-    if cached_error.exists():
+    if cache and cached_error.exists():
         print(f"using cached {cached_error}")
         build.error = RuntimeError(cached_error.read_text())
         return build
 
-    if all(file.exists() for file in [cached_rav1d, cached_dav1d, cached_dav1d_so]):
+    if cache and all(file.exists() for file in [cached_rav1d, cached_dav1d, cached_dav1d_so]):
         print(f"using cached {cached_rav1d}, {cached_dav1d}, {cached_dav1d_so}")
         return build
     
@@ -244,7 +245,7 @@ def main(
     video = download_video(dir)
 
     if ".." not in commit:
-        build = build_commit(dir, commit)
+        build = build_commit(dir, cache, commit)
         for benchmark in benchmark_build(dir, cache, threads, video, build):
             print(benchmark)
     else:
@@ -261,7 +262,7 @@ def main(
             commit = commits[index]
             if commit in benchmark_by_commit:
                 return benchmark_by_commit[commit]
-            build = build_commit(dir, commit)
+            build = build_commit(dir, cache, commit)
             benchmarks = list(benchmark_build(dir, cache, threads, video, build))
             assert(len(benchmarks) == 1)
             benchmark = benchmarks[0]
