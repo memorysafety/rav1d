@@ -167,6 +167,7 @@ def benchmark_build(
         print(f"cached {export_json_path}")
     else:
         run(hyperfine[
+            "--show-output",
             "--warmup", "3",
             "--parameter-list", av1d_var, ",".join(str(path) for path in av1ds),
             "--parameter-list", threads_var, ",".join(str(threads) for threads in threads),
