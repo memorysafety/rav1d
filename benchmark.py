@@ -190,7 +190,7 @@ def benchmark_build(
     av1d_var = "av1d"
     threads_var = "threads"
 
-    export_json_path = dir / f"benchmark-{build.resolved_commit}-{"-".join(str(n) for n in threads)}.json"
+    export_json_path = dir / f"{build.resolved_commit}-{"-".join(str(n) for n in threads)}.benchmark.json"
     av1ds = [build.rav1d, build.dav1d]
 
     if cache and export_json_path.exists():
