@@ -30,6 +30,7 @@ cargo = local["cargo"]
 meson = local["meson"]
 ninja = local["ninja"]
 hyperfine = local["hyperfine"]
+patchelf = local["patchelf"]
 
 def host_target() -> str:
     output: str = rustc["-vV"]()
@@ -81,7 +82,8 @@ channel = "nightly-2025-05-01"
     resolved_commit = resolve_commit(commit)
 
     cached_rav1d = dir / f"{resolved_commit}.rav1d"
-    cached_dav1d = dir / f"{resolved_commit}.rav1d"
+    cached_dav1d = dir / f"{resolved_commit}.dav1d"
+    cached_dav1d_so = dir / f"{resolved_commit}.dav1d.so"
 
     build = Build(
         commit=commit,
@@ -91,7 +93,7 @@ channel = "nightly-2025-05-01"
         dav1d=cached_dav1d,
     )
 
-    if cached_rav1d.exists() and cached_dav1d.exists():
+    if all(file.exists() for file in [cached_rav1d, cached_dav1d, cached_dav1d_so]):
         return build
     
     target = host_target()
@@ -124,12 +126,23 @@ channel = "nightly-2025-05-01"
     # Allow us to reset git state if interrupted.
     if interrupt is not None:
         raise interrupt
+    
+    if build.error is not None:
+        return build
 
     rav1d = Path("target") / target / "release/dav1d"
     dav1d = Path("build") / "tools/dav1d"
+    dav1d_so = Path("build") / "src/libdav1d.so.7"
 
     rav1d.rename(cached_rav1d)
     dav1d.rename(cached_dav1d)
+    dav1d_so.resolve().rename(cached_dav1d_so)
+
+    # Need to update `dav1d` and `libdav1d.so`
+    # to recognize the update name and location of `libdav1d.so`.
+    run(patchelf["--set-rpath", "$ORIGIN", cached_dav1d])
+    run(patchelf["--replace-needed", dav1d_so.name, cached_dav1d_so.name, cached_dav1d])
+    run(patchelf["--set-soname", cached_dav1d_so.name, cached_dav1d_so])
 
     return build
     
