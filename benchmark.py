@@ -64,7 +64,7 @@ def download_video(dir: Path) -> Video:
 class Build:
     commit: str
     resolved_commit: str
-    error: None | ProcessExecutionError
+    error: None | ProcessExecutionError | RuntimeError
     rav1d: Path
     dav1d: Path
 
@@ -81,6 +81,7 @@ channel = "nightly-2025-05-01"
 
     resolved_commit = resolve_commit(commit)
 
+    cached_error = dir / f"{resolved_commit}.error"
     cached_rav1d = dir / f"{resolved_commit}.rav1d"
     cached_dav1d = dir / f"{resolved_commit}.dav1d"
     cached_dav1d_so = dir / f"{resolved_commit}.dav1d.so"
@@ -92,6 +93,10 @@ channel = "nightly-2025-05-01"
         rav1d=cached_rav1d,
         dav1d=cached_dav1d,
     )
+
+    if cached_error.exists():
+        build.error = RuntimeError(cached_error.read_text())
+        return build
 
     if all(file.exists() for file in [cached_rav1d, cached_dav1d, cached_dav1d_so]):
         return build
@@ -112,6 +117,7 @@ channel = "nightly-2025-05-01"
         run(ninja["-C", "build"])
     except ProcessExecutionError as e:
         build.error = e
+        cached_error.write_text(f"{e}")
         print(f"skipping {commit} due to build error: {e}")
     except KeyboardInterrupt as e:
         interrupt = e
