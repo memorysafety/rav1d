@@ -95,10 +95,12 @@ channel = "nightly-2025-05-01"
     )
 
     if cached_error.exists():
+        print(f"using cached {cached_error}")
         build.error = RuntimeError(cached_error.read_text())
         return build
 
     if all(file.exists() for file in [cached_rav1d, cached_dav1d, cached_dav1d_so]):
+        print(f"using cached {cached_rav1d}, {cached_dav1d}, {cached_dav1d_so}")
         return build
     
     target = host_target()
@@ -118,6 +120,7 @@ channel = "nightly-2025-05-01"
     except ProcessExecutionError as e:
         build.error = e
         cached_error.write_text(f"{e}")
+        print(f"cached {cached_error}")
         print(f"skipping {commit} due to build error: {e}")
     except KeyboardInterrupt as e:
         interrupt = e
@@ -141,7 +144,9 @@ channel = "nightly-2025-05-01"
     dav1d_so = Path("build") / "src/libdav1d.so.7"
 
     rav1d.rename(cached_rav1d)
+    print(f"cached {cached_rav1d}")
     dav1d.rename(cached_dav1d)
+    print(f"cached {cached_dav1d}")
     dav1d_so.resolve().rename(cached_dav1d_so)
 
     # Need to update `dav1d` and `libdav1d.so`
@@ -149,6 +154,7 @@ channel = "nightly-2025-05-01"
     run(patchelf["--set-rpath", "$ORIGIN", cached_dav1d])
     run(patchelf["--replace-needed", dav1d_so.name, cached_dav1d_so.name, cached_dav1d])
     run(patchelf["--set-soname", cached_dav1d_so.name, cached_dav1d_so])
+    print(f"cached {cached_dav1d_so}")
 
     return build
     
@@ -183,7 +189,7 @@ def benchmark_build(
     av1ds = [build.rav1d, build.dav1d]
 
     if cache and export_json_path.exists():
-        print(f"cached {export_json_path}")
+        print(f"using cached {export_json_path}")
     else:
         run(hyperfine[
             "--show-output",
@@ -193,6 +199,7 @@ def benchmark_build(
             f"{{{av1d_var}}} -q -i {str(video.path)} -o /dev/null --limit 1000 --threads {{{threads_var}}}",
             "--export-json", str(export_json_path)
         ])
+        print(f"cached {export_json_path}")
     
     data = json.loads(export_json_path.read_text())
     results = data["results"]
