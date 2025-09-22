@@ -263,6 +263,9 @@ def main(
                 return
             elif count == 1:
                 benchmark_one(first_index)
+            elif count == 2:
+                benchmark_one(first_index)
+                benchmark_one(last_index)
             else:
                 mid_index = (first_index + last_index) // 2
                 first = benchmark_one(first_index)
@@ -270,8 +273,8 @@ def main(
                 if first is not None and last is not None:
                     diff_of_diff = abs(first.diff() - last.diff())
                     if diff_of_diff > diff_threshold:
-                        benchmark_range(mid_index, last_index)
                         benchmark_range(first_index, mid_index)
+                        benchmark_range(mid_index, last_index)
                 elif first is not None:
                     benchmark_range(first_index, mid_index)
                 elif last is not None:
