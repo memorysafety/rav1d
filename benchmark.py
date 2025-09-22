@@ -10,6 +10,7 @@
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import shutil
 from typing import Annotated, Generator
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
@@ -147,7 +148,7 @@ channel = "nightly-2025-05-01"
     print(f"cached {cached_rav1d}")
     dav1d.rename(cached_dav1d)
     print(f"cached {cached_dav1d}")
-    dav1d_so.resolve().rename(cached_dav1d_so)
+    shutil.copy(dav1d_so, cached_dav1d_so)
 
     # Need to update `dav1d` and `libdav1d.so`
     # to recognize the update name and location of `libdav1d.so`.
