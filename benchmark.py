@@ -283,7 +283,8 @@ def main(
         benchmark_range(0, len(commits) - 1)
 
         for i, commit in enumerate(commits):
-            print(f"{i}, {benchmark_by_commit[commit]}")
+            if commit in benchmark_by_commit:
+                print(f"{i}, {benchmark_by_commit[commit]}")
 
 if __name__ == "__main__":
     typer.run(main)
