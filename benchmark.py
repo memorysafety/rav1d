@@ -9,6 +9,7 @@
 
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
 import shutil
 from typing import Annotated, Generator
@@ -167,6 +168,7 @@ channel = "nightly-2025-05-01"
 class Benchmark:
     commit: str
     threads: int
+    error: None | ProcessExecutionError | RuntimeError
     rav1d_time: float
     dav1d_time: float
 
@@ -174,8 +176,14 @@ class Benchmark:
         return (self.rav1d_time / self.dav1d_time) - 1
 
     def __str__(self) -> str:
-        percent = self.diff() * 100
-        return f"{self.commit}, {self.threads:3} threads: {percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
+        prefix = f"{self.commit}, {self.threads:3} threads: "
+        if self.error is None:
+            percent = self.diff() * 100
+            return f"{prefix}{percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
+        else:
+            e = f"{self.error}"
+            first_error = next(line for line in e.split("\n") if "error:" in line)
+            return f"{prefix}error: {first_error}"
 
 def benchmark_build(
     dir: Path,
@@ -185,6 +193,14 @@ def benchmark_build(
     build: Build,
 ) -> Generator[Benchmark, None, None]:
     if build.error is not None:
+        for thread in threads:
+            yield Benchmark(
+                commit=build.resolved_commit,
+                threads=thread,
+                error=build.error,
+                rav1d_time=0,
+                dav1d_time=0,
+            )
         return
 
     av1d_var = "av1d"
@@ -213,6 +229,7 @@ def benchmark_build(
         yield Benchmark(
             commit=build.resolved_commit,
             threads=thread,
+            error=None,
             rav1d_time=result[str(build.rav1d)]["mean"],
             dav1d_time=result[str(build.dav1d)]["mean"],
         )
@@ -238,21 +255,16 @@ def main(
         output: str = git["rev-list", commit]()
         commits = [line.strip() for line in output.strip().split("\n")]
         
-        benchmark_by_commit: dict[str, None | Benchmark] = {}
+        benchmark_by_commit: dict[str, Benchmark] = {}
 
-        def benchmark_one(index: int) -> None | Benchmark:
+        def benchmark_one(index: int) -> Benchmark:
             commit = commits[index]
             if commit in benchmark_by_commit:
                 return benchmark_by_commit[commit]
             build = build_commit(dir, commit)
             benchmarks = list(benchmark_build(dir, cache, threads, video, build))
-            if len(benchmarks) == 0:
-                # if there was an error
-                benchmark = None
-            elif len(benchmarks) == 1:
-                benchmark = benchmarks[0]
-            else:
-                assert(False)
+            assert(len(benchmarks) == 1)
+            benchmark = benchmarks[0]
             benchmark_by_commit[commit] = benchmark
             print(f"{index}, {benchmark}")
             return benchmark
@@ -270,14 +282,14 @@ def main(
                 mid_index = (first_index + last_index) // 2
                 first = benchmark_one(first_index)
                 last = benchmark_one(last_index)
-                if first is not None and last is not None:
+                if first.error is None and last.error is None:
                     diff_of_diff = abs(first.diff() - last.diff())
                     if diff_of_diff > diff_threshold:
                         benchmark_range(first_index, mid_index)
                         benchmark_range(mid_index, last_index)
-                elif first is not None:
+                elif first.error is None:
                     benchmark_range(first_index, mid_index)
-                elif last is not None:
+                elif last.error is None:
                     benchmark_range(mid_index, last_index)
         
         benchmark_range(0, len(commits) - 1)
