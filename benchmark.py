@@ -68,6 +68,7 @@ class Build:
     dav1d: Path
 
 def build_commit(
+    dir: Path,
     commit: str,
 ) -> Build:
     fix_arm_commit = "9ecc4e4b"
@@ -76,11 +77,25 @@ def build_commit(
 [toolchain]
 channel = "nightly-2025-05-01"
 """.lstrip()
+
+    resolved_commit = resolve_commit(commit)
+
+    cached_rav1d = dir / f"{resolved_commit}.rav1d"
+    cached_dav1d = dir / f"{resolved_commit}.rav1d"
+
+    build = Build(
+        commit=commit,
+        resolved_commit=resolved_commit,
+        error=None,
+        rav1d=cached_rav1d,
+        dav1d=cached_dav1d,
+    )
+
+    if cached_rav1d.exists() and cached_dav1d.exists():
+        return build
     
     target = host_target()
     head_commit = resolve_commit("HEAD")
-
-    resolved_commit = resolve_commit(commit)
 
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
@@ -88,14 +103,13 @@ channel = "nightly-2025-05-01"
     run(git["cherry-pick", "--no-commit", fix_arm_commit])
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
 
-    error = None
     interrupt = None
     try:
         run(cargo["build", "--release", "--target", target])
         run(meson["setup", "build", "-Dtest_rust=false", "--reconfigure"])
         run(ninja["-C", "build"])
     except ProcessExecutionError as e:
-        error = e
+        build.error = e
         print(f"skipping {commit} due to build error: {e}")
     except KeyboardInterrupt as e:
         interrupt = e
@@ -111,13 +125,13 @@ channel = "nightly-2025-05-01"
     if interrupt is not None:
         raise interrupt
 
-    return Build(
-        commit=commit,
-        resolved_commit=resolved_commit,
-        error=error,
-        rav1d=Path("target") / target / "release/dav1d",
-        dav1d=Path("build") / "tools/dav1d",
-    )
+    rav1d = Path("target") / target / "release/dav1d"
+    dav1d = Path("build") / "tools/dav1d"
+
+    rav1d.rename(cached_rav1d)
+    dav1d.rename(cached_dav1d)
+
+    return build
     
 @dataclass
 class Benchmark:
@@ -181,7 +195,7 @@ def main(
     video = download_video(dir)
 
     if ".." not in commit:
-        build = build_commit(commit)
+        build = build_commit(dir, commit)
         for benchmark in benchmark_build(dir, cache, threads, video, build):
             print(benchmark)
     else:
@@ -198,7 +212,7 @@ def main(
             commit = commits[index]
             if commit in benchmark_by_commit:
                 return benchmark_by_commit[commit]
-            build = build_commit(commit)
+            build = build_commit(dir, commit)
             benchmarks = list(benchmark_build(dir, cache, threads, video, build))
             if len(benchmarks) == 0:
                 # if there was an error
