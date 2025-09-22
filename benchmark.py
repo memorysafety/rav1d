@@ -284,7 +284,7 @@ def main(
 
         for i, commit in enumerate(commits):
             if commit in benchmark_by_commit:
-                print(f"{i}, {benchmark_by_commit[commit]}")
+                print(f"{i:4}, {benchmark_by_commit[commit]}")
 
 if __name__ == "__main__":
     typer.run(main)
