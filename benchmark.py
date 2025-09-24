@@ -75,7 +75,7 @@ def build_commit(
     cache: bool,
     commit: str,
 ) -> Build:
-    fix_arm_commit = "9ecc4e4b"
+    fix_arm_commit = "ad951f78"
 
     rust_toolchain_toml = """
 [toolchain]
