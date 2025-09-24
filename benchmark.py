@@ -210,7 +210,7 @@ def benchmark_build(
     export_json_path = dir / f"{build.resolved_commit}-{"-".join(str(n) for n in threads)}.benchmark.json"
     av1ds = [build.rav1d, build.dav1d]
 
-    if cache and export_json_path.exists():
+    if cache and export_json_path.exists() and export_json_path.stat().st_size > 0:
         print(f"using cached {export_json_path}")
     else:
         run(hyperfine[
