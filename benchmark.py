@@ -116,7 +116,7 @@ channel = "nightly-2025-05-01"
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
-    run(git["cherry-pick", "--no-commit", fix_arm_commit])
+    run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", fix_arm_commit])
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
 
     interrupt = None
