@@ -241,6 +241,8 @@ def main(
     commit: Annotated[str, Option(help="git commit(s) to benchmark")] = "HEAD",
     diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01
 ):
+    threads.sort()
+
     dir = Path("benchmarks")
     video = download_video(dir)
 
