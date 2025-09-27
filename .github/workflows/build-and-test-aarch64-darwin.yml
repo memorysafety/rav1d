@@ -29,6 +29,7 @@ jobs:
         with:
           toolchain: stable # aarch64 feature detection is stable
           target: aarch64-apple-darwin
+          components: clippy
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
