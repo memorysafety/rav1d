@@ -239,10 +239,14 @@ class Benchmark:
         e = f"{self.error}"
         lines = e.split("\n")
         first_error = None
-        if first_error is None:
-            first_error = next((line for line in lines if "error:" in line), None)
-        if first_error is None:
-            first_error = next((line for line in lines if "panicked at" in line), None)
+        for substring in [
+            "error:",
+            "panicked at",
+            "core dumped",
+            "Segmentation fault",
+        ]:
+            if first_error is None:
+                first_error = next((line for line in lines if substring in line), None)
         if first_error is None:
             first_error = lines[0]
         return first_error.strip()
