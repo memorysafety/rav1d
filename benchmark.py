@@ -183,8 +183,8 @@ class Benchmark:
             return f"{prefix}{percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
         else:
             e = f"{self.error}"
-            first_error = next(line for line in e.split("\n") if "error:" in line)
-            return f"{prefix}error: {first_error}"
+            first_error = next(line for line in e.split("\n") if "error:" in line).strip()
+            return f"{prefix}{first_error}"
 
 def benchmark_build(
     dir: Path,
