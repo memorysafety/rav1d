@@ -114,14 +114,45 @@ channel = "nightly-2025-05-01"
     stashed = run(git["stash", "push"]).strip() != "No local changes to save"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
+    
     run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", fix_arm_commit])
+
+    # Use a consistent toolchain.
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
+
+    # `proc-macro2` has compile errors on older versions.
     run(cargo["update", "--package", "proc-macro2"])
+    
+    # Add `#![feature(let_chains)]` to `c2rust-lib.rs`.
     lib_rs = Path("c2rust-lib.rs")
     if lib_rs.exists():
         rs = lib_rs.read_text()
         rs = f"#![feature(let_chains)]\n{rs}"
         lib_rs.write_text(rs)
+    
+    # Delete `rav1d`/Rust stuff from meson.
+    tests_meson_build = Path("tests/meson.build")
+    if tests_meson_build.exists():
+        meson_build = tests_meson_build.read_text()
+        lines = meson_build.split("\n")
+        
+        filtered_lines = []
+        skipping = False
+
+        for line in lines:
+            if skipping:
+                if line.startswith("endif"):
+                    skipping = False # stop skipping after `endif`
+                continue
+            if "get_option('test_rust_path')" in line or "get_option('test_rust')" in line:
+                skipping = True # start skipping
+                continue
+            filtered_lines.append(line)
+
+        lines = filtered_lines
+
+        meson_build = "\n".join(lines)
+        tests_meson_build.write_text(meson_build)
 
     interrupt = None
     try:
