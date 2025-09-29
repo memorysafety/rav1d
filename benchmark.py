@@ -334,6 +334,8 @@ def main(
         
         benchmark_by_commit: dict[str, Benchmark] = {}
 
+        percent = lambda x: f"{x * 100:.1f}%"
+
         def benchmark_one(index: int) -> Benchmark:
             commit = commits[index]
             if commit in benchmark_by_commit:
@@ -362,7 +364,6 @@ def main(
                 recurse = True
                 if first.error is None and last.error is None:
                     diff_of_diff = abs(first.diff() - last.diff())
-                    percent = lambda x: f"{x * 100:.1f}%"
                     recurse = diff_of_diff > diff_threshold
                     if recurse:
                         print(f"{percent(diff_of_diff)} > {percent(diff_threshold)}, so recursing")
@@ -387,10 +388,40 @@ def main(
         benchmark_range(0, len(commits) - 1)
 
         print()
+        print(f"all commits in {commit}, recursing into ones > {percent(diff_threshold)}:")
         print(f"commit #, commit hash, threads: diff %, rav1d s, dav1d s")
         for i, commit in enumerate(commits):
-            if commit in benchmark_by_commit:
-                print(f"{i:4}, {benchmark_by_commit[commit]}")
+            if commit not in benchmark_by_commit:
+                continue
+            print(f"{i:4}, {benchmark_by_commit[commit]}")
+        
+        print()
+        print(f"sorted adjacent diffs of diffs:")
+        diff_of_diffs: list[tuple[int, float]] = []
+        for i, commit in enumerate(commits):
+            if i == 0:
+                continue
+            if commit not in benchmark_by_commit:
+                continue
+            benchmark = benchmark_by_commit[commit]
+            if benchmark.error is not None:
+                continue
+            prev_commit = commits[i - 1]
+            if prev_commit not in benchmark_by_commit:
+                continue
+            prev_benchmark = benchmark_by_commit[prev_commit]
+            if prev_benchmark.error is not None:
+                continue
+            diff = benchmark.diff()
+            prev_diff = prev_benchmark.diff()
+            diff_of_diff = diff - prev_diff
+            diff_of_diffs.append((i, diff_of_diff))
+        print(f"diff of diff %, commit #, commit hash, threads: diff %, rav1d s, dav1d s")
+        for i, diff_of_diff in sorted(diff_of_diffs, key=lambda e: e[1]):
+            plus = "+" if diff_of_diff > 0 else ""
+            diff_of_diff = f"{plus}{percent(diff_of_diff)}"
+            print(f"{diff_of_diff:>7}, {i:4}, {benchmark_by_commit[commits[i]]}")
+
 
 if __name__ == "__main__":
     typer.run(main)
