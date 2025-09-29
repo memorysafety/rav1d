@@ -349,7 +349,12 @@ def main(
                 recurse = True
                 if first.error is None and last.error is None:
                     diff_of_diff = abs(first.diff() - last.diff())
+                    percent = lambda x: f"{x * 100:.1f}%"
                     recurse = diff_of_diff > diff_threshold
+                    if recurse:
+                        print(f"{percent(diff_of_diff)} > {percent(diff_threshold)}, so recursing")
+                    else:
+                        print(f"{percent(diff_of_diff)} <= {percent(diff_threshold)}, so not recursing")
                 if first.error is not None and last.error is not None:
                     def find_assert(error: ProcessExecutionError | RuntimeError) -> str:
                         s = f"{error}"
