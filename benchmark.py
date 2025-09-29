@@ -122,6 +122,8 @@ channel = "nightly-2025-05-01"
     cherry_pick("3114c84b") # fix `goto error` error
     cherry_pick("d42c04ee") # fix `ALLOC_BLOCK` error
     cherry_pick("1c5e9e74") # fix `ALLOC_REFMVS` error
+    if Path("src/include/common/attributes.h").exists():
+        cherry_pick("9af65faa") # update `checkasm` `#include`s after `src/` move
 
     # Use a consistent toolchain.
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
