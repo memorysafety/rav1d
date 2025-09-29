@@ -359,13 +359,13 @@ def main(
                     def find_assert(error: ProcessExecutionError | RuntimeError) -> str:
                         s = f"{error}"
                         lines = s.split("\n")
-                        lines = [line for line in lines if "assertion failed:" in line]
-                        lines.sort()
+                        lines = [line.strip() for line in lines if "assertion failed:" in line]
+                        lines = sorted(set(lines))
                         return "\n".join(lines)
                     first_assert = find_assert(first.error)
                     last_assert = find_assert(last.error)
                     if first_assert != "" and last_assert != "" and first_assert == last_assert:
-                        print(f"same error, so not recursing:\n{first_assert}")
+                        print(f"same error, so not recursing: {first_assert}")
                         recurse = False
                 if recurse:
                     benchmark_range(first_index, mid_index)
