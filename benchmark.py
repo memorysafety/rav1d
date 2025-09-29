@@ -385,17 +385,25 @@ def render_markdown_table(rows: list[list[MarkdownCell]]) -> str:
         lines.append(row_to_value(row))
     return "\n".join(lines)
 
+def implies(a: bool, b: bool) -> bool:
+    return not a or b
+
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = True,
     commit: Annotated[str, Option(help="git commit(s) to benchmark")] = "HEAD",
     merges: Annotated[bool, Option(help="only look at merge commits")] = False,
+    pr: Annotated[bool, Option(help="treat the single commit as all of the commits in that merge commit")] = False,
     diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01,
 ):
     threads.sort()
 
     dir = Path("benchmarks")
     video = download_video(dir)
+
+    assert implies(pr, ".." not in commit)
+    if pr:
+        commit = f"{commit}^1..{commit}^2"
 
     if ".." not in commit:
         build = build_commit(dir, cache, commit)
