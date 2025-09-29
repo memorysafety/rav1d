@@ -218,7 +218,15 @@ class Benchmark:
             return f"{prefix}{percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
         else:
             e = f"{self.error}"
-            first_error = next(line for line in e.split("\n") if "error:" in line).strip()
+            lines = e.split("\n")
+            first_error = None
+            if first_error is None:
+                first_error = next((line for line in lines if "error:" in line), None)
+            if first_error is None:
+                first_error = next((line for line in lines if "panicked at" in line), None)
+            if first_error is None:
+                first_error = lines[0]
+            first_error = first_error.strip()
             return f"{prefix}{first_error}"
 
 def benchmark_build(
