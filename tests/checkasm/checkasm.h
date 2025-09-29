@@ -47,9 +47,9 @@
 #define checkasm_load_context() longjmp(checkasm_context_buf, 1)
 #endif
 
-#include "include/common/attributes.h"
-#include "include/common/bitdepth.h"
-#include "include/common/intops.h"
+#include "src/include/common/attributes.h"
+#include "src/include/common/bitdepth.h"
+#include "src/include/common/intops.h"
 
 int xor128_rand(void);
 #define rnd xor128_rand
