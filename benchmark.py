@@ -286,14 +286,12 @@ def main(
                 mid_index = (first_index + last_index) // 2
                 first = benchmark_one(first_index)
                 last = benchmark_one(last_index)
+                recurse = True
                 if first.error is None and last.error is None:
                     diff_of_diff = abs(first.diff() - last.diff())
-                    if diff_of_diff > diff_threshold:
-                        benchmark_range(first_index, mid_index)
-                        benchmark_range(mid_index, last_index)
-                elif first.error is None:
+                    recurse = diff_of_diff > diff_threshold
+                if recurse:
                     benchmark_range(first_index, mid_index)
-                elif last.error is None:
                     benchmark_range(mid_index, last_index)
         
         benchmark_range(0, len(commits) - 1)
