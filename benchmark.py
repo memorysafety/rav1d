@@ -350,6 +350,18 @@ def main(
                 if first.error is None and last.error is None:
                     diff_of_diff = abs(first.diff() - last.diff())
                     recurse = diff_of_diff > diff_threshold
+                if first.error is not None and last.error is not None:
+                    def find_assert(error: ProcessExecutionError | RuntimeError) -> str:
+                        s = f"{error}"
+                        lines = s.split("\n")
+                        lines = [line for line in lines if "assertion failed:" in line]
+                        lines.sort()
+                        return "\n".join(lines)
+                    first_assert = find_assert(first.error)
+                    last_assert = find_assert(last.error)
+                    if first_assert != "" and last_assert != "" and first_assert == last_assert:
+                        print(f"same error, so not recursing:\n{first_assert}")
+                        recurse = False
                 if recurse:
                     benchmark_range(first_index, mid_index)
                     benchmark_range(mid_index, last_index)
