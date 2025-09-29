@@ -248,15 +248,31 @@ def benchmark_build(
     if cache and export_json_path.exists() and export_json_path.stat().st_size > 0:
         print(f"using cached {export_json_path}")
     else:
-        run(hyperfine[
-            "--show-output",
-            "--warmup", "3",
-            "--parameter-list", av1d_var, ",".join(str(path) for path in av1ds),
-            "--parameter-list", threads_var, ",".join(str(threads) for threads in threads),
-            f"{{{av1d_var}}} -q -i {str(video.path)} -o /dev/null --limit 1000 --threads {{{threads_var}}}",
-            "--export-json", str(export_json_path)
-        ])
-        print(f"cached {export_json_path}")
+        try:
+            run(hyperfine[
+                "--show-output",
+                "--warmup", "3",
+                "--parameter-list", av1d_var, ",".join(str(path) for path in av1ds),
+                "--parameter-list", threads_var, ",".join(str(threads) for threads in threads),
+                f"{{{av1d_var}}} -q -i {str(video.path)} -o /dev/null --limit 1000 --threads {{{threads_var}}}",
+                "--export-json", str(export_json_path)
+            ])
+            print(f"cached {export_json_path}")
+        except ProcessExecutionError as e:
+            cached_error = dir / f"{build.resolved_commit}.error"
+            cached_error.write_text(f"{e}")
+            print(f"cached {cached_error}")
+            print(f"skipping {build.commit} due to runtime error: {e}")
+            for thread in threads:
+                yield Benchmark(
+                    commit=build.resolved_commit,
+                    threads=thread,
+                    error=e,
+                    rav1d_time=0,
+                    dav1d_time=0,
+                )
+            return
+        
     
     data = json.loads(export_json_path.read_text())
     results = data["results"]
