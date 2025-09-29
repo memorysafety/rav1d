@@ -115,13 +115,13 @@ channel = "nightly-2025-05-01"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
     
-    for commit in [
-        "ad951f78", # fix arm
-        "3114c84b", # fix `goto error` error
-        "d42c04ee", # fix `ALLOC_BLOCK` error
-        "1c5e9e74", # fix `ALLOC_REFMVS` error
-    ]:
+    def cherry_pick(commit: str):
         run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", commit])
+
+    cherry_pick("ad951f78") # fix arm
+    cherry_pick("3114c84b") # fix `goto error` error
+    cherry_pick("d42c04ee") # fix `ALLOC_BLOCK` error
+    cherry_pick("1c5e9e74") # fix `ALLOC_REFMVS` error
 
     # Use a consistent toolchain.
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
