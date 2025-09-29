@@ -115,7 +115,11 @@ channel = "nightly-2025-05-01"
     if resolved_commit != head_commit:
         run(git["checkout", commit])
     
-    run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", fix_arm_commit])
+    for commit in [
+        "ad951f78", # fix arm
+        "3114c84b", # fix goto error
+    ]:
+        run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", commit])
 
     # Use a consistent toolchain.
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
