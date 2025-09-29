@@ -239,6 +239,7 @@ def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = True,
     commit: Annotated[str, Option(help="git commit(s) to benchmark")] = "HEAD",
+    merges: Annotated[bool, Option(help="only look at merge commits")] = False,
     diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01
 ):
     threads.sort()
@@ -255,7 +256,7 @@ def main(
             raise RuntimeError("can't bisect over multiple threads")
         thread = threads[0]
 
-        output: str = run(git["rev-list", commit])
+        output: str = run(git["rev-list", *(["--merges"] if merges else []), commit])
         commits = [line.strip() for line in output.strip().split("\n")][::-1]
         
         benchmark_by_commit: dict[str, Benchmark] = {}
