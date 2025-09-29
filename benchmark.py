@@ -121,8 +121,10 @@ channel = "nightly-2025-05-01"
     cherry_pick("ad951f78") # fix arm
     if "dav1d_parse_obus_error" in Path("src/obu.c").read_text():
         cherry_pick("3114c84b") # fix `goto error` error
-    cherry_pick("d42c04ee") # fix `ALLOC_BLOCK` error
-    cherry_pick("1c5e9e74") # fix `ALLOC_REFMVS` error
+    if "ALLOC_BLOCK" in Path("src/decode.c").read_text():
+        cherry_pick("d42c04ee") # fix `ALLOC_BLOCK` error
+    if "ALLOC_REFMVS" in Path("src/refmvs.c").read_text():
+        cherry_pick("1c5e9e74") # fix `ALLOC_REFMVS` error
     if Path("src/include/common/attributes.h").exists():
         cherry_pick("9af65faa") # update `checkasm` `#include`s after `src/` move
 
