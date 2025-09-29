@@ -9,9 +9,7 @@
 
 from dataclasses import dataclass
 import json
-import math
 from pathlib import Path
-import shutil
 from typing import Annotated, Generator
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
