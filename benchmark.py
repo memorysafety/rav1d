@@ -144,7 +144,12 @@ channel = "nightly-2025-05-01"
                 if line.startswith("endif"):
                     skipping = False # stop skipping after `endif`
                 continue
-            if "get_option('test_rust_path')" in line or "get_option('test_rust')" in line:
+            if any(s in line for s in [
+                "if get_option('test_rust_path')",
+                "if get_option('test_rust')",
+                "= get_option('test_rust_path')",
+                "= get_option('test_rust')",
+            ]):
                 skipping = True # start skipping
                 continue
             filtered_lines.append(line)
