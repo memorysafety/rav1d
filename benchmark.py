@@ -119,6 +119,11 @@ channel = "nightly-2025-05-01"
     run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", fix_arm_commit])
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
     run(cargo["update", "--package", "proc-macro2"])
+    lib_rs = Path("c2rust-lib.rs")
+    if lib_rs.exists():
+        rs = lib_rs.read_text()
+        rs = f"#![feature(let_chains)]\n{rs}"
+        lib_rs.write_text(rs)
 
     interrupt = None
     try:
