@@ -119,6 +119,7 @@ channel = "nightly-2025-05-01"
         "ad951f78", # fix arm
         "3114c84b", # fix `goto error` error
         "d42c04ee", # fix `ALLOC_BLOCK` error
+        "1c5e9e74", # fix `ALLOC_REFMVS` error
     ]:
         run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", commit])
 
