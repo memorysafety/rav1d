@@ -10,7 +10,7 @@
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Annotated, Generator
+from typing import Annotated, Generator, Literal
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 import typer
@@ -212,7 +212,13 @@ channel = "nightly-2025-05-01"
     run(patchelf["--set-soname", cached_dav1d_so.name, cached_dav1d_so])
 
     return build
-    
+
+@dataclass
+class MarkdownCell:
+    column: str
+    alignment: Literal["---"] | Literal[":--"] | Literal["--:"] | Literal[":-:"]
+    value: str
+
 @dataclass
 class Benchmark:
     commit: str
@@ -224,23 +230,66 @@ class Benchmark:
     def diff(self) -> float:
         return (self.rav1d_time / self.dav1d_time) - 1
 
+    def first_error(self) -> None | str:
+        if self.error is None:
+            return None
+        e = f"{self.error}"
+        lines = e.split("\n")
+        first_error = None
+        if first_error is None:
+            first_error = next((line for line in lines if "error:" in line), None)
+        if first_error is None:
+            first_error = next((line for line in lines if "panicked at" in line), None)
+        if first_error is None:
+            first_error = lines[0]
+        return first_error.strip()
+
     def __str__(self) -> str:
         prefix = f"{self.commit}, {self.threads:3} threads: "
         if self.error is None:
             percent = self.diff() * 100
             return f"{prefix}{percent:4.1f}%, {self.rav1d_time:.3f} s, {self.dav1d_time:.3f} s"
         else:
-            e = f"{self.error}"
-            lines = e.split("\n")
-            first_error = None
-            if first_error is None:
-                first_error = next((line for line in lines if "error:" in line), None)
-            if first_error is None:
-                first_error = next((line for line in lines if "panicked at" in line), None)
-            if first_error is None:
-                first_error = lines[0]
-            first_error = first_error.strip()
-            return f"{prefix}{first_error}"
+            return f"{prefix}{self.first_error()}"
+
+    def markdown(self) -> list[MarkdownCell]:
+        commit = MarkdownCell(
+            column="commit hash",
+            alignment="---",
+            value=self.commit,
+        )
+        threads = MarkdownCell(
+            column="threads",
+            alignment="--:",
+            value=f"{self.threads}",
+        )
+        diff = MarkdownCell(
+            column="diff %",
+            alignment="--:",
+            value="",
+        )
+        rav1d = MarkdownCell(
+            column="rav1d s",
+            alignment="--:",
+            value=""
+        )
+        dav1d = MarkdownCell(
+            column="dav1d s",
+            alignment="--:",
+            value=""
+        )
+        error = MarkdownCell(
+            column="error",
+            alignment=":--",
+            value=""
+        )
+        if self.error is None:
+            diff.value = f"{self.diff() * 100:4.1f}%"
+            rav1d.value = f"{self.rav1d_time:.3f} s"
+            dav1d.value = f"{self.dav1d_time:.3f} s"
+        else:
+            error.value = f"{self.first_error()}"
+        return [commit, threads, diff, rav1d, dav1d, error]
 
 def benchmark_build(
     dir: Path,
@@ -307,12 +356,34 @@ def benchmark_build(
             dav1d_time=result[str(build.dav1d)]["mean"],
         )
 
+def render_markdown_table(rows: list[list[MarkdownCell]]) -> str:
+    def row_to_column(row: list[MarkdownCell]):
+        return f"| {" | ".join(cell.column for cell in row)} |"
+
+    def row_to_alignment(row: list[MarkdownCell]):
+        return f"|{"|".join(cell.alignment for cell in row)}|"
+
+    def row_to_value(row: list[MarkdownCell]):
+        return f"| {" | ".join(cell.value for cell in row)} |"
+
+    if len(rows) == 0:
+        return ""
+
+    columns = row_to_column(rows[0])
+    alignment = row_to_alignment(rows[0])
+    lines = [columns, alignment]
+    for row in rows:
+        assert columns == row_to_column(row)
+        assert alignment == row_to_alignment(row)
+        lines.append(row_to_value(row))
+    return "\n".join(lines)
+
 def main(
     threads: Annotated[list[int], Option(help="list of number of threads to test with")],
     cache: Annotated[bool, Option(help="cache results")] = True,
     commit: Annotated[str, Option(help="git commit(s) to benchmark")] = "HEAD",
     merges: Annotated[bool, Option(help="only look at merge commits")] = False,
-    diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01
+    diff_threshold: Annotated[float, Option(help="perf diff threshold to subdivide into narrower commits")] = 0.01,
 ):
     threads.sort()
 
@@ -389,11 +460,20 @@ def main(
 
         print()
         print(f"all commits in {commit}, recursing into ones > {percent(diff_threshold)}:")
-        print(f"commit #, commit hash, threads: diff %, rav1d s, dav1d s")
+        all_table: list[list[MarkdownCell]] = []
         for i, commit in enumerate(commits):
             if commit not in benchmark_by_commit:
                 continue
-            print(f"{i:4}, {benchmark_by_commit[commit]}")
+            benchmark = benchmark_by_commit[commit]
+            
+            commit_num = MarkdownCell(
+                column="commit #",
+                alignment="--:",
+                value=f"{i}",
+            )
+            row = [commit_num, *benchmark.markdown()]
+            all_table.append(row)
+        print(render_markdown_table(all_table))
         
         print()
         print(f"sorted adjacent diffs of diffs:")
@@ -416,11 +496,27 @@ def main(
             prev_diff = prev_benchmark.diff()
             diff_of_diff = diff - prev_diff
             diff_of_diffs.append((i, diff_of_diff))
-        print(f"diff of diff %, commit #, commit hash, threads: diff %, rav1d s, dav1d s")
+        
+        adjacent_table: list[list[MarkdownCell]] = []
         for i, diff_of_diff in sorted(diff_of_diffs, key=lambda e: e[1]):
             plus = "+" if diff_of_diff > 0 else ""
             diff_of_diff = f"{plus}{percent(diff_of_diff)}"
-            print(f"{diff_of_diff:>7}, {i:4}, {benchmark_by_commit[commits[i]]}")
+            benchmark = benchmark_by_commit[commits[i]]
+            
+            commit_num = MarkdownCell(
+                column="commit #",
+                alignment="--:",
+                value=f"{i}",
+            )
+            diff_of_diff = MarkdownCell(
+                column="diff of diff %",
+                alignment="--:",
+                value=diff_of_diff,
+            )
+            # skip error column, since we filter it out
+            row = [diff_of_diff, commit_num, *benchmark.markdown()[:-1]]
+            adjacent_table.append(row)
+        print(render_markdown_table(adjacent_table))
 
 
 if __name__ == "__main__":
