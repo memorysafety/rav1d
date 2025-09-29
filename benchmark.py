@@ -118,6 +118,7 @@ channel = "nightly-2025-05-01"
         run(git["checkout", commit])
     run(git["cherry-pick", "--no-commit", "--strategy-option", "theirs", fix_arm_commit])
     Path("rust-toolchain.toml").write_text(rust_toolchain_toml)
+    run(cargo["update", "--package", "proc-macro2"])
 
     interrupt = None
     try:
