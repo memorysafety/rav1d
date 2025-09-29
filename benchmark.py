@@ -293,6 +293,7 @@ def main(
 
         output: str = run(git["rev-list", *(["--merges"] if merges else []), commit])
         commits = [line.strip() for line in output.strip().split("\n")][::-1]
+        print(f"benchmarking {commit}: {len(commits)} commits")
         
         benchmark_by_commit: dict[str, Benchmark] = {}
 
