@@ -1,3 +1,4 @@
+#![feature(mapped_lock_guards)]
 #![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![cfg_attr(
     any(target_arch = "riscv32", target_arch = "riscv64"),
@@ -148,10 +149,9 @@ mod wedge;
 use std::ffi::{c_char, c_uint, c_void, CStr};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Once};
+use std::sync::{Arc, Mutex, Once};
 use std::{cmp, mem, ptr, slice, thread};
 
-use parking_lot::Mutex;
 use to_method::To as _;
 
 use crate::c_arc::RawArc;
@@ -345,7 +345,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
             let mut fc = Rav1dFrameContext::default(i);
             fc.task_thread.finished = AtomicBool::new(true);
             fc.task_thread.ttd = Arc::clone(&task_thread);
-            let f = fc.data.get_mut();
+            let f = fc.data.get_mut().unwrap();
             f.lf.last_sharpness = u8::MAX;
             fc
         })
@@ -420,7 +420,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
     for tc in c.tc.iter() {
         if let Rav1dContextTaskType::Worker(handle) = &tc.task {
             // Unpark each thread once we set its `thread_data.c`.
-            *tc.thread_data.c.lock() = Some(Arc::clone(&c));
+            *tc.thread_data.c.lock().unwrap() = Some(Arc::clone(&c));
             handle.thread().unpark();
         }
     }
@@ -548,9 +548,9 @@ fn drain_picture(c: &Rav1dContext, state: &mut Rav1dState, out: &mut Rav1dPictur
     for _ in 0..c.fc.len() {
         let next = state.frame_thread.next;
         let fc = &c.fc[next as usize];
-        let mut task_thread_lock = c.task_thread.lock.lock();
+        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
-            fc.task_thread.cond.wait(&mut task_thread_lock);
+            task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut state.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
@@ -799,10 +799,10 @@ pub(crate) fn rav1d_flush(c: &Rav1dContext) {
     }
     c.flush.store(true, Ordering::SeqCst);
     if c.tc.len() > 1 {
-        let mut task_thread_lock = c.task_thread.lock.lock();
+        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         for tc in c.tc.iter() {
             while !tc.flushed() {
-                tc.thread_data.cond.wait(&mut task_thread_lock);
+                task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
             }
         }
         for fc in c.fc.iter() {
@@ -872,7 +872,7 @@ impl Rav1dContext {
             return;
         }
         let ttd = &*self.task_thread;
-        let _task_thread_lock = ttd.lock.lock();
+        let _task_thread_lock = ttd.lock.lock().unwrap();
         for tc in self.tc.iter() {
             tc.thread_data.die.set(true);
         }

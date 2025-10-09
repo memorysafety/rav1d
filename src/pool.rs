@@ -1,4 +1,4 @@
-use parking_lot::Mutex;
+use std::sync::Mutex;
 
 pub struct MemPool<T> {
     bufs: Mutex<Vec<Vec<T>>>,
@@ -12,7 +12,7 @@ impl<T> MemPool<T> {
     }
 
     pub fn _pop(&self, size: usize) -> Vec<T> {
-        if let Some(mut buf) = self.bufs.lock().pop() {
+        if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
             if size > buf.capacity() {
                 // TODO fallible allocation
                 buf.reserve(size - buf.len());
@@ -32,7 +32,7 @@ impl<T> MemPool<T> {
     where
         T: Copy,
     {
-        if let Some(buf) = self.bufs.lock().pop() {
+        if let Some(buf) = self.bufs.lock().unwrap().pop() {
             if size <= buf.len() {
                 return buf;
             }
@@ -42,7 +42,7 @@ impl<T> MemPool<T> {
     }
 
     pub fn push(&self, buf: Vec<T>) {
-        self.bufs.lock().push(buf);
+        self.bufs.lock().unwrap().push(buf);
     }
 }
 

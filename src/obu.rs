@@ -2487,14 +2487,14 @@ fn parse_obus(
                     .flags
                     .into();
             } else {
-                let mut task_thread_lock = c.task_thread.lock.lock();
+                let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
                 // Need to append this to the frame output queue.
                 let next = state.frame_thread.next;
                 state.frame_thread.next = (state.frame_thread.next + 1) % c.fc.len() as u32;
 
                 let fc = &c.fc[next as usize];
                 while !fc.task_thread.finished.load(Ordering::SeqCst) {
-                    fc.task_thread.cond.wait(&mut task_thread_lock);
+                    task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
                 let out_delayed = &mut state.frame_thread.out_delayed[next as usize];
                 if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0

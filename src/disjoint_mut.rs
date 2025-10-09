@@ -768,10 +768,9 @@ mod debug {
     use std::backtrace::{Backtrace, BacktraceStatus};
     use std::fmt::Debug;
     use std::panic::Location;
+    use std::sync::Mutex;
     use std::thread;
     use std::thread::ThreadId;
-
-    use parking_lot::Mutex;
 
     use super::*;
 
@@ -867,10 +866,10 @@ mod debug {
     impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         #[track_caller]
         fn add_mut_bounds(&self, current: DisjointMutBounds) {
-            for existing in self.bounds.immutable.lock().iter() {
+            for existing in self.bounds.immutable.lock().unwrap().iter() {
                 current.check_overlaps(existing);
             }
-            let mut mut_bounds = self.bounds.mutable.lock();
+            let mut mut_bounds = self.bounds.mutable.lock().unwrap();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
             }
@@ -879,19 +878,20 @@ mod debug {
 
         #[track_caller]
         fn add_immut_bounds(&self, current: DisjointMutBounds) {
-            let mut_bounds = self.bounds.mutable.lock();
+            let mut_bounds = self.bounds.mutable.lock().unwrap();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
             }
-            self.bounds.immutable.lock().push(current);
+            self.bounds.immutable.lock().unwrap().push(current);
         }
 
         fn remove_bound(&self, bounds: &DisjointMutBounds) {
-            let mut all_bounds = if bounds.mutable {
-                self.bounds.mutable.lock()
+            let all_bounds = if bounds.mutable {
+                &self.bounds.mutable
             } else {
-                self.bounds.immutable.lock()
+                &self.bounds.immutable
             };
+            let mut all_bounds = all_bounds.lock().unwrap();
             let idx = all_bounds
                 .iter()
                 .position(|r| r == bounds)

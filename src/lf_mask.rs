@@ -1,9 +1,9 @@
 use std::cmp;
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
+use std::sync::RwLock;
 
 use libc::ptrdiff_t;
-use parking_lot::RwLock;
 use zerocopy::FromBytes;
 
 use crate::align::{Align16, AlignedVec2, ArrayDefault};

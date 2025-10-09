@@ -3,9 +3,8 @@
 use std::cmp;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
-use parking_lot::{RwLock, RwLockWriteGuard};
 use strum::EnumCount;
 
 use crate::align::{Align16, Align32, Align4, Align8};
