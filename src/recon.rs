@@ -1531,7 +1531,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
 
-    if b.skip != 0 {
+    if b.skip {
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
             [bh4 as usize, bw4 as usize],
@@ -1561,7 +1561,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
-    assert!(b.skip == 0);
+    assert!(!b.skip);
     let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
     let t_dim = &DAV1D_TXFM_DIMENSIONS[match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
@@ -2328,7 +2328,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                     }
 
-                    if b.skip == 0 {
+                    if !b.skip {
                         let mut cf_guard;
                         let cf;
                         let eob;
@@ -2701,7 +2701,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             }
                         }
 
-                        if b.skip == 0 {
+                        if !b.skip {
                             let mut txtp = DCT_DCT;
                             let eob;
                             let mut cf_guard;
@@ -3500,7 +3500,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
 
-    if b.skip != 0 {
+    if b.skip {
         // reset coef contexts
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],

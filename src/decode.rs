@@ -707,8 +707,7 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4)
-    {
+    if !b.skip && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4) {
         uvtx = TxfmSize::S4x4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -721,7 +720,7 @@ fn read_vartx_tree(
                 },
             );
         }
-    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
+    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip {
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&t.l, 1), (&f.a[t.a], 0)],
@@ -1329,11 +1328,10 @@ fn decode_b(
 
     // skip
     if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
-        b.skip = 1;
+        b.skip = true;
     } else {
-        let sctx = *ta.skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
-        b.skip =
-            rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx as usize]) as u8;
+        let sctx = *ta.skip.index(bx4 as usize) as usize + *t.l.skip.index(by4 as usize) as usize;
+        b.skip = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx]);
         if debug_block_info!(f, t.b) {
             println!("Post-skip[{}]: r={}", b.skip, ts_c.msac.rng);
         }
@@ -1344,7 +1342,7 @@ fn decode_b(
         && frame_hdr.segmentation.update_map != 0
         && frame_hdr.segmentation.seg_data.preskip == 0
     {
-        if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
+        if !b.skip && frame_hdr.segmentation.temporal != 0 && {
             let index = *ta.seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
@@ -1368,7 +1366,7 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            b.seg_id = if b.skip != 0 {
+            b.seg_id = if b.skip {
                 pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
@@ -1395,7 +1393,7 @@ fn decode_b(
     }
 
     // cdef index
-    if b.skip == 0 {
+    if !b.skip {
         let idx = if seq_hdr.sb128 != 0 {
             ((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)
         } else {
@@ -1437,7 +1435,7 @@ fn decode_b(
                 } else {
                     BlockSize::Bs64x64
                 })
-                || b.skip == 0);
+                || !b.skip);
 
         let prev_delta_lf = ts.last_delta_lf.get();
 
@@ -2996,7 +2994,7 @@ fn decode_b(
                 t.b,
                 f.w4,
                 f.h4,
-                b.skip != 0,
+                b.skip,
                 bs,
                 ytx,
                 &tx_split,
@@ -3070,7 +3068,7 @@ fn decode_b(
             }
         });
     }
-    if b.skip == 0 {
+    if !b.skip {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
@@ -3710,7 +3708,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     }
 
     ctx.partition.get_mut().0.fill(0);
-    ctx.skip.get_mut().0.fill(0);
+    ctx.skip.get_mut().0.fill(false);
     ctx.skip_mode.get_mut().0.fill(0);
     ctx.tx_lpf_y.get_mut().0.fill(2);
     ctx.tx_lpf_uv.get_mut().0.fill(1);
