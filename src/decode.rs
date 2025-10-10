@@ -2958,8 +2958,7 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
         if frame_hdr.loopfilter.level_y != [0, 0] {
-            let is_globalmv =
-                (inter_mode == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV }) as c_int;
+            let is_globalmv = inter_mode == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV };
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
@@ -2984,7 +2983,7 @@ fn decode_b(
                 // we pass the indices as args, which are then applied at the use sites.
                 &lflvl[b.seg_id.get()],
                 (r#ref[0] + 1) as usize,
-                is_globalmv == 0,
+                !is_globalmv,
                 t.b,
                 f.w4,
                 f.h4,
