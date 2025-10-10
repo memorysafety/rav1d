@@ -2054,16 +2054,11 @@ fn decode_b(
                 ..Default::default()
             }
             .into(),
-            comp_type: Default::default(),
-            inter_mode: Default::default(),
-            motion_mode: Default::default(),
-            drl_idx: Default::default(),
-            r#ref: Default::default(),
             max_ytx,
             filter2d,
-            interintra_type: Default::default(),
             tx_split0,
             tx_split1,
+            ..Default::default()
         };
         b.ii = Av1BlockIntraInter::Inter(inter.clone()); // Cheap 24-byte clone
 

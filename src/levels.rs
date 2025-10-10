@@ -516,7 +516,7 @@ pub struct Av1BlockInter2d {
     pub matrix: [i16; 4],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockInterNd {
     /// Make [`Av1BlockInter1d`] the field instead of [`Av1BlockInter2d`]
@@ -553,7 +553,7 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
