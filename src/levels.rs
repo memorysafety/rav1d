@@ -632,7 +632,7 @@ pub struct Av1Block {
     pub bs: u8,
     pub bp: BlockPartition,
     pub seg_id: SegmentId,
-    pub skip_mode: u8,
+    pub skip_mode: bool,
     pub skip: bool,
     pub uvtx: TxfmSize,
     pub ii: Av1BlockIntraInter,

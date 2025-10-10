@@ -1314,20 +1314,19 @@ fn decode_b(
         && frame_hdr.skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
-        let smctx = *ta.skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
-        b.skip_mode = rav1d_msac_decode_bool_adapt(
-            &mut ts_c.msac,
-            &mut ts_c.cdf.mi.skip_mode.0[smctx as usize],
-        ) as u8;
+        let smctx = *ta.skip_mode.index(bx4 as usize) as usize
+            + *t.l.skip_mode.index(by4 as usize) as usize;
+        b.skip_mode =
+            rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.skip_mode.0[smctx]);
         if debug_block_info!(f, t.b) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts_c.msac.rng);
         }
     } else {
-        b.skip_mode = 0;
+        b.skip_mode = false;
     }
 
     // skip
-    if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
+    if b.skip_mode || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
         b.skip = true;
     } else {
         let sctx = *ta.skip.index(bx4 as usize) as usize + *t.l.skip.index(by4 as usize) as usize;
@@ -1526,7 +1525,7 @@ fn decode_b(
         }
     }
 
-    let intra = if b.skip_mode != 0 {
+    let intra = if b.skip_mode {
         false
     } else if frame_hdr.frame_type.is_inter_or_switch() {
         if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
@@ -1879,7 +1878,7 @@ fn decode_b(
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
                 case.set_disjoint(&dir.pal_sz, pal_sz[0]);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
+                case.set_disjoint(&dir.skip_mode, false);
                 case.set_disjoint(&dir.intra, 1);
                 case.set_disjoint(&dir.skip, b.skip);
                 // see aomedia bug 2183 for why we use luma coordinates here
@@ -2088,7 +2087,7 @@ fn decode_b(
                 // see aomedia bug 2183 for why this is outside `if has_chroma {}`
                 case.set(&mut t.pal_sz_uv[dir_index], 0);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
+                case.set_disjoint(&dir.skip_mode, false);
                 case.set_disjoint(&dir.intra, 0);
                 case.set_disjoint(&dir.skip, b.skip);
             },
@@ -2109,7 +2108,7 @@ fn decode_b(
 
         let mut has_subpel_filter;
 
-        let is_comp = if b.skip_mode != 0 {
+        let is_comp = if b.skip_mode {
             true
         } else if seg
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
@@ -2145,7 +2144,7 @@ fn decode_b(
             drl_idx,
             r#ref,
             interintra_type,
-        } = if b.skip_mode != 0 {
+        } = if b.skip_mode {
             let r#ref = [
                 frame_hdr.skip_mode.refs[0] as i8,
                 frame_hdr.skip_mode.refs[1] as i8,
@@ -3709,7 +3708,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
 
     ctx.partition.get_mut().0.fill(0);
     ctx.skip.get_mut().0.fill(false);
-    ctx.skip_mode.get_mut().0.fill(0);
+    ctx.skip_mode.get_mut().0.fill(false);
     ctx.tx_lpf_y.get_mut().0.fill(2);
     ctx.tx_lpf_uv.get_mut().0.fill(1);
     ctx.tx_intra.get_mut().0.fill(-1);
