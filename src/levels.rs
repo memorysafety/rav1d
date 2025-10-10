@@ -206,9 +206,10 @@ impl BlockPartition {
     pub const N_SUB8X8_PARTITIONS: usize = 4;
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, FromZeroes, Default)]
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, FromZeroes)]
 pub enum BlockSize {
+    #[default]
     Bs128x128 = 0,
     Bs128x64 = 1,
     Bs64x128 = 2,
@@ -629,7 +630,7 @@ impl Display for SegmentId {
 #[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
-    pub bs: u8,
+    pub bs: BlockSize,
     pub bp: BlockPartition,
     pub seg_id: SegmentId,
     pub skip_mode: bool,

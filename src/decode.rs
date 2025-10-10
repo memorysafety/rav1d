@@ -1233,7 +1233,7 @@ fn decode_b(
 
     b.bl = bl;
     b.bp = bp;
-    b.bs = bs as u8;
+    b.bs = bs;
 
     let mut seg = None;
 
