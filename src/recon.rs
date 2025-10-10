@@ -28,10 +28,10 @@ use crate::internal::{
 use crate::intra_edge::EdgeFlags;
 use crate::ipred_prepare::{rav1d_prepare_intra_edges, sm_flag, sm_uv_flag};
 use crate::levels::{
-    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterType, Filter2d,
-    InterIntraPredMode, InterIntraType, IntraPredMode, MotionMode, Mv, TxClass, TxfmSize, TxfmType,
-    CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, IDTX, SMOOTH_PRED,
-    WHT_WHT,
+    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterPredMode,
+    CompInterType, Filter2d, InterIntraPredMode, InterIntraType, IntraPredMode, MotionMode, Mv,
+    TxClass, TxfmSize, TxfmType, CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, GLOBALMV, IDTX,
+    SMOOTH_PRED, WHT_WHT,
 };
 use crate::lf_apply::{rav1d_copy_lpf, rav1d_loopfilter_sbrow_cols, rav1d_loopfilter_sbrow_rows};
 use crate::lr_apply::rav1d_lr_sbrow;
@@ -2913,7 +2913,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         for i in 0..2 {
             let refp = &f.refp[inter.r#ref[i] as usize];
 
-            if inter.inter_mode == GLOBALMV_GLOBALMV
+            if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                 && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
             {
                 warp_affine::<BD>(
@@ -3009,7 +3009,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             for pl in 0..2 {
                 for i in 0..2 {
                     let refp = &f.refp[inter.r#ref[i] as usize];
-                    if inter.inter_mode == GLOBALMV_GLOBALMV
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
                     {
@@ -3090,7 +3090,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         let filter_2d = inter.filter2d;
 
         if cmp::min(bw4, bh4) > 1
-            && (inter.inter_mode == GLOBALMV && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+            && (inter.inter_mode == GLOBALMV.into()
+                && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                 || inter.motion_mode == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
@@ -3347,7 +3348,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
-                    && (inter.inter_mode == GLOBALMV
+                    && (inter.inter_mode == GLOBALMV.into()
                         && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)

@@ -319,16 +319,26 @@ pub enum DrlProximity {
     Nearish,
 }
 
-pub type CompInterPredMode = u8;
-pub const N_COMP_INTER_PRED_MODES: usize = 8;
-pub const NEWMV_NEWMV: CompInterPredMode = 7;
-pub const GLOBALMV_GLOBALMV: CompInterPredMode = 6;
-pub const NEWMV_NEARMV: CompInterPredMode = 5;
-pub const NEARMV_NEWMV: CompInterPredMode = 4;
-pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
-pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
-pub const NEARMV_NEARMV: CompInterPredMode = 1;
-pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+/// Sometimes this can store a [`InterPredMode`] instead, which is smaller.
+#[expect(clippy::enum_variant_names, reason = "match dav1d naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, Default)]
+pub enum CompInterPredMode {
+    #[default]
+    NearestMvNearestMv = 0,
+    NearMvNearMv = 1,
+    NearestMvNewMv = 2,
+    NewMvNearestMv = 3,
+    NearMvNewMv = 4,
+    NewMvNearMv = 5,
+    GlobalMvGlobalMv = 6,
+    NewMvNewMv = 7,
+}
+
+impl From<InterPredMode> for CompInterPredMode {
+    fn from(value: InterPredMode) -> Self {
+        CompInterPredMode::from_repr(value as usize).unwrap()
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompInterType {
@@ -558,7 +568,7 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
     pub comp_type: Option<CompInterType>,
-    pub inter_mode: u8,
+    pub inter_mode: CompInterPredMode,
     pub motion_mode: MotionMode,
     pub drl_idx: DrlProximity,
     pub r#ref: [i8; 2],

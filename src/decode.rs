@@ -43,11 +43,10 @@ use crate::internal::{
 use crate::intra_edge::{EdgeFlags, EdgeIndex, IntraEdges};
 use crate::levels::{
     Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
-    Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterType, DrlProximity,
-    Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId, TxfmSize,
-    CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, NEARESTMV, NEARESTMV_NEARESTMV,
-    NEARMV, NEWMV, NEWMV_NEWMV, N_COMP_INTER_PRED_MODES, N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES,
-    VERT_LEFT_PRED, VERT_PRED,
+    Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterPredMode, CompInterType,
+    DrlProximity, Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId,
+    TxfmSize, CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, NEARESTMV, NEARMV, NEWMV,
+    N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES, VERT_LEFT_PRED, VERT_PRED,
 };
 use crate::lf_mask::{
     rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
@@ -819,7 +818,8 @@ fn splat_oneref_mv(
             ],
         },
         bs,
-        mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
+        mf: (mode == GLOBALMV.into() && cmp::min(bw4, bh4) >= 2) as u8
+            | (mode == NEWMV.into()) as u8 * 2,
     });
 
     c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
@@ -866,7 +866,8 @@ fn splat_tworef_mv(
             r#ref: [inter.r#ref[0] + 1, inter.r#ref[1] + 1],
         },
         bs,
-        mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
+        mf: (mode == CompInterPredMode::GlobalMvGlobalMv) as u8
+            | (1 << (mode as u8) & 0xbc != 0) as u8 * 2,
     });
     c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
@@ -2125,7 +2126,7 @@ fn decode_b(
         struct Inter {
             nd: Av1BlockInterNd,
             comp_type: Option<CompInterType>,
-            inter_mode: u8,
+            inter_mode: CompInterPredMode,
             motion_mode: MotionMode,
             drl_idx: DrlProximity,
             r#ref: [i8; 2],
@@ -2145,7 +2146,7 @@ fn decode_b(
                 frame_hdr.skip_mode.refs[1] as i8,
             ];
             let comp_type = CompInterType::Avg;
-            let inter_mode = NEARESTMV_NEARESTMV;
+            let inter_mode = CompInterPredMode::NearestMvNearestMv;
             let drl_idx = DrlProximity::Nearest;
             has_subpel_filter = false;
 
@@ -2282,21 +2283,25 @@ fn decode_b(
                 frame_hdr,
             );
 
-            let inter_mode = rav1d_msac_decode_symbol_adapt8(
-                &mut ts_c.msac,
-                &mut ts_c.cdf.mi.comp_inter_mode[ctx as usize],
-                N_COMP_INTER_PRED_MODES as u8 - 1,
-            );
+            let inter_mode = CompInterPredMode::from_repr(
+                rav1d_msac_decode_symbol_adapt8(
+                    &mut ts_c.msac,
+                    &mut ts_c.cdf.mi.comp_inter_mode[ctx as usize],
+                    CompInterPredMode::COUNT as u8 - 1,
+                )
+                .into(),
+            )
+            .unwrap();
             if debug_block_info!(f, t.b) {
                 println!(
-                    "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
+                    "Post-compintermode[{:?},ctx={},n_mvs={}]: r={}",
                     inter_mode, ctx, n_mvs, ts_c.msac.rng,
                 );
             }
 
             let im = &DAV1D_COMP_INTER_PRED_MODES[inter_mode as usize];
             let mut drl_idx = DrlProximity::Nearest;
-            if inter_mode == NEWMV_NEWMV {
+            if inter_mode == CompInterPredMode::NewMvNewMv {
                 if n_mvs > 1 {
                     // `Nearer` or `Near`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -2354,7 +2359,8 @@ fn decode_b(
             }
             let drl_idx = drl_idx;
 
-            has_subpel_filter = cmp::min(bw4, bh4) == 1 || inter_mode != GLOBALMV_GLOBALMV;
+            has_subpel_filter =
+                cmp::min(bw4, bh4) == 1 || inter_mode != CompInterPredMode::GlobalMvGlobalMv;
             let mv1d = array::from_fn(|i| match im[i] {
                 NEARMV | NEARESTMV => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
@@ -2869,7 +2875,7 @@ fn decode_b(
                     .into(),
                 },
                 comp_type: None,
-                inter_mode,
+                inter_mode: inter_mode.into(),
                 motion_mode,
                 drl_idx,
                 r#ref,
@@ -2958,7 +2964,12 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
         if frame_hdr.loopfilter.level_y != [0, 0] {
-            let is_globalmv = inter_mode == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV };
+            let is_globalmv = inter_mode
+                == if is_comp {
+                    CompInterPredMode::GlobalMvGlobalMv
+                } else {
+                    GLOBALMV.into()
+                };
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
@@ -3028,7 +3039,7 @@ fn decode_b(
                 case.set_disjoint(&dir.comp_type, comp_type);
                 case.set_disjoint(&dir.filter[0], filter[0]);
                 case.set_disjoint(&dir.filter[1], filter[1]);
-                case.set_disjoint(&dir.mode, inter_mode);
+                case.set_disjoint(&dir.mode, inter_mode as u8);
                 case.set_disjoint(&dir.r#ref[0], r#ref[0]);
                 case.set_disjoint(&dir.r#ref[1], r#ref[1]);
             },
@@ -3085,7 +3096,7 @@ fn decode_b(
             if inter.comp_type.is_none() {
                 // y
                 if cmp::min(bw4, bh4) > 1
-                    && (inter.inter_mode == GLOBALMV
+                    && (inter.inter_mode == GLOBALMV.into()
                         && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
@@ -3195,7 +3206,7 @@ fn decode_b(
                             &f.svc[inter.r#ref[0] as usize][1],
                         );
                     } else if cmp::min(cbw4, cbh4) > 1
-                        && (inter.inter_mode == GLOBALMV
+                        && (inter.inter_mode == GLOBALMV.into()
                             && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                             || inter.motion_mode == MotionMode::Warp
                                 && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
@@ -3245,7 +3256,9 @@ fn decode_b(
                         .map(|(r#ref, mv)| (r#ref as usize, mv))
                 };
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
+                        && f.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -3264,7 +3277,9 @@ fn decode_b(
                     }
                 }
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
+                        && f.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -3286,7 +3301,7 @@ fn decode_b(
                 // uv
                 if has_chroma {
                     for (r#ref, mv) in refmvs() {
-                        if inter.inter_mode == GLOBALMV_GLOBALMV
+                        if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                             && cmp::min(cbw4, cbh4) > 1
                             && f.gmv_warp_allowed[r#ref] != 0
                         {
