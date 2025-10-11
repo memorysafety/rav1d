@@ -9,11 +9,11 @@ use crate::enum_map::DefaultValue;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, FromZeroes, FromBytes, AsBytes)]
 #[repr(transparent)]
-pub struct InRange<T, const MIN: u128, const MAX: u128>(T);
+pub struct InRange<T, const MIN: i128, const MAX: i128>(T);
 
-impl<T, const MIN: u128, const MAX: u128> InRange<T, MIN, MAX>
+impl<T, const MIN: i128, const MAX: i128> InRange<T, MIN, MAX>
 where
-    T: TryFrom<u128, Error: Debug>,
+    T: TryFrom<i128, Error: Debug>,
 {
     pub fn min() -> Self {
         Self(MIN.try_into().unwrap())
@@ -24,9 +24,9 @@ where
     }
 }
 
-impl<T, const MIN: u128, const MAX: u128> InRange<T, MIN, MAX>
+impl<T, const MIN: i128, const MAX: i128> InRange<T, MIN, MAX>
 where
-    T: TryFrom<u128, Error: Debug> + PartialEq + Eq + PartialOrd + Ord,
+    T: TryFrom<i128, Error: Debug> + PartialEq + Eq + PartialOrd + Ord,
 {
     fn in_bounds(&self) -> bool {
         *self >= Self::min() && *self <= Self::max()
@@ -48,16 +48,16 @@ where
     }
 }
 
-impl<T, const MIN: u128, const MAX: u128> Default for InRange<T, MIN, MAX>
+impl<T, const MIN: i128, const MAX: i128> Default for InRange<T, MIN, MAX>
 where
-    T: TryFrom<u128, Error: Debug>,
+    T: TryFrom<i128, Error: Debug>,
 {
     fn default() -> Self {
         Self::min()
     }
 }
 
-impl<T, const MIN: u128, const MAX: u128> Display for InRange<T, MIN, MAX>
+impl<T, const MIN: i128, const MAX: i128> Display for InRange<T, MIN, MAX>
 where
     T: Display,
 {
@@ -68,14 +68,14 @@ where
 
 macro_rules! impl_const_new {
     ($T:ty) => {
-        impl<const MIN: u128, const MAX: u128> DefaultValue for InRange<$T, MIN, MAX> {
+        impl<const MIN: i128, const MAX: i128> DefaultValue for InRange<$T, MIN, MAX> {
             const DEFAULT: Self = Self(0);
         }
 
-        impl<const MIN: u128, const MAX: u128> InRange<$T, MIN, MAX> {
+        impl<const MIN: i128, const MAX: i128> InRange<$T, MIN, MAX> {
             #[allow(unused)]
             pub const fn const_new(value: $T) -> Self {
-                assert!(value as u128 >= MIN && value as u128 <= MAX);
+                assert!(value as i128 >= MIN && value as i128 <= MAX);
                 Self(value)
             }
 

@@ -646,7 +646,7 @@ impl Default for Av1BlockIntraInter {
 /// Within range `0..`[`SegmentId::COUNT`].
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SegmentId {
-    id: InRange<u8, 0, { Self::COUNT as u128 - 1 }>,
+    id: InRange<u8, 0, { Self::COUNT as i128 - 1 }>,
 }
 
 impl SegmentId {
