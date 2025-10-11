@@ -10,13 +10,12 @@ use crate::include::dav1d::headers::{
     Rav1dFilterMode, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
 };
 use crate::levels::{
-    BlockLevel, BlockPartition, BlockSize, CompInterPredMode, Filter2d, InterPredMode, TxClass,
-    TxfmSize, TxfmType, ADST_ADST, ADST_DCT, ADST_FLIPADST, DCT_ADST, DCT_DCT, DCT_FLIPADST,
-    DC_PRED, DIAG_DOWN_LEFT_PRED, DIAG_DOWN_RIGHT_PRED, FLIPADST_ADST, FLIPADST_DCT,
-    FLIPADST_FLIPADST, HOR_DOWN_PRED, HOR_PRED, HOR_UP_PRED, H_ADST, H_DCT, H_FLIPADST, IDTX,
-    N_INTRA_PRED_MODES, N_TX_TYPES_PLUS_LL, N_UV_INTRA_PRED_MODES, PAETH_PRED, SMOOTH_H_PRED,
-    SMOOTH_PRED, SMOOTH_V_PRED, VERT_LEFT_PRED, VERT_PRED, VERT_RIGHT_PRED, V_ADST, V_DCT,
-    V_FLIPADST,
+    BlockLevel, BlockPartition, BlockSize, Filter2d, TxClass, TxfmSize, TxfmType, ADST_ADST,
+    ADST_DCT, ADST_FLIPADST, DCT_ADST, DCT_DCT, DCT_FLIPADST, DC_PRED, DIAG_DOWN_LEFT_PRED,
+    DIAG_DOWN_RIGHT_PRED, FLIPADST_ADST, FLIPADST_DCT, FLIPADST_FLIPADST, HOR_DOWN_PRED, HOR_PRED,
+    HOR_UP_PRED, H_ADST, H_DCT, H_FLIPADST, IDTX, N_INTRA_PRED_MODES, N_TX_TYPES_PLUS_LL,
+    N_UV_INTRA_PRED_MODES, PAETH_PRED, SMOOTH_H_PRED, SMOOTH_PRED, SMOOTH_V_PRED, VERT_LEFT_PRED,
+    VERT_PRED, VERT_RIGHT_PRED, V_ADST, V_DCT, V_FLIPADST,
 };
 
 #[repr(C)]
@@ -389,23 +388,6 @@ pub static DAV1D_TXTP_FROM_UVMODE: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     tbl[SMOOTH_V_PRED as usize] = ADST_DCT;
     tbl[SMOOTH_H_PRED as usize] = DCT_ADST;
     tbl[PAETH_PRED as usize] = ADST_ADST;
-    tbl
-};
-
-pub static DAV1D_COMP_INTER_PRED_MODES: [[InterPredMode; 2]; CompInterPredMode::COUNT] = {
-    let mut tbl = [[InterPredMode::GlobalMv; 2]; 8];
-    tbl[CompInterPredMode::NearestMvNearestMv as usize] =
-        [InterPredMode::NearestMv, InterPredMode::NearestMv];
-    tbl[CompInterPredMode::NearMvNearMv as usize] = [InterPredMode::NearMv, InterPredMode::NearMv];
-    tbl[CompInterPredMode::NewMvNewMv as usize] = [InterPredMode::NewMv, InterPredMode::NewMv];
-    tbl[CompInterPredMode::GlobalMvGlobalMv as usize] =
-        [InterPredMode::GlobalMv, InterPredMode::GlobalMv];
-    tbl[CompInterPredMode::NewMvNearestMv as usize] =
-        [InterPredMode::NewMv, InterPredMode::NearestMv];
-    tbl[CompInterPredMode::NewMvNearMv as usize] = [InterPredMode::NewMv, InterPredMode::NearMv];
-    tbl[CompInterPredMode::NearestMvNewMv as usize] =
-        [InterPredMode::NearestMv, InterPredMode::NewMv];
-    tbl[CompInterPredMode::NearMvNewMv as usize] = [InterPredMode::NearMv, InterPredMode::NewMv];
     tbl
 };
 

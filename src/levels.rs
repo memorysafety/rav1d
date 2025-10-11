@@ -342,6 +342,23 @@ impl From<InterPredMode> for CompInterPredMode {
     }
 }
 
+impl CompInterPredMode {
+    pub const fn split(self) -> [InterPredMode; 2] {
+        use CompInterPredMode::*;
+        use InterPredMode::*;
+        match self {
+            NearestMvNearestMv => [NearestMv, NearestMv],
+            NearMvNearMv => [NearMv, NearMv],
+            NearestMvNewMv => [NearestMv, NewMv],
+            NewMvNearestMv => [NewMv, NearestMv],
+            NearMvNewMv => [NearMv, NewMv],
+            NewMvNearMv => [NewMv, NearMv],
+            GlobalMvGlobalMv => [GlobalMv, GlobalMv],
+            NewMvNewMv => [NewMv, NewMv],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompInterType {
     WeightedAvg = 1,

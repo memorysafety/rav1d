@@ -70,10 +70,10 @@ use crate::refmvs::{
 };
 use crate::relaxed_atomic::RelaxedAtomic;
 use crate::tables::{
-    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_COMP_INTER_PRED_MODES,
-    DAV1D_FILTER_2D, DAV1D_FILTER_DIR, DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS,
-    DAV1D_PARTITION_TYPE_COUNT, DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT,
-    DAV1D_YMODE_SIZE_CONTEXT, INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
+    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_FILTER_2D, DAV1D_FILTER_DIR,
+    DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS, DAV1D_PARTITION_TYPE_COUNT,
+    DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT, DAV1D_YMODE_SIZE_CONTEXT,
+    INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
 };
 use crate::thread_task::{
     rav1d_task_create_tile_sbrow, rav1d_task_frame_init, FRAME_ERROR, TILE_ERROR,
@@ -2299,7 +2299,7 @@ fn decode_b(
                 );
             }
 
-            let im = &DAV1D_COMP_INTER_PRED_MODES[inter_mode as usize];
+            let im = inter_mode.split();
             let mut drl_idx = DrlProximity::Nearest;
             if inter_mode == CompInterPredMode::NewMvNewMv {
                 if n_mvs > 1 {
