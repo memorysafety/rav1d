@@ -2911,10 +2911,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         let seg_mask = &mut scratch_inter.seg_mask;
 
         for i in 0..2 {
-            let refp = &f.refp[inter.r#ref[i] as usize];
+            let refp = &f.refp[inter.r#ref[i].get() as usize];
 
             if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
-                && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+                && f.gmv_warp_allowed[inter.r#ref[i].get() as usize] != 0
             {
                 warp_affine::<BD>(
                     f,
@@ -2927,7 +2927,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     b_dim,
                     0,
                     refp,
-                    &frame_hdr.gmv[inter.r#ref[i] as usize],
+                    &frame_hdr.gmv[inter.r#ref[i].get() as usize],
                 )?;
             } else {
                 mc::<BD>(
@@ -2945,7 +2945,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     0,
                     inter.nd.one_d.mv[i],
                     refp,
-                    inter.r#ref[i] as usize,
+                    inter.r#ref[i].get() as usize,
                     filter_2d,
                 )?;
             }
@@ -2960,8 +2960,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     .call::<BD>(y_dst, &tmp[0], &tmp[1], bw4 * 4, bh4 * 4, bd);
             }
             CompInterType::WeightedAvg => {
-                jnt_weight =
-                    f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
+                jnt_weight = f.jnt_weights[inter.r#ref[0].get() as usize]
+                    [inter.r#ref[1].get() as usize] as c_int;
                 f.dsp.mc.w_avg.call::<BD>(
                     y_dst,
                     &tmp[0],
@@ -3009,10 +3009,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         if has_chroma {
             for pl in 0..2 {
                 for i in 0..2 {
-                    let refp = &f.refp[inter.r#ref[i] as usize];
+                    let refp = &f.refp[inter.r#ref[i].get() as usize];
                     if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                         && cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+                        && f.gmv_warp_allowed[inter.r#ref[i].get() as usize] != 0
                     {
                         warp_affine::<BD>(
                             f,
@@ -3025,7 +3025,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             b_dim,
                             1 + pl,
                             refp,
-                            &frame_hdr.gmv[inter.r#ref[i] as usize],
+                            &frame_hdr.gmv[inter.r#ref[i].get() as usize],
                         )?;
                     } else {
                         mc::<BD>(
@@ -3043,7 +3043,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             1 + pl,
                             inter.nd.one_d.mv[i],
                             refp,
-                            inter.r#ref[i] as usize,
+                            inter.r#ref[i].get() as usize,
                             filter_2d,
                         )?;
                     }
@@ -3087,12 +3087,12 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else {
-        let refp = &f.refp[inter.r#ref[0] as usize];
+        let refp = &f.refp[inter.r#ref[0].get() as usize];
         let filter_2d = inter.filter2d;
 
         if cmp::min(bw4, bh4) > 1
             && (inter.inter_mode == InterPredMode::GlobalMv.into()
-                && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                 || inter.motion_mode == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
@@ -3107,7 +3107,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 if inter.motion_mode == MotionMode::Warp {
                     &t.warpmv
                 } else {
-                    &frame_hdr.gmv[inter.r#ref[0] as usize]
+                    &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                 },
             )?;
         } else {
@@ -3123,7 +3123,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 0,
                 inter.nd.one_d.mv[0],
                 refp,
-                inter.r#ref[0] as usize,
+                inter.r#ref[0].get() as usize,
                 filter_2d,
             )?;
             if inter.motion_mode == MotionMode::Obmc {
@@ -3343,14 +3343,14 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         1 + pl,
                         inter.nd.one_d.mv[0],
                         refp,
-                        inter.r#ref[0] as usize,
+                        inter.r#ref[0].get() as usize,
                         filter_2d,
                     )?;
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
                     && (inter.inter_mode == InterPredMode::GlobalMv.into()
-                        && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                        && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
@@ -3368,7 +3368,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             if inter.motion_mode == MotionMode::Warp {
                                 &t.warpmv
                             } else {
-                                &frame_hdr.gmv[inter.r#ref[0] as usize]
+                                &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                             },
                         )?;
                     }
@@ -3388,7 +3388,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             1 + pl,
                             inter.nd.one_d.mv[0],
                             refp,
-                            inter.r#ref[0] as usize,
+                            inter.r#ref[0].get() as usize,
                             filter_2d,
                         )?;
                         let uv_dst = cur_data[1 + pl].with_offset::<BD>() + uvdstoff;

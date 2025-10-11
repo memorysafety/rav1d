@@ -604,6 +604,8 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
     }
 }
 
+pub type Av1BlockInterRefIndex = InRange<i8, -1, 6>;
+
 #[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockInter {
@@ -612,7 +614,7 @@ pub struct Av1BlockInter {
     pub inter_mode: CompInterPredMode,
     pub motion_mode: MotionMode,
     pub drl_idx: DrlProximity,
-    pub r#ref: [i8; 2],
+    pub r#ref: [Av1BlockInterRefIndex; 2],
     pub max_ytx: TxfmSize,
     pub filter2d: Filter2d,
     pub interintra_type: Option<InterIntraType>,
