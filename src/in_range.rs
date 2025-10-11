@@ -2,10 +2,13 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::hint::assert_unchecked;
 
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
+
 use crate::const_fn::const_for;
 use crate::enum_map::DefaultValue;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, FromZeroes, FromBytes, AsBytes)]
+#[repr(transparent)]
 pub struct InRange<T, const MIN: u128, const MAX: u128>(T);
 
 impl<T, const MIN: u128, const MAX: u128> InRange<T, MIN, MAX>

@@ -2986,7 +2986,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 mask = &seg_mask[..];
             }
             CompInterType::Wedge => {
-                mask = DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
+                mask =
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx.get() as usize];
                 f.dsp.mc.mask.call::<BD>(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
@@ -2999,7 +3000,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 if has_chroma {
                     mask = DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx]
                         [inter.nd.one_d.mask_sign() as usize]
-                        [inter.nd.one_d.wedge_idx as usize];
+                        [inter.nd.one_d.wedge_idx.get() as usize];
                 }
             }
         }
@@ -3185,7 +3186,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     DAV1D_II_MASKS[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
                 }
                 InterIntraType::Wedge => {
-                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx.get() as usize]
                 }
             };
             f.dsp
@@ -3407,7 +3408,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         }
                         InterIntraType::Wedge => {
                             DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx][0]
-                                [inter.nd.one_d.wedge_idx as usize]
+                                [inter.nd.one_d.wedge_idx.get() as usize]
                         }
                     };
 

@@ -45,7 +45,7 @@ use crate::levels::{
     Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
     Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterPredMode, CompInterType,
     DrlProximity, Filter2d, InterIntraPredMode, InterIntraType, InterPredMode, MVJoint, MotionMode,
-    Mv, SegmentId, TxfmSize, CFL_PRED, DC_PRED, FILTER_PRED, N_INTRA_PRED_MODES,
+    Mv, SegmentId, TxfmSize, WedgeIdx, CFL_PRED, DC_PRED, FILTER_PRED, N_INTRA_PRED_MODES,
     N_UV_INTRA_PRED_MODES, VERT_LEFT_PRED, VERT_PRED,
 };
 use crate::lf_mask::{
@@ -2471,11 +2471,12 @@ fn decode_b(
                         CompInterType::Wedge
                     };
                     if comp_type == CompInterType::Wedge {
-                        wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                        wedge_idx = WedgeIdx::new(rav1d_msac_decode_symbol_adapt16(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.wedge_idx[ctx],
                             15,
-                        ) as u8;
+                        ))
+                        .unwrap();
                     }
                     comp_type
                 } else {
@@ -2738,11 +2739,12 @@ fn decode_b(
                 };
                 interintra_type = Some(ii_type);
                 if ii_type == InterIntraType::Wedge {
-                    wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                    wedge_idx = WedgeIdx::new(rav1d_msac_decode_symbol_adapt16(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_idx[wedge_ctx as usize],
                         15,
-                    ) as u8;
+                    ))
+                    .unwrap();
                 }
             } else {
                 interintra_mode = Default::default();

@@ -534,11 +534,13 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
     }
 }
 
+pub type WedgeIdx = InRange<u8, 0, 15>;
+
 #[derive(Clone, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
     pub mv: [Mv; 2],
-    pub wedge_idx: u8,
+    pub wedge_idx: WedgeIdx,
 
     /// Stored as a [`u8`] since [`bool`] is not [`FromBytes`].
     pub mask_sign: u8,
