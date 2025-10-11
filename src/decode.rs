@@ -44,9 +44,9 @@ use crate::intra_edge::{EdgeFlags, EdgeIndex, IntraEdges};
 use crate::levels::{
     Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
     Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterPredMode, CompInterType,
-    DrlProximity, Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId,
-    TxfmSize, CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, NEARESTMV, NEARMV, NEWMV,
-    N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES, VERT_LEFT_PRED, VERT_PRED,
+    DrlProximity, Filter2d, InterIntraPredMode, InterIntraType, InterPredMode, MVJoint, MotionMode,
+    Mv, SegmentId, TxfmSize, CFL_PRED, DC_PRED, FILTER_PRED, N_INTRA_PRED_MODES,
+    N_UV_INTRA_PRED_MODES, VERT_LEFT_PRED, VERT_PRED,
 };
 use crate::lf_mask::{
     rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
@@ -818,8 +818,8 @@ fn splat_oneref_mv(
             ],
         },
         bs,
-        mf: (mode == GLOBALMV.into() && cmp::min(bw4, bh4) >= 2) as u8
-            | (mode == NEWMV.into()) as u8 * 2,
+        mf: (mode == InterPredMode::GlobalMv.into() && cmp::min(bw4, bh4) >= 2) as u8
+            | (mode == InterPredMode::NewMv.into()) as u8 * 2,
     });
 
     c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
@@ -2328,7 +2328,7 @@ fn decode_b(
                         );
                     }
                 }
-            } else if im[0] == NEARMV || im[1] == NEARMV {
+            } else if im[0] == InterPredMode::NearMv || im[1] == InterPredMode::NearMv {
                 drl_idx = DrlProximity::Nearer;
                 if n_mvs > 2 {
                     // `Near` or `Nearish`
@@ -2362,12 +2362,12 @@ fn decode_b(
             has_subpel_filter =
                 cmp::min(bw4, bh4) == 1 || inter_mode != CompInterPredMode::GlobalMvGlobalMv;
             let mv1d = array::from_fn(|i| match im[i] {
-                NEARMV | NEARESTMV => {
+                InterPredMode::NearMv | InterPredMode::NearestMv => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
                     fix_mv_precision(frame_hdr, &mut mv1d);
                     mv1d
                 }
-                GLOBALMV => {
+                InterPredMode::GlobalMv => {
                     has_subpel_filter |= frame_hdr.gmv[r#ref[i] as usize].r#type
                         == Rav1dWarpedMotionType::Translation;
                     get_gmv_2d(
@@ -2379,12 +2379,11 @@ fn decode_b(
                         frame_hdr,
                     )
                 }
-                NEWMV => {
+                InterPredMode::NewMv => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
                     read_mv_residual(ts_c, &mut mv1d, mv_prec());
                     mv1d
                 }
-                _ => unreachable!(),
             });
             if debug_block_info!(f, t.b) {
                 println!(
@@ -2601,7 +2600,7 @@ fn decode_b(
                         &mut ts_c.cdf.mi.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
-                    inter_mode = GLOBALMV;
+                    inter_mode = InterPredMode::GlobalMv;
                     mv1d0 = get_gmv_2d(
                         &frame_hdr.gmv[r#ref[0] as usize],
                         t.b.x,
@@ -2622,7 +2621,7 @@ fn decode_b(
                         &mut ts_c.cdf.mi.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
                         // `Nearer`, `Near` or `Nearish`
-                        inter_mode = NEARMV;
+                        inter_mode = InterPredMode::NearMv;
                         drl_idx = DrlProximity::Nearer;
                         if n_mvs > 2 {
                             // `Nearer`, `Near` or `Nearish`
@@ -2646,7 +2645,7 @@ fn decode_b(
                             }
                         }
                     } else {
-                        inter_mode = NEARESTMV;
+                        inter_mode = InterPredMode::NearestMv;
                         drl_idx = DrlProximity::Nearest;
                     }
                     mv1d0 = mvstack[drl_idx as usize].mv.mv[0];
@@ -2657,13 +2656,13 @@ fn decode_b(
 
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
+                        "Post-intermode[{:?},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
                         inter_mode, drl_idx, mv1d0.y, mv1d0.x, n_mvs, ts_c.msac.rng,
                     );
                 }
             } else {
                 has_subpel_filter = true;
-                inter_mode = NEWMV;
+                inter_mode = InterPredMode::NewMv;
                 drl_idx = DrlProximity::Nearest;
                 if n_mvs > 1 {
                     // `Nearer`, `Near` or `Nearish`
@@ -2695,7 +2694,7 @@ fn decode_b(
                 }
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={:?}]: r={}",
+                        "Post-intermode[{:?},drl={:?}]: r={}",
                         inter_mode, drl_idx, ts_c.msac.rng,
                     );
                 }
@@ -2768,7 +2767,7 @@ fn decode_b(
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(!frame_hdr.force_integer_mv
-                    && inter_mode == GLOBALMV
+                    && inter_mode == InterPredMode::GlobalMv
                     && frame_hdr.gmv[r#ref[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.index(by4 as usize..(by4 + h4) as usize))
@@ -2968,7 +2967,7 @@ fn decode_b(
                 == if is_comp {
                     CompInterPredMode::GlobalMvGlobalMv
                 } else {
-                    GLOBALMV.into()
+                    InterPredMode::GlobalMv.into()
                 };
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
@@ -3096,7 +3095,7 @@ fn decode_b(
             if inter.comp_type.is_none() {
                 // y
                 if cmp::min(bw4, bh4) > 1
-                    && (inter.inter_mode == GLOBALMV.into()
+                    && (inter.inter_mode == InterPredMode::GlobalMv.into()
                         && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
@@ -3206,7 +3205,7 @@ fn decode_b(
                             &f.svc[inter.r#ref[0] as usize][1],
                         );
                     } else if cmp::min(cbw4, cbh4) > 1
-                        && (inter.inter_mode == GLOBALMV.into()
+                        && (inter.inter_mode == InterPredMode::GlobalMv.into()
                             && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                             || inter.motion_mode == MotionMode::Warp
                                 && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
@@ -3727,7 +3726,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
             r#ref.get_mut().0.fill(-1);
         }
         ctx.comp_type.get_mut().0.fill(None);
-        ctx.mode.get_mut().0.fill(NEARESTMV);
+        ctx.mode.get_mut().0.fill(InterPredMode::NearestMv as u8);
     }
     ctx.lcoef.get_mut().0.fill(0x40);
     for ccoef in &mut ctx.ccoef {

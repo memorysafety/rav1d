@@ -303,12 +303,14 @@ bitflags! {
     }
 }
 
-pub type InterPredMode = u8;
-pub const _N_INTER_PRED_MODES: usize = 4;
-pub const NEWMV: InterPredMode = 3;
-pub const GLOBALMV: InterPredMode = 2;
-pub const NEARMV: InterPredMode = 1;
-pub const NEARESTMV: InterPredMode = 0;
+#[expect(clippy::enum_variant_names, reason = "match dav1d naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterPredMode {
+    NearestMv = 0,
+    NearMv = 1,
+    GlobalMv = 2,
+    NewMv = 3,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum DrlProximity {
