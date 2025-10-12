@@ -1796,12 +1796,13 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
 
+        let uvtx;
         let tx = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
-            b.uvtx = TxfmSize::S4x4;
-            b.uvtx
+            uvtx = TxfmSize::S4x4;
+            uvtx
         } else {
             let mut tx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][0];
-            b.uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
+            uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TxfmSize::S4x4 as _ {
                 let tctx = get_tx_ctx(ta, &t.l, t_dim, by4, bx4);
@@ -1820,6 +1821,7 @@ fn decode_b(
             }
             tx
         };
+        b.uvtx = uvtx;
         let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
 
         let intra = Av1BlockIntra {
