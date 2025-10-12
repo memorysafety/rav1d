@@ -1314,7 +1314,7 @@ fn decode_b(
     b.seg_id = seg_id;
 
     // skip_mode
-    if seg
+    let skip_mode = if seg
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
         && frame_hdr.skip_mode.enabled != 0
@@ -1322,14 +1322,16 @@ fn decode_b(
     {
         let smctx = *ta.skip_mode.index(bx4 as usize) as usize
             + *t.l.skip_mode.index(by4 as usize) as usize;
-        b.skip_mode =
+        let skip_mode =
             rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.skip_mode.0[smctx]);
         if debug_block_info!(f, t.b) {
-            println!("Post-skipmode[{}]: r={}", b.skip_mode, ts_c.msac.rng);
+            println!("Post-skipmode[{}]: r={}", skip_mode, ts_c.msac.rng);
         }
+        skip_mode
     } else {
-        b.skip_mode = false;
-    }
+        false
+    };
+    b.skip_mode = skip_mode;
 
     // skip
     if b.skip_mode || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
