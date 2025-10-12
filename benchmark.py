@@ -44,6 +44,10 @@ def resolve_commit(commit: str) -> str:
     output: str = git["rev-parse", "--short", commit]()
     return output.strip()
 
+def get_commit_subject(commit: str) -> str:
+    output: str = git["log", "-n", "1", "--pretty='%s'", commit]()
+    return output.strip()
+
 @dataclass
 class Video:
     url: str
@@ -265,6 +269,11 @@ class Benchmark:
             alignment="---",
             value=self.commit,
         )
+        commit_subject = MarkdownCell(
+            column="commit subject",
+            alignment=":--",
+            value=get_commit_subject(self.commit)
+        )
         threads = MarkdownCell(
             column="threads",
             alignment="--:",
@@ -296,7 +305,7 @@ class Benchmark:
             dav1d.value = f"{self.dav1d_time:.3f} s"
         else:
             error.value = f"{self.first_error()}"
-        return [commit, threads, diff, rav1d, dav1d, error]
+        return [commit, threads, diff, rav1d, dav1d, commit_subject, error]
 
 def benchmark_build(
     dir: Path,
@@ -529,7 +538,7 @@ def main(
                 value=diff_of_diff,
             )
             # skip error column, since we filter it out
-            row = [diff_of_diff, commit_num, *benchmark.markdown()[:-1]]
+            row = [diff_of_diff, commit_num, *[cell for cell in benchmark.markdown() if not cell.column == "error"]]
             adjacent_table.append(row)
         print(render_markdown_table(adjacent_table))
 
