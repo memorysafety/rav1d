@@ -1351,7 +1351,7 @@ fn decode_b(
         && frame_hdr.segmentation.update_map != 0
         && frame_hdr.segmentation.seg_data.preskip == 0
     {
-        if !b.skip && frame_hdr.segmentation.temporal != 0 && {
+        let seg_id = if !skip && frame_hdr.segmentation.temporal != 0 && {
             let index = *ta.seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
@@ -1360,13 +1360,12 @@ fn decode_b(
             seg_pred
         } {
             // temporal predicted seg_id
-            b.seg_id = f
-                .prev_segmap
+            f.prev_segmap
                 .as_ref()
                 .map(|prev_segmap| {
                     get_prev_frame_segid(frame_hdr, t.b, w4, h4, &prev_segmap.inner, f.b4_stride)
                 })
-                .unwrap_or_default();
+                .unwrap_or_default()
         } else {
             let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
                 t.b,
@@ -1375,7 +1374,7 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            b.seg_id = if b.skip {
+            if skip {
                 pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
@@ -1391,15 +1390,17 @@ fn decode_b(
                     seg_id = 0; // error?
                 }
                 SegmentId::new(seg_id).unwrap_or_default() // error?
-            };
-        }
+            }
+        };
 
-        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id.get()]);
+        seg = Some(&frame_hdr.segmentation.seg_data.d[seg_id.get()]);
 
         if debug_block_info!(f, t.b) {
-            println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts_c.msac.rng);
+            println!("Post-segid[postskip;{}]: r={}", seg_id, ts_c.msac.rng);
         }
-    }
+
+        b.seg_id = seg_id;
+    };
 
     // cdef index
     if !b.skip {
