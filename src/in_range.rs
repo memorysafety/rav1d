@@ -85,10 +85,6 @@ macro_rules! impl_const_new {
                 b
             }
         }
-
-        impl<const N: usize, const MIN: u128, const MAX: u128> DefaultValue for [InRange<$T, MIN, MAX>; N] {
-            const DEFAULT: Self = [DefaultValue::DEFAULT; N];
-        }
     };
 }
 
