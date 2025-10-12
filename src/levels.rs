@@ -9,7 +9,7 @@ use strum::{EnumCount, FromRepr};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 use crate::align::ArrayDefault;
-use crate::enum_map::{DefaultValue, EnumKey};
+use crate::enum_map::{enum_map, DefaultValue, EnumKey};
 use crate::in_range::InRange;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 
@@ -312,6 +312,10 @@ pub enum InterPredMode {
     NewMv = 3,
 }
 
+impl DefaultValue for InterPredMode {
+    const DEFAULT: Self = Self::NearestMv;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum DrlProximity {
     #[default]
@@ -342,11 +346,27 @@ impl From<InterPredMode> for CompInterPredMode {
     }
 }
 
+impl EnumKey<{ Self::COUNT }> for CompInterPredMode {
+    const VALUES: [Self; Self::COUNT] = [
+        Self::NearestMvNearestMv,
+        Self::NearMvNearMv,
+        Self::NearestMvNewMv,
+        Self::NewMvNearestMv,
+        Self::NearMvNewMv,
+        Self::NewMvNearMv,
+        Self::GlobalMvGlobalMv,
+        Self::NewMvNewMv,
+    ];
+
+    fn as_usize(self) -> usize {
+        self as usize
+    }
+}
+
 impl CompInterPredMode {
-    pub const fn split(self) -> [InterPredMode; 2] {
-        use CompInterPredMode::*;
+    pub fn split(self) -> [InterPredMode; 2] {
         use InterPredMode::*;
-        match self {
+        enum_map!(CompInterPredMode => [InterPredMode; 2]; match key {
             NearestMvNearestMv => [NearestMv, NearestMv],
             NearMvNearMv => [NearMv, NearMv],
             NearestMvNewMv => [NearestMv, NewMv],
@@ -355,7 +375,7 @@ impl CompInterPredMode {
             NewMvNearMv => [NewMv, NearMv],
             GlobalMvGlobalMv => [GlobalMv, GlobalMv],
             NewMvNewMv => [NewMv, NewMv],
-        }
+        })[self]
     }
 }
 
