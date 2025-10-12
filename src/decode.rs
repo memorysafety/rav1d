@@ -1334,15 +1334,17 @@ fn decode_b(
     b.skip_mode = skip_mode;
 
     // skip
-    if b.skip_mode || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
-        b.skip = true;
+    let skip = if skip_mode || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
+        true
     } else {
         let sctx = *ta.skip.index(bx4 as usize) as usize + *t.l.skip.index(by4 as usize) as usize;
-        b.skip = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx]);
+        let skip = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx]);
         if debug_block_info!(f, t.b) {
-            println!("Post-skip[{}]: r={}", b.skip, ts_c.msac.rng);
+            println!("Post-skip[{}]: r={}", skip, ts_c.msac.rng);
         }
-    }
+        skip
+    };
+    b.skip = skip;
 
     // segment_id
     if frame_hdr.segmentation.enabled != 0
