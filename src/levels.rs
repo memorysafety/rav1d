@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use std::fmt::{Display, Formatter};
 use std::ops::Neg;
 use std::{fmt, mem};
@@ -102,7 +100,7 @@ impl TxfmSize {
 }
 
 #[repr(u8)]
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumCount)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumCount, FromRepr)]
 pub enum BlockLevel {
     #[default]
     Bl128x128 = 0,
@@ -622,28 +620,28 @@ pub struct Av1BlockInter {
     pub tx_split1: u16,
 }
 
-pub enum Av1BlockIntraInter {
-    Intra(Av1BlockIntra),
-    Inter(Av1BlockInter),
-}
+// pub enum Av1BlockIntraInter {
+//     Intra(Av1BlockIntra),
+//     Inter(Av1BlockInter),
+// }
 
-impl Av1BlockIntraInter {
-    pub fn filter2d(&self) -> Filter2d {
-        // More optimal code if we use a default instead of just panicking.
-        match self {
-            Self::Inter(inter) => Some(inter),
-            _ => None,
-        }
-        .map(|inter| inter.filter2d)
-        .unwrap_or_default()
-    }
-}
+// impl Av1BlockIntraInter {
+//     pub fn filter2d(&self) -> Filter2d {
+//         // More optimal code if we use a default instead of just panicking.
+//         match self {
+//             Self::Inter(inter) => Some(inter),
+//             _ => None,
+//         }
+//         .map(|inter| inter.filter2d)
+//         .unwrap_or_default()
+//     }
+// }
 
-impl Default for Av1BlockIntraInter {
-    fn default() -> Self {
-        Self::Intra(Default::default())
-    }
-}
+// impl Default for Av1BlockIntraInter {
+//     fn default() -> Self {
+//         Self::Intra(Default::default())
+//     }
+// }
 
 /// Within range `0..`[`SegmentId::COUNT`].
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -681,7 +679,7 @@ impl Display for SegmentId {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct Av1Block {
+pub struct Av1BlockOld {
     pub bl: BlockLevel,
     pub bs: BlockSize,
     pub bp: BlockPartition,
@@ -690,4 +688,433 @@ pub struct Av1Block {
     pub skip: bool,
     pub uvtx: TxfmSize,
     pub ii: Av1BlockIntraInter,
+}
+
+#[derive(Default)]
+#[repr(transparent)]
+struct U8Bits {
+    bits: u8,
+}
+
+impl U8Bits {
+    const fn mask(num_bits: usize, start_bit_index: usize) -> u8 {
+        ((1 << num_bits) - 1) << start_bit_index
+    }
+
+    pub const fn get_bits<const NUM_BITS: usize, const START_BIT_INDEX: usize>(&self) -> u8 {
+        let mask = Self::mask(NUM_BITS, START_BIT_INDEX);
+        self.bits & mask
+    }
+
+    pub const fn set_bits<const NUM_BITS: usize, const START_BIT_INDEX: usize>(
+        &mut self,
+        value: u8,
+    ) {
+        let mask = Self::mask(NUM_BITS, START_BIT_INDEX);
+        self.bits = (self.bits & !mask) | ((value << START_BIT_INDEX) & mask)
+    }
+}
+
+/// `u5 = max_ytx: TxfmSize` (19 variants)
+/// `u3 = comp_type: Option<CompInterType>` (4 variants + Option)
+#[derive(Default)]
+#[repr(transparent)]
+struct MaxYtxCompType(U8Bits);
+
+impl MaxYtxCompType {
+    pub const fn max_ytx(&self) -> TxfmSize {
+        todo!()
+    }
+
+    pub const fn set_max_ytx(&mut self, max_ytx: TxfmSize) {
+        todo!()
+    }
+
+    pub const fn comp_type(&self) -> Option<CompInterType> {
+        todo!()
+    }
+}
+
+/// `u3 = seg_id: SegId` (8 variants)
+/// `u5 = uvtx: TxfmSize` (19 variants)
+#[derive(Default)]
+#[repr(transparent)]
+struct SegIdUvtx(U8Bits);
+
+impl SegIdUvtx {
+    pub const fn seg_id(&self) -> SegmentId {
+        todo!()
+    }
+
+    pub const fn set_seg_id(&mut self, seg_id: SegmentId) {
+        todo!()
+    }
+
+    pub const fn uvtx(&self) -> TxfmSize {
+        todo!()
+    }
+
+    pub const fn set_uvtx(&mut self, uvtx: TxfmSize) {
+        todo!()
+    }
+}
+
+/// `u3 = bl: BlockLevel` (5 variants)
+/// `u5 = bs: BlockSize` (22 variants)
+#[derive(Default)]
+#[repr(transparent)]
+pub struct BlockLevelBlockSize(U8Bits);
+
+impl BlockLevelBlockSize {
+    pub const fn bl(&self) -> BlockLevel {
+        let bl = self.0.get_bits::<3, 0>();
+        let bl = BlockLevel::from_repr(bl);
+        // SAFETY: Bits can only be set in `Self::set_bl` from a `BlockLevel`.
+        unsafe { bl.unwrap_unchecked() }
+    }
+
+    pub const fn set_bl(&mut self, bl: BlockLevel) {
+        self.0.set_bits::<3, 0>(bl as _);
+    }
+
+    pub const fn bs(&self) -> BlockSize {
+        let bs = self.0.get_bits::<5, { 0 + 3 }>();
+        let bs: Option<BlockSize> = BlockSize::from_repr(bs);
+        // SAFETY: Bits can only be set in `Self::set_bs` from a `BlockLevel`.
+        unsafe { bs.unwrap_unchecked() }
+    }
+
+    pub const fn set_bs(&mut self, bs: BlockSize) {
+        self.0.set_bits::<5, { 0 + 3 }>(bs as _);
+    }
+}
+
+/// `u4 = bp: BlockPartition` (10 variants)
+/// `u4 = filter2d: Filter2d` (10 variants)
+#[derive(Default)]
+#[repr(transparent)]
+struct BlockPartitionFilter2d(U8Bits);
+
+impl BlockPartitionFilter2d {
+    pub const fn bp(&self) -> BlockPartition {
+        todo!()
+    }
+
+    pub const fn set_bp(&mut self, bp: BlockPartition) {
+        todo!()
+    }
+
+    pub const fn filter2d(&self) -> Filter2d {
+        todo!()
+    }
+
+    pub const fn set_filter2d(&mut self, filter2d: Filter2d) {
+        todo!()
+    }
+}
+
+/// `u3 = inter_mode: CompInterPredMode` (8 variants)
+/// `u2 = motion_mode: MotionMode` (3 variants)
+/// `u2 = drl_idx: DrlProximity` (4 variants)
+/// `u1 = mask_sign: bool` (2 variants)
+#[derive(Default)]
+#[repr(transparent)]
+struct InterModeMotionModeDrlIdxMaskSign(U8Bits);
+
+impl InterModeMotionModeDrlIdxMaskSign {
+    pub const fn inter_mode(&self) -> CompInterPredMode {
+        todo!()
+    }
+
+    pub const fn motion_mode(&self) -> MotionMode {
+        todo!()
+    }
+
+    pub const fn drl_idx(&self) -> DrlProximity {
+        todo!()
+    }
+
+    pub const fn mask_sign(&self) -> bool {
+        todo!()
+    }
+}
+
+/// `u1 = skip: bool` (2 variants)
+/// `u1 = skip_mode: bool` (2 variants)
+/// `[u3; 2] = r#ref: [Av1BlockInterRefIndex; 2]` ([8 variants; 2])
+#[derive(Default)]
+#[repr(transparent)]
+struct SkipSkipModeRef(U8Bits);
+
+impl SkipSkipModeRef {
+    pub const fn skip(&self) -> bool {
+        todo!()
+    }
+
+    pub const fn set_skip(&mut self, skip: bool) {
+        todo!()
+    }
+
+    pub const fn skip_mode(&self) -> bool {
+        todo!()
+    }
+
+    pub const fn set_skip_mode(&mut self, skip_mode: bool) {
+        todo!()
+    }
+
+    pub const fn ref0(&self) -> Av1BlockInterRefIndex {
+        todo!()
+    }
+
+    pub const fn ref1(&self) -> Av1BlockInterRefIndex {
+        todo!()
+    }
+}
+
+/// `u2 = interintra_type: Option<InterIntraType>` (2 variants + Option)
+/// `u2 = interintra_mode: InterIntraPredMode` (4 variants)
+/// `u4 = wedge_idx: WedgeIdx` (16 variants)
+#[derive(Default)]
+#[repr(transparent)]
+struct InterIntraTypeWedgeIdxInterIntraMode(U8Bits);
+
+impl InterIntraTypeWedgeIdxInterIntraMode {
+    pub const fn interintra_type(&self) -> Option<InterIntraType> {
+        todo!()
+    }
+
+    pub const fn interintra_mode(&self) -> InterIntraPredMode {
+        todo!()
+    }
+
+    pub const fn wedge_idx(&self) -> WedgeIdx {
+        todo!()
+    }
+}
+
+#[derive(Default, FromZeroes, FromBytes, AsBytes)]
+#[repr(C)] // For known layout, not C.
+struct Av1BlockInterNdBytes {
+    /// Bytes 0..4
+    ///
+    /// These are `i14`s (except for an [`i16::MIN`] stored as a discriminant).
+    /// Not sure how we could stably use that niche, though.
+    matrix3: i16,
+    matrix4: i16,
+
+    /// Bytes 4..12
+    ///
+    /// `mv1d[0]` is `mv2d`.
+    /// `mv1d` is `Av1BlockIntra`, except for `tx`, which reuses `uvtx`.
+    mv1d: [Mv; 2],
+}
+
+#[derive(Default)]
+#[repr(C)]
+pub enum Av1BlockIntraInter {
+    #[default]
+    Inter,
+    Intra,
+}
+
+#[derive(Default)]
+#[repr(C)] // For known layout, not C.
+pub struct Av1Block {
+    /// Bytes 0..12
+    inter_nd: Av1BlockInterNdBytes,
+
+    /// Byte 13
+    ///
+    /// [`Self::inter_max_ytx`] is reused as [`Self::intra_tx`],
+    /// and the rest of [`Self::intra`] is from [`Self::inter_nd`]'s last 8 bytes ([`Av1BlockInterNdBytes::mv1d`]),
+    /// so we want to keep [`Self::intra_tx`] adjacent to [`Self::intra`].
+    max_ytx_comp_type: MaxYtxCompType,
+
+    /// Bytes 13..16
+    ///
+    /// Bytes 12..16 aligned for a u32 load of both of them.
+    pub inter_tx_split0: u8,
+    pub inter_tx_split1: u16,
+
+    /// Bytes 16..23
+    /// 
+    /// We have extra space for [`Self::ii`], but it could also be folded into a niche if needed.
+    pub ii: Av1BlockIntraInter,
+    seg_id_uvtx: SegIdUvtx,
+    bl_bs: BlockLevelBlockSize,
+    bp_filter2d: BlockPartitionFilter2d,
+    inter_mode_motion_mode_drl_idx_mask_sign: InterModeMotionModeDrlIdxMaskSign,
+    skip_skip_mode_ref: SkipSkipModeRef,
+    interintra_type_interintra_mode_wedge_idx: InterIntraTypeWedgeIdxInterIntraMode,
+
+    /// Explicit padding.
+    _byte_23: u8,
+}
+
+/// [`Av1BlockIntra`] minus [`Av1BlockIntra::tx`], which reuses [`Av1BlockBytes::inter_max_ytx`].
+/// The fields are rearranged somewhat for access patterns.
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C)] // For known layout, not C.
+pub struct Av1BlockIntraMinuxTx {
+    pub y_mode: u8,
+    pub uv_mode: u8,
+    pub y_angle: i8,
+    pub uv_angle: i8,
+    pub pal_sz: [u8; 2],
+    pub cfl_alpha: [i8; 2],
+}
+
+impl Av1Block {
+    pub const fn bl(&self) -> BlockLevel {
+        self.bl_bs.bl()
+    }
+
+    pub const fn set_bl(&mut self, bl: BlockLevel) {
+        self.bl_bs.set_bl(bl);
+    }
+
+    pub const fn bs(&self) -> BlockSize {
+        self.bl_bs.bs()
+    }
+
+    pub const fn set_bs(&mut self, bs: BlockSize) {
+        self.bl_bs.set_bs(bs);
+    }
+
+    pub const fn bp(&self) -> BlockPartition {
+        self.bp_filter2d.bp()
+    }
+
+    pub const fn set_bp(&mut self, bp: BlockPartition) {
+        self.bp_filter2d.set_bp(bp);
+    }
+
+    pub const fn seg_id(&self) -> SegmentId {
+        self.seg_id_uvtx.seg_id()
+    }
+
+    pub const fn set_seg_id(&mut self, seg_id: SegmentId) {
+        self.seg_id_uvtx.set_seg_id(seg_id);
+    }
+
+    pub const fn skip_mode(&self) -> bool {
+        self.skip_skip_mode_ref.skip_mode()
+    }
+
+    pub const fn set_skip_mode(&mut self, skip_mode: bool) {
+        self.skip_skip_mode_ref.set_skip_mode(skip_mode);
+    }
+
+    pub const fn skip(&self) -> bool {
+        self.skip_skip_mode_ref.skip()
+    }
+
+    pub const fn set_skip(&mut self, skip: bool) {
+        self.skip_skip_mode_ref.set_skip(skip);
+    }
+
+    pub const fn uvtx(&self) -> TxfmSize {
+        self.seg_id_uvtx.uvtx()
+    }
+
+    pub const fn set_uvtx(&mut self, uvtx: TxfmSize) {
+        self.seg_id_uvtx.set_uvtx(uvtx);
+    }
+
+    pub fn intra(&self) -> &Av1BlockIntraMinuxTx {
+        FromBytes::ref_from(AsBytes::as_bytes(&self.inter_nd.mv1d)).unwrap()
+    }
+
+    pub fn intra_mut(&mut self) -> &mut Av1BlockIntraMinuxTx {
+        FromBytes::mut_from(AsBytes::as_bytes_mut(&mut self.inter_nd.mv1d)).unwrap()
+    }
+
+    pub const fn intra_tx(&self) -> TxfmSize {
+        // Reuse `inter_max_ytx` since it's `inter`.
+        // It will also remove a select between `intra_tx` and `inter_max_ytx`.
+        self.inter_max_ytx()
+    }
+
+    pub const fn set_intra_tx(&mut self, tx: TxfmSize) {
+        self.set_inter_max_ytx(tx)
+    }
+
+    pub const fn inter_1d_mv(&self) -> &[Mv; 2] {
+        &self.inter_nd.mv1d
+    }
+
+    pub const fn inter_1d_mv_mut(&mut self) -> &mut [Mv; 2] {
+        &mut self.inter_nd.mv1d
+    }
+
+    pub const fn inter_1d_wedge_idx(&self) -> WedgeIdx {
+        self.interintra_type_interintra_mode_wedge_idx.wedge_idx()
+    }
+
+    pub const fn inter_1d_mask_sign(&self) -> bool {
+        self.inter_mode_motion_mode_drl_idx_mask_sign.mask_sign()
+    }
+
+    pub const fn inter_1d_interintra_mode(&self) -> InterIntraPredMode {
+        self.interintra_type_interintra_mode_wedge_idx.interintra_mode()
+    }
+
+    pub const fn inter_2d_mv(&self) -> &Mv {
+        &self.inter_nd.mv1d[0]
+    }
+
+    pub fn inter_2d_matrix(&self) -> &[i16; 4] {
+        FromBytes::ref_from(&AsBytes::as_bytes(&self.inter_nd)[0..8]).unwrap()
+    }
+
+    pub const fn inter_comp_type(&self) -> Option<CompInterType> {
+        self.max_ytx_comp_type.comp_type()
+    }
+
+    // TODO does `inter_inter` naming make sense, or does one `inter` suffice.
+    pub const fn inter_inter_mode(&self) -> CompInterPredMode {
+        self.inter_mode_motion_mode_drl_idx_mask_sign.inter_mode()
+    }
+
+    pub const fn inter_motion_mode(&self) -> MotionMode {
+        self.inter_mode_motion_mode_drl_idx_mask_sign.motion_mode()
+    }
+
+    pub const fn inter_drl_idx(&self) -> DrlProximity {
+        self.inter_mode_motion_mode_drl_idx_mask_sign.drl_idx()
+    }
+
+    pub const fn inter_ref0(&self) -> Av1BlockInterRefIndex {
+        self.skip_skip_mode_ref.ref0()
+    }
+
+    pub const fn inter_ref1(&self) -> Av1BlockInterRefIndex {
+        self.skip_skip_mode_ref.ref1()
+    }
+
+    pub const fn inter_ref(&self) -> [Av1BlockInterRefIndex; 2] {
+        [self.inter_ref0(), self.inter_ref1()]
+    }
+
+    pub const fn inter_max_ytx(&self) -> TxfmSize {
+        self.max_ytx_comp_type.max_ytx()
+    }
+
+    pub const fn set_inter_max_ytx(&mut self, max_ytx: TxfmSize) {
+        self.max_ytx_comp_type.set_max_ytx(max_ytx);
+    }
+
+    pub const fn inter_filter2d(&self) -> Filter2d {
+        self.bp_filter2d.filter2d()
+    }
+
+    pub const fn set_inter_filter2d(&mut self, filter2d: Filter2d) {
+        self.bp_filter2d.set_filter2d(filter2d);
+    }
+
+    // TODO does `inter_inter` naming make sense, or does one `inter` suffice.
+    pub const fn inter_interintra_type(&self) -> Option<InterIntraType> {
+        self.interintra_type_interintra_mode_wedge_idx.interintra_type()
+    }
 }
