@@ -1,26 +1,22 @@
 #![deny(unsafe_code)]
 
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
+use std::cmp;
+use std::ffi::{c_int, c_uint};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
+
+use crate::align::{Align16, AlignedVec64};
+use crate::cdef::CdefEdgeFlags;
+use crate::disjoint_mut::DisjointMut;
+use crate::include::common::bitdepth::{BitDepth, BPC};
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::Align16;
-use crate::src::align::AlignedVec64;
-use crate::src::cdef::CdefEdgeFlags;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::pic_or_buf::PicOrBuf;
-use crate::src::strided::Strided as _;
-use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use crate::internal::{Rav1dContext, Rav1dFrameData, Rav1dTaskContext};
+use crate::pic_or_buf::PicOrBuf;
+use crate::strided::{Strided as _, WithStride};
+use crate::with_offset::WithOffset;
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -89,11 +85,13 @@ fn backup2x8<BD: BitDepth>(
     flag: Backup2x8Flags,
 ) {
     let x_off = x_off as isize;
+    // Precomputing (only `stride[0]`) optimizes better.
+    let stride_0 = src[0].pixel_stride::<BD>();
 
     if flag.contains(Backup2x8Flags::Y) {
         for y in 0..8 {
             let y_dst = &mut dst[0][y];
-            let y_src = src[0] + (y as isize * src[0].pixel_stride::<BD>() + x_off - 2);
+            let y_src = src[0] + (y as isize * stride_0 + x_off - 2);
             let y_len = y_dst.len();
             BD::pixel_copy(y_dst, &y_src.slice::<BD>(y_len), y_len);
         }
@@ -105,12 +103,17 @@ fn backup2x8<BD: BitDepth>(
 
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
+    let strides = [
+        stride_0,
+        src[1].pixel_stride::<BD>(),
+        src[2].pixel_stride::<BD>(),
+    ];
 
     let x_off = x_off >> ss_hor;
     for y in 0..8 >> ss_ver {
         for pl in 1..3 {
             let uv_dst = &mut dst[pl][y];
-            let uv_src = src[pl] + (y as isize * src[pl].pixel_stride::<BD>() + x_off - 2);
+            let uv_src = src[pl] + (y as isize * strides[pl] + x_off - 2);
             let uv_len = uv_dst.len();
             BD::pixel_copy(uv_dst, &uv_src.slice::<BD>(uv_len), uv_len);
         }
@@ -173,6 +176,12 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
 
     let mut bit = false;
+
+    // In C, this is declared uninitialized inside the loop,
+    // so it doesn't matter what it is initialized to in Rust as long as it is initialized,
+    // which means we can hoist it out of the loop to safely avoid re-initializing it.
+    let mut lr_bak = Align16([[[[0.into(); 2 /* x */]; 8 /* y */]; 3 /* plane */ ]; 2 /* idx */]);
+
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle != 0;
         let by_idx = (by & 30) >> 1;
@@ -195,8 +204,6 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
             backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
         }
 
-        let mut lr_bak =
-            Align16([[[[0.into(); 2 /* x */]; 8 /* y */]; 3 /* plane */ ]; 2 /* idx */]);
         let mut iptrs = ptrs;
         edges.remove(CdefEdgeFlags::HAVE_LEFT);
         edges.insert(CdefEdgeFlags::HAVE_RIGHT);

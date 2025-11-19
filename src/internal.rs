@@ -1,114 +1,56 @@
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::BPC;
+use std::ffi::{c_int, c_uint};
+use std::mem;
+use std::ops::{Deref, Range};
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, Ordering};
+use std::sync::{Arc, OnceLock};
+use std::thread::JoinHandle;
+
+use atomig::{Atom, Atomic};
+use libc::ptrdiff_t;
+use parking_lot::{Condvar, Mutex, RwLock, RwLockReadGuard};
+use strum::FromRepr;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
+
+use crate::align::{Align16, Align64, AlignedVec2, AlignedVec64};
+use crate::cdef::Rav1dCdefDSPContext;
+use crate::cdf::{CdfContext, CdfThreadContext};
+use crate::cpu::{rav1d_get_cpu_flags, CpuFlags};
+use crate::disjoint_mut::{DisjointImmutGuard, DisjointMut, DisjointMutArcSlice, DisjointMutGuard};
+use crate::env::BlockContext;
+use crate::error::Rav1dError;
+use crate::filmgrain::{Rav1dFilmGrainDSPContext, GRAIN_HEIGHT, GRAIN_WIDTH};
+use crate::include::common::bitdepth::{BitDepth, BitDepth16, BitDepth8, BPC};
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
-use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
-use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::picture::Rav1dPicAllocator;
-use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align16;
-use crate::src::align::Align64;
-use crate::src::align::AlignedVec64;
-use crate::src::cdef::Rav1dCdefDSPContext;
-use crate::src::cdf::CdfContext;
-use crate::src::cdf::CdfThreadContext;
-use crate::src::cpu::rav1d_get_cpu_flags;
-use crate::src::cpu::CpuFlags;
-use crate::src::disjoint_mut::DisjointImmutGuard;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::disjoint_mut::DisjointMutArcSlice;
-use crate::src::disjoint_mut::DisjointMutGuard;
-use crate::src::env::BlockContext;
-use crate::src::error::Rav1dError;
-use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::src::filmgrain::GRAIN_HEIGHT;
-use crate::src::filmgrain::GRAIN_WIDTH;
-use crate::src::ipred::Rav1dIntraPredDSPContext;
-use crate::src::itx::Rav1dInvTxfmDSPContext;
-use crate::src::levels::Av1Block;
-use crate::src::levels::Filter2d;
-use crate::src::levels::SegmentId;
-use crate::src::levels::TxfmType;
-use crate::src::levels::WHT_WHT;
-use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::log::Rav1dLogger;
-use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
-use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
-use crate::src::lr_apply::LrRestorePlanes;
-use crate::src::mc::Rav1dMCDSPContext;
-use crate::src::mem::MemPool;
-use crate::src::msac::MsacContext;
-use crate::src::msac::Rav1dMsacDSPContext;
-use crate::src::pal::Rav1dPalDSPContext;
-use crate::src::picture::PictureFlags;
-use crate::src::picture::Rav1dThreadPicture;
-use crate::src::recon::rav1d_backup_ipred_edge;
-use crate::src::recon::rav1d_copy_pal_block_uv;
-use crate::src::recon::rav1d_copy_pal_block_y;
-use crate::src::recon::rav1d_filter_sbrow;
-use crate::src::recon::rav1d_filter_sbrow_cdef;
-use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
-use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
-use crate::src::recon::rav1d_filter_sbrow_lr;
-use crate::src::recon::rav1d_filter_sbrow_resize;
-use crate::src::recon::rav1d_read_coef_blocks;
-use crate::src::recon::rav1d_read_pal_plane;
-use crate::src::recon::rav1d_read_pal_uv;
-use crate::src::recon::rav1d_recon_b_inter;
-use crate::src::recon::rav1d_recon_b_intra;
-use crate::src::recon::BackupIpredEdgeFn;
-use crate::src::recon::CopyPalBlockFn;
-use crate::src::recon::FilterSbrowFn;
-use crate::src::recon::ReadCoefBlocksFn;
-use crate::src::recon::ReadPalPlaneFn;
-use crate::src::recon::ReadPalUVFn;
-use crate::src::recon::ReconBInterFn;
-use crate::src::recon::ReconBIntraFn;
-use crate::src::refmvs::Rav1dRefmvsDSPContext;
-use crate::src::refmvs::RefMvsFrame;
-use crate::src::refmvs::RefMvsTemporalBlock;
-use crate::src::refmvs::RefmvsTile;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::thread_task::Rav1dTaskIndex;
-use crate::src::thread_task::Rav1dTasks;
-use atomig::Atom;
-use atomig::Atomic;
-use libc::ptrdiff_t;
-use parking_lot::Condvar;
-use parking_lot::Mutex;
-use parking_lot::RwLock;
-use parking_lot::RwLockReadGuard;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::mem;
-use std::ops::Deref;
-use std::ops::Range;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicI32;
-use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::sync::OnceLock;
-use std::thread::JoinHandle;
-use strum::FromRepr;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
-use zerocopy::FromZeroes;
+use crate::include::dav1d::dav1d::{Rav1dDecodeFrameType, Rav1dEventFlags, Rav1dInloopFilterType};
+use crate::include::dav1d::headers::{
+    DRav1d, Dav1dFrameHeader, Dav1dSequenceHeader, Rav1dContentLightLevel, Rav1dFrameHeader,
+    Rav1dITUTT35, Rav1dMasteringDisplay, Rav1dSequenceHeader, Rav1dWarpedMotionParams,
+};
+use crate::include::dav1d::picture::{Rav1dPicAllocator, Rav1dPicture};
+use crate::ipred::Rav1dIntraPredDSPContext;
+use crate::itx::Rav1dInvTxfmDSPContext;
+use crate::levels::{Av1Block, Filter2d, SegmentId, TxfmType, WHT_WHT};
+use crate::lf_mask::{Av1Filter, Av1FilterLUT, Av1Restoration, Av1RestorationUnit};
+use crate::log::Rav1dLogger;
+use crate::loopfilter::Rav1dLoopFilterDSPContext;
+use crate::looprestoration::Rav1dLoopRestorationDSPContext;
+use crate::lr_apply::LrRestorePlanes;
+use crate::mc::Rav1dMCDSPContext;
+use crate::msac::{MsacContext, Rav1dMsacDSPContext};
+use crate::pal::Rav1dPalDSPContext;
+use crate::picture::{PictureFlags, Rav1dThreadPicture};
+use crate::pool::MemPool;
+use crate::recon::{
+    rav1d_backup_ipred_edge, rav1d_copy_pal_block_uv, rav1d_copy_pal_block_y, rav1d_filter_sbrow,
+    rav1d_filter_sbrow_cdef, rav1d_filter_sbrow_deblock_cols, rav1d_filter_sbrow_deblock_rows,
+    rav1d_filter_sbrow_lr, rav1d_filter_sbrow_resize, rav1d_read_coef_blocks, rav1d_read_pal_plane,
+    rav1d_read_pal_uv, rav1d_recon_b_inter, rav1d_recon_b_intra, BackupIpredEdgeFn, CopyPalBlockFn,
+    FilterSbrowFn, ReadCoefBlocksFn, ReadPalPlaneFn, ReadPalUVFn, ReconBInterFn, ReconBIntraFn,
+};
+use crate::refmvs::{Rav1dRefmvsDSPContext, RefMvsFrame, RefMvsTemporalBlock, RefmvsTile};
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::thread_task::{Rav1dTaskIndex, Rav1dTasks};
 
 #[derive(Default)]
 pub struct Rav1dDSPContext {
@@ -304,9 +246,11 @@ pub(crate) struct TaskThreadDataDelayedFg {
     pub grain: Grain,
 }
 
-// TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+// SAFETY:
+// See discussion in https://github.com/memorysafety/rav1d/pull/1329
 unsafe impl Send for TaskThreadDataDelayedFg {}
-// TODO(SJC): Remove when TaskThreadDataDelayedFg is thread-safe
+// SAFETY:
+// See discussion in https://github.com/memorysafety/rav1d/pull/1329
 unsafe impl Sync for TaskThreadDataDelayedFg {}
 
 #[derive(Default)]
@@ -319,7 +263,7 @@ pub(crate) struct TaskThreadData {
     /// This is used for delayed reset of the task cur pointer when
     /// such operation is needed but the thread doesn't enter a critical
     /// section (typically when executing the next sbrow task locklessly).
-    /// See [`crate::src::thread_task::reset_task_cur`].
+    /// See [`crate::thread_task::reset_task_cur`].
     pub reset_task_cur: AtomicU32,
     pub cond_signaled: AtomicI32,
     pub delayed_fg_exec: RelaxedAtomic<i32>,
@@ -369,8 +313,8 @@ impl Rav1dContextTaskThread {
 /// It is not accessed by other threads
 /// (not in the call tree of [`rav1d_worker_task`]).
 ///
-/// [`rav1d_flush`]: crate::src::lib::rav1d_flush
-/// [`rav1d_worker_task`]: crate::src::thread_task::rav1d_worker_task
+/// [`rav1d_flush`]: crate::lib::rav1d_flush
+/// [`rav1d_worker_task`]: crate::thread_task::rav1d_worker_task
 #[derive(Default)]
 pub struct Rav1dState {
     /// Cache of OBUs that make up a single frame before we submit them
@@ -381,7 +325,11 @@ pub struct Rav1dState {
     pub(crate) frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // TODO(kkysen) Previously pooled.
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    pub(crate) itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
+
+    /// This is ref-counted in C, but since we first accumulate the `Vec<Rav1dITUTT35>`
+    /// during [`parse_obus`] and then convert to an [`Arc`] in [`Rav1dITUTT35::to_immut`],
+    /// we don't need an [`Arc`] here.
+    pub(crate) itut_t35: Vec<Rav1dITUTT35>,
 
     // decoded output picture queue
     pub(crate) in_0: Rav1dData,
@@ -436,9 +384,11 @@ pub struct Rav1dContext {
     pub(crate) picture_pool: Arc<MemPool<u8>>,
 }
 
-// TODO(SJC): Remove when Rav1dContext is thread-safe
+// SAFETY:
+// See discussion in https://github.com/memorysafety/rav1d/pull/1329
 unsafe impl Send for Rav1dContext {}
-// TODO(SJC): Remove when Rav1dContext is thread-safe
+// SAFETY:
+// See discussion in https://github.com/memorysafety/rav1d/pull/1329
 unsafe impl Sync for Rav1dContext {}
 
 #[derive(Default)]
@@ -693,7 +643,7 @@ impl TxLpfRightEdge {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContextLf {
-    pub level: DisjointMut<Vec<u8>>,
+    pub level: DisjointMut<AlignedVec2<u8>>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
@@ -712,13 +662,6 @@ pub struct Rav1dFrameContextLf {
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
     pub restore_planes: LrRestorePlanes,
-}
-
-#[derive(Default)]
-#[repr(C)]
-pub struct Rav1dFrameContextTaskThreadPendingTasks {
-    pub head: Rav1dTaskIndex,
-    pub tail: Rav1dTaskIndex,
 }
 
 #[derive(Default)]

@@ -17,22 +17,20 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: cache rust dependencies
-        uses: actions/cache@v4
+      - name: install rust toolchain
+        id: toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: aarch64-android-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+          # aarch64 feature detection is stable
+          toolchain: stable
+          target: aarch64-linux-android
+          components: clippy
+      - name: cache rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: cargo build for aarch64-linux-android
-        run:  |
-            rustup target add --toolchain stable aarch64-linux-android
-            cargo +stable build --target aarch64-linux-android --release
+        run: |
+            cargo +${{ steps.toolchain.outputs.name }} build --target aarch64-linux-android --release
         env:
           AR: llvm-ar
           CC: aarch64-linux-android26-clang
           RUSTFLAGS: "-C linker=aarch64-linux-android26-clang -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/17/lib/linux/aarch64 -L $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26"
-

@@ -1,103 +1,56 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
-use crate::include::common::dump::ac_dump;
-use crate::include::common::dump::coef_dump;
-use crate::include::common::dump::hex_dump;
-use crate::include::common::dump::hex_dump_pic;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::ulog2;
-use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::assume::assume;
-use crate::src::cdef_apply::rav1d_cdef_brow;
-use crate::src::ctx::CaseSet;
-use crate::src::env::get_uv_inter_txtp;
-use crate::src::in_range::InRange;
-use crate::src::internal::Bxy;
-use crate::src::internal::Cf;
-use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTileStateContext;
-use crate::src::internal::ScratchEmuEdge;
-use crate::src::internal::TaskContextScratch;
-use crate::src::internal::TileStateRef;
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
-use crate::src::ipred_prepare::sm_flag;
-use crate::src::ipred_prepare::sm_uv_flag;
-use crate::src::levels::Av1Block;
-use crate::src::levels::Av1BlockInter;
-use crate::src::levels::Av1BlockIntra;
-use crate::src::levels::Av1BlockIntraInter;
-use crate::src::levels::BlockSize;
-use crate::src::levels::CompInterType;
-use crate::src::levels::Filter2d;
-use crate::src::levels::InterIntraPredMode;
-use crate::src::levels::InterIntraType;
-use crate::src::levels::IntraPredMode;
-use crate::src::levels::MotionMode;
-use crate::src::levels::Mv;
-use crate::src::levels::TxClass;
-use crate::src::levels::TxfmSize;
-use crate::src::levels::TxfmType;
-use crate::src::levels::CFL_PRED;
-use crate::src::levels::DCT_DCT;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::IDTX;
-use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::WHT_WHT;
-use crate::src::lf_apply::rav1d_copy_lpf;
-use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
-use crate::src::lf_apply::rav1d_loopfilter_sbrow_rows;
-use crate::src::lr_apply::rav1d_lr_sbrow;
-use crate::src::msac::rav1d_msac_decode_bool_adapt;
-use crate::src::msac::rav1d_msac_decode_bool_equi;
-use crate::src::msac::rav1d_msac_decode_bools;
-use crate::src::msac::rav1d_msac_decode_hi_tok;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt16;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
-use crate::src::msac::MsacContext;
-use crate::src::picture::Rav1dThreadPicture;
-use crate::src::pixels::Pixels as _;
-use crate::src::scan::dav1d_scans;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_filter_2d;
-use crate::src::tables::dav1d_filter_mode_to_y_mode;
-use crate::src::tables::dav1d_lo_ctx_offsets;
-use crate::src::tables::dav1d_skip_ctx;
-use crate::src::tables::dav1d_tx_type_class;
-use crate::src::tables::dav1d_tx_types_per_set;
-use crate::src::tables::dav1d_txfm_dimensions;
-use crate::src::tables::dav1d_txtp_from_uvmode;
-use crate::src::tables::TxfmInfo;
-use crate::src::wedge::dav1d_ii_masks;
-use crate::src::wedge::dav1d_wedge_masks;
-use crate::src::with_offset::WithOffset;
+use std::ffi::{c_int, c_uint};
+use std::hint::assert_unchecked;
+use std::ops::BitOr;
+use std::{array, cmp, ptr};
+
 use assert_matches::debug_assert_matches;
 use libc::intptr_t;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ops::BitOr;
-use std::ptr;
 use to_method::To as _;
+
+use crate::cdef_apply::rav1d_cdef_brow;
+use crate::ctx::CaseSet;
+use crate::env::get_uv_inter_txtp;
+use crate::in_range::InRange;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, ToPrimitive, BPC};
+use crate::include::common::dump::{ac_dump, coef_dump, hex_dump, hex_dump_pic};
+use crate::include::common::intops::{apply_sign64, clip, ulog2};
+use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
+use crate::include::dav1d::headers::{
+    Rav1dPixelLayout, Rav1dPixelLayoutSubSampled, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
+};
+use crate::include::dav1d::picture::{Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset};
+use crate::internal::{
+    Bxy, Cf, CodedBlockInfo, Rav1dContext, Rav1dFrameData, Rav1dTaskContext, Rav1dTileStateContext,
+    ScratchEmuEdge, TaskContextScratch, TileStateRef,
+};
+use crate::intra_edge::EdgeFlags;
+use crate::ipred_prepare::{rav1d_prepare_intra_edges, sm_flag, sm_uv_flag};
+use crate::levels::{
+    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterType, Filter2d,
+    InterIntraPredMode, InterIntraType, IntraPredMode, MotionMode, Mv, TxClass, TxfmSize, TxfmType,
+    CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, IDTX, SMOOTH_PRED,
+    WHT_WHT,
+};
+use crate::lf_apply::{rav1d_copy_lpf, rav1d_loopfilter_sbrow_cols, rav1d_loopfilter_sbrow_rows};
+use crate::lr_apply::rav1d_lr_sbrow;
+use crate::msac::{
+    rav1d_msac_decode_bool_adapt, rav1d_msac_decode_bool_equi, rav1d_msac_decode_bools,
+    rav1d_msac_decode_hi_tok, rav1d_msac_decode_symbol_adapt16, rav1d_msac_decode_symbol_adapt4,
+    rav1d_msac_decode_symbol_adapt8, MsacContext,
+};
+use crate::picture::Rav1dThreadPicture;
+use crate::pixels::Pixels as _;
+use crate::scan::DAV1D_SCANS;
+use crate::strided::Strided as _;
+use crate::tables::{
+    LoCtxOffset, TxfmInfo, DAV1D_FILTER_2D, DAV1D_FILTER_MODE_TO_Y_MODE, DAV1D_LO_CTX_OFFSETS,
+    DAV1D_SKIP_CTX, DAV1D_TXFM_DIMENSIONS, DAV1D_TXTP_FROM_UVMODE, DAV1D_TX_TYPES_PER_SET,
+    DAV1D_TX_TYPE_CLASS,
+};
+use crate::wedge::{DAV1D_II_MASKS, DAV1D_WEDGE_MASKS};
+use crate::with_offset::WithOffset;
 
 impl Bxy {
     pub fn debug_block_info(&self) -> bool {
@@ -115,10 +68,10 @@ impl Bxy {
 /// This a macro rather than a function so that the compiler can see which
 /// specific fields are used to avoid borrowck errors.
 ///
-/// [`Bxy`]: crate::src::internal::Bxy
+/// [`Bxy`]: crate::internal::Bxy
 macro_rules! debug_block_info {
     ($f:expr, $tb:expr) => {{
-        use crate::src::internal::Bxy;
+        use crate::internal::Bxy;
 
         let tb: Bxy = $tb;
         false && $f.frame_hdr.as_ref().unwrap().frame_offset == 2 && tb.debug_block_info()
@@ -336,7 +289,7 @@ fn get_skip_ctx(
             cmp::min(ldir & 0x3f, 4) as usize
         }
 
-        dav1d_skip_ctx[ldir(a)][ldir(l)]
+        DAV1D_SKIP_CTX[ldir(a)][ldir(l)]
     };
     InRange::new(skip_ctx).unwrap()
 }
@@ -472,50 +425,82 @@ fn get_dc_sign_ctx(tx: TxfmSize, a: &[u8], l: &[u8]) -> c_uint {
     (s != 0) as c_uint + (s > 0) as c_uint
 }
 
+/// This is used for `lo_ctx`, which is used for a lookup into `lo_cdf`.
+/// `lo_cdf` corresponds roughly to `Coeff_Base_Cdf` in the spec.
+/// `rav1d`/`dav1d` use a maximum value of 40 (for an array size of 41),
+/// whereas the spec has the array being 42 elements.
+type LoCdfIndex = InRange<usize, 0, 40>;
+
 #[inline]
 fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut u32,
-    ctx_offsets: Option<&[[u8; 5]; 5]>,
+    ctx_offsets: Option<&[[LoCtxOffset; 32]; 32]>,
     x: u8,
     y: u8,
     stride: u8,
-) -> u8 {
+) -> LoCdfIndex {
     let stride = stride as usize;
     let level = |y, x| levels[y * stride + x] as u32;
 
-    // Note that the first `mag` initialization is moved inside the `match`
-    // so that the different bounds checks can be done inside the `match`,
-    // as putting them outside the `match` in an identical one trips up LLVM.
-    let mut mag;
+    // Stride:
+    //  - In the `H | V` cases, `stride = 16`.
+    //  - In the `TwoD` case, `stride = 4 << slh`.
+    //    Max `slh` is `TxfmSize::S32x32 as u8`, which is 3.
+    //    Max `stride` is `4 << 3 = 32`.
+    //
+    // We access level pairs (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (1, 1), and (2, 0),
+    // which means the maximum index we access is:
+    //  - `2 * 16 + 0 = 32` in the `H | V` cases
+    //  - `2 * 32 + 0 = 64` in the `TwoD` case
+    // Therefore, the caller must ensure that `levels` has at least 33 or 65 elements.
+
+    let mut mag = level(0, 1) + level(1, 0);
     let offset;
     match ctx_offsets {
         Some(ctx_offsets) => {
-            level(2, 1); // Bounds check all at once.
-            mag = level(0, 1) + level(1, 0);
             debug_assert_matches!(tx_class, TxClass::TwoD);
             mag += level(1, 1);
             *hi_mag = mag;
             mag += level(0, 2) + level(2, 0);
-            offset = ctx_offsets[cmp::min(y as usize, 4)][cmp::min(x as usize, 4)];
+            offset = ctx_offsets[y as usize][x as usize].get();
+            // The type for `ctx_offsets` guarantees bounds.
+            assert!(offset <= 21); // Elided
         }
         None => {
             debug_assert_matches!(tx_class, TxClass::H | TxClass::V);
-            level(1, 4); // Bounds check all at once.
-            mag = level(0, 1) + level(1, 0);
             mag += level(0, 2);
             *hi_mag = mag;
             mag += level(0, 3) + level(0, 4);
             offset = 26 + if y > 1 { 10 } else { y * 5 };
+            // This follows from the definition of offset.
+            assert!(offset <= 36); // Elided
         }
     }
-    offset
+
+    // What is the maxiumum value of `lo_ctx`, the result?
+    // The callers are using it as a lookup into `lo_cdf`, which has size 41.
+    // Can we statically prove the our return value is less than 41?
+    //
+    // In the `H | V` cases, the maximum value of `offset` is `26 + 10 = 36`.
+    // In the `TwoD` case, `offset` takes a value from `ctx_offsets`.
+    // The highest value in the underlying table is 21, and we guarantee that with types.
+    //
+    // So at this point, `offset <= 36`. However, it seems the compiler needs
+    // some help to unify the offset maxima from the branches.
+    assert!(offset <= 36); // Elided
+
+    let lo_ctx = offset as usize
         + if mag > 512 {
             4
         } else {
-            ((mag + 64) >> 7) as u8
-        }
+            // `mag <= 512` in this branch, so the maximum value is `576 >> 7 == 4`
+            ((mag + 64) >> 7) as u8 as usize
+        } as usize;
+
+    // `36 + 4 == 40`.
+    LoCdfIndex::new(lo_ctx).unwrap() // Elided
 }
 
 fn decode_coefs<BD: BitDepth>(
@@ -542,7 +527,8 @@ fn decode_coefs<BD: BitDepth>(
     let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id.get()];
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
+    #[expect(clippy::overly_complex_bool_expr, reason = "used for debugging")]
     let dbg = dbg_block_info && plane != 0 && false;
 
     if dbg {
@@ -576,7 +562,7 @@ fn decode_coefs<BD: BitDepth>(
         }
         Intra(_) if t_dim.max >= TxfmSize::S32x32 as _ => DCT_DCT,
         Inter(_) if t_dim.max >= TxfmSize::S64x64 as _ => DCT_DCT,
-        Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        Intra(intra) if chroma => DAV1D_TXTP_FROM_UVMODE[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
         Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
@@ -585,7 +571,7 @@ fn decode_coefs<BD: BitDepth>(
         _ if frame_hdr.segmentation.qidx[b.seg_id.get()] == 0 => DCT_DCT,
         Intra(intra) => {
             let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
-                dav1d_filter_mode_to_y_mode[intra.y_angle as usize]
+                DAV1D_FILTER_MODE_TO_Y_MODE[intra.y_angle as usize]
             } else {
                 intra.y_mode
             };
@@ -596,14 +582,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
                     4,
                 );
-                dav1d_tx_types_per_set[idx as usize + 0]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 0]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_intra1[t_dim.min as usize][y_mode_nofilt as usize],
                     6,
                 );
-                dav1d_tx_types_per_set[idx as usize + 5]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 5]
             };
             if dbg {
                 println!(
@@ -632,14 +618,14 @@ fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.cdf.m.txtp_inter2.0,
                     11,
                 );
-                dav1d_tx_types_per_set[idx as usize + 12]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 12]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter1[t_dim.min as usize],
                     15,
                 );
-                dav1d_tx_types_per_set[idx as usize + 24]
+                DAV1D_TX_TYPES_PER_SET[idx as usize + 24]
             };
             if dbg {
                 println!(
@@ -654,7 +640,7 @@ fn decode_coefs<BD: BitDepth>(
     // find end-of-block (eob)
     let tx2dszctx =
         cmp::min(t_dim.lw, TxfmSize::S32x32 as u8) + cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
-    let tx_class = dav1d_tx_type_class[*txtp as usize];
+    let tx_class = DAV1D_TX_TYPE_CLASS[*txtp as usize];
     let chroma = chroma as usize;
     let is_1d = (tx_class != TxClass::TwoD) as usize;
     let eob_bin = match tx2dszctx {
@@ -729,7 +715,7 @@ fn decode_coefs<BD: BitDepth>(
             // both of which are powers of 2.
             // `cf_len` is a power of 2 since it's from `1 << n`, etc.
             // Thus, `& (self.0.len() - 1)` is the same as `% self.0.len()`.
-            unsafe { assume(i < self.0.len()) };
+            unsafe { assert_unchecked(i < self.0.len()) };
             i
         }
 
@@ -778,12 +764,14 @@ fn decode_coefs<BD: BitDepth>(
 
         let lo_cdf = &mut ts_c.cdf.coef.base_tok[t_dim.ctx as usize][chroma];
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
-        let sw = cmp::min(t_dim.w, 8);
-        let sh = cmp::min(t_dim.h, 8);
+
+        let slw = cmp::min(t_dim.lw, TxfmSize::S32x32 as u8);
+        let slh = cmp::min(t_dim.lh, TxfmSize::S32x32 as u8);
+        let tx2dszctx = slw + slh;
 
         // eob
         let mut ctx =
-            1 + (eob > sw as u16 * sh as u16 * 2) as u8 + (eob > sw as u16 * sh as u16 * 4) as u8;
+            1 + (eob > (2 << tx2dszctx) as u16) as u8 + (eob > (4 << tx2dszctx) as u16) as u8;
         let eob_tok =
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2);
         let mut tok = eob_tok + 1;
@@ -796,9 +784,9 @@ fn decode_coefs<BD: BitDepth>(
         match tx_class {
             TxClass::TwoD => {
                 let is_rect = tx.is_rect() as usize;
-                lo_ctx_offsets = Some(&dav1d_lo_ctx_offsets[is_rect + (tx as usize & is_rect)]);
-                scan = dav1d_scans[tx as usize];
-                stride = 4 * sh;
+                lo_ctx_offsets = Some(&DAV1D_LO_CTX_OFFSETS[is_rect + (tx as usize & is_rect)]);
+                scan = DAV1D_SCANS[tx as usize];
+                stride = 4 << slh;
             }
             TxClass::H | TxClass::V => {
                 lo_ctx_offsets = None;
@@ -810,33 +798,74 @@ fn decode_coefs<BD: BitDepth>(
         let shift;
         let shift2;
         let mask;
-        let swh_zero;
+        let end: usize;
         match tx_class {
             TxClass::TwoD => {
-                shift = if t_dim.lh < 4 { t_dim.lh + 2 } else { 5 };
+                shift = slh + 2;
                 shift2 = 0;
-                mask = 4 * sh - 1;
-                swh_zero = sw;
+                mask = (4 << slh) - 1;
+                // We need to zero part of `levels`. We want to calulate the end
+                // of the slice to zero in a way that rust can elide the bounds
+                // check. The size of the `levels` array is 1088 bytes.
+                //
+                // The original calculation here:
+                // `end = stride as usize * ((4 << slw) as usize + 2)`
+                //
+                // We know:
+                //  - `stride = 4 << slh`, where `slh <= 3`.
+                //    Therefore, `stride <= 32`.
+                //
+                //  - `slw <= 3`. Therefore, `4 << slw <= 32`
+                //
+                // Therefore, we have the maximum `end` value as
+                //  `32 * (32 + 2) = 1088`
+                // Therefore, no bounds check should be required to slice `levels`.
+                //
+                // However, as of nightly 2025-05-01, rustc had a lot of trouble
+                // proving that to itself. Here we give it a hand. First, we
+                // rearrange:
+                //    `stride * ((4 << slw) + 2)`
+                //  `= (4 << slh) * ((4 << slw) + 2)`
+                // This gets a lot easier if we shift from << to *2^x
+                //  `= (4 * 2^slh) * (4 * 2^slw + 2)`
+                //  `= (2^(slh+2)) * (2^(slw+2) + 2)`
+                //  `= 2^(slh+2) * 2(slw + 2) + 2^(slh+2)*2`
+                //  `= 2^(slh+slw+4) + 2^(slh+3)`
+                //  `= 16 * 2^(slh+slw) + 8*2^slh`
+                //  `= 16 << (slh + slw) + 8 << slh`
+                //
+                // With suitable asserts, rustc can handle this.
+                //
+                // Interestingly, regardless of `slw`, these two terms don't have overlapping bits,
+                // so we can replace the + with a bitwise or
+                //  `= 16 << (slh + slw) | 8 << slh`
+                // However, this confuses rustc again! So we just use an add!
+                let term1: usize = 16 << (slw + slh);
+                assert!(term1 <= 1024); // Elided
+                let term2: usize = 8 << slh;
+                assert!(term2 <= 64); // Elided
+                end = term1 + term2;
             }
             TxClass::H => {
-                shift = t_dim.lh + 2;
+                shift = slh + 2;
                 shift2 = 0;
-                mask = 4 * sh - 1;
-                swh_zero = sh;
+                mask = (4 << slh) - 1;
+                end = stride as usize * ((4 << slh) as usize + 2);
             }
             TxClass::V => {
-                shift = t_dim.lw + 2;
-                shift2 = t_dim.lh + 2;
-                mask = 4 * sw - 1;
-                swh_zero = sw;
+                shift = slw + 2;
+                shift2 = slh + 2;
+                mask = (4 << slw) - 1;
+                end = stride as usize * ((4 << slw) as usize + 2);
             }
         }
 
-        // Optimizes better than `.fill(0)`,
-        // which doesn't elide the bounds check, inline, or vectorize.
-        for i in 0..stride as usize * (4 * swh_zero as usize + 2) {
-            levels[i] = 0;
-        }
+        // `.fill(0)` will become a call the the platform C library's `bzero` or `memset` function.
+        // That is likely to be a version optimised for the specific CPU with appropriate vectoring.
+        //
+        // The value of `end` is known statically to not exceed the size of `levels`,
+        // so there's also no bounds check.
+        levels[..end].fill(0);
 
         let mut rc;
         let mut x;
@@ -891,7 +920,13 @@ fn decode_coefs<BD: BitDepth>(
             }
         }
         cf.set(rc, tok.to::<i16>() << 11);
-        levels[x as usize * stride as usize + y as usize] = level_tok as u8;
+        let level_off = if tx_class == TxClass::TwoD {
+            rc as usize
+        } else {
+            x as usize * stride as usize + y as usize
+        };
+        levels[level_off] = level_tok as u8;
+
         for i in (1..eob).rev() {
             // ac
             let rc_i;
@@ -915,12 +950,30 @@ fn decode_coefs<BD: BitDepth>(
             debug_assert!(x < 32 && y < 32);
             x %= 32;
             y %= 32;
-            let level = &mut levels[x as usize * stride as usize + y as usize..];
-            ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
+            // The caller of `get_lo_ctx` must ensure that there are at least
+            // 65 elements in `level` in the `TwoD` case, and 33 elements for `H | V`.
+            // The size of `levels` is `32 * 34`, so `level_off` must be such that
+            // - `H | V`: `32 * 34 - level_off >= 33` => `level_off <= 1055`
+            // - `TwoD`: `32 * 34 - level_off >= 65` => `level_off <= 1023`
+            let level_off = match tx_class {
+                // `rc_i` is from `scan[i]`, which has type `Scan`,
+                // which has a max of 1023 by virtue of the type definition.
+                // That's the max from the calculation above.
+                // Therefore, we are okay.
+                TxClass::TwoD => rc_i as usize,
+
+                // Max `x` and `y` are 31 and `stride = 16`.
+                // Therefore, max `level_off` is 527, which is okay.
+                TxClass::H | TxClass::V => x as usize * stride as usize + y as usize,
+            };
+            // At this point, we know that `get_lo_ctx` can elide the bounds check on `level`
+            // because it is statically known that `level` has at least 65 elements.
+            let level = &mut levels[level_off..];
+            let lo_ctx = get_lo_ctx(level, tx_class, &mut mag, lo_ctx_offsets, x, y, stride);
             if tx_class == TxClass::TwoD {
                 y |= x;
             }
-            tok = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3);
+            tok = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[lo_ctx.get()], 3);
             if dbg {
                 println!(
                     "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -973,13 +1026,17 @@ fn decode_coefs<BD: BitDepth>(
             }
         }
         // dc
-        ctx = if tx_class == TxClass::TwoD {
+        let lo_ctx = if tx_class == TxClass::TwoD {
             0
         } else {
-            get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride)
+            // The caller of `get_lo_ctx` must ensure that there are at least
+            // 65 elements in level in the `TwoD` case, and 33 elements for `H | V`.
+            // The size of `levels` is 32 * 34, and we are not offsetting into it,
+            // so this is trivially true.
+            get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride).get()
         };
         let mut dc_tok =
-            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3) as c_uint;
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[lo_ctx], 3) as c_uint;
         if dbg {
             println!(
                 "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
@@ -1276,7 +1333,7 @@ fn read_coef_tree<BD: BitDepth>(
     let bd = BD::from_c(f.bitdepth_max);
 
     let ts = &f.ts[t.ts];
-    let t_dim = &dav1d_txfm_dimensions[ytx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[ytx as usize];
     let txw = t_dim.w;
     let txh = t_dim.h;
 
@@ -1285,7 +1342,7 @@ fn read_coef_tree<BD: BitDepth>(
     // Avoids an undefined left shift.
     if depth < 2 && tx_split[depth] != 0 && tx_split[depth] & 1 << y_off * 4 + x_off != 0 {
         let sub = t_dim.sub;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &DAV1D_TXFM_DIMENSIONS[sub as usize];
         let txsw = sub_t_dim.w;
         let txsh = sub_t_dim.h;
 
@@ -1505,8 +1562,8 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
     assert!(b.skip == 0);
-    let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let t_dim = &dav1d_txfm_dimensions[match &b.ii {
+    let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
     } as usize];
@@ -1922,7 +1979,7 @@ fn obmc<BD: BitDepth>(
                     a_r.mv.mv[0],
                     &f.refp[a_r.r#ref.r#ref[0] as usize - 1],
                     a_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
+                    DAV1D_FILTER_2D[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_h.call::<BD>(
@@ -1970,7 +2027,7 @@ fn obmc<BD: BitDepth>(
                     l_r.mv.mv[0],
                     &f.refp[l_r.r#ref.r#ref[0] as usize - 1],
                     l_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
+                    DAV1D_FILTER_2D[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
                         [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
                 f.dsp.mc.blend_v.call::<BD>(
@@ -2108,8 +2165,8 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
-    let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
-    let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[intra.tx as usize];
+    let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
 
     // coefficient coding
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2929,7 +2986,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 mask = &seg_mask[..];
             }
             CompInterType::Wedge => {
-                mask = dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
+                mask = DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
                 f.dsp.mc.mask.call::<BD>(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
@@ -2940,7 +2997,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     bd,
                 );
                 if has_chroma {
-                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx]
+                    mask = DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx]
                         [inter.nd.one_d.mask_sign() as usize]
                         [inter.nd.one_d.wedge_idx as usize];
                 }
@@ -3124,10 +3181,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             let ii_mask = match interintra_type {
                 InterIntraType::Blend => {
-                    dav1d_ii_masks[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
+                    DAV1D_II_MASKS[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
                 }
                 InterIntraType::Wedge => {
-                    dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
                 }
             };
             f.dsp
@@ -3197,7 +3254,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bw4 == 1 {
-                    let left_filter_2d = dav1d_filter_2d
+                    let left_filter_2d = DAV1D_FILTER_2D
                         [*t.l.filter[1].index(by4 as usize) as usize]
                         [*t.l.filter[0].index(by4 as usize) as usize];
                     for pl in 0..2 {
@@ -3233,7 +3290,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bh4 == ss_ver {
-                    let top_filter_2d = dav1d_filter_2d
+                    let top_filter_2d = DAV1D_FILTER_2D
                         [*f.a[t.a].filter[1].index(bx4 as usize) as usize]
                         [*f.a[t.a].filter[0].index(bx4 as usize) as usize];
                     for pl in 0..2 {
@@ -3344,11 +3401,11 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     // transform size...
                     let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
-                            dav1d_ii_masks[bs as usize][chr_layout_idx]
+                            DAV1D_II_MASKS[bs as usize][chr_layout_idx]
                                 [inter.nd.one_d.interintra_mode.get() as usize]
                         }
                         InterIntraType::Wedge => {
-                            dav1d_wedge_masks[bs as usize][chr_layout_idx][0]
+                            DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx][0]
                                 [inter.nd.one_d.wedge_idx as usize]
                         }
                     };
@@ -3468,8 +3525,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         return Ok(());
     }
 
-    let uvtx = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let ytx = &dav1d_txfm_dimensions[inter.max_ytx as usize];
+    let uvtx = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
+    let ytx = &DAV1D_TXFM_DIMENSIONS[inter.max_ytx as usize];
     let tx_split = [inter.tx_split0 as u16, inter.tx_split1];
 
     for init_y in (0..bh4).step_by(16) {

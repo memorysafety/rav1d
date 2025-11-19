@@ -1,43 +1,29 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Rav1dPicAllocator;
-use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::dav1d::picture::Rav1dPictureParameters;
-use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
-use crate::src::error::Dav1dResult;
-use crate::src::error::Rav1dError::EGeneric;
-use crate::src::error::Rav1dResult;
-use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::log::Rav1dLog as _;
-use crate::src::log::Rav1dLogger;
-use crate::src::mem::MemPool;
-use crate::src::send_sync_non_null::SendSyncNonNull;
-use bitflags::bitflags;
-use libc::ptrdiff_t;
-use parking_lot::Mutex;
-use std::ffi::c_int;
-use std::ffi::c_void;
-use std::mem;
-use std::ptr;
-use std::ptr::fn_addr_eq;
-use std::ptr::NonNull;
+use std::ffi::{c_int, c_void};
+use std::ptr::{fn_addr_eq, NonNull};
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
+use std::{mem, ptr};
+
+use bitflags::bitflags;
+use libc::ptrdiff_t;
 use to_method::To as _;
+
+use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
+use crate::include::dav1d::common::Rav1dDataProps;
+use crate::include::dav1d::dav1d::Rav1dEventFlags;
+use crate::include::dav1d::headers::{
+    DRav1d, Dav1dFrameHeader, Dav1dITUTT35, Dav1dSequenceHeader, Rav1dContentLightLevel,
+    Rav1dFrameHeader, Rav1dITUTT35, Rav1dMasteringDisplay, Rav1dPixelLayout, Rav1dSequenceHeader,
+};
+use crate::include::dav1d::picture::{
+    Dav1dPicture, Rav1dPicAllocator, Rav1dPicture, Rav1dPictureParameters, RAV1D_PICTURE_ALIGNMENT,
+};
+use crate::internal::{Rav1dFrameContext, Rav1dFrameData};
+use crate::log::{Rav1dLog as _, Rav1dLogger};
+use crate::pool::MemPool;
+use crate::send_sync_non_null::SendSyncNonNull;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PictureFlags(u8);
@@ -227,7 +213,7 @@ fn picture_alloc_with_edges(
 ) -> Rav1dResult {
     if p.data.is_some() {
         writeln!(logger, "Picture already allocated!",);
-        return Err(EGeneric);
+        return Err(Rav1dError::Other);
     }
     assert!(bpc > 0 && bpc <= 16);
     let pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
@@ -262,7 +248,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
     frame_flags: &mut PictureFlags,
     f: &mut Rav1dFrameData,
     bpc: u8,
-    itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
+    itut_t35: Vec<Rav1dITUTT35>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = fc.len() > 1;

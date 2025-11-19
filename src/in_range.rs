@@ -1,10 +1,9 @@
-use crate::src::assume::assume;
-use crate::src::const_fn::const_for;
-use crate::src::enum_map::DefaultValue;
 use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Debug, Display, Formatter};
+use std::hint::assert_unchecked;
+
+use crate::const_fn::const_for;
+use crate::enum_map::DefaultValue;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct InRange<T, const MIN: u128, const MAX: u128>(T);
@@ -41,7 +40,7 @@ where
 
     pub fn get(self) -> T {
         // SAFETY: Checked in `Self::new`.
-        unsafe { assume(self.in_bounds()) };
+        unsafe { assert_unchecked(self.in_bounds()) };
         self.0
     }
 }
@@ -85,6 +84,10 @@ macro_rules! impl_const_new {
                 });
                 b
             }
+        }
+
+        impl<const N: usize, const MIN: u128, const MAX: u128> DefaultValue for [InRange<$T, MIN, MAX>; N] {
+            const DEFAULT: Self = [DefaultValue::DEFAULT; N];
         }
     };
 }

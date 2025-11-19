@@ -1,20 +1,12 @@
-use crate::include::common::intops::clip;
-use crate::src::align::Align16;
-use crate::src::align::Align8;
-use crate::src::align::ArrayDefault;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_void;
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::ops::Add;
-use std::ops::Div;
-use std::ops::Mul;
-use std::ops::Rem;
-use std::ops::Shr;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
+use std::fmt::{Display, Formatter};
+use std::ops::{Add, Div, Mul, Rem, Shr};
+
+use zerocopy::{AsBytes, FromBytes};
+
+use crate::align::{Align16, Align8, ArrayDefault};
+use crate::include::common::intops::clip;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;
@@ -421,14 +413,14 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 ///     * `arm`, `aarch64`:
 ///         * [`neon`]
 ///
-/// [`wrap_fn_ptr!`]: crate::src::wrap_fn_ptr::wrap_fn_ptr
-/// [`CpuFlags`]: crate::src::cpu::CpuFlags
-/// [`sse2`]: crate::src::cpu::CpuFlags::SSE2
-/// [`sse41`]: crate::src::cpu::CpuFlags::SSE41
-/// [`ssse3`]: crate::src::cpu::CpuFlags::SSSE3
-/// [`avx2`]: crate::src::cpu::CpuFlags::AVX2
-/// [`avx512icl`]: crate::src::cpu::CpuFlags::AVX512ICL
-/// [`neon`]: crate::src::cpu::CpuFlags::NEON
+/// [`wrap_fn_ptr!`]: crate::wrap_fn_ptr::wrap_fn_ptr
+/// [`CpuFlags`]: crate::cpu::CpuFlags
+/// [`sse2`]: crate::cpu::CpuFlags::SSE2
+/// [`sse41`]: crate::cpu::CpuFlags::SSE41
+/// [`ssse3`]: crate::cpu::CpuFlags::SSSE3
+/// [`avx2`]: crate::cpu::CpuFlags::AVX2
+/// [`avx512icl`]: crate::cpu::CpuFlags::AVX512ICL
+/// [`neon`]: crate::cpu::CpuFlags::NEON
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
@@ -489,12 +481,10 @@ macro_rules! fn_identity {
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 pub(crate) use bd_fn;
-
 #[cfg(all(
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 pub(crate) use bpc_fn;
-
 #[allow(unused)]
 pub(crate) use fn_identity;

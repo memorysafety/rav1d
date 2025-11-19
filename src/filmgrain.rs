@@ -1,43 +1,34 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynEntry;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::DynScaling;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::picture::Rav1dPictureDataComponent;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::assume::assume;
-use crate::src::cpu::CpuFlags;
-use crate::src::enum_map::enum_map;
-use crate::src::enum_map::enum_map_ty;
-use crate::src::enum_map::DefaultValue;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::internal::GrainLut;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_gaussian_sequence;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use libc::intptr_t;
-use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::mem;
-use std::ops::Add;
-use std::ops::Shl;
-use std::ops::Shr;
-use std::ptr;
+use std::ffi::{c_int, c_uint};
+use std::hint::assert_unchecked;
+use std::ops::{Add, Shl, Shr};
+use std::{cmp, mem, ptr};
+
+use libc::{intptr_t, ptrdiff_t};
 use to_method::To;
 
+use crate::cpu::CpuFlags;
+use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
+use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 use crate::include::common::bitdepth::bd_fn;
+use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynEntry, DynPixel, DynScaling};
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::{
+    Dav1dFilmGrainData, Rav1dFilmGrainData, Rav1dPixelLayoutSubSampled,
+};
+use crate::include::dav1d::picture::{
+    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponent,
+    Rav1dPictureDataComponentOffset,
+};
+use crate::internal::GrainLut;
+use crate::strided::Strided as _;
+use crate::tables::dav1d_gaussian_sequence;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
@@ -106,8 +97,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_src: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst_row: FFISafeRav1dPictureDataComponentOffset,
+    _src_src: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl fgy_32x32xn::Fn {
@@ -135,8 +126,8 @@ impl fgy_32x32xn::Fn {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let bd = bd.into_c();
-        let dst_row = FFISafe::new(&dst_row);
-        let src_row = FFISafe::new(&src_row);
+        let dst_row = dst_row.into_ffi_safe();
+        let src_row = src_row.into_ffi_safe();
         // SAFETY: Fallback `fn fgy_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -172,9 +163,9 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst_row: FFISafeRav1dPictureDataComponentOffset,
+    _src_row: FFISafeRav1dPictureDataComponentOffset,
+    _luma_row: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl fguv_32x32xn::Fn {
@@ -212,9 +203,9 @@ impl fguv_32x32xn::Fn {
         let uv_pl = is_uv as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
-        let dst_row = FFISafe::new(&dst_row);
-        let src_row = FFISafe::new(&src_row);
-        let luma_row = FFISafe::new(&luma_row);
+        let dst_row = dst_row.into_ffi_safe();
+        let src_row = src_row.into_ffi_safe();
+        let luma_row = luma_row.into_ffi_safe();
         // SAFETY: Fallback `fn fguv_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -448,8 +439,8 @@ fn generate_grain_uv_rust<BD: BitDepth>(
                         // The optimizer is not smart enough to deduce this on its own.
                         // SAFETY: The above static check checks all maximum index possibilities.
                         unsafe {
-                            assume(luma_y < GRAIN_HEIGHT + 1 - 1);
-                            assume(luma_x < GRAIN_WIDTH - 1);
+                            assert_unchecked(luma_y < GRAIN_HEIGHT + 1 - 1);
+                            assert_unchecked(luma_x < GRAIN_WIDTH - 1);
                         }
                         for i in 0..1 + is_sub.y as usize {
                             for j in 0..1 + is_sub.x as usize {
@@ -538,11 +529,11 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst_row: FFISafeRav1dPictureDataComponentOffset,
+    src_row: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `fgy_32x32xn::Fn::call`.
-    let [dst_row, src_row] = [dst_row, src_row].map(|it| *unsafe { FFISafe::get(it) });
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `fgy_32x32xn::Fn::call`.
+    let [dst_row, src_row] = [dst_row, src_row].map(|it| unsafe { FFISafe::from_with_offset(it) });
     let data = &data.clone().into();
     // SAFETY: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
@@ -877,13 +868,13 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-    dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-    luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    dst_row: FFISafeRav1dPictureDataComponentOffset,
+    src_row: FFISafeRav1dPictureDataComponentOffset,
+    luma_row: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let [dst_row, src_row, luma_row] = [dst_row, src_row, luma_row].map(|row| {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `fguv_32x32xn::Fn::call`.
-        *unsafe { FFISafe::get(row) }
+        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `fguv_32x32xn::Fn::call`.
+        unsafe { FFISafe::from_with_offset(row) }
     });
     let data = &data.clone().into();
     // SAFETY: Casting back to the original type from the `fn` ptr call.
@@ -990,8 +981,8 @@ mod neon {
         bh: c_int,
         row_num: c_int,
         bitdepth_max: c_int,
-        _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-        _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _dst_row: FFISafeRav1dPictureDataComponentOffset,
+        _src_row: FFISafeRav1dPictureDataComponentOffset,
     ) {
         let dst_row = dst_row_ptr.cast();
         let src_row = src_row_ptr.cast();
@@ -1154,9 +1145,9 @@ mod neon {
         uv: c_int,
         is_id: c_int,
         bitdepth_max: c_int,
-        _dst_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-        _src_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
-        _luma_row: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _dst_row: FFISafeRav1dPictureDataComponentOffset,
+        _src_row: FFISafeRav1dPictureDataComponentOffset,
+        _luma_row: FFISafeRav1dPictureDataComponentOffset,
     ) {
         let dst_row = dst_row_ptr.cast();
         let src_row = src_row_ptr.cast();

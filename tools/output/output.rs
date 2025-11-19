@@ -1,25 +1,10 @@
-use crate::compat::stdio::snprintf;
-use crate::compat::stdio::stderr;
-use libc::fprintf;
-use libc::free;
-use libc::malloc;
-use libc::memcpy;
-use libc::strchr;
-use libc::strcmp;
-use libc::strlen;
-use libc::strncmp;
-use libc::ENOMEM;
-use libc::ENOPROTOOPT;
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use std::cmp;
-use std::ffi::c_char;
-use std::ffi::c_int;
-use std::ffi::c_long;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_void;
-use std::mem;
+use std::ffi::{c_char, c_int, c_long, c_uint, c_ulong, c_void};
+use std::{cmp, mem};
+
+use libc::{fprintf, free, malloc, memcpy, strchr, strcmp, strlen, strncmp, ENOMEM, ENOPROTOOPT};
+use rav1d::include::dav1d::picture::{Dav1dPicture, Dav1dPictureParameters};
+
+use crate::compat::stdio::{snprintf, stderr};
 
 extern "C" {
     static null_muxer: Muxer;
@@ -62,7 +47,7 @@ pub struct Muxer {
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const c_char) -> c_int>,
 }
 
-static mut muxers: [*const Muxer; 5] = unsafe {
+static mut MUXERS: [*const Muxer; 5] = unsafe {
     [
         &null_muxer as *const Muxer,
         &md5_muxer as *const Muxer,
@@ -115,19 +100,19 @@ pub unsafe fn output_open(
         name_offset =
             5 as c_int * (strncmp(name, b"frame\0" as *const u8 as *const c_char, 5) == 0) as c_int;
         i = 0 as c_int as c_uint;
-        while !(muxers[i as usize]).is_null() {
+        while !(MUXERS[i as usize]).is_null() {
             if strcmp(
-                (*muxers[i as usize]).name,
+                (*MUXERS[i as usize]).name,
                 &*name.offset(name_offset as isize),
             ) == 0
             {
-                impl_0 = muxers[i as usize];
+                impl_0 = MUXERS[i as usize];
                 break;
             } else {
                 i = i.wrapping_add(1);
             }
         }
-        if (muxers[i as usize]).is_null() {
+        if (MUXERS[i as usize]).is_null() {
             fprintf(
                 stderr(),
                 b"Failed to find muxer named \"%s\"\n\0" as *const u8 as *const c_char,
@@ -136,7 +121,7 @@ pub unsafe fn output_open(
             return -ENOPROTOOPT;
         }
     } else if strcmp(filename, b"/dev/null\0" as *const u8 as *const c_char) == 0 {
-        impl_0 = muxers[0];
+        impl_0 = MUXERS[0];
     } else {
         let ext: *const c_char = find_extension(filename);
         if ext.is_null() {
@@ -148,15 +133,15 @@ pub unsafe fn output_open(
             return -1;
         }
         i = 0 as c_int as c_uint;
-        while !(muxers[i as usize]).is_null() {
-            if strcmp((*muxers[i as usize]).extension, ext) == 0 {
-                impl_0 = muxers[i as usize];
+        while !(MUXERS[i as usize]).is_null() {
+            if strcmp((*MUXERS[i as usize]).extension, ext) == 0 {
+                impl_0 = MUXERS[i as usize];
                 break;
             } else {
                 i = i.wrapping_add(1);
             }
         }
-        if (muxers[i as usize]).is_null() {
+        if (MUXERS[i as usize]).is_null() {
             fprintf(
                 stderr(),
                 b"Failed to find muxer for extension \"%s\"\n\0" as *const u8 as *const c_char,

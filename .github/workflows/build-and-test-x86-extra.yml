@@ -26,29 +26,20 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: meson nasm gcc-multilib
-          version: 1.0 # version of cache to load
+          version: 3.0 # version of cache to load
       - name: git checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: cache rust toolchain
-        uses: actions/cache@v4
+      - name: install rust toolchain
+        id: toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          path: |
-            ~/.rustup/toolchains
-            ~/.rustup/update-hashes
-            ~/.rustup/settings.toml
-          key: ${{ runner.os }}-${{ matrix.target }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
-      - name: cache rust crates
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          toolchain: stable # x86_64 feature detection is stable
+          target: ${{ matrix.target }}
+          components: clippy
+      - name: cache rust dependencies
+        uses: Swatinem/rust-cache@v2
       - name: cache argon test vectors
         id: cache-argon
         uses: actions/cache@v4
@@ -60,10 +51,11 @@ jobs:
             argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          rustup target add --toolchain stable ${{ matrix.target }}
-          cargo +stable build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+          cargo +${{ steps.toolchain.outputs.name }} build --target ${{ matrix.target }} ${{ matrix.build.flags }}
         env:
           RUSTFLAGS: "-C overflow-checks=on"
+      - name: Clippy
+        run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: download, check, and unpack argon test vectors
         if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
         run: | # delete the downloaded .zip to avoid out-of-diskspace errors
@@ -74,9 +66,8 @@ jobs:
           rm argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
           mv argon_coveragetool_av1_base_and_extended_profiles_v2.1 tests/argon
         env:
-          ARGON_URL: https://storage.googleapis.com/downloads.aomedia.org/assets/zip/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
-          ARGON_URL_MD5: https://storage.googleapis.com/downloads.aomedia.org/assets/zip/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip.md5sum
+          ARGON_URL: https://aom-cwg-av1-argon-streams-public.s3.us-east-1.amazonaws.com/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+          ARGON_URL_MD5: https://aom-cwg-av1-argon-streams-public.s3.us-east-1.amazonaws.com/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip.md5sum
       - name: run argon tests for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           tests/dav1d_argon.bash -d target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d -j `nproc`
-

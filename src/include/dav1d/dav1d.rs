@@ -1,18 +1,26 @@
-use crate::include::dav1d::picture::Dav1dPicAllocator;
-use crate::include::dav1d::picture::Rav1dPicAllocator;
-use crate::src::c_arc::RawArc;
-use crate::src::error::Rav1dError;
-use crate::src::internal::Rav1dContext;
-pub use crate::src::log::Dav1dLogger;
-use crate::src::log::Rav1dLogger;
+use std::ffi::{c_int, c_uint};
+
 use bitflags::bitflags;
-use std::ffi::c_int;
-use std::ffi::c_uint;
 use strum::FromRepr;
+
+use crate::c_arc::RawArc;
+use crate::error::Rav1dError;
+use crate::in_range::InRange;
+use crate::include::dav1d::picture::{Dav1dPicAllocator, Rav1dPicAllocator};
+use crate::internal::Rav1dContext;
+pub use crate::log::Dav1dLogger;
+use crate::log::Rav1dLogger;
+use crate::validate_input;
 
 pub type Dav1dContext = RawArc<Rav1dContext>;
 
 pub type Dav1dRef = ();
+
+pub const RAV1D_MAX_THREADS: usize = 256;
+pub const RAV1D_MAX_FRAME_DELAY: usize = 256;
+
+pub const DAV1D_MAX_THREADS: c_int = RAV1D_MAX_THREADS as _;
+pub const DAV1D_MAX_FRAME_DELAY: c_int = RAV1D_MAX_FRAME_DELAY as _;
 
 pub type Dav1dInloopFilterType = c_uint;
 pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType =
@@ -80,7 +88,7 @@ impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
     type Error = Rav1dError;
 
     fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
-        Self::from_repr(value as usize).ok_or(Rav1dError::EINVAL)
+        Self::from_repr(value as usize).ok_or(Rav1dError::InvalidArgument)
     }
 }
 
@@ -142,10 +150,10 @@ pub struct Dav1dSettings {
 
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
-    pub n_threads: c_int,
-    pub max_frame_delay: c_int,
+    pub n_threads: InRange<u16, 0, { RAV1D_MAX_THREADS as _ }>,
+    pub max_frame_delay: InRange<u16, 0, { RAV1D_MAX_FRAME_DELAY as _ }>,
     pub apply_grain: bool,
-    pub operating_point: u8,
+    pub operating_point: InRange<u8, 0, 31>,
     pub all_layers: bool,
     pub frame_size_limit: c_uint,
     pub allocator: Rav1dPicAllocator,
@@ -175,11 +183,23 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
+        validate_input!((
+            (0..=DAV1D_MAX_THREADS).contains(&n_threads),
+            Rav1dError::InvalidArgument
+        ))?;
+        validate_input!((
+            (0..=DAV1D_MAX_FRAME_DELAY).contains(&max_frame_delay),
+            Rav1dError::InvalidArgument
+        ))?;
+        validate_input!((
+            (0..32).contains(&operating_point),
+            Rav1dError::InvalidArgument
+        ))?;
         Ok(Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: InRange::new(n_threads.try_into().unwrap()).unwrap(),
+            max_frame_delay: InRange::new(max_frame_delay.try_into().unwrap()).unwrap(),
             apply_grain: apply_grain != 0,
-            operating_point: operating_point.try_into().unwrap(),
+            operating_point: InRange::new(operating_point.try_into().unwrap()).unwrap(),
             all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.try_into()?,
@@ -209,10 +229,10 @@ impl From<Rav1dSettings> for Dav1dSettings {
             decode_frame_type,
         } = value;
         Self {
-            n_threads,
-            max_frame_delay,
+            n_threads: n_threads.get().into(),
+            max_frame_delay: max_frame_delay.get().into(),
             apply_grain: apply_grain as c_int,
-            operating_point: operating_point.into(),
+            operating_point: operating_point.get().into(),
             all_layers: all_layers as c_int,
             frame_size_limit,
             allocator: allocator.into(),

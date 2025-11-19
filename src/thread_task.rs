@@ -1,3 +1,22 @@
+use std::ffi::{c_int, c_uint};
+use std::num::NonZeroU32;
+use std::ops::{Add, AddAssign, Deref};
+use std::process::abort;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::Arc;
+use std::{cmp, mem, thread};
+
+use atomig::{Atom, Atomic};
+use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
+
+use crate::cdf::rav1d_cdf_thread_update;
+use crate::decode::{
+    rav1d_decode_frame_exit, rav1d_decode_frame_init, rav1d_decode_frame_init_cdf,
+    rav1d_decode_tile_sbrow,
+};
+use crate::error::{Rav1dError, Rav1dResult};
+use crate::fg_apply::{rav1d_apply_grain_row, rav1d_prep_grain};
+use crate::filmgrain::FG_BLOCK_SIZE;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
@@ -5,50 +24,13 @@ use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::cdf::rav1d_cdf_thread_update;
-use crate::src::decode::rav1d_decode_frame_exit;
-use crate::src::decode::rav1d_decode_frame_init;
-use crate::src::decode::rav1d_decode_frame_init_cdf;
-use crate::src::decode::rav1d_decode_tile_sbrow;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
-use crate::src::error::Rav1dResult;
-use crate::src::fg_apply::rav1d_apply_grain_row;
-use crate::src::fg_apply::rav1d_prep_grain;
-use crate::src::filmgrain::FG_BLOCK_SIZE;
-use crate::src::internal::Grain;
-use crate::src::internal::Rav1dBitDepthDSPContext;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameContextTaskThread;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTask;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContextTaskThread;
-use crate::src::internal::TaskThreadData;
-use crate::src::internal::TaskType;
-use crate::src::iter::wrapping_iter;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use atomig::Atom;
-use atomig::Atomic;
-use parking_lot::Mutex;
-use parking_lot::MutexGuard;
-use parking_lot::RwLock;
-use parking_lot::RwLockReadGuard;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::mem;
-use std::num::NonZeroU32;
-use std::ops::Add;
-use std::ops::AddAssign;
-use std::ops::Deref;
-use std::process::abort;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicI32;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::thread;
+use crate::internal::{
+    Grain, Rav1dBitDepthDSPContext, Rav1dContext, Rav1dFrameContext, Rav1dFrameContextTaskThread,
+    Rav1dFrameData, Rav1dTask, Rav1dTaskContext, Rav1dTaskContextTaskThread, TaskThreadData,
+    TaskType,
+};
+use crate::iter::wrapping_iter;
+use crate::relaxed_atomic::RelaxedAtomic;
 
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
@@ -69,7 +51,7 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
     fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
         for fc in wrapping_iter(c.fc.iter(), first + ttd.cur.get() as usize) {
-            fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::None);
+            fc.task_thread.tasks.cur_prev.set(Rav1dTaskIndex::NONE);
         }
         return 1;
     }
@@ -204,7 +186,7 @@ impl Rav1dTasks {
         cond_signal: c_int,
     ) {
         // insert task back into task queue
-        let mut prev_t = Rav1dTaskIndex::None;
+        let mut prev_t = Rav1dTaskIndex::NONE;
         let mut t = self.head.load(Ordering::SeqCst);
         while t.is_some() {
             'next: {
@@ -264,7 +246,7 @@ impl Rav1dTasks {
             prev_t = t;
             t = self.index(t).next();
         }
-        self.insert_tasks_between(c, first, last, prev_t, Rav1dTaskIndex::None, cond_signal);
+        self.insert_tasks_between(c, first, last, prev_t, Rav1dTaskIndex::NONE, cond_signal);
     }
 
     fn push(&self, task: Rav1dTask) -> Rav1dTaskIndex {
@@ -294,7 +276,7 @@ impl Rav1dTasks {
                 .compare_exchange(t, next_t, Ordering::SeqCst, Ordering::SeqCst)
                 .ok()?;
         }
-        self.index(t).set_next(Rav1dTaskIndex::None);
+        self.index(t).set_next(Rav1dTaskIndex::NONE);
         Some(self.index(t).without_next())
     }
 
@@ -354,7 +336,7 @@ impl Rav1dFrameContextTaskThread {
 pub struct Rav1dTaskIndex(Option<NonZeroU32>);
 
 impl Rav1dTaskIndex {
-    pub const None: Self = Self(None);
+    pub const NONE: Self = Self(None);
 
     // Return the zero-based index into the task queue vector or `None`
     pub fn raw_index(self) -> Option<u32> {
@@ -644,9 +626,13 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
 
 #[inline]
 fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
-    fc.task_thread
-        .error
-        .store(if error == Err(EINVAL) { 1 } else { -1 }, Ordering::SeqCst);
+    fc.task_thread.error.store(
+        match error {
+            Err(Rav1dError::InvalidArgument) => 1,
+            _ => -1,
+        },
+        Ordering::SeqCst,
+    );
     fc.task_thread.task_counter.store(0, Ordering::SeqCst);
     fc.task_thread.done[0].store(1, Ordering::SeqCst);
     fc.task_thread.done[1].store(1, Ordering::SeqCst);
@@ -828,7 +814,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     }
                     let t = tasks.index(t_idx);
                     if t.type_0 == TaskType::Init {
-                        break 'found (fc, t_idx, Rav1dTaskIndex::None);
+                        break 'found (fc, t_idx, Rav1dTaskIndex::NONE);
                     }
                     if t.type_0 == TaskType::InitCdf {
                         // XXX This can be a simple else, if adding tasks of both
@@ -848,7 +834,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                             fc.task_thread
                                 .error
                                 .fetch_or((p1 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            break 'found (fc, t_idx, Rav1dTaskIndex::None);
+                            break 'found (fc, t_idx, Rav1dTaskIndex::NONE);
                         }
                     }
                 }
@@ -1010,7 +996,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if res.is_err() || p1_3 == TILE_ERROR {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock());
-                            abort_frame(c, fc, if res.is_err() { res } else { Err(EINVAL) });
+                            abort_frame(c, fc, res.and_then(|_| Err(Rav1dError::InvalidArgument)));
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
                             t.type_0 = TaskType::InitCdf;
@@ -1027,7 +1013,7 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         if !(c.fc.len() > 1) {
                             unreachable!();
                         }
-                        let mut res_0 = Err(EINVAL);
+                        let mut res_0 = Err(Rav1dError::InvalidArgument);
                         let mut f = fc.data.try_write().unwrap();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
                             res_0 = rav1d_decode_frame_init_cdf(c, fc, &mut f, &fc.in_cdf());
@@ -1081,7 +1067,11 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                             unreachable!();
                                         }
                                         drop(f);
-                                        let _ = rav1d_decode_frame_exit(c, fc, Err(ENOMEM));
+                                        let _ = rav1d_decode_frame_exit(
+                                            c,
+                                            fc,
+                                            Err(Rav1dError::OutOfMemory),
+                                        );
                                         fc.task_thread.cond.notify_one();
                                     } else {
                                         drop(
@@ -1185,9 +1175,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                                     c,
                                     fc,
                                     if error_0 == 1 {
-                                        Err(EINVAL)
+                                        Err(Rav1dError::InvalidArgument)
                                     } else if error_0 != 0 {
-                                        Err(ENOMEM)
+                                        Err(Rav1dError::OutOfMemory)
                                     } else {
                                         Ok(())
                                     },
@@ -1360,9 +1350,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                         c,
                         fc,
                         if error_0 == 1 {
-                            Err(EINVAL)
+                            Err(Rav1dError::InvalidArgument)
                         } else if error_0 != 0 {
-                            Err(ENOMEM)
+                            Err(Rav1dError::OutOfMemory)
                         } else {
                             Ok(())
                         },
@@ -1415,9 +1405,9 @@ pub fn rav1d_worker_task(task_thread: Arc<Rav1dTaskContextTaskThread>) {
                     c,
                     fc,
                     if error_0 == 1 {
-                        Err(EINVAL)
+                        Err(Rav1dError::InvalidArgument)
                     } else if error_0 != 0 {
-                        Err(ENOMEM)
+                        Err(Rav1dError::OutOfMemory)
                     } else {
                         Ok(())
                     },

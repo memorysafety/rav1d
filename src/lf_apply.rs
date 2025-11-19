@@ -1,23 +1,18 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::{c_int, c_uint};
+use std::{array, cmp};
+
+use crate::align::{AlignedVec2, AlignedVec64};
+use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::{Rav1dFrameHeader, Rav1dPixelLayout};
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::AlignedVec64;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::internal::Rav1dBitDepthDSPContext;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::lr_apply::LrRestorePlanes;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::strided::Strided as _;
-use crate::src::strided::WithStride;
-use crate::src::with_offset::WithOffset;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use crate::internal::{Rav1dBitDepthDSPContext, Rav1dContext, Rav1dFrameData};
+use crate::lr_apply::LrRestorePlanes;
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::strided::{Strided as _, WithStride};
+use crate::with_offset::WithOffset;
 
 /// The loop filter buffer stores 12 rows of pixels.
 /// A superblock block will contain at most 2 stripes.
@@ -368,7 +363,7 @@ pub(crate) fn rav1d_copy_lpf<BD: BitDepth>(
 fn filter_plane_cols_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
     w: usize,
@@ -405,7 +400,7 @@ fn filter_plane_cols_y<BD: BitDepth>(
 fn filter_plane_rows_y<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 3]; 32],
     y_dst: Rav1dPictureDataComponentOffset,
@@ -437,7 +432,7 @@ fn filter_plane_rows_y<BD: BitDepth>(
 fn filter_plane_cols_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_left: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,
     v_dst: Rav1dPictureDataComponentOffset,
@@ -480,7 +475,7 @@ fn filter_plane_cols_uv<BD: BitDepth>(
 fn filter_plane_rows_uv<BD: BitDepth>(
     f: &Rav1dFrameData,
     have_top: bool,
-    lvl: WithOffset<&DisjointMut<Vec<u8>>>,
+    lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
     b4_stride: usize,
     mask: &[[[RelaxedAtomic<u16>; 2]; 2]; 32],
     u_dst: Rav1dPictureDataComponentOffset,

@@ -1,181 +1,85 @@
+use std::ffi::{c_int, c_uint};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::{array, cmp, iter, mem};
+
+use libc::ptrdiff_t;
+use strum::EnumCount;
+
+use crate::align::{Align16, AlignedVec64};
+use crate::c_arc::CArc;
+use crate::cdf::{
+    rav1d_cdf_thread_alloc, rav1d_cdf_thread_copy, rav1d_cdf_thread_init_static,
+    rav1d_cdf_thread_update, CdfMvComponent, CdfThreadContext,
+};
+use crate::ctx::CaseSet;
+use crate::dequant_tables::DAV1D_DQ_TBL;
+use crate::disjoint_mut::{DisjointMut, DisjointMutSlice};
+use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
+use crate::env::{
+    av1_get_bwd_ref_1_ctx, av1_get_bwd_ref_ctx, av1_get_fwd_ref_1_ctx, av1_get_fwd_ref_2_ctx,
+    av1_get_fwd_ref_ctx, av1_get_ref_ctx, av1_get_uni_p1_ctx, fix_mv_precision,
+    gather_left_partition_prob, gather_top_partition_prob, get_comp_ctx, get_comp_dir_ctx,
+    get_cur_frame_segid, get_drl_context, get_filter_ctx, get_gmv_2d, get_intra_ctx,
+    get_jnt_comp_ctx, get_mask_comp_ctx, get_partition_ctx, get_poc_diff, get_tx_ctx, BlockContext,
+};
+use crate::error::{Rav1dError, Rav1dResult};
+use crate::extensions::OptionError as _;
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BPC;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::clip;
-use crate::include::common::intops::clip_u8;
-use crate::include::common::intops::iclip;
+use crate::include::common::intops::{apply_sign64, clip, clip_u8, iclip};
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dTxfmMode;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::headers::SgrIdx;
-use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
+use crate::include::dav1d::headers::{
+    Rav1dFilterMode, Rav1dFrameHeader, Rav1dFrameHeaderTiling, Rav1dPixelLayout,
+    Rav1dRestorationType, Rav1dSequenceHeader, Rav1dTxfmMode, Rav1dWarpedMotionParams,
+    Rav1dWarpedMotionType, SgrIdx, RAV1D_PRIMARY_REF_NONE,
+};
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align16;
-use crate::src::align::AlignedVec64;
-use crate::src::c_arc::CArc;
-use crate::src::cdf::rav1d_cdf_thread_alloc;
-use crate::src::cdf::rav1d_cdf_thread_copy;
-use crate::src::cdf::rav1d_cdf_thread_init_static;
-use crate::src::cdf::rav1d_cdf_thread_update;
-use crate::src::cdf::CdfMvComponent;
-use crate::src::cdf::CdfThreadContext;
-use crate::src::ctx::CaseSet;
-use crate::src::dequant_tables::dav1d_dq_tbl;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::disjoint_mut::DisjointMutSlice;
-use crate::src::enum_map::enum_map;
-use crate::src::enum_map::enum_map_ty;
-use crate::src::enum_map::DefaultValue;
-use crate::src::env::av1_get_bwd_ref_1_ctx;
-use crate::src::env::av1_get_bwd_ref_ctx;
-use crate::src::env::av1_get_fwd_ref_1_ctx;
-use crate::src::env::av1_get_fwd_ref_2_ctx;
-use crate::src::env::av1_get_fwd_ref_ctx;
-use crate::src::env::av1_get_ref_ctx;
-use crate::src::env::av1_get_uni_p1_ctx;
-use crate::src::env::fix_mv_precision;
-use crate::src::env::gather_left_partition_prob;
-use crate::src::env::gather_top_partition_prob;
-use crate::src::env::get_comp_ctx;
-use crate::src::env::get_comp_dir_ctx;
-use crate::src::env::get_cur_frame_segid;
-use crate::src::env::get_drl_context;
-use crate::src::env::get_filter_ctx;
-use crate::src::env::get_gmv_2d;
-use crate::src::env::get_intra_ctx;
-use crate::src::env::get_jnt_comp_ctx;
-use crate::src::env::get_mask_comp_ctx;
-use crate::src::env::get_partition_ctx;
-use crate::src::env::get_poc_diff;
-use crate::src::env::get_tx_ctx;
-use crate::src::env::BlockContext;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOPROTOOPT;
-use crate::src::error::Rav1dResult;
-use crate::src::extensions::OptionError as _;
-use crate::src::internal::Bxy;
-use crate::src::internal::Rav1dBitDepthDSPContext;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameContextFrameThread;
-use crate::src::internal::Rav1dFrameContextLf;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dState;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTileState;
-use crate::src::internal::Rav1dTileStateContext;
-use crate::src::internal::ScalableMotionParams;
-use crate::src::internal::ScratchPal;
-use crate::src::internal::TileStateRef;
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EdgeIndex;
-use crate::src::intra_edge::IntraEdges;
-use crate::src::levels::Av1Block;
-use crate::src::levels::Av1BlockInter;
-use crate::src::levels::Av1BlockInter1d;
-use crate::src::levels::Av1BlockInter2d;
-use crate::src::levels::Av1BlockInterNd;
-use crate::src::levels::Av1BlockIntra;
-use crate::src::levels::Av1BlockIntraInter;
-use crate::src::levels::BlockLevel;
-use crate::src::levels::BlockPartition;
-use crate::src::levels::BlockSize;
-use crate::src::levels::CompInterType;
-use crate::src::levels::DrlProximity;
-use crate::src::levels::Filter2d;
-use crate::src::levels::InterIntraPredMode;
-use crate::src::levels::InterIntraType;
-use crate::src::levels::MVJoint;
-use crate::src::levels::MotionMode;
-use crate::src::levels::Mv;
-use crate::src::levels::SegmentId;
-use crate::src::levels::TxfmSize;
-use crate::src::levels::CFL_PRED;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::NEARESTMV;
-use crate::src::levels::NEARESTMV_NEARESTMV;
-use crate::src::levels::NEARMV;
-use crate::src::levels::NEWMV;
-use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::VERT_LEFT_PRED;
-use crate::src::levels::VERT_PRED;
-use crate::src::lf_mask::rav1d_calc_eih;
-use crate::src::lf_mask::rav1d_calc_lf_values;
-use crate::src::lf_mask::rav1d_create_lf_mask_inter;
-use crate::src::lf_mask::rav1d_create_lf_mask_intra;
-use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::log::Rav1dLog as _;
-use crate::src::lr_apply::LrRestorePlanes;
-use crate::src::msac::rav1d_msac_decode_bool;
-use crate::src::msac::rav1d_msac_decode_bool_adapt;
-use crate::src::msac::rav1d_msac_decode_bool_equi;
-use crate::src::msac::rav1d_msac_decode_bools;
-use crate::src::msac::rav1d_msac_decode_subexp;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt16;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
-use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
-use crate::src::msac::rav1d_msac_decode_uniform;
-use crate::src::msac::MsacContext;
-use crate::src::pal::Rav1dPalDSPContext;
-use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_thread_picture_alloc;
-use crate::src::picture::Rav1dThreadPicture;
-use crate::src::qm::dav1d_qm_tbl;
-use crate::src::recon::debug_block_info;
-use crate::src::refmvs::rav1d_refmvs_find;
-use crate::src::refmvs::rav1d_refmvs_init_frame;
-use crate::src::refmvs::rav1d_refmvs_tile_sbrow_init;
-use crate::src::refmvs::RefMvsBlock;
-use crate::src::refmvs::RefMvsFrame;
-use crate::src::refmvs::RefMvsMvPair;
-use crate::src::refmvs::RefMvsRefPair;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::tables::cfl_allowed_mask;
-use crate::src::tables::dav1d_al_part_ctx;
-use crate::src::tables::dav1d_block_sizes;
-use crate::src::tables::dav1d_comp_inter_pred_modes;
-use crate::src::tables::dav1d_filter_2d;
-use crate::src::tables::dav1d_filter_dir;
-use crate::src::tables::dav1d_intra_mode_context;
-use crate::src::tables::dav1d_max_txfm_size_for_bs;
-use crate::src::tables::dav1d_partition_type_count;
-use crate::src::tables::dav1d_sgr_params;
-use crate::src::tables::dav1d_txfm_dimensions;
-use crate::src::tables::dav1d_wedge_ctx_lut;
-use crate::src::tables::dav1d_ymode_size_context;
-use crate::src::tables::interintra_allowed_mask;
-use crate::src::tables::wedge_allowed_mask;
-use crate::src::thread_task::rav1d_task_create_tile_sbrow;
-use crate::src::thread_task::rav1d_task_frame_init;
-use crate::src::thread_task::FRAME_ERROR;
-use crate::src::thread_task::TILE_ERROR;
-use crate::src::warpmv::rav1d_find_affine_int;
-use crate::src::warpmv::rav1d_get_shear_params;
-use crate::src::warpmv::rav1d_set_affine_mv2d;
-use libc::ptrdiff_t;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::iter;
-use std::mem;
-use std::sync::atomic::AtomicI32;
-use std::sync::atomic::Ordering;
-use strum::EnumCount;
+use crate::internal::{
+    Bxy, Rav1dBitDepthDSPContext, Rav1dContext, Rav1dContextTaskType, Rav1dFrameContext,
+    Rav1dFrameContextFrameThread, Rav1dFrameContextLf, Rav1dFrameData, Rav1dState,
+    Rav1dTaskContext, Rav1dTileState, Rav1dTileStateContext, ScalableMotionParams, ScratchPal,
+    TileStateRef,
+};
+use crate::intra_edge::{EdgeFlags, EdgeIndex, IntraEdges};
+use crate::levels::{
+    Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
+    Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterType, DrlProximity,
+    Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId, TxfmSize,
+    CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, NEARESTMV, NEARESTMV_NEARESTMV,
+    NEARMV, NEWMV, NEWMV_NEWMV, N_COMP_INTER_PRED_MODES, N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES,
+    VERT_LEFT_PRED, VERT_PRED,
+};
+use crate::lf_mask::{
+    rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
+    Av1RestorationUnit,
+};
+use crate::log::Rav1dLog as _;
+use crate::lr_apply::LrRestorePlanes;
+use crate::msac::{
+    rav1d_msac_decode_bool, rav1d_msac_decode_bool_adapt, rav1d_msac_decode_bool_equi,
+    rav1d_msac_decode_bools, rav1d_msac_decode_subexp, rav1d_msac_decode_symbol_adapt16,
+    rav1d_msac_decode_symbol_adapt4, rav1d_msac_decode_symbol_adapt8, rav1d_msac_decode_uniform,
+    MsacContext,
+};
+use crate::pal::Rav1dPalDSPContext;
+use crate::picture::{rav1d_picture_alloc_copy, rav1d_thread_picture_alloc, Rav1dThreadPicture};
+use crate::qm::DAV1D_QM_TBL;
+use crate::recon::debug_block_info;
+use crate::refmvs::{
+    rav1d_refmvs_find, rav1d_refmvs_init_frame, rav1d_refmvs_tile_sbrow_init, RefMvsBlock,
+    RefMvsFrame, RefMvsMvPair, RefMvsRefPair,
+};
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::tables::{
+    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_COMP_INTER_PRED_MODES,
+    DAV1D_FILTER_2D, DAV1D_FILTER_DIR, DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS,
+    DAV1D_PARTITION_TYPE_COUNT, DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT,
+    DAV1D_YMODE_SIZE_CONTEXT, INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
+};
+use crate::thread_task::{
+    rav1d_task_create_tile_sbrow, rav1d_task_frame_init, FRAME_ERROR, TILE_ERROR,
+};
+use crate::warpmv::{rav1d_find_affine_int, rav1d_get_shear_params, rav1d_set_affine_mv2d};
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
@@ -183,7 +87,7 @@ fn init_quant_tables(
     qidx: u8,
     dq: &[[[RelaxedAtomic<u16>; 2]; 3]; SegmentId::COUNT],
 ) {
-    let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
+    let tbl = &DAV1D_DQ_TBL[seq_hdr.hbd as usize];
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     let len = if segmentation_is_enabled {
@@ -289,7 +193,7 @@ fn read_tx_tree(
 ) {
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
-    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[from as usize];
     let txw = t_dim.lw;
     let txh = t_dim.lh;
     let is_split;
@@ -311,7 +215,7 @@ fn read_tx_tree(
     }
     if is_split && t_dim.max > TxfmSize::S8x8 as _ {
         let sub = t_dim.sub;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &DAV1D_TXFM_DIMENSIONS[sub as usize];
         let txsw = sub_t_dim.w as c_int;
         let txsh = sub_t_dim.h as c_int;
 
@@ -799,7 +703,7 @@ fn read_vartx_tree(
 
     // var-tx tree coding
     let mut tx_split = [0u16; 2];
-    let mut max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    let mut max_ytx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][0];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
@@ -830,10 +734,10 @@ fn read_vartx_tree(
                 },
             );
         }
-        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
     } else {
         assert!(bw4 <= 16 || bh4 <= 16 || max_ytx == TxfmSize::S64x64);
-        let ytx = &dav1d_txfm_dimensions[max_ytx as usize];
+        let ytx = &DAV1D_TXFM_DIMENSIONS[max_ytx as usize];
         let h = ytx.h as usize;
         let w = ytx.w as usize;
         debug_assert_eq!(bh4 % h, 0);
@@ -854,7 +758,7 @@ fn read_vartx_tree(
                 tx_split[0], tx_split[1], ts_c.msac.rng
             );
         }
-        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
     }
     assert!(tx_split[0] & !0x33 == 0);
     let tx_split0 = tx_split[0] as u8;
@@ -1278,7 +1182,7 @@ fn decode_b(
 
                 (bd_fn.recon_b_inter)(f, t, None, bs, b, inter)?;
 
-                let filter = &dav1d_filter_dir[inter.filter2d as usize];
+                let filter = &DAV1D_FILTER_DIR[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
                     [&t.l, ta],
                     [bh4 as usize, bw4 as usize],
@@ -1651,11 +1555,11 @@ fn decode_b(
     // intra/inter-specific stuff
     if intra {
         let ymode_cdf = if frame_hdr.frame_type.is_inter_or_switch() {
-            &mut ts_c.cdf.mi.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
+            &mut ts_c.cdf.mi.y_mode[DAV1D_YMODE_SIZE_CONTEXT[bs as usize] as usize]
         } else {
             &mut ts_c.cdf.kfym
-                [dav1d_intra_mode_context[*ta.mode.index(bx4 as usize) as usize] as usize]
-                [dav1d_intra_mode_context[*t.l.mode.index(by4 as usize) as usize] as usize]
+                [DAV1D_INTRA_MODE_CONTEXT[*ta.mode.index(bx4 as usize) as usize] as usize]
+                [DAV1D_INTRA_MODE_CONTEXT[*t.l.mode.index(by4 as usize) as usize] as usize]
         };
         let y_mode = rav1d_msac_decode_symbol_adapt16(
             &mut ts_c.msac,
@@ -1683,7 +1587,7 @@ fn decode_b(
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id.get()] {
                 cbw4 == 1 && cbh4 == 1
             } else {
-                (cfl_allowed_mask & (1 << bs as u8)) != 0
+                (CFL_ALLOWED_MASK & (1 << bs as u8)) != 0
             };
             let uvmode_cdf = &mut ts_c.cdf.m.uv_mode[cfl_allowed as usize][y_mode as usize];
             uv_mode = rav1d_msac_decode_symbol_adapt16(
@@ -1888,9 +1792,9 @@ fn decode_b(
             b.uvtx = TxfmSize::S4x4;
             b.uvtx
         } else {
-            let mut tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
-            b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            let mut t_dim = &dav1d_txfm_dimensions[tx as usize];
+            let mut tx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][0];
+            b.uvtx = DAV1D_MAX_TXFM_SIZE_FOR_BS[bs as usize][f.cur.p.layout as usize];
+            let mut t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TxfmSize::S4x4 as _ {
                 let tctx = get_tx_ctx(ta, &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts_c.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
@@ -1900,7 +1804,7 @@ fn decode_b(
 
                 for _ in 0..depth {
                     tx = t_dim.sub;
-                    t_dim = &dav1d_txfm_dimensions[tx as usize];
+                    t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
                 }
             }
             if debug_block_info!(f, t.b) {
@@ -1908,7 +1812,7 @@ fn decode_b(
             }
             tx
         };
-        let t_dim = &dav1d_txfm_dimensions[tx as usize];
+        let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
 
         let intra = Av1BlockIntra {
             y_mode,
@@ -2398,7 +2302,7 @@ fn decode_b(
                 );
             }
 
-            let im = &dav1d_comp_inter_pred_modes[inter_mode as usize];
+            let im = &DAV1D_COMP_INTER_PRED_MODES[inter_mode as usize];
             let mut drl_idx = DrlProximity::Nearest;
             if inter_mode == NEWMV_NEWMV {
                 if n_mvs > 1 {
@@ -2559,8 +2463,8 @@ fn decode_b(
                 }
                 mask_sign = Default::default();
             } else {
-                comp_type = if wedge_allowed_mask & (1 << bs as u8) != 0 {
-                    let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
+                comp_type = if WEDGE_ALLOWED_MASK & (1 << bs as u8) != 0 {
+                    let ctx = DAV1D_WEDGE_CTX_LUT[bs as usize] as usize;
                     let comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_comp[ctx],
@@ -2812,9 +2716,9 @@ fn decode_b(
             let interintra_mode;
             let interintra_type;
             let mut wedge_idx = Default::default();
-            let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as c_int;
+            let ii_sz_grp = DAV1D_YMODE_SIZE_CONTEXT[bs as usize] as c_int;
             if seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs as u8) != 0
+                && INTERINTRA_ALLOWED_MASK & (1 << bs as u8) != 0
                 && rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.interintra[ii_sz_grp as usize],
@@ -2826,7 +2730,7 @@ fn decode_b(
                     InterIntraPredMode::COUNT as u8 - 1,
                 ) as usize)
                 .expect("valid variant");
-                let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
+                let wedge_ctx = DAV1D_WEDGE_CTX_LUT[bs as usize] as c_int;
                 let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.interintra_wedge[wedge_ctx as usize],
@@ -2850,7 +2754,7 @@ fn decode_b(
             let wedge_idx = wedge_idx;
             if debug_block_info!(f, t.b)
                 && seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs as u8) != 0
+                && INTERINTRA_ALLOWED_MASK & (1 << bs as u8) != 0
             {
                 println!(
                     "Post-interintra[t={:?},m={:?},w={}]: r={}",
@@ -3028,7 +2932,7 @@ fn decode_b(
         } else {
             [frame_hdr.subpel_filter_mode; 2]
         };
-        let filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
+        let filter2d = DAV1D_FILTER_2D[filter[1] as usize][filter[0] as usize];
 
         let VarTx {
             uvtx,
@@ -3465,6 +3369,7 @@ fn decode_sb(
     let mut by8 = 0;
     let ctx = match pass {
         FrameThreadPassState::First(ts_c) => {
+            #[expect(clippy::overly_complex_bool_expr, reason = "used for debugging")]
             if false && bl == BlockLevel::Bl64x64 {
                 println!(
                     "poc={},y={},x={},bl={:?},r={}",
@@ -3487,7 +3392,7 @@ fn decode_sb(
             bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize].into(),
+                DAV1D_PARTITION_TYPE_COUNT[bl as usize].into(),
             ) as usize)
             .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
@@ -3518,7 +3423,7 @@ fn decode_sb(
                 BlockPartition::Split
             };
         }
-        let b = &dav1d_block_sizes[bl as usize][bp as usize];
+        let b = &DAV1D_BLOCK_SIZES[bl as usize][bp as usize];
 
         match bp {
             BlockPartition::None => {
@@ -3709,7 +3614,7 @@ fn decode_sb(
                 f,
                 pass,
                 bl,
-                dav1d_block_sizes[bl as usize][bp as usize][0],
+                DAV1D_BLOCK_SIZES[bl as usize][bp as usize][0],
                 bp,
                 node.h[0],
             )?;
@@ -3767,7 +3672,7 @@ fn decode_sb(
                 f,
                 pass,
                 bl,
-                dav1d_block_sizes[bl as usize][bp as usize][0],
+                DAV1D_BLOCK_SIZES[bl as usize][bp as usize][0],
                 bp,
                 node.v[0],
             )?;
@@ -3784,7 +3689,7 @@ fn decode_sb(
             |case, (dir, dir_index)| {
                 case.set_disjoint(
                     &dir.partition,
-                    dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
+                    DAV1D_AL_PART_CTX[dir_index][bl as usize][bp as usize],
                 );
             },
         );
@@ -3837,7 +3742,7 @@ impl DefaultValue for [u8; 2] {
 }
 
 /// `{ Y+U+V, Y+U } * 4`
-static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
+static SS_SIZE_MUL: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
     I400 => [4, 4],
     I420 => [6, 5],
     I422 => [8, 6],
@@ -3870,7 +3775,7 @@ fn setup_tile(
     let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
     let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
 
-    let size_mul = &ss_size_mul[cur.p.layout];
+    let size_mul = &SS_SIZE_MUL[cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p]
             .pal_idx
@@ -4047,7 +3952,7 @@ fn read_restoration_info(
         Rav1dRestorationType::SgrProj(_) => {
             let sgr_idx =
                 SgrIdx::from_repr(rav1d_msac_decode_bools(&mut ts_c.msac, 4) as usize).unwrap();
-            let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
+            let sgr_params = &DAV1D_SGR_PARAMS[sgr_idx as usize];
             lr.r#type = Rav1dRestorationType::SgrProj(sgr_idx);
             lr.sgr_weights[0] = if sgr_params[0] != 0 {
                 msac_decode_lr_subexp(ts_c, lr_ref.sgr_weights[0], 4, 96)
@@ -4365,7 +4270,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     f.a.resize_with(a_sz as usize, Default::default);
 
     let num_sb128 = f.sb128w * f.sb128h;
-    let size_mul = &ss_size_mul[f.cur.p.layout];
+    let size_mul = &SS_SIZE_MUL[f.cur.p.layout];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let hbd = (seq_hdr.hbd != 0) as c_int;
     if c.fc.len() > 1 {
@@ -4538,8 +4443,7 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     f.lf.mask.resize_with(num_sb128 as usize, Default::default);
     // over-allocate by 3 bytes since some of the SIMD implementations
     // index this from the level type and can thus over-read by up to 3 bytes.
-    f.lf.level
-        .resize_with(4 * num_sb128 as usize * 32 * 32 + 3, Default::default); // TODO: Fallible allocation
+    f.lf.level.resize(4 * num_sb128 as usize * 32 * 32 + 3, 0); // TODO: Fallible allocation
     if c.fc.len() > 1 {
         // TODO: Fallible allocation
         f.frame_thread
@@ -4594,9 +4498,9 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
     init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
     if frame_hdr.quant.qm != 0 {
         for i in 0..TxfmSize::COUNT {
-            f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
-            f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i];
-            f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i];
+            f.qm[i][0] = DAV1D_QM_TBL[frame_hdr.quant.qm_y as usize][0][i];
+            f.qm[i][1] = DAV1D_QM_TBL[frame_hdr.quant.qm_u as usize][1][i];
+            f.qm[i][2] = DAV1D_QM_TBL[frame_hdr.quant.qm_v as usize][1][i];
         }
     } else {
         f.qm = Default::default();
@@ -4621,19 +4525,19 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
                 });
                 let order = d[0] <= d[1];
 
-                static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
-                static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
+                static QUANT_DIST_WEIGHT: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
+                static QUANT_DIST_LOOKUP_TABLE: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
 
-                let k = quant_dist_weight
+                let k = QUANT_DIST_WEIGHT
                     .into_iter()
                     .position(|weight| {
                         let c = [order, !order].map(|order| weight[order as usize]);
                         let dc: [_; 2] = array::from_fn(|i| d[i] * c[i]);
                         !order && dc[0] < dc[1] || order && dc[0] > dc[1]
                     })
-                    .unwrap_or(quant_dist_weight.len());
+                    .unwrap_or(QUANT_DIST_WEIGHT.len());
 
-                f.jnt_weights[i][j] = quant_dist_lookup_table[k][order as usize];
+                f.jnt_weights[i][j] = QUANT_DIST_LOOKUP_TABLE[k][order as usize];
             }
         }
     }
@@ -4689,7 +4593,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 data.len()
             } else {
                 if n_bytes > data.len() {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
                 let (cur_data, rest_data) = CArc::split_at(data, n_bytes);
                 let tile_sz = cur_data
@@ -4700,7 +4604,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                     + 1;
                 data = rest_data;
                 if tile_sz > data.len() {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
                 tile_sz
             };
@@ -4804,7 +4708,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
             }
             for col in 0..cols {
                 t.ts = tile_row * cols + col;
-                rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
+                rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| Rav1dError::InvalidArgument)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.dsp
@@ -4843,7 +4747,7 @@ pub(crate) fn rav1d_decode_frame_exit(
             rf.p.frame_hdr.is_some()
                 && rf.progress.as_ref().unwrap()[1].load(Ordering::SeqCst) == FRAME_ERROR
         }) {
-            retval = Err(EINVAL);
+            retval = Err(Rav1dError::InvalidArgument);
             task_thread.error.store(1, Ordering::SeqCst);
             f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
         }
@@ -5027,7 +4931,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                 &mut state.cached_error_props,
                 &state.in_0.m,
             );
-            return Err(ENOPROTOOPT);
+            return Err(Rav1dError::UnsupportedBitstream);
         }
     };
 
@@ -5048,7 +4952,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     &mut state.cached_error_props,
                     &state.in_0.m,
                 );
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
         }
         for i in 0..7 {
@@ -5071,7 +4975,7 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
                     &mut state.cached_error_props,
                     &state.in_0.m,
                 );
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             f.refp[i] = state.refs[refidx].p.clone();
             ref_coded_width[i] = state.refs[refidx]

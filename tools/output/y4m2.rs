@@ -1,26 +1,16 @@
-use crate::compat::errno::errno_location;
-use crate::compat::stdio::stderr;
-use crate::compat::stdio::stdout;
-use libc::fclose;
-use libc::fopen;
-use libc::fprintf;
-use libc::fwrite;
-use libc::strcmp;
-use libc::strerror;
-use rav1d::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::src::lib::dav1d_picture_unref;
-use std::ffi::c_char;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_void;
+use std::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
 use std::ptr;
 use std::ptr::NonNull;
+
+use libc::{fclose, fopen, fprintf, fwrite, strcmp, strerror};
+use rav1d::dav1d_picture_unref;
+use rav1d::include::dav1d::headers::{
+    DAV1D_CHR_UNKNOWN, DAV1D_PIXEL_LAYOUT_I400, DAV1D_PIXEL_LAYOUT_I420, DAV1D_PIXEL_LAYOUT_I444,
+};
+use rav1d::include::dav1d::picture::{Dav1dPicture, Dav1dPictureParameters};
+
+use crate::compat::errno::errno_location;
+use crate::compat::stdio::{stderr, stdout};
 
 #[repr(C)]
 pub struct MuxerPriv {
@@ -76,7 +66,7 @@ unsafe extern "C" fn y4m2_open(
 }
 
 unsafe fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_int {
-    static mut ss_names: [[*const c_char; 3]; 4] = [
+    static mut SS_NAMES: [[*const c_char; 3]; 4] = [
         [
             b"mono\0" as *const u8 as *const c_char,
             b"mono10\0" as *const u8 as *const c_char,
@@ -98,7 +88,7 @@ unsafe fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_i
             b"444p12\0" as *const u8 as *const c_char,
         ],
     ];
-    static mut chr_names_8bpc_i420: [*const c_char; 3] = [
+    static mut CHR_NAMES_8BPC_I420: [*const c_char; 3] = [
         b"420jpeg\0" as *const u8 as *const c_char,
         b"420mpeg2\0" as *const u8 as *const c_char,
         b"420\0" as *const u8 as *const c_char,
@@ -108,13 +98,13 @@ unsafe fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_i
     let ss_name: *const c_char =
         if (*p).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint && (*p).p.bpc == 8
         {
-            chr_names_8bpc_i420[(if seq_hdr.chr as c_uint > 2 as c_uint {
+            CHR_NAMES_8BPC_I420[(if seq_hdr.chr as c_uint > 2 as c_uint {
                 DAV1D_CHR_UNKNOWN as c_int as c_uint
             } else {
                 seq_hdr.chr as c_uint
             }) as usize]
         } else {
-            ss_names[(*p).p.layout as usize][seq_hdr.hbd as usize]
+            SS_NAMES[(*p).p.layout as usize][seq_hdr.hbd as usize]
         };
     let fw: c_uint = (*p).p.w as c_uint;
     let fh: c_uint = (*p).p.h as c_uint;

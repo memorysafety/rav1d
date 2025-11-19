@@ -37,9 +37,10 @@
 //! e.g. x86 assembly, integer overflows are not considered UB, but they merely
 //! wrap around.
 
-use crate::include::common::intops::iclip;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
+
+use crate::include::common::intops::iclip;
 
 #[inline(never)]
 fn inv_dct4_1d_internal_c(
@@ -1132,6 +1133,7 @@ pub fn rav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_in
     }
 }
 
+#[cfg(not(all(feature = "asm", target_feature = "neon")))]
 pub fn rav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let stride = stride.get();
 

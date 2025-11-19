@@ -1,24 +1,22 @@
-use crate::include::common::intops::clip;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::src::align::Align16;
-use crate::src::align::ArrayDefault;
-use crate::src::ctx::CaseSet;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::internal::Bxy;
-use crate::src::levels::BlockSize;
-use crate::src::levels::SegmentId;
-use crate::src::levels::TxfmSize;
-use crate::src::relaxed_atomic::RelaxedAtomic;
-use crate::src::tables::dav1d_txfm_dimensions;
-use libc::ptrdiff_t;
-use parking_lot::RwLock;
 use std::cmp;
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
+
+use libc::ptrdiff_t;
+use parking_lot::RwLock;
+use zerocopy::FromBytes;
+
+use crate::align::{Align16, AlignedVec2, ArrayDefault};
+use crate::ctx::CaseSet;
+use crate::disjoint_mut::DisjointMut;
+use crate::include::common::intops::{clip, iclip};
+use crate::include::dav1d::headers::{
+    Rav1dFrameHeader, Rav1dLoopfilterModeRefDeltas, Rav1dPixelLayout, Rav1dRestorationType,
+};
+use crate::internal::Bxy;
+use crate::levels::{BlockSize, SegmentId, TxfmSize};
+use crate::relaxed_atomic::RelaxedAtomic;
+use crate::tables::DAV1D_TXFM_DIMENSIONS;
 
 #[repr(C)]
 pub struct Av1FilterLUT {
@@ -108,7 +106,7 @@ fn decomp_tx(
     tx_masks: &[u16; 2],
 ) {
     debug_assert!(depth <= 2);
-    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[from as usize];
 
     let y0 = (y_off * t_dim.h) as usize;
     let x0 = (x_off * t_dim.w) as usize;
@@ -162,7 +160,7 @@ fn mask_edges_inter(
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[max_tx as usize];
 
     // See [`decomp_tx`]'s docs for the `txa` arg.
 
@@ -272,7 +270,7 @@ fn mask_edges_intra(
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
     let twl4c = cmp::min(2, twl4);
@@ -351,7 +349,7 @@ fn mask_edges_chroma(
     ss_hor: usize,
     ss_ver: usize,
 ) {
-    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let t_dim = &DAV1D_TXFM_DIMENSIONS[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
     let twl4c = (twl4 != 0) as u8;
@@ -425,7 +423,7 @@ fn mask_edges_chroma(
 #[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_intra(
     lflvl: &Av1Filter,
-    level_cache: &DisjointMut<Vec<u8>>,
+    level_cache: &DisjointMut<AlignedVec2<u8>>,
     b4_stride: ptrdiff_t,
     filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     b: Bxy,
@@ -449,6 +447,9 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     let bx4 = bx & 31;
     let by4 = by & 31;
 
+    let filter_level_yuv = filter_level.0.map(|a| a[0][0]);
+    let [filter_level_y, filter_level_uv] = *<[u16; 2]>::ref_from(&filter_level_yuv).unwrap();
+
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
@@ -456,8 +457,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
                 let idx = 4 * (level_cache_off + x);
                 // `0.., ..2` is for Y
                 let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                lvl[0] = filter_level[0][0][0];
-                lvl[1] = filter_level[1][0][0];
+                *u16::mut_from(lvl).unwrap() = filter_level_y;
             }
             level_cache_off += b4_stride;
         }
@@ -494,8 +494,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
             let idx = 4 * (level_cache_off + x);
             // `2.., ..2` is for UV
             let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            lvl[0] = filter_level[2][0][0];
-            lvl[1] = filter_level[3][0][0];
+            *u16::mut_from(lvl).unwrap() = filter_level_uv;
         }
         level_cache_off += b4_stride;
     }
@@ -518,7 +517,7 @@ pub(crate) fn rav1d_create_lf_mask_intra(
 #[inline(never)]
 pub(crate) fn rav1d_create_lf_mask_inter(
     lflvl: &Av1Filter,
-    level_cache: &DisjointMut<Vec<u8>>,
+    level_cache: &DisjointMut<AlignedVec2<u8>>,
     b4_stride: ptrdiff_t,
     filter_level: &Align16<[[[u8; 2]; 8]; 4]>,
     r#ref: usize,
@@ -547,6 +546,9 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     let bx4 = bx & 31;
     let by4 = by & 31;
 
+    let filter_level_yuv = filter_level.0.map(|a| a[r#ref][is_gmv]);
+    let [filter_level_y, filter_level_uv] = *<[u16; 2]>::ref_from(&filter_level_yuv).unwrap();
+
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
@@ -554,8 +556,7 @@ pub(crate) fn rav1d_create_lf_mask_inter(
                 let idx = 4 * (level_cache_off + x);
                 // `0.., ..2` is for Y
                 let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                lvl[0] = filter_level[0][r#ref][is_gmv];
-                lvl[1] = filter_level[1][r#ref][is_gmv];
+                *u16::mut_from(lvl).unwrap() = filter_level_y;
             }
             level_cache_off += b4_stride;
         }
@@ -603,8 +604,7 @@ pub(crate) fn rav1d_create_lf_mask_inter(
             let idx = 4 * (level_cache_off + x);
             // `2.., ..2` is for UV
             let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            lvl[0] = filter_level[2][r#ref][is_gmv];
-            lvl[1] = filter_level[3][r#ref][is_gmv];
+            *u16::mut_from(lvl).unwrap() = filter_level_uv;
         }
         level_cache_off += b4_stride;
     }
@@ -702,9 +702,8 @@ pub(crate) fn rav1d_calc_lf_values(
         return;
     }
 
-    let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into();
     let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
-        Some(&mr_deltas)
+        Some(&hdr.loopfilter.mode_ref_deltas)
     } else {
         None
     };

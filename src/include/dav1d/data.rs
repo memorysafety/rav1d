@@ -1,9 +1,9 @@
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::common::Rav1dDataProps;
-use crate::src::c_arc::CArc;
-use crate::src::c_arc::RawCArc;
 use std::ptr::NonNull;
+
 use to_method::To as _;
+
+use crate::c_arc::{CArc, RawCArc};
+use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 
 #[derive(Default)]
 #[repr(C)]

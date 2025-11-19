@@ -1,16 +1,14 @@
 #![deny(unsafe_code)]
 
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BPC;
-use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::ArrayDefault;
-use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::src::filmgrain::FG_BLOCK_SIZE;
-use crate::src::internal::GrainBD;
-use crate::src::strided::Strided as _;
 use std::cmp;
+
+use crate::align::ArrayDefault;
+use crate::filmgrain::{Rav1dFilmGrainDSPContext, FG_BLOCK_SIZE};
+use crate::include::common::bitdepth::{BitDepth, BPC};
+use crate::include::dav1d::headers::{Rav1dMatrixCoefficients, Rav1dPixelLayout};
+use crate::include::dav1d::picture::Rav1dPicture;
+use crate::internal::GrainBD;
+use crate::strided::Strided as _;
 
 fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
@@ -133,7 +131,6 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let seq_hdr = &***out.seq_hdr.as_ref().unwrap();
     let frame_hdr = &***out.frame_hdr.as_ref().unwrap();
     let data = &frame_hdr.film_grain.data;
-    let data_c = &data.clone().into();
     let in_data = &r#in.data.as_ref().unwrap().data;
     let out_data = &out.data.as_ref().unwrap().data;
     let w = out.p.w as usize;
@@ -142,7 +139,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = w + ss_x >> ss_x;
-    let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
+    let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::Identity;
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
 
@@ -204,7 +201,7 @@ pub(crate) fn rav1d_apply_grain_row<BD: BitDepth>(
                     layout,
                     &out_data[1 + pl],
                     &in_data[1 + pl],
-                    data_c,
+                    data,
                     cpw,
                     &scaling[1 + pl],
                     &grain_lut[1 + pl],

@@ -6,16 +6,13 @@
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
 
-use crate::src::assume::assume;
-use crate::src::disjoint_mut::AsMutPtr;
+use std::hint::assert_unchecked;
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::MaybeUninit;
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::ops::Index;
-use std::ops::IndexMut;
-use std::slice;
+use std::ops::{Deref, DerefMut, Index, IndexMut};
+use std::{mem, slice};
+
+use crate::disjoint_mut::AsMutPtr;
 
 /// [`Default`] isn't `impl`emented for all arrays `[T; N]`
 /// because they were implemented before `const` generics
@@ -107,7 +104,7 @@ macro_rules! def_align {
 
             unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
                 // SAFETY: `ptr` is safe to deref and thus is aligned.
-                unsafe { assume(ptr.is_aligned()) }
+                unsafe { assert_unchecked(ptr.is_aligned()) }
 
                 // SAFETY: `$name` (`Align*`) is a `#[repr(C)]` aligned wrapper around `[V; N]`,
                 // so a `*mut Self` is the same as a `*mut V` to the first `V`.
@@ -263,6 +260,7 @@ impl<T: Copy, C: AlignedByteChunk> Default for AlignedVec<T, C> {
     }
 }
 
+pub type AlignedVec2<T> = AlignedVec<T, Align2<[u8; 2]>>;
 pub type AlignedVec32<T> = AlignedVec<T, Align32<[u8; 32]>>;
 pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;
 
@@ -280,7 +278,7 @@ unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
         // SAFETY: `AlignedVec` stores `C`s internally,
         // so `*mut T` is really `*mut C`.
         // Since it's stored in a `Vec`, it's aligned.
-        unsafe { assume(ptr.cast::<C>().is_aligned()) };
+        unsafe { assert_unchecked(ptr.cast::<C>().is_aligned()) };
 
         ptr
     }

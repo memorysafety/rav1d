@@ -1,9 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::src::cpu::CpuFlags;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::ffi::c_int;
 use std::slice;
+
+use crate::cpu::CpuFlags;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_idx_finish(
     dst: *mut u8,

@@ -10,12 +10,19 @@ jobs:
         steps:
             - name: git checkout
               uses: actions/checkout@v4
+            - name: install rust toolchain
+              id: toolchain
+              uses: dtolnay/rust-toolchain@master
+              with:
+                toolchain: 1.87.0 # specific version for consistent perf
+                target: x86_64-unknown-linux-gnu
+                components: clippy
             - name: release build this PR
-              run:  nice cargo build --release
+              run: nice cargo +${{ steps.toolchain.outputs.name }} build --release
             - name: release build main branch
               run: |
                 git fetch --depth 1 origin main && git checkout origin/main
-                nice cargo +stable build --release --target-dir target.main
+                nice cargo +${{ steps.toolchain.outputs.name }} build --release --target-dir target.main
             - name: benchmark on chimera 8-bit test data
               run: |
                 mkdir -p `dirname $LOCAL_FILE`
@@ -26,7 +33,7 @@ jobs:
                 input=$(basename $LOCAL_FILE)
                 perf record -o perf.data.$input      -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
                 perf record -o perf.data.$input.main -- target.main/release/dav1d -q -i $LOCAL_FILE -o /dev/null
-                perf diff perf.data.$input perf.data.$input.main | head -n 100
+                perf diff perf.data.$input.main perf.data.$input | head -n 100
               env:
                 REMOTE_URL: http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-8bit-1280x720-3363kbps.ivf
                 LOCAL_FILE: /tmp/rav1d/Chimera-AV1-8bit-1280x720-3363kbps.ivf
@@ -40,7 +47,7 @@ jobs:
                 input=$(basename $LOCAL_FILE)
                 perf record -o perf.data.$input      -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
                 perf record -o perf.data.$input.main -- target.main/release/dav1d -q -i $LOCAL_FILE -o /dev/null
-                perf diff perf.data.$input perf.data.$input.main | head -n 100
+                perf diff perf.data.$input.main perf.data.$input | head -n 100
               env:
                 REMOTE_URL: http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-10bit-1920x1080-6191kbps.ivf
                 LOCAL_FILE: /tmp/rav1d/Chimera-AV1-10bit-1920x1080-6191kbps.ivf

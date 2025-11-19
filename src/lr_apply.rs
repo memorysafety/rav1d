@@ -1,23 +1,21 @@
 #![deny(unsafe_code)]
 
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::Align16;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameData;
-use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::looprestoration::LooprestorationParams;
-use crate::src::looprestoration::LooprestorationParamsSgr;
-use crate::src::looprestoration::LrEdgeFlags;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_sgr_params;
+use std::cmp;
+use std::ffi::c_int;
+
 use assert_matches::assert_matches;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
+
+use crate::align::Align16;
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::dav1d::headers::{Rav1dPixelLayout, Rav1dRestorationType};
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::internal::{Rav1dContext, Rav1dFrameData};
+use crate::lf_mask::Av1RestorationUnit;
+use crate::looprestoration::{LooprestorationParams, LooprestorationParamsSgr, LrEdgeFlags};
+use crate::strided::Strided as _;
+use crate::tables::DAV1D_SGR_PARAMS;
 
 bitflags! {
     #[derive(Clone, Copy, Default)]
@@ -85,7 +83,7 @@ fn lr_stripe<BD: BitDepth>(
         lr_fn = f.dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
         let sgr_idx = assert_matches!(lr.r#type, Rav1dRestorationType::SgrProj(idx) => idx);
-        let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
+        let sgr_params = &DAV1D_SGR_PARAMS[sgr_idx as usize];
         *params.sgr_mut() = LooprestorationParamsSgr {
             s0: sgr_params[0] as u32,
             s1: sgr_params[1] as u32,

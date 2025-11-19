@@ -1,17 +1,15 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use crate::c_arc::CArc;
+use crate::c_box::{CBox, FnFree, Free};
+use crate::error::{Rav1dError, Rav1dResult};
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
-use crate::src::c_arc::CArc;
-use crate::src::c_box::CBox;
-use crate::src::c_box::FnFree;
-use crate::src::c_box::Free;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dResult;
-use crate::src::send_sync_non_null::SendSyncNonNull;
-use std::ffi::c_void;
-use std::ptr::NonNull;
+use crate::send_sync_non_null::SendSyncNonNull;
 
 impl From<CArc<[u8]>> for Rav1dData {
     fn from(data: CArc<[u8]>) -> Self {
@@ -40,7 +38,7 @@ impl Rav1dData {
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult<Self> {
-        let free = validate_input!(free_callback.ok_or(EINVAL))?;
+        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         let free = Free { free, cookie };
         // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
         let data = unsafe { CBox::from_c(data, free) };
@@ -57,7 +55,7 @@ impl Rav1dData {
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,
     ) -> Rav1dResult {
-        let free = validate_input!(free_callback.ok_or(EINVAL))?;
+        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         let free = Free { free, cookie };
         // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
         let user_data = unsafe { CBox::from_c(user_data, free) };

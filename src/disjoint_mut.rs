@@ -3,29 +3,20 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::src::align::AlignedByteChunk;
-use crate::src::align::AlignedVec;
 use std::cell::UnsafeCell;
-use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::ops::Index;
-use std::ops::Range;
-use std::ops::RangeFrom;
-use std::ops::RangeFull;
-use std::ops::RangeInclusive;
-use std::ops::RangeTo;
-use std::ops::RangeToInclusive;
-use std::ptr;
+use std::ops::{
+    Deref, DerefMut, Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+};
+use std::ptr::addr_of_mut;
 use std::sync::Arc;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
+use std::{fmt, mem, ptr};
+
+use zerocopy::{AsBytes, FromBytes};
+
+use crate::align::{AlignedByteChunk, AlignedVec};
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -610,6 +601,7 @@ impl Debug for Bounds {
 }
 
 impl Bounds {
+    #[cfg(any(debug_assertions, test))]
     fn overlaps(&self, other: &Bounds) -> bool {
         let a = &self.range;
         let b = &other.range;
@@ -773,14 +765,15 @@ mod release {
 
 #[cfg(debug_assertions)]
 mod debug {
-    use super::*;
-    use parking_lot::Mutex;
-    use std::backtrace::Backtrace;
-    use std::backtrace::BacktraceStatus;
+    use std::backtrace::{Backtrace, BacktraceStatus};
     use std::fmt::Debug;
     use std::panic::Location;
     use std::thread;
     use std::thread::ThreadId;
+
+    use parking_lot::Mutex;
+
+    use super::*;
 
     #[derive(Debug)]
     pub(super) struct DisjointMutBounds {
@@ -1091,7 +1084,7 @@ fn test_pointer_write_release() {
     let mut v: DisjointMut<Vec<[u8; 4]>> = Default::default();
     v.resize(10, [0u8; 4]);
 
-    let borrow = unsafe { v.index(0..) };
+    let borrow = v.index(0..);
     let ptr = v.as_mut_ptr().wrapping_offset(3) as *mut u8;
     unsafe {
         ptr.wrapping_offset(2).write(42);
@@ -1104,8 +1097,8 @@ fn test_pointer_write_release() {
     // assert_eq!(borrow[3][2], 0);
 
     // We are fine to re-borrow at this point now that the write is done.
-    assert_eq!(unsafe { v.index(4)[0] }, 0);
-    assert_eq!(unsafe { v.index(3)[2] }, 42);
+    assert_eq!(v.index(4)[0], 0);
+    assert_eq!(v.index(3)[2], 42);
 }
 
 #[test]

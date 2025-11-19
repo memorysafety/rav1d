@@ -1,82 +1,39 @@
 #![deny(unsafe_code)]
 
-use crate::include::common::intops::clip_u8;
-use crate::include::common::intops::ulog2;
+use std::ffi::{c_int, c_uint};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::{array, cmp, fmt, mem};
+
+use crate::c_arc::CArc;
+use crate::decode::rav1d_submit_frame;
+use crate::env::get_poc_diff;
+use crate::error::{Rav1dError, Rav1dResult};
+use crate::getbits::GetBits;
+use crate::include::common::intops::{clip_u8, ulog2};
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
-use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
-use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
-use crate::include::dav1d::headers::Rav1dColorPrimaries;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
-use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dFrameHeaderCdef;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDelta;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaLF;
-use crate::include::dav1d::headers::Rav1dFrameHeaderDeltaQ;
-use crate::include::dav1d::headers::Rav1dFrameHeaderFilmGrain;
-use crate::include::dav1d::headers::Rav1dFrameHeaderLoopFilter;
-use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
-use crate::include::dav1d::headers::Rav1dFrameHeaderQuant;
-use crate::include::dav1d::headers::Rav1dFrameHeaderRestoration;
-use crate::include::dav1d::headers::Rav1dFrameHeaderSegmentation;
-use crate::include::dav1d::headers::Rav1dFrameHeaderSuperRes;
-use crate::include::dav1d::headers::Rav1dFrameHeaderTiling;
-use crate::include::dav1d::headers::Rav1dFrameSize;
-use crate::include::dav1d::headers::Rav1dFrameSkipMode;
-use crate::include::dav1d::headers::Rav1dFrameType;
-use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
-use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Rav1dObuType;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::Rav1dProfile;
-use crate::include::dav1d::headers::Rav1dRestorationType;
-use crate::include::dav1d::headers::Rav1dSegmentationData;
-use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
-use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
-use crate::include::dav1d::headers::Rav1dTxfmMode;
-use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
-use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
-use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
-use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
-use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
-use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
-use crate::src::c_arc::CArc;
-use crate::src::decode::rav1d_submit_frame;
-use crate::src::env::get_poc_diff;
-use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOENT;
-use crate::src::error::Rav1dError::ERANGE;
-use crate::src::error::Rav1dResult;
-use crate::src::getbits::GetBits;
-use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dState;
-use crate::src::internal::Rav1dTileGroup;
-use crate::src::internal::Rav1dTileGroupHeader;
-use crate::src::levels::ObuMetaType;
-use crate::src::log::Rav1dLog as _;
-use crate::src::picture::rav1d_picture_copy_props;
-use crate::src::picture::PictureFlags;
-use crate::src::thread_task::FRAME_ERROR;
-use std::array;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::fmt;
-use std::mem;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use crate::include::dav1d::headers::{
+    DRav1d, Dav1dSequenceHeader, Rav1dAdaptiveBoolean, Rav1dChromaSamplePosition,
+    Rav1dColorPrimaries, Rav1dContentLightLevel, Rav1dFilmGrainData, Rav1dFilterMode,
+    Rav1dFrameHeader, Rav1dFrameHeaderCdef, Rav1dFrameHeaderDelta, Rav1dFrameHeaderDeltaLF,
+    Rav1dFrameHeaderDeltaQ, Rav1dFrameHeaderFilmGrain, Rav1dFrameHeaderLoopFilter,
+    Rav1dFrameHeaderOperatingPoint, Rav1dFrameHeaderQuant, Rav1dFrameHeaderRestoration,
+    Rav1dFrameHeaderSegmentation, Rav1dFrameHeaderSuperRes, Rav1dFrameHeaderTiling, Rav1dFrameSize,
+    Rav1dFrameSkipMode, Rav1dFrameType, Rav1dITUTT35, Rav1dLoopfilterModeRefDeltas,
+    Rav1dMasteringDisplay, Rav1dMatrixCoefficients, Rav1dObuType, Rav1dPixelLayout, Rav1dProfile,
+    Rav1dRestorationType, Rav1dSegmentationData, Rav1dSegmentationDataSet, Rav1dSequenceHeader,
+    Rav1dSequenceHeaderOperatingParameterInfo, Rav1dSequenceHeaderOperatingPoint,
+    Rav1dTransferCharacteristics, Rav1dTxfmMode, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
+    RAV1D_MAX_CDEF_STRENGTHS, RAV1D_MAX_OPERATING_POINTS, RAV1D_MAX_TILE_COLS, RAV1D_MAX_TILE_ROWS,
+    RAV1D_PRIMARY_REF_NONE, RAV1D_REFS_PER_FRAME,
+};
+use crate::internal::{Rav1dContext, Rav1dState, Rav1dTileGroup, Rav1dTileGroupHeader};
+use crate::levels::ObuMetaType;
+use crate::log::Rav1dLog as _;
+use crate::picture::{rav1d_picture_copy_props, PictureFlags};
+use crate::thread_task::FRAME_ERROR;
 
 struct Debug {
     enabled: bool,
@@ -128,7 +85,7 @@ fn check_trailing_bits(gb: &mut GetBits, strict_std_compliance: bool) -> Rav1dRe
     let trailing_one_bit = gb.get_bit();
 
     if gb.has_error() != 0 {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     if !strict_std_compliance {
@@ -136,13 +93,13 @@ fn check_trailing_bits(gb: &mut GetBits, strict_std_compliance: bool) -> Rav1dRe
     }
 
     if !trailing_one_bit || gb.pending_bits() != 0 {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     gb.bytealign();
 
     if gb.get_bytes(gb.remaining_len()).iter().any(|&b| b != 0) {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     Ok(())
@@ -155,13 +112,14 @@ fn parse_seq_hdr(
 ) -> Rav1dResult<Rav1dSequenceHeader> {
     let debug = Debug::new(false, "SEQHDR", gb);
 
-    let profile = Rav1dProfile::from_repr(gb.get_bits(3) as usize).ok_or(EINVAL)?;
+    let profile =
+        Rav1dProfile::from_repr(gb.get_bits(3) as usize).ok_or(Rav1dError::InvalidArgument)?;
     debug.post(gb, "post-profile");
 
     let still_picture = gb.get_bit() as u8;
     let reduced_still_picture_header = gb.get_bit() as u8;
     if reduced_still_picture_header != 0 && still_picture == 0 {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
     debug.post(gb, "post-stillpicture_flags");
 
@@ -205,13 +163,13 @@ fn parse_seq_hdr(
             num_units_in_tick = gb.get_bits(32) as u32;
             time_scale = gb.get_bits(32) as u32;
             if strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             equal_picture_interval = gb.get_bit() as u8;
             if equal_picture_interval != 0 {
                 let num_ticks_per_picture_ = gb.get_vlc();
                 if num_ticks_per_picture_ == 0xffffffff {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
                 num_ticks_per_picture = num_ticks_per_picture_ + 1;
             } else {
@@ -224,7 +182,7 @@ fn parse_seq_hdr(
                 encoder_decoder_buffer_delay_length = gb.get_bits(5) as u8 + 1;
                 num_units_in_decoding_tick = gb.get_bits(32) as u32;
                 if strict_std_compliance && num_units_in_decoding_tick == 0 {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
                 buffer_removal_delay_length = gb.get_bits(5) as u8 + 1;
                 frame_presentation_delay_length = gb.get_bits(5) as u8 + 1;
@@ -255,7 +213,7 @@ fn parse_seq_hdr(
             let op = &mut operating_points[i as usize];
             op.idc = gb.get_bits(12) as u16;
             if op.idc != 0 && (op.idc & 0xff == 0 || op.idc & 0xf00 == 0) {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             op.major_level = 2 + gb.get_bits(3) as u8;
             op.minor_level = gb.get_bits(2) as u8;
@@ -392,18 +350,18 @@ fn parse_seq_hdr(
         // Default initialization.
         monochrome = Default::default();
     }
-    let color_description_present = gb.get_bit() as u8;
+    let color_description_present = gb.get_bit();
     let pri;
     let trc;
     let mtrx;
-    if color_description_present != 0 {
-        pri = Rav1dColorPrimaries(gb.get_bits(8) as u8);
-        trc = Rav1dTransferCharacteristics(gb.get_bits(8) as u8);
-        mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
+    if color_description_present {
+        pri = gb.get_bits(8).try_into().unwrap_or_default();
+        trc = gb.get_bits(8).try_into().unwrap_or_default();
+        mtrx = gb.get_bits(8).try_into().unwrap_or_default();
     } else {
-        pri = Rav1dColorPrimaries::UNKNOWN;
-        trc = Rav1dTransferCharacteristics::UNKNOWN;
-        mtrx = Rav1dMatrixCoefficients::UNKNOWN;
+        pri = Default::default();
+        trc = Default::default();
+        mtrx = Default::default();
     }
     let color_range;
     let layout;
@@ -418,12 +376,12 @@ fn parse_seq_hdr(
         chr = Rav1dChromaSamplePosition::Unknown;
     } else if pri == Rav1dColorPrimaries::BT709
         && trc == Rav1dTransferCharacteristics::SRGB
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
     {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
         if profile != Rav1dProfile::High && !(profile == Rav1dProfile::Professional && hbd == 2) {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
 
         // Default initialization.
@@ -478,10 +436,10 @@ fn parse_seq_hdr(
         };
     }
     if strict_std_compliance
-        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && mtrx == Rav1dMatrixCoefficients::Identity
         && layout != Rav1dPixelLayout::I444
     {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
     let separate_uv_delta_q;
     if monochrome == 0 {
@@ -560,7 +518,7 @@ fn parse_seq_hdr(
 pub(crate) fn rav1d_parse_sequence_header(
     mut data: &[u8],
 ) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-    let mut res = Err(ENOENT);
+    let mut res = Err(Rav1dError::NoEntity);
 
     while !data.is_empty() {
         let gb = &mut GetBits::new(data);
@@ -576,7 +534,7 @@ pub(crate) fn rav1d_parse_sequence_header(
             let len = gb.get_uleb128() as usize;
             let len = gb.byte_pos() + len;
             if len > data.len() {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             len
         } else {
@@ -586,13 +544,13 @@ pub(crate) fn rav1d_parse_sequence_header(
         if r#type == Some(Rav1dObuType::SeqHdr) {
             res = Ok(parse_seq_hdr(gb, false)?);
             if gb.byte_pos() > obu_end {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             gb.bytealign();
         }
 
         if gb.has_error() != 0 {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         assert!(!gb.has_pending_bits());
 
@@ -613,7 +571,12 @@ fn parse_frame_size(
         for i in 0..7 {
             if gb.get_bit() {
                 let r#ref = &state.refs[refidx[i as usize] as usize].p;
-                let ref_size = &r#ref.p.frame_hdr.as_ref().ok_or(EINVAL)?.size;
+                let ref_size = &r#ref
+                    .p
+                    .frame_hdr
+                    .as_ref()
+                    .ok_or(Rav1dError::InvalidArgument)?
+                    .size;
                 let width1 = ref_size.width[1];
                 let height = ref_size.height;
                 let render_width = ref_size.render_width;
@@ -698,7 +661,7 @@ fn tile_log2(sz: c_int, tgt: c_int) -> u8 {
     k
 }
 
-static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
+static DEFAULT_MODE_REF_DELTAS: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
     mode_delta: [0, 0],
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
@@ -728,7 +691,7 @@ fn parse_refidx(
                         .p
                         .frame_hdr
                         .as_ref()
-                        .ok_or(EINVAL)?
+                        .ok_or(Rav1dError::InvalidArgument)?
                         .frame_offset as c_int,
                     frame_offset as c_int,
                 );
@@ -831,7 +794,7 @@ fn parse_refidx(
                 .frame_hdr
                 .as_ref()
                 .filter(|ref_frame_hdr| ref_frame_hdr.frame_id == ref_frame_id)
-                .ok_or(EINVAL)?;
+                .ok_or(Rav1dError::InvalidArgument)?;
         }
     }
     Ok(refidx)
@@ -932,7 +895,7 @@ fn parse_tiling(
     if log2_cols != 0 || log2_rows != 0 {
         update = gb.get_bits((log2_cols + log2_rows).into()) as u16;
         if update >= cols as u16 * rows as u16 {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         n_bytes = gb.get_bits(2) as u8 + 1;
     } else {
@@ -1163,7 +1126,7 @@ fn parse_segmentation(
                 .p
                 .frame_hdr
                 .as_ref()
-                .ok_or(EINVAL)?
+                .ok_or(Rav1dError::InvalidArgument)?
                 .segmentation
                 .seg_data
                 .clone()
@@ -1268,7 +1231,7 @@ fn parse_loopfilter(
         sharpness = 0;
         mode_ref_delta_enabled = 1;
         mode_ref_delta_update = 1;
-        mode_ref_deltas = default_mode_ref_deltas.clone();
+        mode_ref_deltas = DEFAULT_MODE_REF_DELTAS.clone();
     } else {
         level_y = [gb.get_bits(6) as u8, gb.get_bits(6) as u8];
         if seqhdr.monochrome == 0 && (level_y[0] != 0 || level_y[1] != 0) {
@@ -1282,7 +1245,7 @@ fn parse_loopfilter(
         sharpness = gb.get_bits(3) as u8;
 
         if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-            mode_ref_deltas = default_mode_ref_deltas.clone();
+            mode_ref_deltas = DEFAULT_MODE_REF_DELTAS.clone();
         } else {
             let r#ref = refidx[primary_ref_frame as usize];
             mode_ref_deltas = state.refs[r#ref as usize]
@@ -1290,7 +1253,7 @@ fn parse_loopfilter(
                 .p
                 .frame_hdr
                 .as_ref()
-                .ok_or(EINVAL)?
+                .ok_or(Rav1dError::InvalidArgument)?
                 .loopfilter
                 .mode_ref_deltas
                 .clone();
@@ -1451,7 +1414,7 @@ fn parse_skip_mode(
                 .p
                 .frame_hdr
                 .as_ref()
-                .ok_or(EINVAL)?
+                .ok_or(Rav1dError::InvalidArgument)?
                 .frame_offset as c_uint;
 
             let diff = get_poc_diff(seqhdr.order_hint_n_bits, refpoc as c_int, poc as c_int);
@@ -1490,7 +1453,7 @@ fn parse_skip_mode(
                     .p
                     .frame_hdr
                     .as_ref()
-                    .ok_or(EINVAL)?
+                    .ok_or(Rav1dError::InvalidArgument)?
                     .frame_offset as c_uint;
                 if get_poc_diff(
                     seqhdr.order_hint_n_bits,
@@ -1565,7 +1528,7 @@ fn parse_gmv(
                     .p
                     .frame_hdr
                     .as_ref()
-                    .ok_or(EINVAL)?
+                    .ok_or(Rav1dError::InvalidArgument)?
                     .gmv[i]
             };
             let mat = &mut gmv.matrix;
@@ -1607,14 +1570,14 @@ fn parse_film_grain_data(
 ) -> Rav1dResult<Rav1dFilmGrainData> {
     let num_y_points = gb.get_bits(4) as c_int;
     if num_y_points > 14 {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     let mut y_points = [[0; 2]; 14];
     for i in 0..num_y_points {
         y_points[i as usize][0] = gb.get_bits(8) as u8;
         if i != 0 && y_points[(i - 1) as usize][0] as c_int >= y_points[i as usize][0] as c_int {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         y_points[i as usize][1] = gb.get_bits(8) as u8;
     }
@@ -1631,7 +1594,7 @@ fn parse_film_grain_data(
         for pl in 0..2 {
             num_uv_points[pl as usize] = gb.get_bits(4) as c_int;
             if num_uv_points[pl as usize] > 10 {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             for i in 0..num_uv_points[pl as usize] {
                 uv_points[pl as usize][i as usize][0] = gb.get_bits(8) as u8;
@@ -1639,7 +1602,7 @@ fn parse_film_grain_data(
                     && uv_points[pl as usize][(i - 1) as usize][0] as c_int
                         >= uv_points[pl as usize][i as usize][0] as c_int
                 {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
                 uv_points[pl as usize][i as usize][1] = gb.get_bits(8) as u8;
             }
@@ -1650,7 +1613,7 @@ fn parse_film_grain_data(
         && seqhdr.ss_ver == 1
         && (num_uv_points[0] != 0) != (num_uv_points[1] != 0)
     {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     let scaling_shift = gb.get_bits(2) as u8 + 8;
@@ -1736,7 +1699,7 @@ fn parse_film_grain(
                 }
             }
             if !found {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             Rav1dFilmGrainData {
                 seed,
@@ -1745,7 +1708,7 @@ fn parse_film_grain(
                     .p
                     .frame_hdr
                     .as_ref()
-                    .ok_or(EINVAL)?
+                    .ok_or(Rav1dError::InvalidArgument)?
                     .film_grain
                     .data
                     .clone()
@@ -1799,7 +1762,7 @@ fn parse_frame_hdr(
                 .frame_hdr
                 .as_ref()
                 .filter(|ref_frame_hdr| ref_frame_hdr.frame_id == frame_id)
-                .ok_or(EINVAL)?;
+                .ok_or(Rav1dError::InvalidArgument)?;
         } else {
             // Default initialization.
             frame_id = Default::default();
@@ -1937,7 +1900,7 @@ fn parse_frame_hdr(
             && frame_type == Rav1dFrameType::Intra
             && refresh_frame_flags == 0xff
         {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         size = parse_frame_size(state, seqhdr, None, frame_size_override, gb)?;
         allow_intrabc = allow_screen_content_tools && !size.super_res.enabled && gb.get_bit();
@@ -2167,7 +2130,7 @@ fn parse_obus(
     // obu header
     let obu_forbidden_bit = gb.get_bit();
     if c.strict_std_compliance && obu_forbidden_bit {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
     let raw_type = gb.get_bits(4);
     let r#type = Rav1dObuType::from_repr(raw_type as usize);
@@ -2186,10 +2149,11 @@ fn parse_obus(
     // obu length field
     if has_length_field {
         let len = gb.get_uleb128() as usize;
-        gb.set_remaining_len(len).ok_or(EINVAL)?;
+        gb.set_remaining_len(len)
+            .ok_or(Rav1dError::InvalidArgument)?;
     }
     if gb.has_error() != 0 {
-        return Err(EINVAL);
+        return Err(Rav1dError::InvalidArgument);
     }
 
     // We must have read a whole number of bytes at this point
@@ -2216,11 +2180,18 @@ fn parse_obus(
         props: &Rav1dDataProps,
         gb: &mut GetBits,
     ) -> Rav1dResult {
-        let hdr = parse_tile_hdr(&state.frame_hdr.as_ref().ok_or(EINVAL)?.tiling, gb);
+        let hdr = parse_tile_hdr(
+            &state
+                .frame_hdr
+                .as_ref()
+                .ok_or(Rav1dError::InvalidArgument)?
+                .tiling,
+            gb,
+        );
         // Align to the next byte boundary and check for overrun.
         gb.bytealign();
         if gb.has_error() != 0 {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
 
         let mut data = r#in.clone();
@@ -2230,10 +2201,10 @@ fn parse_obus(
         if hdr.start > hdr.end || hdr.start != state.n_tiles {
             state.tiles.clear();
             state.n_tiles = 0;
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         if let Err(_) = state.tiles.try_reserve_exact(1) {
-            return Err(EINVAL);
+            return Err(Rav1dError::InvalidArgument);
         }
         state.n_tiles += 1 + hdr.end - hdr.start;
         state.tiles.push(Rav1dTileGroup {
@@ -2255,7 +2226,7 @@ fn parse_obus(
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
             if gb.has_error() != 0 {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
 
             let op_idx = if c.operating_point < seq_hdr.num_operating_points {
@@ -2315,7 +2286,7 @@ fn parse_obus(
             let frame_hdr = parse_frame_hdr(
                 c,
                 state,
-                state.seq_hdr.as_ref().ok_or(EINVAL)?,
+                state.seq_hdr.as_ref().ok_or(Rav1dError::InvalidArgument)?,
                 temporal_id,
                 spatial_id,
                 gb,
@@ -2339,13 +2310,13 @@ fn parse_obus(
                     "Frame size {}x{} exceeds limit {}",
                     frame_hdr.size.width[1], frame_hdr.size.height, c.frame_size_limit,
                 );
-                return Err(ERANGE);
+                return Err(Rav1dError::OutOfRange);
             }
 
             if r#type == Some(Rav1dObuType::Frame) {
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if frame_hdr.show_existing_frame != 0 {
-                    return Err(EINVAL);
+                    return Err(Rav1dError::InvalidArgument);
                 }
             }
 
@@ -2368,7 +2339,7 @@ fn parse_obus(
             // obu metadata type field
             let meta_type = gb.get_uleb128();
             if gb.has_error() != 0 {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
 
             match ObuMetaType::from_repr(meta_type as usize) {
@@ -2435,7 +2406,7 @@ fn parse_obus(
                         payload_size -= 1;
                     }
 
-                    if payload_size <= 0 || gb[payload_size] != 0x80 {
+                    if payload_size == 0 || gb[payload_size] != 0x80 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let country_code = country_code as u8;
@@ -2446,7 +2417,7 @@ fn parse_obus(
                             country_code_extension_byte,
                             payload,
                         };
-                        state.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
+                        state.itut_t35.push(itut_t35); // TODO fallible allocation
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
@@ -2473,7 +2444,7 @@ fn parse_obus(
                 .p
                 .frame_hdr
                 .as_ref()
-                .ok_or(EINVAL)?
+                .ok_or(Rav1dError::InvalidArgument)?
                 .frame_type
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
@@ -2494,12 +2465,12 @@ fn parse_obus(
                 .data
                 .is_none()
             {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             if c.strict_std_compliance
                 && !state.refs[frame_hdr.existing_frame_idx as usize].p.showable
             {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             if c.fc.len() == 1 {
                 state.out = state.refs[frame_hdr.existing_frame_idx as usize].p.clone();
@@ -2621,7 +2592,7 @@ fn parse_obus(
                 _ => {}
             }
             if state.tiles.is_empty() {
-                return Err(EINVAL);
+                return Err(Rav1dError::InvalidArgument);
             }
             rav1d_submit_frame(c, state)?;
             assert!(state.tiles.is_empty());

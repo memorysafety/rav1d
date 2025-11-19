@@ -1,30 +1,81 @@
-use std::ffi::c_int;
-use std::ffi::c_uint;
+use std::error::Error;
+use std::ffi::{c_int, c_uint};
+use std::fmt::{self, Display, Formatter};
+
 use strum::FromRepr;
 
+/// Error enum return by various `rav1d` operations.
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Debug)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Rav1dError {
     /// This represents a generic `rav1d` error.
-    /// It has nothing to do with the other `errno`-based ones
-    /// (and that's why it's not all caps like the other ones).
+    /// It has nothing to do with the other `errno`-based ones.
     ///
     /// Normally `EPERM = 1`, but `dav1d` never uses `EPERM`,
     /// but does use `-1`, as opposed to the normal `DAV1D_ERR(E*)`.
     ///
-    /// Also Note that this forces `0` to be the niche,
+    /// Also note that this forces `0` to be the niche,
     /// which is more optimal since `0` is no error for [`Dav1dResult`].
-    EGeneric = 1,
+    Other = 1,
 
-    ENOENT = libc::ENOENT as u8,
-    EIO = libc::EIO as u8,
-    EAGAIN = libc::EAGAIN as u8,
-    ENOMEM = libc::ENOMEM as u8,
-    EINVAL = libc::EINVAL as u8,
-    ERANGE = libc::ERANGE as u8,
-    ENOPROTOOPT = libc::ENOPROTOOPT as u8,
+    /// No entity.
+    ///
+    /// No Sequence Header OBUs were found in the buffer.
+    NoEntity = libc::ENOENT as u8,
+
+    /// Try again.
+    ///
+    /// If this is returned by [`rav1d_send_data`], then there
+    /// are decoded frames pending that first have to be retrieved via [`rav1d_get_picture`]
+    /// before processing any further pending data.
+    ///
+    /// If this is returned by [`rav1d_get_picture`], then no decoded frames are pending
+    /// currently and more data needs to be sent to the decoder.
+    TryAgain = libc::EAGAIN as u8,
+
+    /// Out of memory.
+    ///
+    /// Not enough memory is currently available for performing this operation.
+    OutOfMemory = libc::ENOMEM as u8,
+
+    /// Invalid argument.
+    ///
+    /// One of the arguments passed to the function, including the bitstream, is invalid.
+    InvalidArgument = libc::EINVAL as u8,
+
+    /// Out of range.
+    ///
+    /// The frame size is larger than the limit.
+    OutOfRange = libc::ERANGE as u8,
+
+    /// Unsupported bitstream.
+    ///
+    /// The provided bitstream is not supported by `rav1d`.
+    UnsupportedBitstream = libc::ENOPROTOOPT as u8,
 }
+
+impl Rav1dError {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Rav1dError::TryAgain => "Try again",
+            Rav1dError::InvalidArgument => "Invalid argument",
+            Rav1dError::OutOfMemory => "Not enough memory available",
+            Rav1dError::UnsupportedBitstream => "Unsupported bitstream",
+            Rav1dError::Other => "Other error",
+            Rav1dError::NoEntity => "No sequence header found",
+            Rav1dError::OutOfRange => "Out of range",
+        }
+    }
+}
+
+impl Display for Rav1dError {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.as_str())
+    }
+}
+
+impl Error for Rav1dError {}
 
 pub type Rav1dResult<T = ()> = Result<T, Rav1dError>;
 

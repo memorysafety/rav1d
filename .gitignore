@@ -20,3 +20,7 @@ target/
 
 .gdb_history
 .gdbinit
+
+.cache/clangd/index
+
+/benchmarks/

@@ -1,43 +1,36 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::common::bitdepth::AsPrimitive;
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::LeftPixelRow;
-use crate::include::common::bitdepth::ToPrimitive;
-use crate::include::common::bitdepth::BPC;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
-use crate::src::align::AlignedVec64;
-use crate::src::cpu::CpuFlags;
-use crate::src::cursor::CursorMut;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::strided::Strided as _;
-use crate::src::tables::dav1d_sgr_x_by_x;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use std::ffi::{c_int, c_uint};
+use std::ops::Add;
+use std::{cmp, iter, mem, slice};
+
 use bitflags::bitflags;
 use libc::ptrdiff_t;
-use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::iter;
-use std::mem;
-use std::ops::Add;
-use std::slice;
 use to_method::To;
-use zerocopy::AsBytes;
-use zerocopy::FromBytes;
-use zerocopy::FromZeroes;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
+use crate::align::AlignedVec64;
+use crate::cpu::CpuFlags;
+use crate::cursor::CursorMut;
+use crate::disjoint_mut::DisjointMut;
+use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bd_fn;
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
+use crate::include::common::bitdepth::{
+    AsPrimitive, BitDepth, DynPixel, LeftPixelRow, ToPrimitive, BPC,
+};
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::picture::{
+    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
+};
+use crate::strided::Strided as _;
+use crate::tables::dav1d_sgr_x_by_x;
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -80,7 +73,7 @@ pub struct LooprestorationParamsSgr {
 pub struct LooprestorationParams {
     /// [`Align16`] moved to [`Self`] because we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
     ///
-    /// [`Align16`]: crate::src::align::Align16
+    /// [`Align16`]: crate::align::Align16
     pub filter: [[i16; 8]; 2],
 }
 
@@ -118,7 +111,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loop_restoration_filter(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-    _dst: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    _dst: FFISafeRav1dPictureDataComponentOffset,
     _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) -> ());
 
@@ -159,7 +152,7 @@ impl loop_restoration_filter::Fn {
             .wrapping_offset(lpf_off)
             .cast();
         let bd = bd.into_c();
-        let dst = FFISafe::new(&dst);
+        let dst = dst.into_ffi_safe();
         let lpf = FFISafe::new(lpf);
         // SAFETY: Fallbacks `fn wiener_rust`, `fn sgr_{3x3,5x5,mix}_rust` are safe; asm is supposed to do the same.
         unsafe {
@@ -363,11 +356,11 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let lpf = unsafe { FFISafe::get(lpf) };
@@ -779,11 +772,11 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let lpf = unsafe { FFISafe::get(lpf) };
@@ -845,11 +838,11 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let lpf = unsafe { FFISafe::get(lpf) };
@@ -906,11 +899,11 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bitdepth_max: c_int,
-    p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+    p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-    let p = *unsafe { FFISafe::get(p) };
+    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
     let lpf = unsafe { FFISafe::get(lpf) };
@@ -959,12 +952,13 @@ fn sgr_mix_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 mod neon {
-    use super::*;
-
-    use crate::include::common::bitdepth::bd_fn;
-    use crate::src::align::Align16;
-    use libc::intptr_t;
     use std::ptr;
+
+    use libc::intptr_t;
+
+    use super::*;
+    use crate::align::Align16;
+    use crate::include::common::bitdepth::bd_fn;
 
     wrap_fn_ptr!(unsafe extern "C" fn wiener_filter_h(
         dst: *mut i16,
@@ -1049,7 +1043,7 @@ mod neon {
         params: &LooprestorationParams,
         edges: LrEdgeFlags,
         bitdepth_max: c_int,
-        _p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        _p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
         let p = p.cast();
@@ -1574,11 +1568,10 @@ mod neon {
 #[deny(unsafe_op_in_unsafe_fn)]
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 mod neon {
-    use super::*;
+    use std::{array, ptr};
 
-    use crate::src::align::Align16;
-    use std::array;
-    use std::ptr;
+    use super::*;
+    use crate::align::Align16;
 
     fn rotate<const LEN: usize, const MID: usize>(
         a: &mut [*mut i32; LEN],
@@ -3327,11 +3320,11 @@ mod neon_erased {
         params: &LooprestorationParams,
         edges: LrEdgeFlags,
         bitdepth_max: c_int,
-        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-        let p = *unsafe { FFISafe::get(p) };
+        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();
         let bd = BD::from_c(bitdepth_max);
@@ -3356,11 +3349,11 @@ mod neon_erased {
         params: &LooprestorationParams,
         edges: LrEdgeFlags,
         bitdepth_max: c_int,
-        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-        let p = *unsafe { FFISafe::get(p) };
+        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();
         let w = w as usize;
@@ -3385,11 +3378,11 @@ mod neon_erased {
         params: &LooprestorationParams,
         edges: LrEdgeFlags,
         bitdepth_max: c_int,
-        p: *const FFISafe<Rav1dPictureDataComponentOffset>,
+        p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
-        let p = *unsafe { FFISafe::get(p) };
+        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();
         let bd = BD::from_c(bitdepth_max);

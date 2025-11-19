@@ -1,44 +1,35 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dWarpedMotionType;
-use crate::src::align::Align16;
-use crate::src::align::AlignedVec64;
-use crate::src::cpu::CpuFlags;
-use crate::src::disjoint_mut::DisjointMut;
-use crate::src::disjoint_mut::DisjointMutArcSlice;
-use crate::src::disjoint_mut::DisjointMutGuard;
-use crate::src::disjoint_mut::DisjointMutSlice;
-use crate::src::env::fix_mv_precision;
-use crate::src::env::get_gmv_2d;
-use crate::src::env::get_poc_diff;
-use crate::src::error::Rav1dResult;
-use crate::src::ffi_safe::FFISafe;
-use crate::src::internal::Bxy;
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::levels::BlockSize;
-use crate::src::levels::Mv;
-use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use std::cmp;
 use std::marker::PhantomData;
-use std::mem;
 use std::mem::MaybeUninit;
-use std::ptr;
-use std::slice;
-use zerocopy::FromZeroes;
+use std::{cmp, mem, ptr, slice};
+
+use zerocopy::{AsBytes, FromZeroes};
+
+use crate::align::{Align16, AlignedVec64};
+use crate::cpu::CpuFlags;
+use crate::disjoint_mut::{DisjointMut, DisjointMutArcSlice, DisjointMutGuard, DisjointMutSlice};
+use crate::env::{fix_mv_precision, get_gmv_2d, get_poc_diff};
+use crate::error::Rav1dResult;
+use crate::ffi_safe::FFISafe;
+use crate::include::common::intops::{apply_sign, iclip};
+use crate::include::dav1d::headers::{
+    Rav1dFrameHeader, Rav1dSequenceHeader, Rav1dWarpedMotionType,
+};
+use crate::internal::Bxy;
+use crate::intra_edge::EdgeFlags;
+use crate::levels::{BlockSize, Mv, UnalignedMv};
+use crate::wrap_fn_ptr::wrap_fn_ptr;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
 pub struct RefMvsTemporalBlock {
-    pub mv: Mv,
+    pub mv: UnalignedMv,
     pub r#ref: i8,
 }
 const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
-#[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
+#[derive(Clone, Copy, Eq, FromZeroes, AsBytes)]
 // In C, this is packed and is 2 bytes.
 // In Rust, being packed and aligned is tricky
 #[repr(C, align(2))]
@@ -47,18 +38,41 @@ pub struct RefMvsRefPair {
 }
 const _: () = assert!(mem::size_of::<RefMvsRefPair>() == 2);
 
+impl PartialEq for RefMvsRefPair {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        // `#[derive(PartialEq)]` compares per-field with `&&`,
+        // which isn't optimized well and isn't coalesced into wider loads.
+        // Comparing all of the bytes at once optimizes better with wider loads.
+        // See <https://github.com/rust-lang/rust/issues/140167>.
+        self.as_bytes() == other.as_bytes()
+    }
+}
+
 impl From<[i8; 2]> for RefMvsRefPair {
     fn from(from: [i8; 2]) -> Self {
         RefMvsRefPair { r#ref: from }
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, FromZeroes)]
+#[derive(Clone, Copy, Default, Eq, FromZeroes, AsBytes)]
 #[repr(C)]
+#[repr(align(4))] // Is a `union` with a `uint64_t` in C, so `align(8)`, but `align(8)` doesn't allow `align(4)` for `RefMvsBlock`.
 pub struct RefMvsMvPair {
     pub mv: [Mv; 2],
 }
 const _: () = assert!(mem::size_of::<RefMvsMvPair>() == 8);
+
+impl PartialEq for RefMvsMvPair {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        // `#[derive(PartialEq)]` compares per-field with `&&`,
+        // which isn't optimized well and isn't coalesced into wider loads.
+        // Comparing all of the bytes at once optimizes better with wider loads.
+        // See <https://github.com/rust-lang/rust/issues/140167>.
+        self.as_bytes() == other.as_bytes()
+    }
+}
 
 #[derive(Clone, Copy, FromZeroes)]
 // In C, this is packed and is 12 bytes.
@@ -668,13 +682,13 @@ fn scan_col(
 
 #[inline]
 fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
-    static div_mult: [u16; 32] = [
+    static DIV_MULT: [u16; 32] = [
         0, 16384, 8192, 5461, 4096, 3276, 2730, 2340, 2048, 1820, 1638, 1489, 1365, 1260, 1170,
         1092, 1024, 963, 910, 862, 819, 780, 744, 712, 682, 655, 630, 606, 585, 564, 546, 528,
     ];
     assert!(den > 0 && den < 32);
     assert!(num > -32 && num < 32);
-    let frac = num * div_mult[den as usize] as i32;
+    let frac = num * DIV_MULT[den as usize] as i32;
     let y = mv.y as i32 * frac;
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
@@ -694,12 +708,13 @@ fn add_temporal_candidate(
     globalmv: Option<(&mut i32, &[Mv; 2])>,
     frame_hdr: &Rav1dFrameHeader,
 ) {
-    if rb.mv.is_invalid() {
+    let rb_mv = rb.mv.into_aligned();
+    if rb_mv.is_invalid() {
         return;
     }
 
     let mut mv = mv_projection(
-        rb.mv,
+        rb_mv,
         rf.pocdiff[r#ref.r#ref[0] as usize - 1] as i32,
         rb.r#ref as i32,
     );
@@ -728,7 +743,7 @@ fn add_temporal_candidate(
             mv: [
                 mv,
                 mv_projection(
-                    rb.mv,
+                    rb_mv,
                     rf.pocdiff[r#ref.r#ref[1] as usize - 1] as i32,
                     rb.r#ref as i32,
                 ),
@@ -1431,7 +1446,7 @@ fn load_tmvs_rust(
         for rp_proj in
             &mut *rp_proj.index_mut(offset + col_start8 as usize..offset + col_end8 as usize)
         {
-            rp_proj.mv = Mv::INVALID;
+            rp_proj.mv = Mv::INVALID.into_unaligned();
         }
     }
     for n in 0..rf.n_mfmvs {
@@ -1459,7 +1474,7 @@ fn load_tmvs_rust(
                     x += 1;
                     continue;
                 }
-                let offset = mv_projection(rb.mv, ref2cur, ref2ref);
+                let offset = mv_projection(rb.mv.into_aligned(), ref2cur, ref2ref);
                 let mut pos_x =
                     x + apply_sign((offset.x as i32).abs() >> 6, offset.x as i32 ^ ref_sign);
                 let pos_y =
@@ -1561,7 +1576,10 @@ fn save_tmvs_rust(
                 let r#ref = cand_b.r#ref.r#ref[i];
                 if r#ref > 0 && ref_sign[r#ref as usize - 1] != 0 && mv.y.abs() | mv.x.abs() < 4096
                 {
-                    Some(RefMvsTemporalBlock { mv, r#ref })
+                    Some(RefMvsTemporalBlock {
+                        mv: mv.into_unaligned(),
+                        r#ref,
+                    })
                 } else {
                     None
                 }
