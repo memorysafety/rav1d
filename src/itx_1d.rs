@@ -1133,6 +1133,7 @@ pub fn rav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_in
     }
 }
 
+#[cfg(not(all(feature = "asm", target_feature = "neon")))]
 pub fn rav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let stride = stride.get();
 
