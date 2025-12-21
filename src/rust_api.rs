@@ -364,13 +364,12 @@ pub struct Plane(Picture, PlanarImageComponent);
 impl AsRef<[u8]> for Plane {
     fn as_ref(&self) -> &[u8] {
         let (stride, height) = self.0.plane_data_geometry(self.1);
-        // SAFETY: both stride and height can't be negative, the `stride` and `height` methods panic if they are so there's no undefined behaviour
-        unsafe {
-            slice::from_raw_parts(
-                self.0.plane_data_ptr(self.1) as *const u8,
-                (stride * height) as usize,
-            )
+        let data = self.0.plane_data_ptr(self.1) as *const u8;
+        if stride == 0 || data.is_null() {
+            return &[];
         }
+        // SAFETY: Copied checks from david-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
+        unsafe { slice::from_raw_parts(data, stride as usize * height as usize) }
     }
 }
 
