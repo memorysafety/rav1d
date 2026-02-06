@@ -166,6 +166,7 @@ use crate::in_range::InRange;
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
+use crate::include::common::intops::clip;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 use crate::include::dav1d::data::{Dav1dData, Rav1dData};
@@ -259,31 +260,32 @@ pub unsafe extern "C" fn dav1d_default_settings(s: NonNull<Dav1dSettings>) {
 }
 
 struct NumThreads {
-    n_tc: usize,
-    n_fc: usize,
+    n_tc: u16,
+    n_fc: u16,
 }
 
 #[cold]
 fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_tc = if s.n_threads.get() != 0 {
-        s.n_threads.get() as usize // TODO propagate `InRange`
+        s.n_threads.get() // TODO propagate `InRange`
     } else {
-        rav1d_num_logical_processors()
-            .get()
-            .clamp(1, RAV1D_MAX_THREADS)
+        clip(
+            rav1d_num_logical_processors().get(),
+            1,
+            const { RAV1D_MAX_THREADS as u16 },
+        )
     };
     let n_fc = if s.max_frame_delay.get() != 0 {
-        cmp::min(s.max_frame_delay.get() as usize, n_tc) // TODO propagate `InRange`
+        cmp::min(s.max_frame_delay.get(), n_tc) // TODO propagate `InRange`
     } else {
-        cmp::min((n_tc as f64).sqrt().ceil() as usize, 8)
+        cmp::min((n_tc as f64).sqrt().ceil() as u16, 8)
     };
     NumThreads { n_fc, n_tc }
 }
 
 #[cold]
-pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
-    let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
-    Ok(n_fc)
+pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> u16 {
+    get_num_threads(s).n_fc
 }
 
 /// # Safety
@@ -297,7 +299,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: Option<NonNull<Dav1dSettings>>
         // SAFETY: `s` is safe to `ptr::read`.
         let s = unsafe { s.as_ptr().read() };
         let s = s.try_into()?;
-        rav1d_get_frame_delay(&s).map(|frame_delay| frame_delay as c_uint)
+        Ok(rav1d_get_frame_delay(&s) as c_uint)
     })()
     .into()
 }
@@ -342,7 +344,7 @@ pub(crate) fn rav1d_open(s: &Rav1dSettings) -> Rav1dResult<Arc<Rav1dContext>> {
 
     let fc = (0..n_fc)
         .map(|i| {
-            let mut fc = Rav1dFrameContext::default(i);
+            let mut fc = Rav1dFrameContext::default(i.into());
             fc.task_thread.finished = AtomicBool::new(true);
             fc.task_thread.ttd = Arc::clone(&task_thread);
             let f = fc.data.get_mut();
