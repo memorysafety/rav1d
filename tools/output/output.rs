@@ -94,7 +94,7 @@ pub unsafe fn output_open(
     let mut impl_0: *const Muxer = 0 as *const Muxer;
     let c: *mut MuxerContext;
     let mut i: c_uint;
-    let mut res = 0;
+    let res;
     let mut name_offset = 0;
     if !name.is_null() {
         name_offset =

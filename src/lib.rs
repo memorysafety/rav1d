@@ -633,8 +633,8 @@ fn gen_picture(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResult {
 
 pub(crate) fn rav1d_send_data(c: &Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
     let state = &mut *c.state.try_lock().unwrap();
-    if in_0.data.is_some() {
-        let sz = in_0.data.as_ref().unwrap().len();
+    if let Some(data) = in_0.data.as_ref() {
+        let sz = data.len();
         validate_input!((sz > 0 && sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         state.drain = false;
     }
