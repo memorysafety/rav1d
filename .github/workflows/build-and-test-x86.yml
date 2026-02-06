@@ -70,8 +70,8 @@ jobs:
           name: meson-test-logs-${{ matrix.target }}-${{ matrix.build.name }}
           path: |
              ${{ github.workspace }}/build/meson-logs/testlog-*.txt
-  test-on-macos-13:
-    runs-on: macos-13 # select an x86_64 image
+  test-on-macos-x86_64:
+    runs-on: macos-15-intel # select an x86_64 image
     steps:
       - name: install prerequisites
         env:
