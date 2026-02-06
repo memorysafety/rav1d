@@ -282,8 +282,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 
 #[cold]
 pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> usize {
-    let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
-    n_fc
+    get_num_threads(s).n_fc
 }
 
 /// # Safety
