@@ -841,8 +841,7 @@ pub unsafe extern "C" fn dav1d_flush(c: Dav1dContext) {
 }
 
 #[cold]
-pub(crate) fn rav1d_close(c: Arc<Rav1dContext>) {
-    let c = &*c;
+pub(crate) fn rav1d_close(c: &Rav1dContext) {
     rav1d_flush(c);
     c.tell_worker_threads_to_die();
 }
@@ -862,7 +861,7 @@ pub unsafe extern "C" fn dav1d_close(c_out: Option<NonNull<Option<Dav1dContext>>
     mem::take(c_out).map(|c| {
         // SAFETY: `c` is from `dav1d_open` and thus from `RawArc::from_arc`.
         let c = unsafe { c.into_arc() };
-        rav1d_close(c);
+        rav1d_close(&c);
     });
 }
 
