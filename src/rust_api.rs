@@ -231,7 +231,7 @@ impl Decoder {
             return Err(err);
         }
 
-        if data.data.as_ref().is_some_and(|d| d.len() > 0) {
+        if data.data.as_ref().is_some_and(|d| !d.is_empty()) {
             self.pending_data = Some(data);
             return Err(Rav1dError::TryAgain);
         }
