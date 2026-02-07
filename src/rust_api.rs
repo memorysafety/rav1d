@@ -28,7 +28,7 @@ use std::ffi::c_void;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 use std::sync::Arc;
-use std::{fmt, mem, slice};
+use std::{fmt, slice};
 
 pub use av_data::pixel;
 
@@ -179,9 +179,6 @@ impl Decoder {
     /// All currently pending frames are available afterwards via [`Decoder::get_picture`].
     pub fn flush(&mut self) {
         rav1d_flush(&self.ctx);
-        if let Some(mut pending_data) = self.pending_data.take() {
-            let _ = mem::take(&mut pending_data);
-        }
     }
 
     /// Send new AV1 data to the decoder.
@@ -220,23 +217,8 @@ impl Decoder {
         if let Some(duration) = duration {
             data.m.duration = duration;
         }
-
-        if let Err(err) = rav1d_send_data(&self.ctx, &mut data) {
-            if matches!(err, Rav1dError::TryAgain) {
-                self.pending_data = Some(data);
-            } else {
-                let _ = mem::take(&mut data);
-            }
-
-            return Err(err);
-        }
-
-        if data.data.as_ref().is_some_and(|d| !d.is_empty()) {
-            self.pending_data = Some(data);
-            return Err(Rav1dError::TryAgain);
-        }
-
-        Ok(())
+        self.pending_data = Some(data);
+        self.send_pending_data()
     }
 
     /// Sends any pending data to the decoder.
@@ -247,24 +229,18 @@ impl Decoder {
     /// After this returned `Ok(())` or `Err(`[`Rav1dError::TryAgain`]`)` there might be decoded frames
     /// available via [`Decoder::get_picture`].
     pub fn send_pending_data(&mut self) -> Result<(), Rav1dError> {
-        let mut data = match self.pending_data.take() {
-            None => {
-                return Ok(());
-            }
-            Some(data) => data,
+        let Some(mut data) = self.pending_data.take() else {
+            return Ok(());
         };
 
         if let Err(err) = rav1d_send_data(&self.ctx, &mut data) {
             if matches!(err, Rav1dError::TryAgain) {
                 self.pending_data = Some(data);
-            } else {
-                let _ = mem::take(&mut data);
             }
-
             return Err(err);
         }
 
-        if data.data.as_ref().is_some_and(|d| d.len() > 0) {
+        if data.data.as_ref().is_some_and(|d| !d.is_empty()) {
             self.pending_data = Some(data);
             return Err(Rav1dError::TryAgain);
         }
@@ -282,20 +258,17 @@ impl Decoder {
     /// only be done to drain all pending frames at the end.
     pub fn get_picture(&mut self) -> Result<Picture, Rav1dError> {
         let mut pic = Rav1dPicture::default();
-        let ret = rav1d_get_picture(&self.ctx, &mut pic);
+        rav1d_get_picture(&self.ctx, &mut pic)?;
 
-        if let Err(err) = ret {
-            Err(err)
-        } else {
-            Ok(Picture {
-                inner: Arc::new(pic),
-            })
-        }
+        Ok(Picture {
+            inner: Arc::new(pic),
+        })
     }
 
     /// Get the decoder delay.
     pub fn get_frame_delay(&self) -> u32 {
-        // The only fields this actually needs from Rav1dSettings are n_threads and max_frame_delay so we just pass these in directly
+        // The only fields this actually needs from `Rav1dSettings`
+        // are n_threads and max_frame_delay so we just pass these in directly
 
         rav1d_get_frame_delay(&Rav1dSettings {
             n_threads: self.n_threads,
@@ -307,10 +280,7 @@ impl Decoder {
 
 impl Drop for Decoder {
     fn drop(&mut self) {
-        if let Some(mut pending_data) = self.pending_data.take() {
-            let _ = mem::take(&mut pending_data);
-        }
-        rav1d_close(&self.ctx.clone());
+        rav1d_close(&self.ctx);
     }
 }
 
@@ -359,17 +329,29 @@ impl From<PlanarImageComponent> for usize {
 ///
 /// This can be used like a `&[u8]`.
 #[derive(Clone)]
-pub struct Plane(Picture, PlanarImageComponent);
+pub struct Plane {
+    picture: Picture,
+    planar_image_component: PlanarImageComponent,
+}
 
 impl AsRef<[u8]> for Plane {
     fn as_ref(&self) -> &[u8] {
-        let (stride, height) = self.0.plane_data_geometry(self.1);
-        let data = self.0.plane_data_ptr(self.1) as *const u8;
+        let (stride, height) = self
+            .picture
+            .plane_data_geometry(self.planar_image_component);
+        let data = self.picture.plane_data_ptr(self.planar_image_component) as *const u8;
         if stride == 0 || data.is_null() {
             return &[];
         }
-        // SAFETY: Copied checks from david-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
-        unsafe { slice::from_raw_parts(data, stride as usize * height as usize) }
+        // SAFETY: Copied checks from dav1d-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
+        unsafe {
+            slice::from_raw_parts(
+                data,
+                (stride as usize)
+                    .checked_mul(height as usize)
+                    .expect("The product of stride and height exceeded usize::MAX"),
+            )
+        }
     }
 }
 
@@ -423,7 +405,7 @@ impl Picture {
         let height = match component {
             PlanarImageComponent::Y => self.height(),
             _ => match self.pixel_layout() {
-                PixelLayout::I420 => (self.height() + 1) / 2,
+                PixelLayout::I420 => self.height().div_ceil(2),
                 PixelLayout::I400 | PixelLayout::I422 | PixelLayout::I444 => self.height(),
             },
         };
@@ -432,7 +414,10 @@ impl Picture {
 
     /// Plane data of the `component` for the decoded frame.
     pub fn plane(&self, component: PlanarImageComponent) -> Plane {
-        Plane(self.clone(), component)
+        Plane {
+            picture: self.clone(),
+            planar_image_component: component,
+        }
     }
 
     /// Bit depth of the plane data.
@@ -491,7 +476,7 @@ impl Picture {
     /// This is the same offset as the one provided to [`Decoder::send_data`] or `-1` if none was
     /// provided.
     pub fn offset(&self) -> i64 {
-        self.inner.m.offset as i64
+        self.inner.m.offset
     }
 
     /// Chromaticity coordinates of the source colour primaries.
