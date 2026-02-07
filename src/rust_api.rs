@@ -367,10 +367,8 @@ impl Deref for Plane {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct BitsPerComponent(pub u8);
 
-impl TryFrom<u8> for BitsPerComponent {
-    type Error = Rav1dError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl BitsPerComponent {
+    pub fn new(value: u8) -> Result<Self, Rav1dError> {
         match value {
             0 => Ok(BitsPerComponent(8)),
             1 => Ok(BitsPerComponent(10)),
@@ -433,7 +431,7 @@ impl Picture {
     ///
     /// Check [`Picture::bit_depth`] for the number of storage bits.
     pub fn bits_per_component(&self) -> Option<BitsPerComponent> {
-        self.inner.seq_hdr.as_ref().unwrap().hbd.try_into().ok()
+        BitsPerComponent::new(self.inner.seq_hdr.as_ref().unwrap().hbd).ok()
     }
 
     /// Width of the frame.
