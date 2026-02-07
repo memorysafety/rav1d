@@ -24,9 +24,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-use std::ffi::c_void;
 use std::fmt::{Debug, Formatter};
-use std::ops::Deref;
 use std::sync::Arc;
 use std::{fmt, slice};
 
@@ -325,44 +323,6 @@ impl From<PlanarImageComponent> for usize {
     }
 }
 
-/// A single plane of a decoded frame.
-///
-/// This can be used like a `&[u8]`.
-#[derive(Clone)]
-pub struct Plane {
-    picture: Picture,
-    planar_image_component: PlanarImageComponent,
-}
-
-impl AsRef<[u8]> for Plane {
-    fn as_ref(&self) -> &[u8] {
-        let (stride, height) = self
-            .picture
-            .plane_data_geometry(self.planar_image_component);
-        let data = self.picture.plane_data_ptr(self.planar_image_component) as *const u8;
-        if stride == 0 || data.is_null() {
-            return &[];
-        }
-        // SAFETY: Copied checks from dav1d-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
-        unsafe {
-            slice::from_raw_parts(
-                data,
-                (stride as usize)
-                    .checked_mul(height as usize)
-                    .expect("The product of stride and height exceeded usize::MAX"),
-            )
-        }
-    }
-}
-
-impl Deref for Plane {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
 /// Number of bits per component.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct BitsPerComponent(pub u8);
@@ -389,18 +349,8 @@ impl Picture {
         self.inner.stride[s].try_into().unwrap()
     }
 
-    /// Raw pointer to the data of the `component` for the decoded frame.
-    pub fn plane_data_ptr(&self, component: PlanarImageComponent) -> *mut c_void {
-        let index: usize = component.into();
-        self.inner.data.as_ref().unwrap().data[index]
-            .as_byte_mut_ptr()
-            .cast()
-    }
-
-    /// Plane geometry of the `component` for the decoded frame.
-    ///
-    /// This returns the stride and height.
-    pub fn plane_data_geometry(&self, component: PlanarImageComponent) -> (u32, u32) {
+    /// Plane data of the `component` for the decoded frame.
+    pub fn plane_data(&self, component: PlanarImageComponent) -> &[u8] {
         let height = match component {
             PlanarImageComponent::Y => self.height(),
             _ => match self.pixel_layout() {
@@ -408,14 +358,25 @@ impl Picture {
                 PixelLayout::I400 | PixelLayout::I422 | PixelLayout::I444 => self.height(),
             },
         };
-        (self.stride(component), height)
-    }
 
-    /// Plane data of the `component` for the decoded frame.
-    pub fn plane(&self, component: PlanarImageComponent) -> Plane {
-        Plane {
-            picture: self.clone(),
-            planar_image_component: component,
+        let stride = self.stride(component);
+
+        //  Get a raw pointer to the plane data of the `component` for the decoded frame.
+        let index: usize = component.into();
+        let raw_plane_data_pointer =
+            self.inner.data.as_ref().unwrap().data[index].as_byte_mut_ptr() as *const u8;
+
+        if stride == 0 || raw_plane_data_pointer.is_null() {
+            return &[];
+        }
+        // SAFETY: Copied checks from dav1d-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
+        unsafe {
+            slice::from_raw_parts(
+                raw_plane_data_pointer,
+                (stride as usize)
+                    .checked_mul(height as usize)
+                    .expect("The product of stride and height exceeded usize::MAX"),
+            )
         }
     }
 
