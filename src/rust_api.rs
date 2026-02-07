@@ -193,7 +193,7 @@ impl Decoder {
     ///
     /// If a previous call returned [`Rav1dError::TryAgain`] then this must not be called again until
     /// [`Decoder::send_pending_data`] has returned `Ok(())`.
-    pub fn send_data<T: AsRef<[u8]> + Send + Sync + 'static>(
+    pub fn send_data<T: AsRef<[u8]> + Send + Sync>(
         &mut self,
         buf: T,
         offset: Option<i64>,
