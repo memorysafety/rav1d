@@ -368,8 +368,9 @@ impl Deref for Plane {
 pub struct BitsPerComponent(pub u8);
 
 impl BitsPerComponent {
-    pub fn new(value: u8) -> Result<Self, Rav1dError> {
-        match value {
+    /// Get the number of bits per component from the high bit depth flag
+    pub fn from_hbd(hbd: u8) -> Result<Self, Rav1dError> {
+        match hbd {
             0 => Ok(BitsPerComponent(8)),
             1 => Ok(BitsPerComponent(10)),
             2 => Ok(BitsPerComponent(12)),
@@ -431,7 +432,7 @@ impl Picture {
     ///
     /// Check [`Picture::bit_depth`] for the number of storage bits.
     pub fn bits_per_component(&self) -> Option<BitsPerComponent> {
-        BitsPerComponent::new(self.inner.seq_hdr.as_ref().unwrap().hbd).ok()
+        BitsPerComponent::from_hbd(self.inner.seq_hdr.as_ref().unwrap().hbd).ok()
     }
 
     /// Width of the frame.
