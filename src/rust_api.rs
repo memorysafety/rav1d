@@ -148,7 +148,7 @@ impl Settings {
     }
 }
 
-/// A `dav1d` decoder instance.
+/// A `rav1d` decoder instance.
 pub struct Decoder {
     ctx: Arc<Rav1dContext>,
     pending_data: Option<Rav1dData>,
@@ -186,12 +186,12 @@ impl Decoder {
 
     /// Send new AV1 data to the decoder.
     ///
-    /// After this returned `Ok(())` or `Err([Error::Again])` there might be decoded frames
+    /// After this returned `Ok(())` or `Err(`[`Rav1dError::TryAgain`]`)` there might be decoded frames
     /// available via [`Decoder::get_picture`].
     ///
     /// # Panics
     ///
-    /// If a previous call returned [`Error::Again`] then this must not be called again until
+    /// If a previous call returned [`Rav1dError::TryAgain`] then this must not be called again until
     /// [`Decoder::send_pending_data`] has returned `Ok(())`.
     pub fn send_data<T: AsRef<[u8]> + Send + Sync + 'static>(
         &mut self,
@@ -241,10 +241,10 @@ impl Decoder {
 
     /// Sends any pending data to the decoder.
     ///
-    /// This has to be called after [`Decoder::send_data`] has returned `Err([Error::Again])` to
+    /// This has to be called after [`Decoder::send_data`] has returned `Err(`[`Rav1dError::TryAgain`]`)` to
     /// consume any futher pending data.
     ///
-    /// After this returned `Ok(())` or `Err([Error::Again])` there might be decoded frames
+    /// After this returned `Ok(())` or `Err(`[`Rav1dError::TryAgain`]`)` there might be decoded frames
     /// available via [`Decoder::get_picture`].
     pub fn send_pending_data(&mut self) -> Result<(), Rav1dError> {
         let mut data = match self.pending_data.take() {
@@ -274,11 +274,11 @@ impl Decoder {
 
     /// Get the next decoded frame from the decoder.
     ///
-    /// If this returns `Err([Error::Again])` then further data has to be sent to the decoder
+    /// If this returns `Err(`[`Rav1dError::TryAgain`]`)` then further data has to be sent to the decoder
     /// before further decoded frames become available.
     ///
     /// To make most use of frame threading this function should only be called once per submitted
-    /// input frame and not until it returns `Err([Error::Again])`. Calling it in a loop should
+    /// input frame and not until it returns `Err(`[`Rav1dError::TryAgain`]`)`. Calling it in a loop should
     /// only be done to drain all pending frames at the end.
     pub fn get_picture(&mut self) -> Result<Picture, Rav1dError> {
         let mut pic = Rav1dPicture::default();
@@ -310,7 +310,7 @@ impl Drop for Decoder {
         if let Some(mut pending_data) = self.pending_data.take() {
             let _ = mem::take(&mut pending_data);
         }
-        rav1d_close(self.ctx.clone());
+        rav1d_close(&self.ctx.clone());
     }
 }
 
