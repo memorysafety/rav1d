@@ -5,7 +5,7 @@ on:
       - 'main'
   pull_request:
 jobs:
-  test-on-ubuntu-latest-with-qemu:
+  test-on-ubuntu-2404-with-qemu:
     strategy:
       matrix:
         # only test specific parameter pairs, not the cross product
@@ -24,7 +24,7 @@ jobs:
             toolchain: stable # aarch64 feature detection is stable
           - target: "x86_64-unknown-linux-gnu"
             linker: "cc"
-            wrapper: "qemu-x86_64-static -cpu max" # enable AVX512
+            wrapper: "qemu-x86_64-static -cpu host" # enable all features supported by the host
             packages: ""
             # NOTE: This appears to work for Ubuntu 22.04 and other systems
             # with a recent version of GNU ld (e.g. 2.38) whereas Ubuntu 20.04
@@ -37,7 +37,7 @@ jobs:
             # riscv64 feature detection is unstable
             # should be the same as rust-toolchain.toml
             toolchain: nightly-2025-05-01
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: test on ${{ matrix.target }}
     steps:
       - name: install prerequisites
