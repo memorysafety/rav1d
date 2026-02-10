@@ -2,7 +2,7 @@
 // (specifically https://github.com/rust-av/dav1d-rs/blob/94b1deaa1e25bf29c77bb5cc8a08ddaf7663eede/src/lib.rs)
 // with modifications.
 // `dav1d-rs` is under the MIT license, replicated here:
-
+//
 // MIT License
 //
 // Copyright (c) 2018 Luca Barbato
