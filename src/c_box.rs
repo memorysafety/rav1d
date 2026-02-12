@@ -13,7 +13,7 @@ pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<SendSyncNo
 
 /// A `free` "closure", i.e. a [`FnFree`] and an enclosed context [`Self::cookie`].
 #[derive(Debug)]
-pub struct Free {
+struct Free {
     pub free: FnFree,
 
     /// # Safety
@@ -121,16 +121,20 @@ impl<T: ?Sized> CBox<T> {
     /// # Safety
     ///
     /// `data` must be valid to dereference
-    /// until `free.free` is called on it, which must deallocate it.
-    /// `free.free` is always called with `free.cookie`,
+    /// until `free` is called on it, which must deallocate it.
+    /// `free` is always called with `cookie`,
     /// which must be accessed thread-safely.
-    pub unsafe fn new(data: NonNull<T>, free: Free) -> Self {
+    pub unsafe fn new(
+        data: NonNull<T>,
+        free: FnFree,
+        cookie: Option<SendSyncNonNull<c_void>>,
+    ) -> Self {
         Self {
             data: Unique {
                 pointer: data,
                 _marker: PhantomData,
             },
-            free,
+            free: Free { free, cookie },
         }
     }
 }
