@@ -37,7 +37,6 @@ pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
 /// Furthermore, storing this stable ref ptr like this
 /// allows for provenance projections of [`Self::stable_ref`],
 /// such as slicing it for a `CArc<[T]>` (see [`Self::slice_in_place`]).
-#[derive(Debug)]
 pub struct CArc<T: ?Sized> {
     owner: Arc<Pin<CRef<T>>>,
 
@@ -275,6 +274,6 @@ where
 {
     pub fn zeroed_slice(size: usize) -> Rav1dResult<Self> {
         let owned_slice = (0..size).map(|_| Default::default()).collect::<Box<[_]>>(); // TODO fallible allocation
-        Self::wrap(CRef::from_rust(Box::new(owned_slice)))
+        Self::wrap(CRef::Rust(Box::new(owned_slice)))
     }
 }

@@ -1,8 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::ffi::c_void;
-use std::fmt;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
@@ -76,45 +75,77 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// That is, it is analogous to a [`Box`],
 /// but it lets you set a C-style `free` `fn` for deallocation
 /// instead of the normal [`Box`] (de)allocator.
-/// It can also store a normal [`Box`] as well.
-pub enum CRef<T: ?Sized> {
-    Rust {
-        data: Box<dyn AsRef<T>>,
-    },
-    C {
-        /// # SAFETY:
-        ///
-        /// * Never moved.
-        /// * Valid to dereference.
-        /// * `free`d by the `free` `fn` ptr below.
-        data: Unique<T>,
-        free: Free,
-    },
+pub struct CBox<T: ?Sized> {
+    /// # SAFETY:
+    ///
+    /// * Never moved.
+    /// * Valid to dereference.
+    /// * `free`d by the `free` `fn` ptr below.
+    data: Unique<T>,
+    free: Free,
 }
 
-impl<T: ?Sized + Debug> Debug for CRef<T> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let data = self.as_ref();
-        match self {
-            Self::Rust { data: _ } => f.debug_struct("Rust").field("data", &data).finish(),
-            Self::C { data: _, free } => f
-                .debug_struct("C")
-                .field("data", &data)
-                .field("free", free)
-                .finish(),
+impl<T: ?Sized> AsRef<T> for CBox<T> {
+    fn as_ref(&self) -> &T {
+        // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
+        // so we can take `&` references of it.
+        // Furthermore, `data` is never moved and is valid to dereference,
+        // so this reference can live as long as `CBox` and still be valid the whole time.
+        unsafe { self.data.pointer.as_ref() }
+    }
+}
+
+impl<T: ?Sized> Drop for CBox<T> {
+    fn drop(&mut self) {
+        let Self { data, free } = self;
+        let ptr = data.pointer.as_ptr();
+        // SAFETY: See below.
+        // The [`FnFree`] won't run Rust's `fn drop`,
+        // so we have to do this ourselves first.
+        unsafe { drop_in_place(ptr) };
+        let ptr = ptr.cast();
+        // SAFETY: See safety docs on [`Self::data`] and [`Self::from_c`].
+        unsafe { free.free(ptr) }
+    }
+}
+
+impl<T: ?Sized> Deref for CBox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
+impl<T: ?Sized> CBox<T> {
+    /// # Safety
+    ///
+    /// `data` must be valid to dereference
+    /// until `free.free` is called on it, which must deallocate it.
+    /// `free.free` is always called with `free.cookie`,
+    /// which must be accessed thread-safely.
+    pub unsafe fn new(data: NonNull<T>, free: Free) -> Self {
+        Self {
+            data: Unique {
+                pointer: data,
+                _marker: PhantomData,
+            },
+            free,
         }
     }
+}
+
+/// An owned reference, which may be a [`CBox`].
+pub enum CRef<T: ?Sized> {
+    Rust(Box<dyn AsRef<T>>),
+    C(CBox<T>),
 }
 
 impl<T: ?Sized> AsRef<T> for CRef<T> {
     fn as_ref(&self) -> &T {
         match self {
-            Self::Rust { data } => (**data).as_ref(),
-            // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
-            // so we can take `&` references of it.
-            // Furthermore, `data` is never moved and is valid to dereference,
-            // so this reference can live as long as `CRef` and still be valid the whole time.
-            Self::C { data, .. } => unsafe { data.pointer.as_ref() },
+            Self::Rust(data) => (**data).as_ref(),
+            Self::C(data) => data.as_ref(),
         }
     }
 }
@@ -127,45 +158,7 @@ impl<T: ?Sized> Deref for CRef<T> {
     }
 }
 
-impl<T: ?Sized> Drop for CRef<T> {
-    fn drop(&mut self) {
-        match self {
-            Self::Rust { data: _ } => {} // Drop normally.
-            Self::C { data, free, .. } => {
-                let ptr = data.pointer.as_ptr();
-                // SAFETY: See below.
-                // The [`FnFree`] won't run Rust's `fn drop`,
-                // so we have to do this ourselves first.
-                unsafe { drop_in_place(ptr) };
-                let ptr = ptr.cast();
-                // SAFETY: See safety docs on [`Self::data`] and [`Self::from_c`].
-                unsafe { free.free(ptr) }
-            }
-        }
-    }
-}
-
 impl<T: ?Sized> CRef<T> {
-    /// # Safety
-    ///
-    /// `data` must be valid to dereference
-    /// until `free.free` is called on it, which must deallocate it.
-    /// `free.free` is always called with `free.cookie`,
-    /// which must be accessed thread-safely.
-    pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
-        Self::C {
-            data: Unique {
-                pointer: data,
-                _marker: PhantomData,
-            },
-            free,
-        }
-    }
-
-    pub fn from_rust(data: Box<dyn AsRef<T>>) -> Self {
-        Self::Rust { data }
-    }
-
     pub fn into_pin(self) -> Pin<Self> {
         // SAFETY:
         // TODO update `Box` part, because it's now `Box<dyn AsRef<T>>`.

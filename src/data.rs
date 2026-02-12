@@ -4,7 +4,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 
 use crate::c_arc::CArc;
-use crate::c_box::{CRef, FnFree, Free};
+use crate::c_box::{CBox, CRef, FnFree, Free};
 use crate::error::{Rav1dError, Rav1dResult};
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -32,14 +32,14 @@ impl Rav1dData {
 
     #[expect(unused, reason = "should be used soon")]
     pub fn wrap_rust(data: Box<dyn AsRef<[u8]>>) -> Rav1dResult<Self> {
-        let data = CRef::from_rust(data);
+        let data = CRef::Rust(data);
         let data = CArc::wrap(data)?;
         Ok(data.into())
     }
 
     /// # Safety
     ///
-    /// See [`CRef::from_c`]'s safety for `data`, `free_callback`, `cookie`.
+    /// See [`CBox::new`]'s safety for `data`, `free_callback`, `cookie`.
     pub unsafe fn wrap_c(
         data: NonNull<[u8]>,
         free_callback: Option<FnFree>,
@@ -47,15 +47,16 @@ impl Rav1dData {
     ) -> Rav1dResult<Self> {
         let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         let free = Free { free, cookie };
-        // SAFETY: Preconditions delegate to `CRef::from_c`'s safety.
-        let data = unsafe { CRef::from_c(data, free) };
+        // SAFETY: Preconditions delegate to `CBox::new`'s safety.
+        let data = unsafe { CBox::new(data, free) };
+        let data = CRef::C(data);
         let data = CArc::wrap(data)?;
         Ok(data.into())
     }
 
     /// # Safety
     ///
-    /// See [`CRef::from_c`]'s safety for `user_data`, `free_callback`, `cookie`.
+    /// See [`CBox::new`]'s safety for `user_data`, `free_callback`, `cookie`.
     pub unsafe fn wrap_user_data(
         &mut self,
         user_data: NonNull<u8>,
@@ -64,8 +65,9 @@ impl Rav1dData {
     ) -> Rav1dResult {
         let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         let free = Free { free, cookie };
-        // SAFETY: Preconditions delegate to `CRef::from_c`'s safety.
-        let user_data = unsafe { CRef::from_c(user_data, free) };
+        // SAFETY: Preconditions delegate to `CBox::new`'s safety.
+        let user_data = unsafe { CBox::new(user_data, free) };
+        let user_data = CRef::C(user_data);
         let user_data = CArc::wrap(user_data)?;
         self.m.user_data = Some(user_data);
         Ok(())
