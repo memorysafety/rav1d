@@ -33,7 +33,7 @@ impl Rav1dData {
     /// # Safety
     ///
     /// See [`CBox::from_c`]'s safety for `data`, `free_callback`, `cookie`.
-    pub unsafe fn wrap(
+    pub unsafe fn wrap_c(
         data: NonNull<[u8]>,
         free_callback: Option<FnFree>,
         cookie: Option<SendSyncNonNull<c_void>>,

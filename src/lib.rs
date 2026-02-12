@@ -990,7 +990,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
         // SAFETY: `ptr`, and thus `data`, is valid to dereference until `free_callback` is called on it, which deallocates it.
-        let data = unsafe { Rav1dData::wrap(data.into(), free_callback, user_data) }?;
+        let data = unsafe { Rav1dData::wrap_c(data.into(), free_callback, user_data) }?;
         let data_c = data.into();
         // SAFETY: `buf` is safe to write to.
         unsafe { buf.as_ptr().write(data_c) };
