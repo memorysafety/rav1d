@@ -145,7 +145,7 @@ impl<T: ?Sized> CBox<T> {
         }
     }
 
-    pub fn from_box(data: Box<T>) -> Self {
+    pub fn from_rust(data: Box<T>) -> Self {
         Self::Rust(data)
     }
 
