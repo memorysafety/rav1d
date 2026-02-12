@@ -37,7 +37,7 @@ pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
 /// Furthermore, storing this stable ref ptr like this
 /// allows for provenance projections of [`Self::stable_ref`],
 /// such as slicing it for a `CArc<[T]>` (see [`Self::slice_in_place`]).
-pub struct CArc<T: ?Sized> {
+pub struct CArc<T: ?Sized + 'static> {
     owner: Arc<Pin<CRef<T>>>,
 
     /// The same as [`Self::stable_ref`] but it never changes.
@@ -227,7 +227,7 @@ impl<T> RawArc<T> {
 }
 
 #[repr(transparent)]
-pub struct RawCArc<T: ?Sized>(RawArc<Pin<CRef<T>>>);
+pub struct RawCArc<T: ?Sized + 'static>(RawArc<Pin<CRef<T>>>);
 
 impl<T: ?Sized> CArc<T> {
     /// Convert into a raw, opaque form suitable for C FFI.
@@ -274,6 +274,6 @@ where
 {
     pub fn zeroed_slice(size: usize) -> Rav1dResult<Self> {
         let owned_slice = (0..size).map(|_| Default::default()).collect::<Box<[_]>>(); // TODO fallible allocation
-        Self::wrap(CRef::Rust(Box::new(owned_slice)))
+        Self::wrap(CRef::Box(owned_slice))
     }
 }
