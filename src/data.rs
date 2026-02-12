@@ -30,6 +30,13 @@ impl Rav1dData {
         Ok(data.into())
     }
 
+    #[expect(unused, reason = "should be used soon")]
+    pub fn wrap_rust(data: Box<[u8]>) -> Rav1dResult<Self> {
+        let data = CBox::from_rust(data);
+        let data = CArc::wrap(data)?;
+        Ok(data.into())
+    }
+
     /// # Safety
     ///
     /// See [`CBox::from_c`]'s safety for `data`, `free_callback`, `cookie`.
