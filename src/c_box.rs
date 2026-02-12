@@ -78,7 +78,9 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// instead of the normal [`Box`] (de)allocator.
 /// It can also store a normal [`Box`] as well.
 pub enum CBox<T: ?Sized> {
-    Rust(Box<T>),
+    Rust {
+        data: Box<T>,
+    },
     C {
         /// # SAFETY:
         ///
@@ -94,7 +96,7 @@ impl<T: ?Sized + Debug> Debug for CBox<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let data = self.as_ref();
         match self {
-            Self::Rust(_) => f.debug_struct("Rust").field("data", &data).finish(),
+            Self::Rust { data: _ } => f.debug_struct("Rust").field("data", &data).finish(),
             Self::C { data: _, free } => f
                 .debug_struct("C")
                 .field("data", &data)
@@ -107,7 +109,7 @@ impl<T: ?Sized + Debug> Debug for CBox<T> {
 impl<T: ?Sized> AsRef<T> for CBox<T> {
     fn as_ref(&self) -> &T {
         match self {
-            Self::Rust(r#box) => r#box.as_ref(),
+            Self::Rust { data } => data.as_ref(),
             // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
             // so we can take `&` references of it.
             // Furthermore, `data` is never moved and is valid to dereference,
@@ -128,7 +130,7 @@ impl<T: ?Sized> Deref for CBox<T> {
 impl<T: ?Sized> Drop for CBox<T> {
     fn drop(&mut self) {
         match self {
-            Self::Rust(_) => {} // Drop normally.
+            Self::Rust { data: _ } => {} // Drop normally.
             Self::C { data, free, .. } => {
                 let ptr = data.pointer.as_ptr();
                 // SAFETY: See below.
@@ -161,7 +163,7 @@ impl<T: ?Sized> CBox<T> {
     }
 
     pub fn from_rust(data: Box<T>) -> Self {
-        Self::Rust(data)
+        Self::Rust { data }
     }
 
     pub fn into_pin(self) -> Pin<Self> {
