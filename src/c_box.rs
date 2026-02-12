@@ -1,6 +1,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::ffi::c_void;
+use std::fmt;
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
@@ -75,7 +77,6 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// but it lets you set a C-style `free` `fn` for deallocation
 /// instead of the normal [`Box`] (de)allocator.
 /// It can also store a normal [`Box`] as well.
-#[derive(Debug)]
 pub enum CBox<T: ?Sized> {
     Rust(Box<T>),
     C {
@@ -87,6 +88,20 @@ pub enum CBox<T: ?Sized> {
         data: Unique<T>,
         free: Free,
     },
+}
+
+impl<T: ?Sized + Debug> Debug for CBox<T> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let data = self.as_ref();
+        match self {
+            Self::Rust(_) => f.debug_struct("Rust").field("data", &data).finish(),
+            Self::C { data: _, free } => f
+                .debug_struct("C")
+                .field("data", &data)
+                .field("free", free)
+                .finish(),
+        }
+    }
 }
 
 impl<T: ?Sized> AsRef<T> for CBox<T> {
