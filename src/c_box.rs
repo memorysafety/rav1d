@@ -79,7 +79,7 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// It can also store a normal [`Box`] as well.
 pub enum CBox<T: ?Sized> {
     Rust {
-        data: Box<T>,
+        data: Box<dyn AsRef<T>>,
     },
     C {
         /// # SAFETY:
@@ -109,7 +109,7 @@ impl<T: ?Sized + Debug> Debug for CBox<T> {
 impl<T: ?Sized> AsRef<T> for CBox<T> {
     fn as_ref(&self) -> &T {
         match self {
-            Self::Rust { data } => data.as_ref(),
+            Self::Rust { data } => (**data).as_ref(),
             // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
             // so we can take `&` references of it.
             // Furthermore, `data` is never moved and is valid to dereference,
@@ -162,12 +162,13 @@ impl<T: ?Sized> CBox<T> {
         }
     }
 
-    pub fn from_rust(data: Box<T>) -> Self {
+    pub fn from_rust(data: Box<dyn AsRef<T>>) -> Self {
         Self::Rust { data }
     }
 
     pub fn into_pin(self) -> Pin<Self> {
         // SAFETY:
+        // TODO update `Box` part, because it's now `Box<dyn AsRef<T>>`.
         // If `self` is `Self::Rust`, `Box` can be pinned.
         // If `self` is `Self::C`, `data` is never moved until [`Self::drop`].
         unsafe { Pin::new_unchecked(self) }

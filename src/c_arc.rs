@@ -275,6 +275,6 @@ where
 {
     pub fn zeroed_slice(size: usize) -> Rav1dResult<Self> {
         let owned_slice = (0..size).map(|_| Default::default()).collect::<Box<[_]>>(); // TODO fallible allocation
-        Self::wrap(CBox::from_rust(owned_slice))
+        Self::wrap(CBox::from_rust(Box::new(owned_slice)))
     }
 }

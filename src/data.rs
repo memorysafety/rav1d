@@ -31,7 +31,7 @@ impl Rav1dData {
     }
 
     #[expect(unused, reason = "should be used soon")]
-    pub fn wrap_rust(data: Box<[u8]>) -> Rav1dResult<Self> {
+    pub fn wrap_rust(data: Box<dyn AsRef<[u8]>>) -> Rav1dResult<Self> {
         let data = CBox::from_rust(data);
         let data = CArc::wrap(data)?;
         Ok(data.into())
