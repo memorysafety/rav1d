@@ -33,7 +33,7 @@ impl Free {
     /// `ptr` is a [`NonNull`]`<T>` and `free` deallocates it.
     /// It must not be used after this call as it is deallocated.
     pub unsafe fn free(&self, ptr: *mut c_void) {
-        // SAFETY: `self` came from `CBox::from_c`,
+        // SAFETY: `self` came from `CRef::from_c`,
         // which requires `self.free` to deallocate the `NonNull<T>` passed to it,
         // and `self.cookie` to be passed to it, which it is.
         unsafe { (self.free)(ptr as *const u8, self.cookie) }
@@ -77,7 +77,7 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// but it lets you set a C-style `free` `fn` for deallocation
 /// instead of the normal [`Box`] (de)allocator.
 /// It can also store a normal [`Box`] as well.
-pub enum CBox<T: ?Sized> {
+pub enum CRef<T: ?Sized> {
     Rust {
         data: Box<dyn AsRef<T>>,
     },
@@ -92,7 +92,7 @@ pub enum CBox<T: ?Sized> {
     },
 }
 
-impl<T: ?Sized + Debug> Debug for CBox<T> {
+impl<T: ?Sized + Debug> Debug for CRef<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let data = self.as_ref();
         match self {
@@ -106,20 +106,20 @@ impl<T: ?Sized + Debug> Debug for CBox<T> {
     }
 }
 
-impl<T: ?Sized> AsRef<T> for CBox<T> {
+impl<T: ?Sized> AsRef<T> for CRef<T> {
     fn as_ref(&self) -> &T {
         match self {
             Self::Rust { data } => (**data).as_ref(),
             // SAFETY: `data` is a `Unique<T>`, which behaves as if it were a `T`,
             // so we can take `&` references of it.
             // Furthermore, `data` is never moved and is valid to dereference,
-            // so this reference can live as long as `CBox` and still be valid the whole time.
+            // so this reference can live as long as `CRef` and still be valid the whole time.
             Self::C { data, .. } => unsafe { data.pointer.as_ref() },
         }
     }
 }
 
-impl<T: ?Sized> Deref for CBox<T> {
+impl<T: ?Sized> Deref for CRef<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -127,7 +127,7 @@ impl<T: ?Sized> Deref for CBox<T> {
     }
 }
 
-impl<T: ?Sized> Drop for CBox<T> {
+impl<T: ?Sized> Drop for CRef<T> {
     fn drop(&mut self) {
         match self {
             Self::Rust { data: _ } => {} // Drop normally.
@@ -145,7 +145,7 @@ impl<T: ?Sized> Drop for CBox<T> {
     }
 }
 
-impl<T: ?Sized> CBox<T> {
+impl<T: ?Sized> CRef<T> {
     /// # Safety
     ///
     /// `data` must be valid to dereference
@@ -175,8 +175,8 @@ impl<T: ?Sized> CBox<T> {
     }
 }
 
-impl<T: ?Sized> From<CBox<T>> for Pin<CBox<T>> {
-    fn from(value: CBox<T>) -> Self {
+impl<T: ?Sized> From<CRef<T>> for Pin<CRef<T>> {
+    fn from(value: CRef<T>) -> Self {
         value.into_pin()
     }
 }
