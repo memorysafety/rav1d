@@ -1,0 +1,12 @@
+diff --git a/third_party/rust/rustversion/v1/BUILD.gn b/third_party/rust/rustversion/v1/BUILD.gn
+--- a/third_party/rust/rustversion/v1/BUILD.gn
++++ b/third_party/rust/rustversion/v1/BUILD.gn
+@@ -57,6 +57,6 @@ cargo_crate("lib") {
+   executable_configs -= [ "//build/config/compiler:chromium_code" ]
+   executable_configs += [ "//build/config/compiler:no_chromium_code" ]
+   build_root = "crate/build/build.rs"
+-  build_sources = [ "crate/build/build.rs" ]
++  build_sources = [ "crate/build/build.rs", "crate/build/rustc.rs" ]
+   build_script_outputs = [ "version.rs" ]
+ }
+--
