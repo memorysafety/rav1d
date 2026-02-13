@@ -46,6 +46,7 @@ macro_rules! impl_ArrayDefault {
 // We want this to be implemented for all `T: Default` where `T` is not `[_; _]`,
 // but we can't do that, so we can just add individual
 // `impl`s here for types we need it for.
+impl_ArrayDefault!(bool);
 impl_ArrayDefault!(u8);
 impl_ArrayDefault!(i8);
 impl_ArrayDefault!(i16);
