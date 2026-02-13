@@ -5123,12 +5123,11 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
 
     // ref_mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-        // TODO fallible allocation
-        f.mvs = Some(
-            (0..f.sb128h as usize * 16 * (f.b4_stride >> 1) as usize)
-                .map(|_| Default::default())
-                .collect(),
-        );
+        let n_mvs = f.sb128h as usize * 16 * (f.b4_stride as usize >> 1);
+        if f.mvs.as_ref().map_or(true, |mvs| mvs.inner.len() != n_mvs) {
+            // TODO fallible allocation
+            f.mvs = Some((0..n_mvs).map(|_| Default::default()).collect());
+        }
         if !frame_hdr.allow_intrabc {
             for i in 0..7 {
                 f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
