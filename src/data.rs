@@ -1,15 +1,10 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use std::ffi::c_void;
-use std::ptr::NonNull;
-
 use crate::c_arc::CArc;
-use crate::c_box::{CBox, FnFree, Free};
-use crate::error::{Rav1dError, Rav1dResult};
-use crate::include::common::validate::validate_input;
+use crate::c_box::CRef;
+use crate::error::Rav1dResult;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
-use crate::send_sync_non_null::SendSyncNonNull;
 
 impl From<CArc<[u8]>> for Rav1dData {
     fn from(data: CArc<[u8]>) -> Self {
@@ -30,44 +25,12 @@ impl Rav1dData {
         Ok(data.into())
     }
 
-    #[expect(unused, reason = "should be used soon")]
-    pub fn wrap_rust(data: Box<[u8]>) -> Rav1dResult<Self> {
-        let data = CBox::from_rust(data);
-        let data = CArc::wrap(data)?;
-        Ok(data.into())
+    pub fn wrap(data: CRef<[u8]>) -> Rav1dResult<Self> {
+        Ok(CArc::wrap(data)?.into())
     }
 
-    /// # Safety
-    ///
-    /// See [`CBox::from_c`]'s safety for `data`, `free_callback`, `cookie`.
-    pub unsafe fn wrap_c(
-        data: NonNull<[u8]>,
-        free_callback: Option<FnFree>,
-        cookie: Option<SendSyncNonNull<c_void>>,
-    ) -> Rav1dResult<Self> {
-        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
-        let free = Free { free, cookie };
-        // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
-        let data = unsafe { CBox::from_c(data, free) };
-        let data = CArc::wrap(data)?;
-        Ok(data.into())
-    }
-
-    /// # Safety
-    ///
-    /// See [`CBox::from_c`]'s safety for `user_data`, `free_callback`, `cookie`.
-    pub unsafe fn wrap_user_data(
-        &mut self,
-        user_data: NonNull<u8>,
-        free_callback: Option<FnFree>,
-        cookie: Option<SendSyncNonNull<c_void>>,
-    ) -> Rav1dResult {
-        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
-        let free = Free { free, cookie };
-        // SAFETY: Preconditions delegate to `CBox::from_c`'s safety.
-        let user_data = unsafe { CBox::from_c(user_data, free) };
-        let user_data = CArc::wrap(user_data)?;
-        self.m.user_data = Some(user_data);
+    pub fn wrap_user_data(&mut self, user_data: CRef<u8>) -> Rav1dResult {
+        self.m.user_data = Some(CArc::wrap(user_data)?);
         Ok(())
     }
 }

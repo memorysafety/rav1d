@@ -155,7 +155,7 @@ use parking_lot::Mutex;
 use to_method::To as _;
 
 use crate::c_arc::RawArc;
-use crate::c_box::FnFree;
+use crate::c_box::{CBox, CRef, FnFree};
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
 use crate::decode::rav1d_decode_frame_exit;
 pub use crate::error::Dav1dResult;
@@ -986,11 +986,13 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     || -> Rav1dResult {
         let buf = validate_input!(buf.ok_or(Rav1dError::InvalidArgument))?;
         let ptr = validate_input!(ptr.ok_or(Rav1dError::InvalidArgument))?;
+        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         validate_input!((sz <= usize::MAX / 2, Rav1dError::InvalidArgument))?;
         // SAFETY: `ptr` is the start of a `&[u8]` slice of length `sz`.
         let data = unsafe { slice::from_raw_parts(ptr.as_ptr(), sz) };
         // SAFETY: `ptr`, and thus `data`, is valid to dereference until `free_callback` is called on it, which deallocates it.
-        let data = unsafe { Rav1dData::wrap_c(data.into(), free_callback, user_data) }?;
+        let data = unsafe { CBox::new(data.into(), free, user_data) };
+        let data = Rav1dData::wrap(CRef::C(data))?;
         let data_c = data.into();
         // SAFETY: `buf` is safe to write to.
         unsafe { buf.as_ptr().write(data_c) };
@@ -1014,11 +1016,13 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
         let buf = validate_input!(buf.ok_or(Rav1dError::InvalidArgument))?;
         // Note that `dav1d` doesn't do this check, but they do for the similar [`dav1d_data_wrap`].
         let user_data = validate_input!(user_data.ok_or(Rav1dError::InvalidArgument))?;
+        let free = validate_input!(free_callback.ok_or(Rav1dError::InvalidArgument))?;
         // SAFETY: `buf` is safe to read from.
         let data_c = unsafe { buf.as_ptr().read() };
         let mut data = data_c.to::<Rav1dData>();
         // SAFETY: `user_data` is valid to dereference until `free_callback` is called on it, which deallocates it.
-        unsafe { data.wrap_user_data(user_data, free_callback, cookie) }?;
+        let user_data = unsafe { CBox::new(user_data, free, cookie) };
+        data.wrap_user_data(CRef::C(user_data))?;
         let data_c = data.into();
         // SAFETY: `buf` is safe to write to.
         unsafe { buf.as_ptr().write(data_c) };
