@@ -59,3 +59,11 @@ impl<T: Atom> From<T> for RelaxedAtomic<T> {
         Self::new(value)
     }
 }
+
+impl<T: Atom + PartialEq> PartialEq for RelaxedAtomic<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.get() == other.get()
+    }
+}
+
+impl<T: Atom + PartialEq + Eq> Eq for RelaxedAtomic<T> {}
