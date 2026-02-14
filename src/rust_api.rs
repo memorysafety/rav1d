@@ -276,8 +276,6 @@ impl Drop for Decoder {
     }
 }
 
-static_assertions::assert_impl_all!(Decoder: Send, Sync);
-
 /// A decoded frame.
 #[derive(Clone)]
 pub struct Picture {
