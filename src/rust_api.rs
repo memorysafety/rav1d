@@ -189,9 +189,9 @@ impl Decoder {
     ///
     /// If a previous call returned [`Rav1dError::TryAgain`] then this must not be called again until
     /// [`Decoder::send_pending_data`] has returned `Ok(())`.
-    pub fn send_data<T: AsRef<[u8]> + Send + Sync>(
+    pub fn send_data(
         &mut self,
-        buf: T,
+        buf: Box<[u8]>,
         offset: Option<i64>,
         timestamp: Option<i64>,
         duration: Option<i64>,
@@ -201,12 +201,7 @@ impl Decoder {
             "Have pending data that needs to be handled first"
         );
 
-        let buf = buf.as_ref().to_vec().into_boxed_slice();
-        let slice = &*buf;
-        let len = slice.len();
-
-        let mut data = Rav1dData::create(len).unwrap();
-        data.data = Some(CArc::wrap(CBox::from_box(buf)).unwrap());
+        let mut data = Rav1dData::wrap(CRef::Box(buf))?;
         if let Some(offset) = offset {
             data.m.offset = offset;
         }
