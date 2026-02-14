@@ -7,7 +7,7 @@ use std::ptr::NonNull;
 use std::slice::SliceIndex;
 use std::sync::Arc;
 
-use crate::c_box::CBox;
+use crate::c_box::CRef;
 use crate::error::Rav1dResult;
 
 pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
@@ -23,23 +23,22 @@ pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
 /// instead of the normal [`Box`] (de)allocator.
 /// It can also store a normal [`Box`] as well.
 ///
-/// It is built around the [`CBox`] abstraction.
+/// It is built around the [`CRef`] abstraction.
 /// However, that necessitates a double indirection
-/// to reach the ptr through the [`Arc`] and [`CBox`].
+/// to reach the ptr through the [`Arc`] and [`CRef`].
 /// To remedy this and improve performance,
 /// a stable pointer is stored inline,
 /// removing the double indirection.
 /// This self-referential ptr is sound
-/// because the [`CBox`] is [`Pin`]ned.
+/// because the [`CRef`] is [`Pin`]ned.
 /// As long as [`Self::owner`] is never replaced
 /// without also re-updating [`Self::stable_ref`], this is sound.
 ///
 /// Furthermore, storing this stable ref ptr like this
 /// allows for provenance projections of [`Self::stable_ref`],
 /// such as slicing it for a `CArc<[T]>` (see [`Self::slice_in_place`]).
-#[derive(Debug)]
-pub struct CArc<T: ?Sized> {
-    owner: Arc<Pin<CBox<T>>>,
+pub struct CArc<T: ?Sized + 'static> {
+    owner: Arc<Pin<CRef<T>>>,
 
     /// The same as [`Self::stable_ref`] but it never changes.
     #[cfg(debug_assertions)]
@@ -108,9 +107,9 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         }
 
         // SAFETY: [`Self::stable_ref`] is a ptr
-        // derived from [`Self::owner`]'s through [`CBox::as_ref`]
+        // derived from [`Self::owner`]'s through [`CRef::as_ref`]
         // and is thus safe to dereference.
-        // The [`CBox`] is [`Pin`]ned and
+        // The [`CRef`] is [`Pin`]ned and
         // [`Self::stable_ref`] is always updated on writes to [`Self::owner`],
         // so they are always in sync.
         unsafe { self.stable_ref.0.as_ref() }
@@ -142,8 +141,8 @@ impl<T: ?Sized> Clone for CArc<T> {
     }
 }
 
-impl<T: ?Sized> From<Arc<Pin<CBox<T>>>> for CArc<T> {
-    fn from(owner: Arc<Pin<CBox<T>>>) -> Self {
+impl<T: ?Sized> From<Arc<Pin<CRef<T>>>> for CArc<T> {
+    fn from(owner: Arc<Pin<CRef<T>>>) -> Self {
         let stable_ref = StableRef((*owner).as_ref().get_ref().into());
         Self {
             owner,
@@ -155,7 +154,7 @@ impl<T: ?Sized> From<Arc<Pin<CBox<T>>>> for CArc<T> {
 }
 
 impl<T: ?Sized> CArc<T> {
-    pub fn wrap(owner: CBox<T>) -> Rav1dResult<Self> {
+    pub fn wrap(owner: CRef<T>) -> Rav1dResult<Self> {
         let owner = Arc::new(owner.into_pin()); // TODO fallible allocation
         Ok(owner.into())
     }
@@ -228,7 +227,7 @@ impl<T> RawArc<T> {
 }
 
 #[repr(transparent)]
-pub struct RawCArc<T: ?Sized>(RawArc<Pin<CBox<T>>>);
+pub struct RawCArc<T: ?Sized + 'static>(RawArc<Pin<CRef<T>>>);
 
 impl<T: ?Sized> CArc<T> {
     /// Convert into a raw, opaque form suitable for C FFI.
@@ -275,6 +274,6 @@ where
 {
     pub fn zeroed_slice(size: usize) -> Rav1dResult<Self> {
         let owned_slice = (0..size).map(|_| Default::default()).collect::<Box<[_]>>(); // TODO fallible allocation
-        Self::wrap(CBox::from_box(owned_slice))
+        Self::wrap(CRef::Box(owned_slice))
     }
 }
