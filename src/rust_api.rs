@@ -31,8 +31,6 @@ use std::{fmt, slice};
 
 pub use av_data::pixel;
 
-use crate::c_arc::CArc;
-use crate::c_box::CBox;
 use crate::error::Rav1dError;
 use crate::in_range::InRange;
 pub use crate::include::dav1d::dav1d::{
@@ -48,7 +46,7 @@ use crate::internal::Rav1dContext;
 use crate::pixels::Pixels;
 use crate::{
     rav1d_close, rav1d_flush, rav1d_get_frame_delay, rav1d_get_picture, rav1d_open,
-    rav1d_send_data, Rav1dData, Rav1dSettings,
+    rav1d_send_data, CRef, Rav1dData, Rav1dSettings,
 };
 
 /// Settings for creating a new [`Decoder`] instance.
@@ -352,7 +350,7 @@ impl Picture {
             _ => match self.pixel_layout() {
                 PixelLayout::I420 => self.height().div_ceil(2),
                 PixelLayout::I422 | PixelLayout::I444 => self.height(),
-                PixelLayout::I400 => return &[]; // grayscale images don't have color components
+                PixelLayout::I400 => return &[], // grayscale images don't have color components
             },
         };
 
