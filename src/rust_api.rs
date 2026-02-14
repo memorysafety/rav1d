@@ -356,7 +356,8 @@ impl Picture {
             PlanarImageComponent::Y => self.height(),
             _ => match self.pixel_layout() {
                 PixelLayout::I420 => self.height().div_ceil(2),
-                PixelLayout::I400 | PixelLayout::I422 | PixelLayout::I444 => self.height(),
+                PixelLayout::I422 | PixelLayout::I444 => self.height(),
+                PixelLayout::I400 => return &[]; // grayscale images don't have color components
             },
         };
 
