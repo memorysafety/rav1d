@@ -36,7 +36,7 @@ pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType =
 
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
-    pub(crate) struct Rav1dInloopFilterType: u8 {
+    pub struct Rav1dInloopFilterType: u8 {
         const DEBLOCK = 1 << 1;
         const CDEF = 1 << 2;
         const RESTORATION = 1 << 3;
@@ -66,7 +66,7 @@ pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
     Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr, Default)]
-pub(crate) enum Rav1dDecodeFrameType {
+pub enum Rav1dDecodeFrameType {
     /// decode and return all frames
     #[default]
     All = 0,

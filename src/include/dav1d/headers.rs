@@ -4,10 +4,12 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::{BitAnd, Deref, Sub};
 use std::sync::Arc;
 
+use av_data::pixel;
 use strum::{EnumCount, FromRepr};
 
 use crate::align::ArrayDefault;
 use crate::enum_map::EnumKey;
+use crate::error::Rav1dError;
 use crate::levels::SegmentId;
 use crate::relaxed_atomic::RelaxedAtomic;
 
@@ -379,7 +381,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 /// Pixel layout of a frame.
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default, Debug)]
 pub enum Rav1dPixelLayout {
     /// Monochrome.
     #[default]
@@ -567,6 +569,25 @@ impl Rav1dColorPrimaries {
     }
 }
 
+impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
+    fn from(val: Rav1dColorPrimaries) -> Self {
+        match val {
+            Rav1dColorPrimaries::BT709 => pixel::ColorPrimaries::BT709,
+            Rav1dColorPrimaries::Unspecified => pixel::ColorPrimaries::Unspecified,
+            Rav1dColorPrimaries::BT470M => pixel::ColorPrimaries::BT470M,
+            Rav1dColorPrimaries::BT470BG => pixel::ColorPrimaries::BT470BG,
+            Rav1dColorPrimaries::BT601 => pixel::ColorPrimaries::BT470BG,
+            Rav1dColorPrimaries::SMPTE240 => pixel::ColorPrimaries::ST240M,
+            Rav1dColorPrimaries::Film => pixel::ColorPrimaries::Film,
+            Rav1dColorPrimaries::BT2020 => pixel::ColorPrimaries::BT2020,
+            Rav1dColorPrimaries::XYZ => pixel::ColorPrimaries::ST428,
+            Rav1dColorPrimaries::SMPTE431 => pixel::ColorPrimaries::P3DCI,
+            Rav1dColorPrimaries::SMPTE432 => pixel::ColorPrimaries::P3Display,
+            Rav1dColorPrimaries::EBU3213 => pixel::ColorPrimaries::Tech3213,
+        }
+    }
+}
+
 impl From<Rav1dColorPrimaries> for Dav1dColorPrimaries {
     fn from(value: Rav1dColorPrimaries) -> Self {
         value.to_dav1d()
@@ -649,6 +670,36 @@ impl Rav1dTransferCharacteristics {
     }
 }
 
+impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
+    fn from(val: Rav1dTransferCharacteristics) -> Self {
+        match val {
+            Rav1dTransferCharacteristics::BT709 => pixel::TransferCharacteristic::BT1886,
+            Rav1dTransferCharacteristics::Unspecified => pixel::TransferCharacteristic::Unspecified,
+            Rav1dTransferCharacteristics::BT470M => pixel::TransferCharacteristic::BT470M,
+            Rav1dTransferCharacteristics::BT470BG => pixel::TransferCharacteristic::BT470BG,
+            Rav1dTransferCharacteristics::BT601 => pixel::TransferCharacteristic::ST170M,
+            Rav1dTransferCharacteristics::SMPTE240 => pixel::TransferCharacteristic::ST240M,
+            Rav1dTransferCharacteristics::Linear => pixel::TransferCharacteristic::Linear,
+            Rav1dTransferCharacteristics::Log100 => pixel::TransferCharacteristic::Logarithmic100,
+            Rav1dTransferCharacteristics::Log100Sqrt10 => {
+                pixel::TransferCharacteristic::Logarithmic316
+            }
+            Rav1dTransferCharacteristics::IEC61966 => pixel::TransferCharacteristic::SRGB,
+            Rav1dTransferCharacteristics::BT1361 => pixel::TransferCharacteristic::BT1886,
+            Rav1dTransferCharacteristics::SRGB => pixel::TransferCharacteristic::SRGB,
+            Rav1dTransferCharacteristics::BT2020_10Bit => pixel::TransferCharacteristic::BT2020Ten,
+            Rav1dTransferCharacteristics::BT2020_12Bit => {
+                pixel::TransferCharacteristic::BT2020Twelve
+            }
+            Rav1dTransferCharacteristics::SMPTE2084 => {
+                pixel::TransferCharacteristic::PerceptualQuantizer
+            }
+            Rav1dTransferCharacteristics::SMPTE428 => pixel::TransferCharacteristic::ST428,
+            Rav1dTransferCharacteristics::HLG => pixel::TransferCharacteristic::HybridLogGamma,
+        }
+    }
+}
+
 impl From<Rav1dTransferCharacteristics> for Dav1dTransferCharacteristics {
     fn from(value: Rav1dTransferCharacteristics) -> Self {
         value.to_dav1d()
@@ -715,6 +766,33 @@ impl Rav1dMatrixCoefficients {
     }
 }
 
+impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
+    fn from(val: Rav1dMatrixCoefficients) -> Self {
+        match val {
+            Rav1dMatrixCoefficients::Identity => pixel::MatrixCoefficients::Identity,
+            Rav1dMatrixCoefficients::BT709 => pixel::MatrixCoefficients::BT709,
+            Rav1dMatrixCoefficients::Unspecified => pixel::MatrixCoefficients::Unspecified,
+            Rav1dMatrixCoefficients::FCC => pixel::MatrixCoefficients::BT470M,
+            Rav1dMatrixCoefficients::BT470BG => pixel::MatrixCoefficients::BT470BG,
+            Rav1dMatrixCoefficients::BT601 => pixel::MatrixCoefficients::BT470BG,
+            Rav1dMatrixCoefficients::SMPTE240 => pixel::MatrixCoefficients::ST240M,
+            Rav1dMatrixCoefficients::SMPTE_YCgCo => pixel::MatrixCoefficients::YCgCo,
+            Rav1dMatrixCoefficients::BT2020NCL => {
+                pixel::MatrixCoefficients::BT2020NonConstantLuminance
+            }
+            Rav1dMatrixCoefficients::BT2020CL => pixel::MatrixCoefficients::BT2020ConstantLuminance,
+            Rav1dMatrixCoefficients::SMPTE2085 => pixel::MatrixCoefficients::ST2085,
+            Rav1dMatrixCoefficients::ChromatNCL => {
+                pixel::MatrixCoefficients::ChromaticityDerivedNonConstantLuminance
+            }
+            Rav1dMatrixCoefficients::ChromatCL => {
+                pixel::MatrixCoefficients::ChromaticityDerivedConstantLuminance
+            }
+            Rav1dMatrixCoefficients::ICtCp => pixel::MatrixCoefficients::ICtCp,
+        }
+    }
+}
+
 impl From<Rav1dMatrixCoefficients> for Dav1dMatrixCoefficients {
     fn from(value: Rav1dMatrixCoefficients) -> Self {
         value.to_dav1d()
@@ -751,6 +829,21 @@ pub enum Rav1dChromaSamplePosition {
 impl From<Rav1dChromaSamplePosition> for Dav1dChromaSamplePosition {
     fn from(value: Rav1dChromaSamplePosition) -> Self {
         value as Dav1dChromaSamplePosition
+    }
+}
+
+impl TryInto<pixel::ChromaLocation> for Rav1dChromaSamplePosition {
+    type Error = Rav1dError;
+
+    fn try_into(self) -> Result<pixel::ChromaLocation, Self::Error> {
+        // According to y4m mapping declared in dav1d's output/y4m2.c and applied from FFmpeg's yuv4mpegdec.c
+        match self {
+            Rav1dChromaSamplePosition::Unknown | Rav1dChromaSamplePosition::Colocated => {
+                Ok(pixel::ChromaLocation::Center)
+            }
+            Rav1dChromaSamplePosition::Vertical => Ok(pixel::ChromaLocation::Left),
+            Rav1dChromaSamplePosition::_Reserved => Err(Rav1dError::InvalidArgument),
+        }
     }
 }
 

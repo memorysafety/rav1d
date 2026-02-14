@@ -139,6 +139,8 @@ mod pool;
 mod qm;
 mod recon;
 mod refmvs;
+/// This API copies that of `dav1d-rs`, and should function as a drop-in replacement, aside from `dav1d::Error` being renamed to `Rav1dError`
+pub mod rust_api;
 mod scan;
 mod tables;
 mod thread_task;
@@ -152,14 +154,14 @@ use std::sync::{Arc, Once};
 use std::{cmp, mem, ptr, slice, thread};
 
 use parking_lot::Mutex;
+pub use rust_api::*;
 use to_method::To as _;
 
 use crate::c_arc::RawArc;
 use crate::c_box::{CBox, CRef, FnFree};
 use crate::cpu::{rav1d_init_cpu, rav1d_num_logical_processors};
 use crate::decode::rav1d_decode_frame_exit;
-pub use crate::error::Dav1dResult;
-use crate::error::{Rav1dError, Rav1dResult};
+pub use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::extensions::OptionError as _;
 use crate::in_range::InRange;
 #[cfg(feature = "bitdepth_16")]
