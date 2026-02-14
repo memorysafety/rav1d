@@ -371,7 +371,26 @@ impl Picture {
         if stride == 0 || raw_plane_data_pointer.is_null() {
             return &[];
         }
-        // SAFETY: Copied checks from dav1d-rs added in this pull request https://github.com/rust-av/dav1d-rs/pull/121
+        // SAFETY: The following invariants are upheld:
+        // 1. Pointer validity: Checked above - if null or stride is 0, we return &[].
+        // 2. Pointer alignment: The allocator guarantees RAV1D_PICTURE_ALIGNMENT (64-byte)
+        //    alignment (see Rav1dPictureDataComponentInner::new), which exceeds any
+        //    primitive type's alignment requirements.
+        // 3. Allocated size: The allocator guarantees the buffer is at least stride * height
+        //    bytes (the allocator callback contract in Dav1dPicAllocator). The checked_mul
+        //    ensures this calculation doesn't overflow.
+        // 4. Initialization: The allocator is required to initialize the data per the
+        //    alloc_picture_callback safety requirements.
+        // 5. Lifetime: The returned slice borrows &self, keeping the Arc<Rav1dPictureData>
+        //    alive for the duration of the borrow.
+        // 6. No mutable aliases: The Picture is only returned after decoding is complete,
+        //    so the decoder no longer writes to this buffer. The public API only exposes
+        //    shared (&[u8]) access, and no &mut references to this data can exist once
+        //    the Picture is handed to the user.
+        //
+        // Past dav1d-rs PRs relevant to this line:
+        // https://github.com/rust-av/dav1d-rs/pull/121
+        // https://github.com/rust-av/dav1d-rs/pull/123
         unsafe {
             slice::from_raw_parts(
                 raw_plane_data_pointer,
