@@ -6,7 +6,6 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::ptr::{drop_in_place, NonNull};
-use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::send_sync_non_null::SendSyncNonNull;
@@ -145,7 +144,6 @@ impl<T: ?Sized> CBox<T> {
 pub enum CRef<T: ?Sized + 'static> {
     Ref(&'static T),
     Box(Box<T>),
-    Rc(Rc<T>),
     Arc(Arc<T>),
     // TODO `Vec` if we have a `StableRef`/frozen version of it that can't resize.
     C(CBox<T>),
@@ -156,7 +154,6 @@ impl<T: ?Sized> AsRef<T> for CRef<T> {
         match self {
             Self::Ref(data) => data,
             Self::Box(data) => data.as_ref(),
-            Self::Rc(data) => data.as_ref(),
             Self::Arc(data) => data.as_ref(),
             Self::C(data) => data.as_ref(),
         }
