@@ -8,6 +8,8 @@ use std::pin::Pin;
 use std::ptr::{drop_in_place, NonNull};
 use std::sync::Arc;
 
+use static_assertions::assert_impl_all;
+
 use crate::send_sync_non_null::SendSyncNonNull;
 
 pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: Option<SendSyncNonNull<c_void>>);
@@ -148,6 +150,10 @@ pub enum CRef<T: ?Sized + 'static> {
     // TODO `Vec` if we have a `StableRef`/frozen version of it that can't resize.
     C(CBox<T>),
 }
+
+// Not generic because this is implemented through a `const`,
+// and `#![feature(generic_const_exprs)]`s isn't stable yet.
+assert_impl_all!(CRef<()>: Send, Sync);
 
 impl<T: ?Sized> AsRef<T> for CRef<T> {
     fn as_ref(&self) -> &T {
