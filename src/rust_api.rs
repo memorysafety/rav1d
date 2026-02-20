@@ -362,6 +362,9 @@ impl Picture {
         if stride == 0 || raw_plane_data_pointer.is_null() {
             return &[];
         }
+        let data_length = (stride as usize)
+            .checked_mul(height as usize)
+            .expect("The product of stride and height exceeded usize::MAX");
         // SAFETY: The following invariants are upheld:
         // 1. Pointer validity: Checked above - if null or stride is 0, we return &[].
         // 2. Pointer alignment: The allocator guarantees RAV1D_PICTURE_ALIGNMENT (64-byte)
@@ -382,14 +385,7 @@ impl Picture {
         // Past dav1d-rs PRs relevant to this line:
         // https://github.com/rust-av/dav1d-rs/pull/121
         // https://github.com/rust-av/dav1d-rs/pull/123
-        unsafe {
-            slice::from_raw_parts(
-                raw_plane_data_pointer,
-                (stride as usize)
-                    .checked_mul(height as usize)
-                    .expect("The product of stride and height exceeded usize::MAX"),
-            )
-        }
+        unsafe { slice::from_raw_parts(raw_plane_data_pointer, data_length) }
     }
 
     /// Bit depth of the plane data.
