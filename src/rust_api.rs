@@ -356,8 +356,9 @@ impl Picture {
 
         //  Get a raw pointer to the plane data of the `component` for the decoded frame.
         let index: usize = component.into();
-        let raw_plane_data_pointer =
-            self.inner.data.as_ref().unwrap().data[index].as_byte_mut_ptr() as *const u8;
+        let raw_plane_data_pointer = self.inner.data.as_ref().unwrap().data[index]
+            .as_byte_mut_ptr()
+            .cast_const();
 
         if stride == 0 || raw_plane_data_pointer.is_null() {
             return &[];
