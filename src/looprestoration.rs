@@ -391,6 +391,10 @@ fn wiener_rust<BD: BitDepth>(
 ) {
     // Wiener filtering is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
+    // TODO(perf): These buffers are zero-initialized but only need to be written
+    // before read, matching the uninitialized C counterparts in dav1d's looprestoration_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0.into(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     padding::<BD>(&mut tmp, p, left, lpf, lpf_off, w, h, edges);
@@ -650,6 +654,10 @@ fn selfguided_filter<BD: BitDepth>(
 
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
+    // TODO(perf): These buffers are zero-initialized but only need to be written
+    // before read, matching the uninitialized C counterparts in dav1d's looprestoration_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut sumsq = [0; (64 + 2 + 2) * REST_UNIT_STRIDE];
     // By inverting `a` and `b` after the boxsums, `b` can be of `BD::Coef` instead of `i32`.
     let mut sum = [0.as_::<BD::Coef>(); (64 + 2 + 2) * REST_UNIT_STRIDE];
@@ -803,6 +811,10 @@ fn sgr_5x5_rust<BD: BitDepth>(
 ) {
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
+    // TODO(perf): These buffers are zero-initialized but only need to be written
+    // before read, matching the uninitialized C counterparts in dav1d's looprestoration_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
 
     // Selfguided filter outputs to a maximum stripe height of 64 and a
@@ -867,6 +879,10 @@ fn sgr_3x3_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    // TODO(perf): These buffers are zero-initialized but only need to be written
+    // before read, matching the uninitialized C counterparts in dav1d's looprestoration_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst = [0.as_(); 64 * 384];
 
@@ -928,6 +944,10 @@ fn sgr_mix_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
+    // TODO(perf): These buffers are zero-initialized but only need to be written
+    // before read, matching the uninitialized C counterparts in dav1d's looprestoration_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0.as_(); (64 + 3 + 3) * REST_UNIT_STRIDE];
     let mut dst0 = [0.as_(); 64 * 384];
     let mut dst1 = [0.as_(); 64 * 384];

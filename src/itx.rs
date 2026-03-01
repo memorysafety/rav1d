@@ -95,6 +95,10 @@ fn inv_txfm_add<BD: BitDepth>(
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
 
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's itx_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0; 64 * 64];
     let mut c = &mut tmp[..];
     for y in 0..sh {
@@ -304,6 +308,10 @@ fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
 
     let coeff = &mut coeff[..W * H];
 
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's itx_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut tmp = [0; W * H];
     let mut c = &mut tmp[..];
     for y in 0..H {
