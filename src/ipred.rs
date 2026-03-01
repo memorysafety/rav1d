@@ -1307,7 +1307,7 @@ fn cfl_ac_rust<BD: BitDepth>(
     is_ss_ver: bool,
 ) {
     let ac = &mut ac[..width * height];
-    let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
+    let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| pad as usize * 4);
     assert!(w_pad < width);
     assert!(h_pad < height);
     let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
