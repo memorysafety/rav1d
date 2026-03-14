@@ -8,6 +8,8 @@ fuzz_target!(|data: &[u8]| {
     let _ = decode(boxed_data); // don't care about returned errors
 });
 
+// the below is based on
+// https://github.com/rust-av/dav1d-rs/blob/master/tools/src/main.rs
 
 fn handle_pending_pictures(dec: &mut rav1d::rust_api::Decoder, drain: bool) -> std::io::Result<()> {
     loop {
