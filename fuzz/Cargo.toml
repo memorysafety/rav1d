@@ -12,6 +12,8 @@ libfuzzer-sys = "0.4"
 
 [dependencies.rav1d]
 path = ".."
+default-features = false # Disables ASM; comment out to enable
+features = ["bitdepth_8", "bitdepth_16"]
 
 # Prevent this from interfering with workspaces
 [workspace]
