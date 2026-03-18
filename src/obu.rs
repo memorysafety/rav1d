@@ -2391,7 +2391,7 @@ fn parse_obus(
                     })); // TODO(kkysen) fallible allocation
                 }
                 Some(ObuMetaType::ItutT35) => {
-                    let mut payload_size = gb.remaining_len();
+                    let mut payload_size = gb.remaining_len() as isize;
                     // Don't take into account all the trailing bits for `payload_size`.
                     while payload_size > 0 && gb[payload_size as usize - 1] == 0 {
                         payload_size -= 1; // trailing_zero_bit x 8
@@ -2406,7 +2406,7 @@ fn parse_obus(
                         payload_size -= 1;
                     }
 
-                    if payload_size == 0 || gb[payload_size] != 0x80 {
+                    if payload_size <= 0 || gb[payload_size as usize] != 0x80 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let country_code = country_code as u8;
