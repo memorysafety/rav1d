@@ -344,51 +344,15 @@ impl Picture {
     }
 
     /// Plane data of the `component` for the decoded frame.
-    pub fn plane_data(&self, component: PlanarImageComponent) -> &[u8] {
-        let height = match component {
-            PlanarImageComponent::Y => self.height(),
-            _ => match self.pixel_layout() {
-                PixelLayout::I420 => self.height().div_ceil(2),
-                PixelLayout::I422 | PixelLayout::I444 => self.height(),
-                PixelLayout::I400 => return &[], // grayscale images don't have color components
-            },
-        };
-
-        let stride = self.stride(component);
-
-        //  Get a raw pointer to the plane data of the `component` for the decoded frame.
-        let index: usize = component.into();
-        let raw_plane_data_pointer = self.inner.data.as_ref().unwrap().data[index]
-            .as_byte_mut_ptr()
-            .cast_const();
-
-        if stride == 0 || raw_plane_data_pointer.is_null() {
-            return &[];
-        }
-        let data_length = (stride as usize)
-            .checked_mul(height as usize)
-            .expect("The product of stride and height exceeded usize::MAX");
-        // SAFETY: The following invariants are upheld:
-        // 1. Pointer validity: Checked above - if null or stride is 0, we return &[].
-        // 2. Pointer alignment: The allocator guarantees RAV1D_PICTURE_ALIGNMENT (64-byte)
-        //    alignment (see Rav1dPictureDataComponentInner::new), which exceeds any
-        //    primitive type's alignment requirements.
-        // 3. Allocated size: The allocator guarantees the buffer is at least stride * height
-        //    bytes (the allocator callback contract in Dav1dPicAllocator). The checked_mul
-        //    ensures this calculation doesn't overflow.
-        // 4. Initialization: The allocator is required to initialize the data per the
-        //    alloc_picture_callback safety requirements.
-        // 5. Lifetime: The returned slice borrows &self, keeping the Arc<Rav1dPictureData>
-        //    alive for the duration of the borrow.
-        // 6. No mutable aliases: The Picture is only returned after decoding is complete,
-        //    so the decoder no longer writes to this buffer. The public API only exposes
-        //    shared (&[u8]) access, and no &mut references to this data can exist once
-        //    the Picture is handed to the user.
-        //
-        // Past dav1d-rs PRs relevant to this line:
-        // https://github.com/rust-av/dav1d-rs/pull/121
-        // https://github.com/rust-av/dav1d-rs/pull/123
-        unsafe { slice::from_raw_parts(raw_plane_data_pointer, data_length) }
+    pub fn plane_data<'a>(&'a self, component: PlanarImageComponent) -> &'a [u8] {
+        let data = &self.inner.data.as_ref().unwrap().data;
+        let component = &data[usize::from(component)];
+        let guard = component.slice::<BitDepth8, _>(..);
+        // SAFETY: [`Picture`] is only created after decoding is complete
+        // (in [`Decoder::get_picture`], which calls [`rav1d_get_picture`]).
+        // Thus, the decoder no longer writes to this data,
+        // and there are no other safe public ways to have a `&mut` to this data.
+        unsafe { guard.unchecked_disjoint_mut() }
     }
 
     /// Bit depth of the plane data.
