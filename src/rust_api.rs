@@ -25,14 +25,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use std::{fmt, slice};
 
 pub use av_data::pixel;
 
 use crate::error::Rav1dError;
 use crate::in_range::InRange;
+use crate::include::common::bitdepth::BitDepth8;
 pub use crate::include::dav1d::dav1d::{
     Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
 };
@@ -43,7 +44,6 @@ pub use crate::include::dav1d::headers::{
 use crate::include::dav1d::picture::Rav1dPicture;
 pub use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT as PICTURE_ALIGNMENT;
 use crate::internal::Rav1dContext;
-use crate::pixels::Pixels;
 use crate::{
     rav1d_close, rav1d_flush, rav1d_get_frame_delay, rav1d_get_picture, rav1d_open,
     rav1d_send_data, CRef, Rav1dData, Rav1dSettings,

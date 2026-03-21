@@ -208,6 +208,15 @@ impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V>
     }
 }
 
+impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
+    // # Safety
+    //
+    // This is no longer checked at runtime to be legitimately disjoint mut.
+    pub unsafe fn unchecked_disjoint_mut(&self) -> &'a V {
+        self.slice
+    }
+}
+
 /// Convert from a mutable pointer to a collection to a mutable pointer to the
 /// underlying slice without ever creating a mutable reference to the slice.
 ///
