@@ -832,12 +832,12 @@ impl From<Rav1dChromaSamplePosition> for Dav1dChromaSamplePosition {
     }
 }
 
-impl TryInto<pixel::ChromaLocation> for Rav1dChromaSamplePosition {
+impl TryFrom<Rav1dChromaSamplePosition> for pixel::ChromaLocation {
     type Error = Rav1dError;
 
-    fn try_into(self) -> Result<pixel::ChromaLocation, Self::Error> {
+    fn try_from(value: Rav1dChromaSamplePosition) -> Result<pixel::ChromaLocation, Self::Error> {
         // According to y4m mapping declared in dav1d's output/y4m2.c and applied from FFmpeg's yuv4mpegdec.c
-        match self {
+        match value {
             Rav1dChromaSamplePosition::Unknown | Rav1dChromaSamplePosition::Colocated => {
                 Ok(pixel::ChromaLocation::Center)
             }
