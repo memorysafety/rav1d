@@ -16,18 +16,19 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::{
     DRav1d, Dav1dSequenceHeader, Rav1dAdaptiveBoolean, Rav1dChromaSamplePosition,
-    Rav1dColorPrimaries, Rav1dContentLightLevel, Rav1dFilmGrainData, Rav1dFilterMode,
-    Rav1dFrameHeader, Rav1dFrameHeaderCdef, Rav1dFrameHeaderDelta, Rav1dFrameHeaderDeltaLF,
-    Rav1dFrameHeaderDeltaQ, Rav1dFrameHeaderFilmGrain, Rav1dFrameHeaderLoopFilter,
-    Rav1dFrameHeaderOperatingPoint, Rav1dFrameHeaderQuant, Rav1dFrameHeaderRestoration,
-    Rav1dFrameHeaderSegmentation, Rav1dFrameHeaderSuperRes, Rav1dFrameHeaderTiling, Rav1dFrameSize,
-    Rav1dFrameSkipMode, Rav1dFrameType, Rav1dITUTT35, Rav1dLoopfilterModeRefDeltas,
-    Rav1dMasteringDisplay, Rav1dMatrixCoefficients, Rav1dObuType, Rav1dPixelLayout, Rav1dProfile,
-    Rav1dRestorationType, Rav1dSegmentationData, Rav1dSegmentationDataSet, Rav1dSequenceHeader,
-    Rav1dSequenceHeaderOperatingParameterInfo, Rav1dSequenceHeaderOperatingPoint,
-    Rav1dTransferCharacteristics, Rav1dTxfmMode, Rav1dWarpedMotionParams, Rav1dWarpedMotionType,
-    RAV1D_MAX_CDEF_STRENGTHS, RAV1D_MAX_OPERATING_POINTS, RAV1D_MAX_TILE_COLS, RAV1D_MAX_TILE_ROWS,
-    RAV1D_PRIMARY_REF_NONE, RAV1D_REFS_PER_FRAME,
+    Rav1dColorPrimaries, Rav1dColorRange, Rav1dContentLightLevel, Rav1dFilmGrainData,
+    Rav1dFilterMode, Rav1dFrameHeader, Rav1dFrameHeaderCdef, Rav1dFrameHeaderDelta,
+    Rav1dFrameHeaderDeltaLF, Rav1dFrameHeaderDeltaQ, Rav1dFrameHeaderFilmGrain,
+    Rav1dFrameHeaderLoopFilter, Rav1dFrameHeaderOperatingPoint, Rav1dFrameHeaderQuant,
+    Rav1dFrameHeaderRestoration, Rav1dFrameHeaderSegmentation, Rav1dFrameHeaderSuperRes,
+    Rav1dFrameHeaderTiling, Rav1dFrameSize, Rav1dFrameSkipMode, Rav1dFrameType, Rav1dITUTT35,
+    Rav1dLoopfilterModeRefDeltas, Rav1dMasteringDisplay, Rav1dMatrixCoefficients, Rav1dObuType,
+    Rav1dPixelLayout, Rav1dProfile, Rav1dRestorationType, Rav1dSegmentationData,
+    Rav1dSegmentationDataSet, Rav1dSequenceHeader, Rav1dSequenceHeaderOperatingParameterInfo,
+    Rav1dSequenceHeaderOperatingPoint, Rav1dTransferCharacteristics, Rav1dTxfmMode,
+    Rav1dWarpedMotionParams, Rav1dWarpedMotionType, RAV1D_MAX_CDEF_STRENGTHS,
+    RAV1D_MAX_OPERATING_POINTS, RAV1D_MAX_TILE_COLS, RAV1D_MAX_TILE_ROWS, RAV1D_PRIMARY_REF_NONE,
+    RAV1D_REFS_PER_FRAME,
 };
 use crate::internal::{Rav1dContext, Rav1dState, Rav1dTileGroup, Rav1dTileGroupHeader};
 use crate::levels::ObuMetaType;
@@ -363,13 +364,13 @@ fn parse_seq_hdr(
         trc = Default::default();
         mtrx = Default::default();
     }
-    let color_range;
+    let full_color_range;
     let layout;
     let ss_ver;
     let ss_hor;
     let chr;
     if monochrome != 0 {
-        color_range = gb.get_bit() as u8;
+        full_color_range = gb.get_bit();
         layout = Rav1dPixelLayout::I400;
         ss_ver = 1;
         ss_hor = ss_ver;
@@ -379,7 +380,7 @@ fn parse_seq_hdr(
         && mtrx == Rav1dMatrixCoefficients::Identity
     {
         layout = Rav1dPixelLayout::I444;
-        color_range = 1;
+        full_color_range = true;
         if profile != Rav1dProfile::High && !(profile == Rav1dProfile::Professional && hbd == 2) {
             return Err(Rav1dError::InvalidArgument);
         }
@@ -389,7 +390,7 @@ fn parse_seq_hdr(
         ss_ver = Default::default();
         chr = Rav1dChromaSamplePosition::Unknown;
     } else {
-        color_range = gb.get_bit() as u8;
+        full_color_range = gb.get_bit();
         match profile {
             Rav1dProfile::Main => {
                 layout = Rav1dPixelLayout::I420;
@@ -435,6 +436,7 @@ fn parse_seq_hdr(
             Rav1dChromaSamplePosition::Unknown
         };
     }
+    let color_range = Rav1dColorRange::from_is_full(full_color_range);
     if strict_std_compliance
         && mtrx == Rav1dMatrixCoefficients::Identity
         && layout != Rav1dPixelLayout::I444
