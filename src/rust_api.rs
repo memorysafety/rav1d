@@ -307,12 +307,12 @@ impl TryFrom<usize> for PlanarImageComponent {
     }
 }
 
-impl From<PlanarImageComponent> for usize {
-    fn from(component: PlanarImageComponent) -> Self {
-        match component {
-            PlanarImageComponent::Y => 0,
-            PlanarImageComponent::U => 1,
-            PlanarImageComponent::V => 2,
+impl PlanarImageComponent {
+    pub const fn as_index(&self) -> usize {
+        match self {
+            Self::Y => 0,
+            Self::U => 1,
+            Self::V => 2,
         }
     }
 }
@@ -346,7 +346,7 @@ impl Picture {
     /// Plane data of the `component` for the decoded frame.
     pub fn plane_data<'a>(&'a self, component: PlanarImageComponent) -> &'a [u8] {
         let data = &self.inner.data.as_ref().unwrap().data;
-        let component = &data[usize::from(component)];
+        let component = &data[component.as_index()];
         let guard = component.slice::<BitDepth8, _>(..);
         // SAFETY: [`Picture`] is only created after decoding is complete
         // (in [`Decoder::get_picture`], which calls [`rav1d_get_picture`]).
