@@ -438,10 +438,7 @@ impl Picture {
 
     /// YUV color range.
     pub fn color_range(&self) -> pixel::YUVRange {
-        match self.inner.seq_hdr.as_ref().unwrap().color_range {
-            0 => pixel::YUVRange::Limited,
-            _ => pixel::YUVRange::Full,
-        }
+        self.inner.seq_hdr.as_ref().unwrap().color_range.into()
     }
 
     /// Sample position for subsampled chroma.

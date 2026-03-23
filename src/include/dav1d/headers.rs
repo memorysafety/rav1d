@@ -843,6 +843,45 @@ impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Rav1dColorRange {
+    Limited,
+    Full,
+}
+
+impl Rav1dColorRange {
+    pub const fn is_full(&self) -> bool {
+        matches!(self, Self::Full)
+    }
+
+    pub const fn to_dav1d(&self) -> u8 {
+        self.is_full() as u8
+    }
+}
+
+impl Rav1dColorRange {
+    pub const fn from_is_full(is_full: bool) -> Self {
+        if is_full {
+            Self::Full
+        } else {
+            Self::Limited
+        }
+    }
+
+    pub const fn from_dav1d(value: u8) -> Self {
+        Self::from_is_full(value != 0)
+    }
+}
+
+impl From<Rav1dColorRange> for pixel::YUVRange {
+    fn from(value: Rav1dColorRange) -> Self {
+        match value {
+            Rav1dColorRange::Limited => Self::Limited,
+            Rav1dColorRange::Full => Self::Full,
+        }
+    }
+}
+
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
     /// Maximum content light level (MaxCLL) in candela per square metre.
@@ -1133,7 +1172,7 @@ pub struct Rav1dSequenceHeader {
     pub mtrx: Rav1dMatrixCoefficients,
     pub chr: Rav1dChromaSamplePosition,
     pub hbd: u8,
-    pub color_range: u8,
+    pub color_range: Rav1dColorRange,
     pub num_operating_points: u8,
     pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub still_picture: u8,
@@ -1367,7 +1406,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
             hbd,
-            color_range,
+            color_range: Rav1dColorRange::from_dav1d(color_range),
             num_operating_points,
             operating_points: operating_points.map(|c| c.into()),
             still_picture,
@@ -1482,7 +1521,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             mtrx: mtrx.into(),
             chr: chr.into(),
             hbd,
-            color_range,
+            color_range: color_range.to_dav1d(),
             num_operating_points,
             operating_points: operating_points.map(|rust| rust.into()),
             still_picture,
