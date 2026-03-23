@@ -299,9 +299,9 @@ impl TryFrom<usize> for PlanarImageComponent {
     type Error = Rav1dError;
     fn try_from(index: usize) -> Result<Self, Self::Error> {
         match index {
-            0 => Ok(PlanarImageComponent::Y),
-            1 => Ok(PlanarImageComponent::U),
-            2 => Ok(PlanarImageComponent::V),
+            0 => Ok(Self::Y),
+            1 => Ok(Self::U),
+            2 => Ok(Self::V),
             _ => Err(Rav1dError::InvalidArgument),
         }
     }
@@ -325,9 +325,9 @@ impl BitsPerComponent {
     /// Get the number of bits per component from the high bit depth flag
     pub fn from_hbd(hbd: u8) -> Result<Self, Rav1dError> {
         match hbd {
-            0 => Ok(BitsPerComponent(8)),
-            1 => Ok(BitsPerComponent(10)),
-            2 => Ok(BitsPerComponent(12)),
+            0 => Ok(Self(8)),
+            1 => Ok(Self(10)),
+            2 => Ok(Self(12)),
             _ => Err(Rav1dError::InvalidArgument),
         }
     }
