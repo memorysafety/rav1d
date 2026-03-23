@@ -571,19 +571,20 @@ impl Rav1dColorPrimaries {
 
 impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
     fn from(val: Rav1dColorPrimaries) -> Self {
+        use Rav1dColorPrimaries::*;
         match val {
-            Rav1dColorPrimaries::BT709 => Self::BT709,
-            Rav1dColorPrimaries::Unspecified => Self::Unspecified,
-            Rav1dColorPrimaries::BT470M => Self::BT470M,
-            Rav1dColorPrimaries::BT470BG => Self::BT470BG,
-            Rav1dColorPrimaries::BT601 => Self::BT470BG,
-            Rav1dColorPrimaries::SMPTE240 => Self::ST240M,
-            Rav1dColorPrimaries::Film => Self::Film,
-            Rav1dColorPrimaries::BT2020 => Self::BT2020,
-            Rav1dColorPrimaries::XYZ => Self::ST428,
-            Rav1dColorPrimaries::SMPTE431 => Self::P3DCI,
-            Rav1dColorPrimaries::SMPTE432 => Self::P3Display,
-            Rav1dColorPrimaries::EBU3213 => Self::Tech3213,
+            BT709 => Self::BT709,
+            Unspecified => Self::Unspecified,
+            BT470M => Self::BT470M,
+            BT470BG => Self::BT470BG,
+            BT601 => Self::BT470BG,
+            SMPTE240 => Self::ST240M,
+            Film => Self::Film,
+            BT2020 => Self::BT2020,
+            XYZ => Self::ST428,
+            SMPTE431 => Self::P3DCI,
+            SMPTE432 => Self::P3Display,
+            EBU3213 => Self::Tech3213,
         }
     }
 }
@@ -672,24 +673,25 @@ impl Rav1dTransferCharacteristics {
 
 impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
     fn from(val: Rav1dTransferCharacteristics) -> Self {
+        use Rav1dTransferCharacteristics::*;
         match val {
-            Rav1dTransferCharacteristics::BT709 => Self::BT1886,
-            Rav1dTransferCharacteristics::Unspecified => Self::Unspecified,
-            Rav1dTransferCharacteristics::BT470M => Self::BT470M,
-            Rav1dTransferCharacteristics::BT470BG => Self::BT470BG,
-            Rav1dTransferCharacteristics::BT601 => Self::ST170M,
-            Rav1dTransferCharacteristics::SMPTE240 => Self::ST240M,
-            Rav1dTransferCharacteristics::Linear => Self::Linear,
-            Rav1dTransferCharacteristics::Log100 => Self::Logarithmic100,
-            Rav1dTransferCharacteristics::Log100Sqrt10 => Self::Logarithmic316,
-            Rav1dTransferCharacteristics::IEC61966 => Self::SRGB,
-            Rav1dTransferCharacteristics::BT1361 => Self::BT1886,
-            Rav1dTransferCharacteristics::SRGB => Self::SRGB,
-            Rav1dTransferCharacteristics::BT2020_10Bit => Self::BT2020Ten,
-            Rav1dTransferCharacteristics::BT2020_12Bit => Self::BT2020Twelve,
-            Rav1dTransferCharacteristics::SMPTE2084 => Self::PerceptualQuantizer,
-            Rav1dTransferCharacteristics::SMPTE428 => Self::ST428,
-            Rav1dTransferCharacteristics::HLG => Self::HybridLogGamma,
+            BT709 => Self::BT1886,
+            Unspecified => Self::Unspecified,
+            BT470M => Self::BT470M,
+            BT470BG => Self::BT470BG,
+            BT601 => Self::ST170M,
+            SMPTE240 => Self::ST240M,
+            Linear => Self::Linear,
+            Log100 => Self::Logarithmic100,
+            Log100Sqrt10 => Self::Logarithmic316,
+            IEC61966 => Self::SRGB,
+            BT1361 => Self::BT1886,
+            SRGB => Self::SRGB,
+            BT2020_10Bit => Self::BT2020Ten,
+            BT2020_12Bit => Self::BT2020Twelve,
+            SMPTE2084 => Self::PerceptualQuantizer,
+            SMPTE428 => Self::ST428,
+            HLG => Self::HybridLogGamma,
         }
     }
 }
@@ -762,21 +764,22 @@ impl Rav1dMatrixCoefficients {
 
 impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
     fn from(val: Rav1dMatrixCoefficients) -> Self {
+        use Rav1dMatrixCoefficients::*;
         match val {
-            Rav1dMatrixCoefficients::Identity => Self::Identity,
-            Rav1dMatrixCoefficients::BT709 => Self::BT709,
-            Rav1dMatrixCoefficients::Unspecified => Self::Unspecified,
-            Rav1dMatrixCoefficients::FCC => Self::BT470M,
-            Rav1dMatrixCoefficients::BT470BG => Self::BT470BG,
-            Rav1dMatrixCoefficients::BT601 => Self::BT470BG,
-            Rav1dMatrixCoefficients::SMPTE240 => Self::ST240M,
-            Rav1dMatrixCoefficients::SMPTE_YCgCo => Self::YCgCo,
-            Rav1dMatrixCoefficients::BT2020NCL => Self::BT2020NonConstantLuminance,
-            Rav1dMatrixCoefficients::BT2020CL => Self::BT2020ConstantLuminance,
-            Rav1dMatrixCoefficients::SMPTE2085 => Self::ST2085,
-            Rav1dMatrixCoefficients::ChromatNCL => Self::ChromaticityDerivedNonConstantLuminance,
-            Rav1dMatrixCoefficients::ChromatCL => Self::ChromaticityDerivedConstantLuminance,
-            Rav1dMatrixCoefficients::ICtCp => Self::ICtCp,
+            Identity => Self::Identity,
+            BT709 => Self::BT709,
+            Unspecified => Self::Unspecified,
+            FCC => Self::BT470M,
+            BT470BG => Self::BT470BG,
+            BT601 => Self::BT470BG,
+            SMPTE240 => Self::ST240M,
+            SMPTE_YCgCo => Self::YCgCo,
+            BT2020NCL => Self::BT2020NonConstantLuminance,
+            BT2020CL => Self::BT2020ConstantLuminance,
+            SMPTE2085 => Self::ST2085,
+            ChromatNCL => Self::ChromaticityDerivedNonConstantLuminance,
+            ChromatCL => Self::ChromaticityDerivedConstantLuminance,
+            ICtCp => Self::ICtCp,
         }
     }
 }
@@ -825,12 +828,11 @@ impl TryFrom<Rav1dChromaSamplePosition> for pixel::ChromaLocation {
 
     fn try_from(value: Rav1dChromaSamplePosition) -> Result<pixel::ChromaLocation, Self::Error> {
         // According to y4m mapping declared in dav1d's output/y4m2.c and applied from FFmpeg's yuv4mpegdec.c
+        use Rav1dChromaSamplePosition::*;
         match value {
-            Rav1dChromaSamplePosition::Unknown | Rav1dChromaSamplePosition::Colocated => {
-                Ok(Self::Center)
-            }
-            Rav1dChromaSamplePosition::Vertical => Ok(Self::Left),
-            Rav1dChromaSamplePosition::_Reserved => Err(Rav1dError::InvalidArgument),
+            Unknown | Colocated => Ok(Self::Center),
+            Vertical => Ok(Self::Left),
+            _Reserved => Err(Rav1dError::InvalidArgument),
         }
     }
 }
