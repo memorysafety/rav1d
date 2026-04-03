@@ -2199,6 +2199,16 @@ cglobal put_8tap_8bpc, 4, 9, 0, dst, ds, src, ss, w, h, mx, my, ss3
     punpcklbw            m3, m6, m0 ; 23
     punpckhbw            m6, m0     ; 56
 .v_w16_loop:
+    .v_w16_loop:
+    ; ===  ===
+    prefetcht1 [r4+ssq*2]       ; Fetch row N+2
+    prefetcht1 [r4+ssq*4]       ; Fetch row N+4
+    ; ============================
+    vbroadcasti128      m12, [r4+ssq*1]
+    lea                  r4, [r4+ssq*2]
+    pmaddubsw           m13, m1, m8  ; a0
+    pmaddubsw           m14, m2, m8  ; b0
+    mova                 m1, m3
     vbroadcasti128      m12, [r4+ssq*1]
     lea                  r4, [r4+ssq*2]
     pmaddubsw           m13, m1, m8  ; a0
