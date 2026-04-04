@@ -159,6 +159,10 @@ fn put_8tap_rust<BD: BitDepth>(
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
+            // TODO(perf): This buffer is zero-initialized but only needs to be written
+            // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+            // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+            // (only used when ASM is unavailable). See PR #1397 and #1399.
             let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
 
             for y in 0..tmp_h {
@@ -223,6 +227,10 @@ fn put_8tap_scaled_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0i16; MID_STRIDE]; 256 + 7]; // Default::default()
 
     for y in 0..tmp_h {
@@ -284,6 +292,10 @@ fn prep_8tap_rust<BD: BitDepth>(
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
+            // TODO(perf): This buffer is zero-initialized but only needs to be written
+            // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+            // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+            // (only used when ASM is unavailable). See PR #1397 and #1399.
             let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
 
             for y in 0..tmp_h {
@@ -344,6 +356,10 @@ fn prep_8tap_scaled_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0i16; MID_STRIDE]; 256 + 7]; // Default::default()
 
     for y in 0..tmp_h {
@@ -417,6 +433,10 @@ fn put_bilin_rust<BD: BitDepth>(
 
     if mx != 0 {
         if my != 0 {
+            // TODO(perf): This buffer is zero-initialized but only needs to be written
+            // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+            // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+            // (only used when ASM is unavailable). See PR #1397 and #1399.
             let mut mid = [[0i16; MID_STRIDE]; 129]; // Default::default()
             let tmp_h = h + 1;
 
@@ -479,6 +499,10 @@ fn put_bilin_scaled_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0i16; MID_STRIDE]; 256 + 1];
 
     for y in 0..tmp_h {
@@ -523,6 +547,10 @@ fn prep_bilin_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     if mx != 0 {
         if my != 0 {
+            // TODO(perf): This buffer is zero-initialized but only needs to be written
+            // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+            // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+            // (only used when ASM is unavailable). See PR #1397 and #1399.
             let mut mid = [[0i16; MID_STRIDE]; 129];
             let tmp_h = h + 1;
 
@@ -581,6 +609,10 @@ fn prep_bilin_scaled_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 2;
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0i16; MID_STRIDE]; 256 + 1];
 
     for y in 0..tmp_h {
@@ -828,6 +860,10 @@ fn warp_affine_8x8_rust<BD: BitDepth>(
     const H: usize = 15;
 
     let intermediate_bits = bd.get_intermediate_bits();
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0; W]; H];
 
     for y in 0..H {
@@ -879,6 +915,10 @@ fn warp_affine_8x8t_rust<BD: BitDepth>(
     const H: usize = 15;
 
     let intermediate_bits = bd.get_intermediate_bits();
+    // TODO(perf): This buffer is zero-initialized but only needs to be written
+    // before read, matching the uninitialized C counterpart in dav1d's mc_tmpl.c.
+    // Could use MaybeUninit to avoid zeroing, but this is a Rust fallback function
+    // (only used when ASM is unavailable). See PR #1397 and #1399.
     let mut mid = [[0; W]; H];
 
     for y in 0..H {
