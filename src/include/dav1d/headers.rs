@@ -875,6 +875,15 @@ impl Rav1dColorRange {
     }
 }
 
+impl From<Rav1dColorRange> for pixel::YUVRange {
+    fn from(value: Rav1dColorRange) -> Self {
+        match value {
+            Rav1dColorRange::Limited => Self::Limited,
+            Rav1dColorRange::Full => Self::Full,
+        }
+    }
+}
+
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
     /// Maximum content light level (MaxCLL) in candela per square metre.

@@ -352,7 +352,7 @@ impl Picture {
         // (in [`Decoder::get_picture`], which calls [`rav1d_get_picture`]).
         // Thus, the decoder no longer writes to this data,
         // and there are no other safe public ways to have a `&mut` to this data.
-        unsafe { guard.unchecked_disjoint_mut() }
+        unsafe { guard.get_unchecked() }
     }
 
     /// Bit depth of the plane data.
