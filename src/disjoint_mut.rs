@@ -211,8 +211,11 @@ impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V>
 impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
     // # Safety
     //
-    // This is no longer checked at runtime to be legitimately disjoint mut.
-    pub unsafe fn unchecked_disjoint_mut(&self) -> &'a V {
+    // The slice of the [`DisjointMut`] this guard protects
+    // must not have overlapping mutable borrows.
+    //
+    // That is, this bypasses the disjoint mut check.
+    pub unsafe fn get_unchecked(&self) -> &'a V {
         self.slice
     }
 }
