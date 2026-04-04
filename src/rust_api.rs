@@ -442,8 +442,8 @@ impl Picture {
     }
 
     /// Sample position for subsampled chroma.
-    pub fn chroma_location(&self) -> Result<pixel::ChromaLocation, Rav1dError> {
-        self.inner.seq_hdr.as_ref().unwrap().chr.try_into()
+    pub fn chroma_location(&self) -> Option<pixel::ChromaLocation> {
+        self.inner.seq_hdr.as_ref().unwrap().chr.try_into().ok()
     }
 }
 
