@@ -18,6 +18,10 @@ impl<T> DefaultValue for Option<T> {
     const DEFAULT: Self = None;
 }
 
+impl<T: DefaultValue, const N: usize> DefaultValue for [T; N] {
+    const DEFAULT: Self = [T::DEFAULT; N];
+}
+
 /// A map from an `enum` key `K` to `V`s.
 /// `N` is the number of possible `enum` values.
 pub struct EnumMap<K, V, const N: usize>
