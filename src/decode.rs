@@ -640,7 +640,7 @@ fn read_pal_indices(
     bw4: c_int,
     bh4: c_int,
 ) {
-    let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| usize::try_from(n).unwrap());
+    let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| n as usize);
     let pli = pl as usize;
 
     let stride = bw4 * 4;
@@ -3058,9 +3058,8 @@ fn decode_b(
     // update contexts
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
-        // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
-        let [by, bx, bh4, bw4] = [t.b.y, t.b.x, bh4, bw4].map(|it| usize::try_from(it).unwrap());
-        let b4_stride = usize::try_from(f.b4_stride).unwrap();
+        let [by, bx, bh4, bw4] = [t.b.y, t.b.x, bh4, bw4].map(|it| it as usize);
+        let b4_stride = f.b4_stride as usize;
         let cur_segmap = &f.cur_segmap.as_ref().unwrap().inner;
         let offset = by * b4_stride + bx;
         CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
