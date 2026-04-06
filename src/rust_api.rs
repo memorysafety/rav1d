@@ -416,12 +416,12 @@ impl Picture {
 
     /// Chromaticity coordinates of the source colour primaries.
     pub fn color_primaries(&self) -> pixel::ColorPrimaries {
-        self.inner.seq_hdr.as_ref().unwrap().pri.try_into().unwrap()
+        self.inner.seq_hdr.as_ref().unwrap().pri.into()
     }
 
     /// Transfer characteristics function.
     pub fn transfer_characteristic(&self) -> pixel::TransferCharacteristic {
-        self.inner.seq_hdr.as_ref().unwrap().trc.try_into().unwrap()
+        self.inner.seq_hdr.as_ref().unwrap().trc.into()
     }
 
     /// Matrix coefficients used in deriving luma and chroma signals from the
@@ -442,8 +442,8 @@ impl Picture {
     }
 
     /// Sample position for subsampled chroma.
-    pub fn chroma_location(&self) -> pixel::ChromaLocation {
-        self.inner.seq_hdr.as_ref().unwrap().chr.try_into().unwrap()
+    pub fn chroma_location(&self) -> Option<pixel::ChromaLocation> {
+        self.inner.seq_hdr.as_ref().unwrap().chr.try_into().ok()
     }
 }
 
