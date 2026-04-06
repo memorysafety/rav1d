@@ -32,6 +32,7 @@ fn handle_pending_pictures(dec: &mut rav1d::rust_api::Decoder, drain: bool) -> s
 fn decode(data: Box<[u8]>) -> std::io::Result<()> {
     let mut settings = rav1d::rust_api::Settings::new();
     settings.set_logger_enabled(false);
+    settings.set_frame_size_limit(256 * 256); // in pixels, 256x256 image max
     let mut dec = rav1d::rust_api::Decoder::with_settings(&settings).expect("failed to create decoder instance");
 
         // Send packet to the decoder
