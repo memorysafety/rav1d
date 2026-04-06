@@ -14,7 +14,7 @@ fuzz_target!(|data: &[u8]| {
 fn handle_pending_pictures(dec: &mut rav1d::rust_api::Decoder, drain: bool) -> std::io::Result<()> {
     loop {
         match dec.get_picture() {
-            Ok(p) => println!("{:?}", p),
+            Ok(p) => {std::hint::black_box(p);},
             // Need to send more data to the decoder before it can decode new pictures
             Err(Rav1dError::TryAgain) => return Ok(()),
             Err(e) => {
