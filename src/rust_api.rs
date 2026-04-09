@@ -344,7 +344,7 @@ impl Picture {
     }
 
     /// Plane data of the `component` for the decoded frame.
-    pub fn plane_data<'a>(&'a self, component: PlanarImageComponent) -> &'a [u8] {
+    pub fn plane<'a>(&'a self, component: PlanarImageComponent) -> &'a [u8] {
         let data = &self.inner.data.as_ref().unwrap().data;
         let component = &data[component.as_index()];
         let guard = component.slice::<BitDepth8, _>(..);
