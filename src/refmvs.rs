@@ -21,11 +21,13 @@ use crate::intra_edge::EdgeFlags;
 use crate::levels::{BlockSize, Mv, UnalignedMv};
 use crate::wrap_fn_ptr::wrap_fn_ptr;
 
+const INVALID_REF2CUR: i8 = -32;
+
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
 pub struct RefMvsTemporalBlock {
     pub mv: UnalignedMv,
-    pub r#ref: i8,
+    pub r#ref: u8,
 }
 const _: () = assert!(mem::size_of::<RefMvsTemporalBlock>() == 5);
 
@@ -107,8 +109,8 @@ pub(crate) struct AsmRefMvsFrame<'a> {
     pub mfmv_sign: [u8; 7],
     pub pocdiff: [i8; 7],
     pub mfmv_ref: [u8; 3],
-    pub mfmv_ref2cur: [i32; 3],
-    pub mfmv_ref2ref: [[i32; 7]; 3],
+    pub mfmv_ref2cur: [i8; 3],
+    pub mfmv_ref2ref: [[u8; 7]; 3],
     pub n_mfmvs: i32,
     pub n_blocks: i32,
     pub rp: *mut RefMvsTemporalBlock,
@@ -134,8 +136,8 @@ pub struct RefMvsFrame {
     pub mfmv_sign: [u8; 7],
     pub pocdiff: [i8; 7],
     pub mfmv_ref: [u8; 3],
-    pub mfmv_ref2cur: [i32; 3],
-    pub mfmv_ref2ref: [[i32; 7]; 3],
+    pub mfmv_ref2cur: [i8; 3],
+    pub mfmv_ref2ref: [[u8; 7]; 3],
     pub n_mfmvs: i32,
     pub n_blocks: u32,
     // TODO: The C code uses a single buffer to store `rp_proj` and `r` to minimize
@@ -1451,7 +1453,7 @@ fn load_tmvs_rust(
     }
     for n in 0..rf.n_mfmvs {
         let ref2cur = rf.mfmv_ref2cur[n as usize];
-        if ref2cur == i32::MIN {
+        if ref2cur == INVALID_REF2CUR {
             continue;
         }
         let r#ref = rf.mfmv_ref[n as usize];
@@ -1474,7 +1476,7 @@ fn load_tmvs_rust(
                     x += 1;
                     continue;
                 }
-                let offset = mv_projection(rb.mv.into_aligned(), ref2cur, ref2ref);
+                let offset = mv_projection(rb.mv.into_aligned(), ref2cur.into(), ref2ref.into());
                 let mut pos_x =
                     x + apply_sign((offset.x as i32).abs() >> 6, offset.x as i32 ^ ref_sign);
                 let pos_y =
@@ -1490,7 +1492,7 @@ fn load_tmvs_rust(
                                 rp_proj_offset + (pos as isize + pos_x as isize) as usize,
                             ) = RefMvsTemporalBlock {
                                 mv: rb.mv,
-                                r#ref: ref2ref as i8,
+                                r#ref: ref2ref,
                             };
                         }
                         x += 1;
@@ -1578,7 +1580,7 @@ fn save_tmvs_rust(
                 {
                     Some(RefMvsTemporalBlock {
                         mv: mv.into_unaligned(),
-                        r#ref,
+                        r#ref: r#ref as u8,
                     })
                 } else {
                     None
@@ -1696,14 +1698,18 @@ pub(crate) fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset as i32,
             );
             if diff1.abs() > 31 {
-                rf.mfmv_ref2cur[n] = i32::MIN;
+                rf.mfmv_ref2cur[n] = INVALID_REF2CUR;
             } else {
-                rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 { -diff1 } else { diff1 };
+                rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 {
+                    -diff1 as i8
+                } else {
+                    diff1 as i8
+                };
                 for m in 0..7 {
                     let rrpoc = ref_ref_poc[rf.mfmv_ref[n] as usize][m];
                     let diff2 = get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as i32, rrpoc as i32);
                     // unsigned comparison also catches the < 0 case
-                    rf.mfmv_ref2ref[n][m] = if diff2 as u32 > 31 { 0 } else { diff2 };
+                    rf.mfmv_ref2ref[n][m] = if diff2 as u32 > 31 { 0 } else { diff2 as u8 };
                 }
             }
         }
