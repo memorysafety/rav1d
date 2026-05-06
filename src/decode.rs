@@ -2,7 +2,6 @@ use std::ffi::{c_int, c_uint};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{array, cmp, iter, mem};
 
-use libc::ptrdiff_t;
 use strum::EnumCount;
 
 use crate::align::{Align16, AlignedVec64};
@@ -53,6 +52,7 @@ use crate::lf_mask::{
     rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
     Av1RestorationUnit,
 };
+use crate::libc_compat::ptrdiff_t;
 use crate::log::Rav1dLog as _;
 use crate::lr_apply::LrRestorePlanes;
 use crate::msac::{

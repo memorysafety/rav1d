@@ -3,7 +3,6 @@
 use std::cmp;
 use std::ffi::c_int;
 
-use libc::ptrdiff_t;
 use strum::FromRepr;
 
 use crate::align::{Align16, AlignedVec2};
@@ -22,6 +21,7 @@ use crate::include::dav1d::picture::{
 };
 use crate::internal::Rav1dFrameData;
 use crate::lf_mask::Av1FilterLUT;
+use crate::libc_compat::ptrdiff_t;
 use crate::strided::Strided as _;
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
@@ -113,20 +113,20 @@ fn loop_filter<BD: BitDepth>(
             *dst(stride_index) = bd.iclip_pixel(pixel);
         };
 
-        let mut p6 = 0;
-        let mut p5 = 0;
-        let mut p4 = 0;
-        let mut p3 = 0;
-        let mut p2 = 0;
+        let mut p6: i32 = 0;
+        let mut p5: i32 = 0;
+        let mut p4: i32 = 0;
+        let mut p3: i32 = 0;
+        let mut p2: i32 = 0;
         let p1 = get_dst(-2);
         let p0 = get_dst(-1);
         let q0 = get_dst(0);
         let q1 = get_dst(1);
-        let mut q2 = 0;
-        let mut q3 = 0;
-        let mut q4 = 0;
-        let mut q5 = 0;
-        let mut q6 = 0;
+        let mut q2: i32 = 0;
+        let mut q3: i32 = 0;
+        let mut q4: i32 = 0;
+        let mut q5: i32 = 0;
+        let mut q6: i32 = 0;
         let mut flat8out = false;
         let mut flat8in = false;
 
