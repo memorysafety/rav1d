@@ -105,6 +105,7 @@ mod ffi_safe;
 mod fg_apply;
 mod filmgrain;
 mod getbits;
+pub(crate) mod libc_compat;
 pub(crate) mod pic_or_buf;
 pub(crate) mod pixels;
 pub(crate) mod relaxed_atomic;
