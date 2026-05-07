@@ -2449,15 +2449,13 @@ fn parse_obus(
                 .ok_or(Rav1dError::InvalidArgument)?
                 .frame_type
             {
-                Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
-                    if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
-                        return Ok(skip(state));
-                    }
+                Rav1dFrameType::Inter | Rav1dFrameType::Switch
+                    if c.decode_frame_type > Rav1dDecodeFrameType::Reference =>
+                {
+                    return Ok(skip(state));
                 }
-                Rav1dFrameType::Intra => {
-                    if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
-                        return Ok(skip(state));
-                    }
+                Rav1dFrameType::Intra if c.decode_frame_type > Rav1dDecodeFrameType::Intra => {
+                    return Ok(skip(state));
                 }
                 _ => {}
             }
@@ -2575,21 +2573,19 @@ fn parse_obus(
             state.frame_hdr = None;
         } else if state.n_tiles == frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int {
             match frame_hdr.frame_type {
-                Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
+                Rav1dFrameType::Inter | Rav1dFrameType::Switch
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
-                            && frame_hdr.refresh_frame_flags == 0
-                    {
-                        return Ok(skip(state));
-                    }
+                            && frame_hdr.refresh_frame_flags == 0 =>
+                {
+                    return Ok(skip(state));
                 }
-                Rav1dFrameType::Intra => {
+                Rav1dFrameType::Intra
                     if c.decode_frame_type > Rav1dDecodeFrameType::Intra
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
-                            && frame_hdr.refresh_frame_flags == 0
-                    {
-                        return Ok(skip(state));
-                    }
+                            && frame_hdr.refresh_frame_flags == 0 =>
+                {
+                    return Ok(skip(state));
                 }
                 _ => {}
             }
