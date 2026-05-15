@@ -47,12 +47,21 @@ fn put_rust<BD: BitDepth>(
     w: usize,
     h: usize,
 ) {
+    let dptr = dst.data.as_strided_mut_ptr::<BD>() as *mut u8;
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let d_stride = dst.stride();
+    let s_stride = src.stride();
+    let d_off = dst.offset * mem::size_of::<BD::Pixel>();
+    let s_off = src.offset * mem::size_of::<BD::Pixel>();
+    let bw = w * mem::size_of::<BD::Pixel>();
     for y in 0..h {
-        let src = src + y as isize * src.pixel_stride::<BD>();
-        let dst = dst + y as isize * dst.pixel_stride::<BD>();
-        let src = &*src.slice::<BD>(w);
-        let dst = &mut *dst.slice_mut::<BD>(w);
-        BD::pixel_copy(dst, src, w);
+        unsafe {
+            ptr::copy_nonoverlapping(
+                sptr.offset(s_off as isize).offset(y as isize * s_stride),
+                dptr.offset(d_off as isize).offset(y as isize * d_stride),
+                bw,
+            );
+        }
     }
 }
 
@@ -65,12 +74,14 @@ fn prep_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let s_stride = src.stride();
+    let s_off = src.offset * mem::size_of::<BD::Pixel>();
     for y in 0..h {
-        let src = src + y as isize * src.pixel_stride::<BD>();
-        let src = &*src.slice::<BD>(w);
+        let row = unsafe { slice::from_raw_parts(sptr.offset(s_off as isize).offset(y as isize * s_stride) as *const BD::Pixel, w) };
         let tmp = &mut tmp[y * w..][..w];
         for x in 0..w {
-            tmp[x] = BD::sub_prep_bias(src[x].as_::<i32>() << intermediate_bits)
+            tmp[x] = BD::sub_prep_bias((row[x].as_::<i32>()) << intermediate_bits);
         }
     }
 }
@@ -120,10 +131,38 @@ fn filter_8tap<BD: BitDepth>(
     f: &[i8; 8],
     stride: isize,
 ) -> FilterResult {
+    let base = src.data.as_strided_ptr::<BD>() as *const u8;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let base_off = (src.offset as isize + x as isize) * pixel_bytes;
+    let row_stride = stride * pixel_bytes;
     let pixel = (0..f.len())
         .map(|y| {
-            let px = *(src + x + (y as isize - 3) * stride).index::<BD>();
-            f[y] as i32 * px.to::<i32>()
+            unsafe {
+                let ptr = base.offset(base_off + (y as isize - 3) * row_stride);
+                let px = *(ptr as *const BD::Pixel);
+                f[y] as i32 * px.to::<i32>()
+            }
+        })
+        .sum();
+    FilterResult { pixel }
+}
+
+/// Raw-pointer version: src points to the first byte of the first tap row.
+fn filter_8tap_raw<BD: BitDepth>(
+    srow: *const u8,
+    x: usize,
+    f: &[i8; 8],
+    stride: isize,
+) -> FilterResult {
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let xoff = x as isize * pixel_bytes;
+    let pixel = (0..f.len())
+        .map(|y| {
+            unsafe {
+                let ptr = srow.offset(xoff + (y as isize - 3) * stride);
+                let px = *(ptr as *const BD::Pixel);
+                f[y] as i32 * px.to::<i32>()
+            }
         })
         .sum();
     FilterResult { pixel }
@@ -156,36 +195,43 @@ fn put_8tap_rust<BD: BitDepth>(
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
 
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let dptr = dst.data.as_strided_mut_ptr::<BD>() as *mut u8;
+    let d_stride = dst.stride();
+    let d_off = dst.offset * pixel_bytes as usize;
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let s_stride = src.stride();
+    let s_off = src.offset * pixel_bytes as usize;
+
+    unsafe {
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
-            let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
+            let mut mid = [[0i16; MID_STRIDE]; 135];
 
             for y in 0..tmp_h {
-                let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
+                let srow = sptr.offset(s_off as isize + (y as isize - 3) * s_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
+                    mid[y][x] = filter_8tap_raw::<BD>(srow, x, fh, pixel_bytes)
                         .rnd(6 - intermediate_bits)
                         .get();
                 }
             }
 
             for y in 0..h {
-                let dst = dst + y as isize * dst.pixel_stride::<BD>();
-                let dst = &mut *dst.slice_mut::<BD>(w);
+                let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
                 for x in 0..w {
-                    dst[x] = filter_8tap_mid(&mid[y..], x, fv)
+                    *drow.add(x) = filter_8tap_mid(&mid[y..], x, fv)
                         .rnd(6 + intermediate_bits)
                         .clip(bd);
                 }
             }
         } else {
             for y in 0..h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
-                let dst = dst + y as isize * dst.pixel_stride::<BD>();
-                let dst = &mut *dst.slice_mut::<BD>(w);
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+                let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
                 for x in 0..w {
-                    dst[x] = filter_8tap::<BD>(src, x, fh, 1)
+                    *drow.add(x) = filter_8tap_raw::<BD>(srow, x, fh, pixel_bytes)
                         .rnd2(6, intermediate_rnd)
                         .clip(bd);
                 }
@@ -193,16 +239,22 @@ fn put_8tap_rust<BD: BitDepth>(
         }
     } else if let Some(fv) = fv {
         for y in 0..h {
-            let src = src + y as isize * src.pixel_stride::<BD>();
-            let dst = dst + y as isize * dst.pixel_stride::<BD>();
-            let dst = &mut *dst.slice_mut::<BD>(w);
+            let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+            let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
             for x in 0..w {
-                dst[x] = filter_8tap::<BD>(src, x, fv, src.pixel_stride::<BD>())
+                *drow.add(x) = filter_8tap_raw::<BD>(srow, x, fv, s_stride)
                     .rnd(6)
                     .clip(bd);
             }
         }
     } else {
+        // Cannot call put_rust inside this unsafe block because put_rust uses safe WithOffset types.
+        // Fall through to the safe path below.
+    }
+    } // end unsafe
+
+    // Separate safe path for the no-filter case
+    if fh.is_none() && fv.is_none() {
         put_rust::<BD>(dst, src, w, h);
     }
 }
