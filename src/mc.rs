@@ -333,34 +333,40 @@ fn prep_8tap_rust<BD: BitDepth>(
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
 
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let s_stride = src.stride();
+    let s_off = src.offset * pixel_bytes as usize;
+
+    unsafe {
     if let Some(fh) = fh {
         if let Some(fv) = fv {
             let tmp_h = h + 7;
-            let mut mid = [[0i16; MID_STRIDE]; 135]; // Default::default()
+            let mut mid = [[0i16; MID_STRIDE]; 135];
 
             for y in 0..tmp_h {
-                let src = src + (y as isize - 3) * src.pixel_stride::<BD>();
+                let srow = sptr.offset(s_off as isize + (y as isize - 3) * s_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_8tap::<BD>(src, x, fh, 1)
+                    mid[y][x] = filter_8tap_raw::<BD>(srow, x, fh, pixel_bytes)
                         .rnd(6 - intermediate_bits)
                         .get();
                 }
             }
 
             for y in 0..h {
-                let tmp = &mut tmp[y * w..][..w];
+                let trow = &mut tmp[y * w..][..w];
                 for x in 0..w {
-                    tmp[x] = filter_8tap_mid(&mid[y..], x, fv)
+                    trow[x] = filter_8tap_mid(&mid[y..], x, fv)
                         .rnd(6)
                         .sub_prep_bias::<BD>();
                 }
             }
         } else {
             for y in 0..h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
-                let tmp = &mut tmp[y * w..][..w];
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+                let trow = &mut tmp[y * w..][..w];
                 for x in 0..w {
-                    tmp[x] = filter_8tap::<BD>(src, x, fh, 1)
+                    trow[x] = filter_8tap_raw::<BD>(srow, x, fh, pixel_bytes)
                         .rnd(6 - intermediate_bits)
                         .sub_prep_bias::<BD>();
                 }
@@ -368,17 +374,22 @@ fn prep_8tap_rust<BD: BitDepth>(
         }
     } else if let Some(fv) = fv {
         for y in 0..h {
-            let src = src + y as isize * src.pixel_stride::<BD>();
-            let tmp = &mut tmp[y * w..][..w];
+            let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+            let trow = &mut tmp[y * w..][..w];
             for x in 0..w {
-                tmp[x] = filter_8tap::<BD>(src, x, fv, src.pixel_stride::<BD>())
+                trow[x] = filter_8tap_raw::<BD>(srow, x, fv, s_stride)
                     .rnd(6 - intermediate_bits)
                     .sub_prep_bias::<BD>()
             }
         }
     } else {
+        // no filter, handled below
+    }
+    } // end unsafe
+
+    if fh.is_none() && fv.is_none() {
         prep_rust(tmp, src, w, h, bd);
-    };
+    }
 }
 
 #[inline(never)]
