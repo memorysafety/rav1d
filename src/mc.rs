@@ -459,11 +459,36 @@ fn filter_bilin<BD: BitDepth>(
     mxy: usize,
     stride: isize,
 ) -> FilterResult {
-    let src = |y: isize, x: usize| -> i32 { (*(src + x + y * stride).index::<BD>()).to::<i32>() };
-    let x0 = src(0, x);
-    let x1 = src(1, x);
-    let pixel = 16 * x0 + mxy as i32 * (x1 - x0);
-    FilterResult { pixel }
+    let base = src.data.as_strided_ptr::<BD>() as *const u8;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let xoff = (src.offset as isize + x as isize) * pixel_bytes;
+    let step = stride * pixel_bytes;
+    unsafe {
+        let p0 = *(base.offset(xoff) as *const BD::Pixel);
+        let p1 = *(base.offset(xoff + step) as *const BD::Pixel);
+        let x0 = p0.to::<i32>();
+        let x1 = p1.to::<i32>();
+        let pixel = 16 * x0 + mxy as i32 * (x1 - x0);
+        FilterResult { pixel }
+    }
+}
+
+fn filter_bilin_raw<BD: BitDepth>(
+    base: *const u8,
+    x: usize,
+    mxy: usize,
+    stride: isize,
+) -> FilterResult {
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let xoff = x as isize * pixel_bytes;
+    unsafe {
+        let p0 = *(base.offset(xoff) as *const BD::Pixel);
+        let p1 = *(base.offset(xoff + stride) as *const BD::Pixel);
+        let x0 = p0.to::<i32>();
+        let x1 = p1.to::<i32>();
+        let pixel = 16 * x0 + mxy as i32 * (x1 - x0);
+        FilterResult { pixel }
+    }
 }
 
 fn put_bilin_rust<BD: BitDepth>(
@@ -478,35 +503,42 @@ fn put_bilin_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
 
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let dptr = dst.data.as_strided_mut_ptr::<BD>() as *mut u8;
+    let d_stride = dst.stride();
+    let d_off = dst.offset * pixel_bytes as usize;
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let s_stride = src.stride();
+    let s_off = src.offset * pixel_bytes as usize;
+
+    unsafe {
     if mx != 0 {
         if my != 0 {
-            let mut mid = [[0i16; MID_STRIDE]; 129]; // Default::default()
+            let mut mid = [[0i16; MID_STRIDE]; 129];
             let tmp_h = h + 1;
 
             for y in 0..tmp_h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_bilin::<BD>(src, x, mx, 1)
+                    mid[y][x] = filter_bilin_raw::<BD>(srow, x, mx, pixel_bytes)
                         .rnd(4 - intermediate_bits)
                         .get();
                 }
             }
             for y in 0..h {
-                let dst = dst + y as isize * dst.pixel_stride::<BD>();
-                let dst = &mut *dst.slice_mut::<BD>(w);
+                let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
                 for x in 0..w {
-                    dst[x] = filter_bilin_mid(&mid[y..], x, my)
+                    *drow.add(x) = filter_bilin_mid(&mid[y..], x, my)
                         .rnd(4 + intermediate_bits)
                         .clip(bd)
                 }
             }
         } else {
             for y in 0..h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
-                let dst = dst + y as isize * dst.pixel_stride::<BD>();
-                let dst = &mut *dst.slice_mut::<BD>(w);
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+                let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
                 for x in 0..w {
-                    dst[x] = filter_bilin::<BD>(src, x, mx, 1)
+                    *drow.add(x) = filter_bilin_raw::<BD>(srow, x, mx, pixel_bytes)
                         .rnd(4 - intermediate_bits)
                         .apply(|px| (px + intermediate_rnd) >> intermediate_bits)
                         .clip(bd);
@@ -515,18 +547,22 @@ fn put_bilin_rust<BD: BitDepth>(
         }
     } else if my != 0 {
         for y in 0..h {
-            let src = src + y as isize * src.pixel_stride::<BD>();
-            let dst = dst + y as isize * dst.pixel_stride::<BD>();
-            let dst = &mut *dst.slice_mut::<BD>(w);
+            let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+            let drow = dptr.offset(d_off as isize + y as isize * d_stride) as *mut BD::Pixel;
             for x in 0..w {
-                dst[x] = filter_bilin::<BD>(src, x, my, src.pixel_stride::<BD>())
+                *drow.add(x) = filter_bilin_raw::<BD>(srow, x, my, s_stride)
                     .rnd(4)
                     .clip(bd)
             }
         }
     } else {
+        // handled below
+    }
+    } // end unsafe
+
+    if mx == 0 && my == 0 {
         put_rust::<BD>(dst, src, w, h);
-    };
+    }
 }
 
 fn put_bilin_scaled_rust<BD: BitDepth>(
@@ -584,33 +620,39 @@ fn prep_bilin_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let sptr = src.data.as_strided_ptr::<BD>() as *const u8;
+    let s_stride = src.stride();
+    let s_off = src.offset * pixel_bytes as usize;
+
+    unsafe {
     if mx != 0 {
         if my != 0 {
             let mut mid = [[0i16; MID_STRIDE]; 129];
             let tmp_h = h + 1;
 
             for y in 0..tmp_h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
                 for x in 0..w {
-                    mid[y][x] = filter_bilin::<BD>(src, x, mx, 1)
+                    mid[y][x] = filter_bilin_raw::<BD>(srow, x, mx, pixel_bytes)
                         .rnd(4 - intermediate_bits)
                         .get();
                 }
             }
             for y in 0..h {
-                let tmp = &mut tmp[y * w..][..w];
+                let trow = &mut tmp[y * w..][..w];
                 for x in 0..w {
-                    tmp[x] = filter_bilin_mid(&mid[y..], x, my)
+                    trow[x] = filter_bilin_mid(&mid[y..], x, my)
                         .rnd(4)
                         .sub_prep_bias::<BD>()
                 }
             }
         } else {
             for y in 0..h {
-                let src = src + y as isize * src.pixel_stride::<BD>();
-                let tmp = &mut tmp[y * w..][..w];
+                let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+                let trow = &mut tmp[y * w..][..w];
                 for x in 0..w {
-                    tmp[x] = filter_bilin::<BD>(src, x, mx, 1)
+                    trow[x] = filter_bilin_raw::<BD>(srow, x, mx, pixel_bytes)
                         .rnd(4 - intermediate_bits)
                         .sub_prep_bias::<BD>()
                 }
@@ -618,17 +660,22 @@ fn prep_bilin_rust<BD: BitDepth>(
         }
     } else if my != 0 {
         for y in 0..h {
-            let src = src + y as isize * src.pixel_stride::<BD>();
-            let tmp = &mut tmp[y * w..][..w];
+            let srow = sptr.offset(s_off as isize + y as isize * s_stride);
+            let trow = &mut tmp[y * w..][..w];
             for x in 0..w {
-                tmp[x] = filter_bilin::<BD>(src, x, my, src.pixel_stride::<BD>())
+                trow[x] = filter_bilin_raw::<BD>(srow, x, my, s_stride)
                     .rnd(4 - intermediate_bits)
                     .sub_prep_bias::<BD>()
             }
         }
     } else {
+        // handled below
+    }
+    } // end unsafe
+
+    if mx == 0 && my == 0 {
         prep_rust(tmp, src, w, h, bd);
-    };
+    }
 }
 
 fn prep_bilin_scaled_rust<BD: BitDepth>(
