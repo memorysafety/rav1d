@@ -2,6 +2,7 @@
 
 use std::cmp;
 use std::ffi::c_int;
+use std::mem;
 
 use libc::ptrdiff_t;
 use strum::FromRepr;
@@ -9,7 +10,6 @@ use strum::FromRepr;
 use crate::align::{Align16, AlignedVec2};
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
-use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
@@ -17,9 +17,7 @@ use crate::ffi_safe::FFISafe;
 use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel};
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::picture::{
-    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
-};
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::internal::Rav1dFrameData;
 use crate::lf_mask::Av1FilterLUT;
 use crate::strided::Strided as _;
@@ -35,8 +33,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
 ) -> ());
 
 impl loopfilter_sb::Fn {
@@ -58,12 +54,10 @@ impl loopfilter_sb::Fn {
         let lut = &f.lf.lim_lut;
         let w = w as c_int;
         let bd = f.bitdepth_max;
-        let dst = dst.into_ffi_safe();
-        let lvl = lvl.into_ffi_safe();
         // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
-                dst_ptr, stride, mask, lvl_ptr, b4_stride, lut, w, bd, dst, lvl,
+                dst_ptr, stride, mask, lvl_ptr, b4_stride, lut, w, bd,
             )
         }
     }
@@ -89,28 +83,29 @@ pub struct Rav1dLoopFilterDSPContext {
 
 #[inline(never)]
 fn loop_filter<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut BD::Pixel,
     e: u8,
     i: u8,
     h: u8,
-    stridea: ptrdiff_t,
-    strideb: ptrdiff_t,
+    stridea: isize,
+    strideb: isize,
     wd: c_int,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let [f, e, i, h] = [1, e, i, h].map(|n| (n as i32) << bitdepth_min_8);
 
-    for idx in 0..4 {
-        let dst = dst + (idx * stridea);
-        let dst = |stride_index: isize| (dst + (strideb * stride_index)).index_mut::<BD>();
+    for idx in 0..4_isize {
+        let row = unsafe { dst_ptr.offset(idx * stridea) };
 
-        let get_dst = |stride_index| (*dst(stride_index)).as_::<i32>();
-        let set_dst = |stride_index, pixel: i32| {
-            *dst(stride_index) = pixel.as_::<BD::Pixel>();
+        let get_dst = |si: isize| -> i32 {
+            unsafe { (*row.offset(strideb * si)).as_::<i32>() }
         };
-        let set_dst_clipped = |stride_index, pixel: i32| {
-            *dst(stride_index) = bd.iclip_pixel(pixel);
+        let set_dst = |si: isize, pixel: i32| {
+            unsafe { *row.offset(strideb * si) = pixel.as_::<BD::Pixel>() };
+        };
+        let set_dst_clipped = |si: isize, pixel: i32| {
+            unsafe { *row.offset(strideb * si) = bd.iclip_pixel(pixel) };
         };
 
         let mut p6 = 0;
@@ -289,9 +284,10 @@ enum YUV {
 }
 
 fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
-    mut dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     vmask: &[u32; 3],
-    mut lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
+    mut lvl_ptr: *const u8,
     b4_stride: usize,
     lut: &Align16<Av1FilterLUT>,
     _wh: c_int,
@@ -300,32 +296,33 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
     let hv = HV::from_repr(HV).unwrap();
     let yuv = YUV::from_repr(YUV).unwrap();
 
-    let stride = dst.pixel_stride::<BD>();
-    let (stridea, strideb) = match hv {
-        HV::H => (stride, 1),
-        HV::V => (1, stride),
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
+    let (stridea, strideb): (isize, isize) = match hv {
+        HV::H => (px_stride, 1),
+        HV::V => (1, px_stride),
     };
-    let (b4_stridea, b4_strideb) = match hv {
-        HV::H => (b4_stride, 1),
-        HV::V => (1, b4_stride),
+    let (b4_stridea, b4_strideb): (isize, isize) = match hv {
+        HV::H => (b4_stride as isize, 1),
+        HV::V => (1, b4_stride as isize),
     };
 
     let vm = match yuv {
         YUV::Y => vmask[0] | vmask[1] | vmask[2],
         YUV::UV => vmask[0] | vmask[1],
     };
+    let mut dst = dst_ptr as *mut BD::Pixel;
     let mut xy = 1u32;
     while vm & !xy.wrapping_sub(1) != 0 {
         'block: {
             if vm & xy == 0 {
                 break 'block;
             }
-            let l = *lvl.data.index(lvl.offset);
+            let l = unsafe { *lvl_ptr };
             let l = if l != 0 {
                 l
             } else {
-                let lvl = lvl - 4 * b4_strideb;
-                *lvl.data.index(lvl.offset)
+                unsafe { *lvl_ptr.offset(-4 * b4_strideb) }
             };
             if l == 0 {
                 break 'block;
@@ -347,11 +344,11 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
                     4 + 2 * idx
                 }
             };
-            loop_filter(dst, e, i, h, stridea, strideb, idx, bd);
+            loop_filter::<BD>(dst, e, i, h, stridea, strideb, idx, bd);
         }
         xy <<= 1;
-        dst += 4 * stridea;
-        lvl += 4 * b4_stridea;
+        dst = unsafe { dst.offset(4 * stridea) };
+        lvl_ptr = unsafe { lvl_ptr.offset(4 * b4_stridea) };
     }
 }
 
@@ -360,24 +357,20 @@ fn loop_filter_sb128_rust<BD: BitDepth, const HV: usize, const YUV: usize>(
 /// Must be called by [`loopfilter_sb::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, const YUV: usize>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    stride: ptrdiff_t,
     vmask: &[u32; 3],
-    _lvl_ptr: *const [u8; 4],
+    lvl_ptr: *const [u8; 4],
     b4_stride: isize,
     lut: &Align16<Av1FilterLUT>,
     wh: c_int,
     bitdepth_max: c_int,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
-    let lvl = unsafe { FFISafe::from_with_offset(lvl) };
-    let b4_stride = b4_stride as usize;
     let bd = BD::from_c(bitdepth_max);
-    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(dst, vmask, lvl, b4_stride, lut, wh, bd)
+    let lvl_ptr = lvl_ptr as *const u8;
+    loop_filter_sb128_rust::<BD, { HV }, { YUV }>(
+        dst_ptr, stride, vmask, lvl_ptr, b4_stride as usize, lut, wh, bd,
+    )
 }
 
 impl Rav1dLoopFilterDSPContext {
