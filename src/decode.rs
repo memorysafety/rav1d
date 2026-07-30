@@ -4898,7 +4898,15 @@ pub fn rav1d_submit_frame(c: &Rav1dContext, state: &mut Rav1dState) -> Rav1dResu
     ) {
         fc.task_thread.error.store(1, Ordering::Relaxed);
         let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
-        if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
+        // `on_error` clears `f.frame_hdr` itself a few lines below, so it must
+        // tolerate being reached when the header is already gone. It can be:
+        // in the `c.fc.len() == 1` branch of `rav1d_submit_frame`,
+        // `rav1d_decode_frame` runs inline and tears the frame data down on
+        // failure, and `rav1d_submit_frame` then calls this on the same data.
+        // Unwrapping there aborts the process rather than panicking, because
+        // every entry point into this crate is `extern "C"` and a panic cannot
+        // unwind across it.
+        if f.frame_hdr.as_ref().is_some_and(|hdr| hdr.refresh_context != 0) {
             let _ = mem::take(&mut f.out_cdf);
         }
         for i in 0..7 {
