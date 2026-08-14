@@ -1939,7 +1939,7 @@ fn parse_frame_hdr(
         size = parse_frame_size(
             state,
             seqhdr,
-            Some(&refidx).filter(|_| use_ref),
+            use_ref.then_some(&refidx),
             frame_size_override,
             gb,
         )?;
