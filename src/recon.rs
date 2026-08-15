@@ -28,10 +28,10 @@ use crate::internal::{
 use crate::intra_edge::EdgeFlags;
 use crate::ipred_prepare::{rav1d_prepare_intra_edges, sm_flag, sm_uv_flag};
 use crate::levels::{
-    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterType, Filter2d,
-    InterIntraPredMode, InterIntraType, IntraPredMode, MotionMode, Mv, TxClass, TxfmSize, TxfmType,
-    CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, IDTX, SMOOTH_PRED,
-    WHT_WHT,
+    Av1Block, Av1BlockInter, Av1BlockIntra, Av1BlockIntraInter, BlockSize, CompInterPredMode,
+    CompInterType, Filter2d, InterIntraPredMode, InterIntraType, InterPredMode, IntraPredMode,
+    MotionMode, Mv, TxClass, TxfmSize, TxfmType, CFL_PRED, DCT_DCT, DC_PRED, FILTER_PRED, IDTX,
+    SMOOTH_PRED, WHT_WHT,
 };
 use crate::lf_apply::{rav1d_copy_lpf, rav1d_loopfilter_sbrow_cols, rav1d_loopfilter_sbrow_rows};
 use crate::lr_apply::rav1d_lr_sbrow;
@@ -1531,7 +1531,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
 
-    if b.skip != 0 {
+    if b.skip {
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
             [bh4 as usize, bw4 as usize],
@@ -1561,7 +1561,7 @@ pub(crate) fn rav1d_read_coef_blocks<BD: BitDepth>(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
-    assert!(b.skip == 0);
+    assert!(!b.skip);
     let uv_t_dim = &DAV1D_TXFM_DIMENSIONS[b.uvtx as usize];
     let t_dim = &DAV1D_TXFM_DIMENSIONS[match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
@@ -2328,7 +2328,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                     }
 
-                    if b.skip == 0 {
+                    if !b.skip {
                         let mut cf_guard;
                         let cf;
                         let eob;
@@ -2701,7 +2701,7 @@ pub(crate) fn rav1d_recon_b_intra<BD: BitDepth>(
                             }
                         }
 
-                        if b.skip == 0 {
+                        if !b.skip {
                             let mut txtp = DCT_DCT;
                             let eob;
                             let mut cf_guard;
@@ -2911,10 +2911,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         let seg_mask = &mut scratch_inter.seg_mask;
 
         for i in 0..2 {
-            let refp = &f.refp[inter.r#ref[i] as usize];
+            let refp = &f.refp[inter.r#ref[i].get() as usize];
 
-            if inter.inter_mode == GLOBALMV_GLOBALMV
-                && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+            if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
+                && f.gmv_warp_allowed[inter.r#ref[i].get() as usize] != 0
             {
                 warp_affine::<BD>(
                     f,
@@ -2927,7 +2927,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     b_dim,
                     0,
                     refp,
-                    &frame_hdr.gmv[inter.r#ref[i] as usize],
+                    &frame_hdr.gmv[inter.r#ref[i].get() as usize],
                 )?;
             } else {
                 mc::<BD>(
@@ -2945,7 +2945,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     0,
                     inter.nd.one_d.mv[i],
                     refp,
-                    inter.r#ref[i] as usize,
+                    inter.r#ref[i].get() as usize,
                     filter_2d,
                 )?;
             }
@@ -2960,8 +2960,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     .call::<BD>(y_dst, &tmp[0], &tmp[1], bw4 * 4, bh4 * 4, bd);
             }
             CompInterType::WeightedAvg => {
-                jnt_weight =
-                    f.jnt_weights[inter.r#ref[0] as usize][inter.r#ref[1] as usize] as c_int;
+                jnt_weight = f.jnt_weights[inter.r#ref[0].get() as usize]
+                    [inter.r#ref[1].get() as usize] as c_int;
                 f.dsp.mc.w_avg.call::<BD>(
                     y_dst,
                     &tmp[0],
@@ -2986,7 +2986,8 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 mask = &seg_mask[..];
             }
             CompInterType::Wedge => {
-                mask = DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize];
+                mask =
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx.get() as usize];
                 f.dsp.mc.mask.call::<BD>(
                     y_dst,
                     &tmp[inter.nd.one_d.mask_sign() as usize],
@@ -2999,7 +3000,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 if has_chroma {
                     mask = DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx]
                         [inter.nd.one_d.mask_sign() as usize]
-                        [inter.nd.one_d.wedge_idx as usize];
+                        [inter.nd.one_d.wedge_idx.get() as usize];
                 }
             }
         }
@@ -3008,10 +3009,10 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
         if has_chroma {
             for pl in 0..2 {
                 for i in 0..2 {
-                    let refp = &f.refp[inter.r#ref[i] as usize];
-                    if inter.inter_mode == GLOBALMV_GLOBALMV
+                    let refp = &f.refp[inter.r#ref[i].get() as usize];
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                         && cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
+                        && f.gmv_warp_allowed[inter.r#ref[i].get() as usize] != 0
                     {
                         warp_affine::<BD>(
                             f,
@@ -3024,7 +3025,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             b_dim,
                             1 + pl,
                             refp,
-                            &frame_hdr.gmv[inter.r#ref[i] as usize],
+                            &frame_hdr.gmv[inter.r#ref[i].get() as usize],
                         )?;
                     } else {
                         mc::<BD>(
@@ -3042,7 +3043,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             1 + pl,
                             inter.nd.one_d.mv[i],
                             refp,
-                            inter.r#ref[i] as usize,
+                            inter.r#ref[i].get() as usize,
                             filter_2d,
                         )?;
                     }
@@ -3086,11 +3087,12 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else {
-        let refp = &f.refp[inter.r#ref[0] as usize];
+        let refp = &f.refp[inter.r#ref[0].get() as usize];
         let filter_2d = inter.filter2d;
 
         if cmp::min(bw4, bh4) > 1
-            && (inter.inter_mode == GLOBALMV && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+            && (inter.inter_mode == InterPredMode::GlobalMv.into()
+                && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                 || inter.motion_mode == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
@@ -3105,7 +3107,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 if inter.motion_mode == MotionMode::Warp {
                     &t.warpmv
                 } else {
-                    &frame_hdr.gmv[inter.r#ref[0] as usize]
+                    &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                 },
             )?;
         } else {
@@ -3121,7 +3123,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                 0,
                 inter.nd.one_d.mv[0],
                 refp,
-                inter.r#ref[0] as usize,
+                inter.r#ref[0].get() as usize,
                 filter_2d,
             )?;
             if inter.motion_mode == MotionMode::Obmc {
@@ -3184,7 +3186,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                     DAV1D_II_MASKS[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
                 }
                 InterIntraType::Wedge => {
-                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
+                    DAV1D_WEDGE_MASKS[bs as usize][0][0][inter.nd.one_d.wedge_idx.get() as usize]
                 }
             };
             f.dsp
@@ -3341,14 +3343,14 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         1 + pl,
                         inter.nd.one_d.mv[0],
                         refp,
-                        inter.r#ref[0] as usize,
+                        inter.r#ref[0].get() as usize,
                         filter_2d,
                     )?;
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
-                    && (inter.inter_mode == GLOBALMV
-                        && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                    && (inter.inter_mode == InterPredMode::GlobalMv.into()
+                        && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
@@ -3366,7 +3368,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             if inter.motion_mode == MotionMode::Warp {
                                 &t.warpmv
                             } else {
-                                &frame_hdr.gmv[inter.r#ref[0] as usize]
+                                &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                             },
                         )?;
                     }
@@ -3386,7 +3388,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                             1 + pl,
                             inter.nd.one_d.mv[0],
                             refp,
-                            inter.r#ref[0] as usize,
+                            inter.r#ref[0].get() as usize,
                             filter_2d,
                         )?;
                         let uv_dst = cur_data[1 + pl].with_offset::<BD>() + uvdstoff;
@@ -3406,7 +3408,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
                         }
                         InterIntraType::Wedge => {
                             DAV1D_WEDGE_MASKS[bs as usize][chr_layout_idx][0]
-                                [inter.nd.one_d.wedge_idx as usize]
+                                [inter.nd.one_d.wedge_idx.get() as usize]
                         }
                     };
 
@@ -3500,7 +3502,7 @@ pub(crate) fn rav1d_recon_b_inter<BD: BitDepth>(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
 
-    if b.skip != 0 {
+    if b.skip {
         // reset coef contexts
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
