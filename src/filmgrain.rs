@@ -5,7 +5,6 @@ use std::hint::assert_unchecked;
 use std::ops::{Add, Shl, Shr};
 use std::{cmp, mem, ptr};
 
-use libc::{intptr_t, ptrdiff_t};
 use to_method::To;
 
 use crate::cpu::CpuFlags;
@@ -26,6 +25,7 @@ use crate::include::dav1d::picture::{
     Rav1dPictureDataComponentOffset,
 };
 use crate::internal::GrainLut;
+use crate::libc_compat::{intptr_t, ptrdiff_t};
 use crate::strided::Strided as _;
 use crate::tables::dav1d_gaussian_sequence;
 use crate::wrap_fn_ptr::wrap_fn_ptr;

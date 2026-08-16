@@ -1,4 +1,3 @@
-#![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![cfg_attr(
     any(target_arch = "riscv32", target_arch = "riscv64"),
     feature(stdarch_riscv_feature_detection)
@@ -106,6 +105,7 @@ mod ffi_safe;
 mod fg_apply;
 mod filmgrain;
 mod getbits;
+pub(crate) mod libc_compat;
 pub(crate) mod pic_or_buf;
 pub(crate) mod pixels;
 pub(crate) mod relaxed_atomic;

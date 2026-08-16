@@ -6,7 +6,6 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 use std::{array, mem};
 
-use libc::{ptrdiff_t, uintptr_t};
 use to_method::To as _;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
@@ -24,6 +23,7 @@ use crate::include::dav1d::headers::{
     Rav1dContentLightLevel, Rav1dFrameHeader, Rav1dITUTT35, Rav1dMasteringDisplay,
     Rav1dPixelLayout, Rav1dSequenceHeader,
 };
+use crate::libc_compat::{ptrdiff_t, uintptr_t};
 use crate::pixels::Pixels;
 use crate::send_sync_non_null::SendSyncNonNull;
 use crate::strided::Strided;
