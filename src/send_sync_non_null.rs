@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ptr::NonNull;
 
 /// A [`NonNull`] that is [`Send`]` + `[`Sync`].
@@ -17,7 +18,6 @@ use std::ptr::NonNull;
 ///
 /// though these are `unsafe` due to the raw pointers
 /// and potential [`Self::cast`] called in between.
-#[derive(Debug)]
 #[repr(transparent)]
 pub struct SendSyncNonNull<T: ?Sized>(NonNull<T>);
 
@@ -88,5 +88,12 @@ impl<T: ?Sized + Send + Sync> SendSyncNonNull<T> {
         // SAFETY: `self` originally came from a `Box<T>` in `Self::from_box`.
         // And since `Self::into_box` hasn't been called yet, it's unique.
         unsafe { Box::from_raw(ptr) }
+    }
+}
+
+impl<T: ?Sized> fmt::Debug for SendSyncNonNull<T> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
     }
 }
