@@ -5,9 +5,9 @@ use std::hint::assert_unchecked;
 use std::ops::{Add, Shl, Shr};
 use std::{cmp, mem, ptr};
 
-use libc::{intptr_t, ptrdiff_t};
 use to_method::To;
 
+use crate::c_types::{intptr_t, ptrdiff_t};
 use crate::cpu::CpuFlags;
 use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
 use crate::ffi_safe::FFISafe;

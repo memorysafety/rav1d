@@ -88,6 +88,7 @@ pub mod include {
 pub mod align;
 pub(crate) mod c_arc;
 pub(crate) mod c_box;
+pub(crate) mod c_types;
 mod cdef;
 mod cdef_apply;
 mod cdf;

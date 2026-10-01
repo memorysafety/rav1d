@@ -6,11 +6,11 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 use std::{array, mem};
 
-use libc::{ptrdiff_t, uintptr_t};
 use to_method::To as _;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 use crate::c_arc::RawArc;
+use crate::c_types::{ptrdiff_t, uintptr_t};
 use crate::disjoint_mut::{
     AsMutPtr, DisjointImmutGuard, DisjointMut, DisjointMutGuard, SliceBounds,
 };

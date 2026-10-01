@@ -3,10 +3,10 @@
 use std::cmp;
 use std::ffi::c_int;
 
-use libc::ptrdiff_t;
 use strum::FromRepr;
 
 use crate::align::{Align16, AlignedVec2};
+use crate::c_types::ptrdiff_t;
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
 use crate::ffi_safe::FFISafe;
