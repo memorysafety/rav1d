@@ -6,9 +6,9 @@ use std::ops::BitOr;
 use std::{array, cmp, ptr};
 
 use assert_matches::debug_assert_matches;
-use libc::intptr_t;
 use to_method::To as _;
 
+use crate::c_types::intptr_t;
 use crate::cdef_apply::rav1d_cdef_brow;
 use crate::ctx::CaseSet;
 use crate::env::get_uv_inter_txtp;

@@ -4,9 +4,9 @@ use std::cmp;
 use std::ffi::{c_int, c_uint};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 
 use crate::align::{Align16, AlignedVec64};
+use crate::c_types::ptrdiff_t;
 use crate::cdef::CdefEdgeFlags;
 use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::{BitDepth, BPC};

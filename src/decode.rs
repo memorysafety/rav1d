@@ -2,11 +2,11 @@ use std::ffi::{c_int, c_uint};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{array, cmp, iter, mem};
 
-use libc::ptrdiff_t;
 use strum::EnumCount;
 
 use crate::align::{Align16, AlignedVec64};
 use crate::c_arc::CArc;
+use crate::c_types::ptrdiff_t;
 use crate::cdf::{
     rav1d_cdf_thread_alloc, rav1d_cdf_thread_copy, rav1d_cdf_thread_init_static,
     rav1d_cdf_thread_update, CdfMvComponent, CdfThreadContext,
