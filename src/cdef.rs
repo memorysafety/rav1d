@@ -1,7 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::ffi::{c_int, c_uint};
-use std::{cmp, ptr};
+use std::{cmp, mem, ptr, slice};
 
 use bitflags::bitflags;
 use libc::ptrdiff_t;
@@ -9,7 +9,6 @@ use libc::ptrdiff_t;
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::DisjointMut;
-use crate::ffi_safe::FFISafe;
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
@@ -21,9 +20,7 @@ use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel, LeftPixelRow2px};
 use crate::include::common::intops::{apply_sign, iclip};
-use crate::include::dav1d::picture::{
-    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
-};
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
 use crate::tables::DAV1D_CDEF_DIRECTIONS;
@@ -53,9 +50,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     damping: c_int,
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
 ) -> ());
 
 pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
@@ -89,10 +83,6 @@ impl cdef::Fn {
         let damping = damping as c_int;
         let bd = bd.into_c();
 
-        let dst = dst.into_ffi_safe();
-        let top = top.into_ffi_safe();
-        let bottom = bottom.as_ref().into_ffi_safe();
-
         // SAFETY: Rust fallback is safe, asm is assumed to do the same.
         unsafe {
             self.get()(
@@ -107,9 +97,6 @@ impl cdef::Fn {
                 damping,
                 edges,
                 bd,
-                dst,
-                top,
-                bottom,
             )
         }
     }
@@ -120,7 +107,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
     dst_stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> c_int);
 
 impl cdef_dir::Fn {
@@ -133,9 +119,8 @@ impl cdef_dir::Fn {
         let dst_ptr = dst.as_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
-        unsafe { self.get()(dst_ptr, dst_stride, variance, bd, dst) }
+        unsafe { self.get()(dst_ptr, dst_stride, variance, bd) }
     }
 }
 
@@ -169,17 +154,17 @@ pub fn fill(tmp: &mut [i16], w: usize, h: usize) {
 #[expect(clippy::eq_op, reason = "easier to reason about")]
 fn padding<BD: BitDepth>(
     tmp: &mut [i16; TMP_STRIDE * TMP_STRIDE],
-    src: Rav1dPictureDataComponentOffset,
+    src_ptr: *const DynPixel,
+    src_stride: isize,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: CdefTop,
-    bottom: CdefBottom,
+    top_ptr: *const DynPixel,
+    bottom_ptr: *const DynPixel,
     w: usize,
     h: usize,
     edges: CdefEdgeFlags,
 ) {
-    let top = top - 2_usize;
-    let bottom = bottom - 2_usize;
-    let stride = src.pixel_stride::<BD>();
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = src_stride / pixel_bytes;
 
     // Fill extended input buffer.
     let mut x_start = 2 - 2;
@@ -204,10 +189,9 @@ fn padding<BD: BitDepth>(
     }
 
     for (i, y) in (y_start..2).enumerate() {
-        let top = top + i as isize * stride;
-        let top = top.data.slice_as::<_, BD::Pixel>((top.offset.., ..x_end));
+        let top_row = unsafe { (top_ptr as *const BD::Pixel).offset(-2 + i as isize * px_stride) };
         for x in x_start..x_end {
-            tmp[x + y * TMP_STRIDE] = top[x].as_::<i16>();
+            tmp[x + y * TMP_STRIDE] = unsafe { (*top_row.offset(x as isize)).as_::<i16>() };
         }
     }
     for y in 0..h {
@@ -216,34 +200,34 @@ fn padding<BD: BitDepth>(
         }
     }
     for y in 0..h {
-        let tmp = &mut tmp[(y + 2) * TMP_STRIDE..];
-        let src = src + (y as isize * stride);
-        let src = &*src.slice::<BD>(x_end - 2);
+        let tmp_row = &mut tmp[(y + 2) * TMP_STRIDE..];
+        let src_row = unsafe {
+            slice::from_raw_parts(
+                (src_ptr as *const BD::Pixel).offset(y as isize * px_stride),
+                x_end - 2,
+            )
+        };
         for x in 2..x_end {
-            tmp[x] = src[x - 2].as_::<i16>();
+            tmp_row[x] = src_row[x - 2].as_::<i16>();
         }
     }
     for (i, y) in (h + 2..y_end).enumerate() {
-        let tmp = &mut tmp[y * TMP_STRIDE..];
-        let bottom = bottom + i as isize * stride;
-        // This is a fallback `fn`, so perf is not as important here, so an extra branch
-        // here should be okay.
-        let bottom = match bottom.data {
-            PicOrBuf::Pic(pic) => &*pic.slice::<BD, _>((bottom.offset.., ..x_end)),
-            PicOrBuf::Buf(buf) => &*buf.slice_as((bottom.offset.., ..x_end)),
-        };
+        let tmp_row = &mut tmp[y * TMP_STRIDE..];
+        let bottom_row =
+            unsafe { (bottom_ptr as *const BD::Pixel).offset(-2 + i as isize * px_stride) };
         for x in x_start..x_end {
-            tmp[x] = bottom[x].as_::<i16>();
+            tmp_row[x] = unsafe { (*bottom_row.offset(x as isize)).as_::<i16>() };
         }
     }
 }
 
 #[inline(never)]
 fn cdef_filter_block_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     left: &[LeftPixelRow2px<BD::Pixel>; 8],
-    top: CdefTop,
-    bottom: CdefBottom,
+    top_ptr: *const DynPixel,
+    bottom_ptr: *const DynPixel,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
@@ -258,15 +242,20 @@ fn cdef_filter_block_rust<BD: BitDepth>(
     assert!((w == 4 || w == 8) && (h == 4 || h == 8));
     let mut tmp = [0; TMP_STRIDE * TMP_STRIDE]; // `12 * 12` is the maximum value of `TMP_STRIDE * (h + 4)`.
 
-    padding::<BD>(&mut tmp, dst, left, top, bottom, w, h, edges);
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
+
+    padding::<BD>(&mut tmp, dst_ptr, dst_stride, left, top_ptr, bottom_ptr, w, h, edges);
 
     let tmp = tmp;
     let tmp_offset = 2 * TMP_STRIDE + 2;
     let tmp_index = |x: usize, offset: isize| (x + tmp_offset).wrapping_add_signed(offset);
 
-    let dst = |y| {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        dst.slice_mut::<BD>(w)
+    let dst = |y: usize| unsafe {
+        slice::from_raw_parts_mut(
+            (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+            w,
+        )
     };
 
     if pri_strength != 0 {
@@ -375,39 +364,27 @@ fn cdef_filter_block_rust<BD: BitDepth>(
 /// Must be called by [`cdef::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    stride: ptrdiff_t,
     left: *const [LeftPixelRow2px<DynPixel>; 8],
-    _top_ptr: *const DynPixel,
-    _bottom_ptr: *const DynPixel,
+    top_ptr: *const DynPixel,
+    bottom_ptr: *const DynPixel,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
     damping: c_int,
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
-
     // SAFETY: Reverse of cast in `cdef::Fn::call`.
     let left = unsafe { &*left.cast() };
-
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let top = unsafe { FFISafe::from_with_offset(top) };
-
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let bottom = unsafe { FFISafe::from_with_offset(bottom) };
-
     let bd = BD::from_c(bitdepth_max);
-    cdef_filter_block_rust(
-        dst,
+    cdef_filter_block_rust::<BD>(
+        dst_ptr,
+        stride,
         left,
-        top,
-        bottom.map(|bot| *bot),
+        top_ptr,
+        bottom_ptr,
         pri_strength,
         sec_strength,
         dir,
@@ -424,20 +401,18 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
 /// Must be called by [`cdef_dir::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
-    _img_ptr: *const DynPixel,
-    _stride: ptrdiff_t,
+    img_ptr: *const DynPixel,
+    img_stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
-    img: FFISafeRav1dPictureDataComponentOffset,
 ) -> c_int {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef_dir::Fn::call`.
-    let img = unsafe { FFISafe::from_with_offset(img) };
     let bd = BD::from_c(bitdepth_max);
-    cdef_find_dir_rust(img, variance, bd)
+    cdef_find_dir_rust::<BD>(img_ptr, img_stride, variance, bd)
 }
 
 fn cdef_find_dir_rust<BD: BitDepth>(
-    img: Rav1dPictureDataComponentOffset,
+    img_ptr: *const DynPixel,
+    img_stride: isize,
     variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
@@ -446,10 +421,17 @@ fn cdef_find_dir_rust<BD: BitDepth>(
     let mut partial_sum_diag = [[0; 15]; 2];
     let mut partial_sum_alt = [[0; 11]; 4];
 
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = img_stride / pixel_bytes;
+
     let (w, h) = (8, 8);
     for y in 0..h {
-        let img = img + (y as isize * img.pixel_stride::<BD>());
-        let img = &*img.slice::<BD>(w);
+        let img = unsafe {
+            slice::from_raw_parts(
+                (img_ptr as *const BD::Pixel).offset(y as isize * px_stride),
+                w,
+            )
+        };
         for x in 0..w {
             let px = (img[x].as_::<c_int>() >> bitdepth_min_8) - 128;
 
@@ -638,9 +620,6 @@ mod neon {
         damping: c_int,
         edges: CdefEdgeFlags,
         bitdepth_max: c_int,
-        _dst: FFISafeRav1dPictureDataComponentOffset,
-        _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-        _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
     ) {
         use crate::align::Align16;
 
