@@ -4,7 +4,6 @@ use std::ffi::{c_int, c_uint};
 use std::{cmp, ptr};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 
 use crate::align::AlignedVec64;
 use crate::cpu::CpuFlags;
@@ -24,6 +23,7 @@ use crate::include::common::intops::{apply_sign, iclip};
 use crate::include::dav1d::picture::{
     FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
 };
+use crate::libc_compat::ptrdiff_t;
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
 use crate::tables::DAV1D_CDEF_DIRECTIONS;

@@ -7,7 +7,6 @@ use std::sync::Arc;
 use std::{mem, ptr};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 use to_method::To as _;
 
 use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
@@ -21,6 +20,7 @@ use crate::include::dav1d::picture::{
     Dav1dPicture, Rav1dPicAllocator, Rav1dPicture, Rav1dPictureParameters, RAV1D_PICTURE_ALIGNMENT,
 };
 use crate::internal::{Rav1dFrameContext, Rav1dFrameData};
+use crate::libc_compat::ptrdiff_t;
 use crate::log::{Rav1dLog as _, Rav1dLogger};
 use crate::pool::MemPool;
 use crate::send_sync_non_null::SendSyncNonNull;

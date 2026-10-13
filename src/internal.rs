@@ -6,7 +6,6 @@ use std::sync::{Arc, OnceLock};
 use std::thread::JoinHandle;
 
 use atomig::{Atom, Atomic};
-use libc::ptrdiff_t;
 use parking_lot::{Condvar, Mutex, RwLock, RwLockReadGuard};
 use strum::FromRepr;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -32,6 +31,7 @@ use crate::ipred::Rav1dIntraPredDSPContext;
 use crate::itx::Rav1dInvTxfmDSPContext;
 use crate::levels::{Av1Block, Filter2d, SegmentId, TxfmType, WHT_WHT};
 use crate::lf_mask::{Av1Filter, Av1FilterLUT, Av1Restoration, Av1RestorationUnit};
+use crate::libc_compat::ptrdiff_t;
 use crate::log::Rav1dLogger;
 use crate::loopfilter::Rav1dLoopFilterDSPContext;
 use crate::looprestoration::Rav1dLoopRestorationDSPContext;

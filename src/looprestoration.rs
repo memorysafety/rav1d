@@ -5,7 +5,6 @@ use std::ops::Add;
 use std::{cmp, iter, mem, slice};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 use to_method::To;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
@@ -28,6 +27,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::picture::{
     FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
 };
+use crate::libc_compat::ptrdiff_t;
 use crate::strided::Strided as _;
 use crate::tables::dav1d_sgr_x_by_x;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
@@ -954,11 +954,10 @@ fn sgr_mix_rust<BD: BitDepth>(
 mod neon {
     use std::ptr;
 
-    use libc::intptr_t;
-
     use super::*;
     use crate::align::Align16;
     use crate::include::common::bitdepth::bd_fn;
+    use crate::libc_compat::intptr_t;
 
     wrap_fn_ptr!(unsafe extern "C" fn wiener_filter_h(
         dst: *mut i16,

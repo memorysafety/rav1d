@@ -4,7 +4,6 @@ use std::cmp;
 use std::ffi::{c_int, c_uint};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 
 use crate::align::{Align16, AlignedVec64};
 use crate::cdef::CdefEdgeFlags;
@@ -14,6 +13,7 @@ use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::internal::{Rav1dContext, Rav1dFrameData, Rav1dTaskContext};
+use crate::libc_compat::ptrdiff_t;
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::{Strided as _, WithStride};
 use crate::with_offset::WithOffset;
