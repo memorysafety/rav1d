@@ -12,7 +12,7 @@ use crate::align::{Align16, Align32, Align4, Align8};
 use crate::error::Rav1dResult;
 use crate::include::dav1d::headers::{Rav1dFilterMode, Rav1dFrameHeader};
 use crate::levels::{
-    BlockLevel, BlockPartition, BlockSize, MVJoint, SegmentId, TxfmSize, N_COMP_INTER_PRED_MODES,
+    BlockLevel, BlockPartition, BlockSize, CompInterPredMode, MVJoint, SegmentId, TxfmSize,
     N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES,
 };
 use crate::tables::DAV1D_PARTITION_TYPE_COUNT;
@@ -106,7 +106,7 @@ pub struct CdfModeInterContext {
     // inter/switch
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
     pub wedge_idx: Align32<[[u16; 16]; 9]>,
-    pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
+    pub comp_inter_mode: Align16<[[u16; CompInterPredMode::COUNT]; 8]>,
     pub filter: Align8<[[[u16; Rav1dFilterMode::N_FILTERS]; 8]; 2]>,
     pub interintra_mode: Align8<[[u16; 4]; 4]>,
     pub motion_mode: Align8<[[u16; 3 + 1]; BlockSize::COUNT]>,
@@ -5039,7 +5039,7 @@ pub(crate) fn rav1d_cdf_thread_update(
 
     update_cdf_2d!(4, N_INTRA_PRED_MODES - 1, mi.y_mode);
     update_cdf_2d!(9, 15, mi.wedge_idx);
-    update_cdf_2d!(8, N_COMP_INTER_PRED_MODES - 1, mi.comp_inter_mode);
+    update_cdf_2d!(8, CompInterPredMode::COUNT - 1, mi.comp_inter_mode);
     update_cdf_3d!(
         2,
         8,
