@@ -1,0 +1,44 @@
+diff --git a/third_party/rust/rav1d/v1/BUILD.gn b/third_party/rust/rav1d/v1/BUILD.gn
+--- a/third_party/rust/rav1d/v1/BUILD.gn
++++ b/third_party/rust/rav1d/v1/BUILD.gn
+@@ -5,7 +5,9 @@
+ # @generated from third_party/rust/BUILD.gn.hbs by tools/crates/gnrt.
+ # Do not edit!
+
++import("rav1d_generated.gni")
+ import("//build/rust/cargo_crate.gni")
++import("//third_party/nasm/nasm_assemble.gni")
+
+ cargo_crate("dav1d") {
+   crate_type = "bin"
+@@ -660,6 +662,7 @@ cargo_crate("lib") {
+   executable_configs -= [ "//build/config/compiler:chromium_code" ]
+   executable_configs += [ "//build/config/compiler:no_chromium_code" ]
+   deps = [
++    ":rav1d_asm",
+     "//third_party/rust/bitflags/v2:lib",
+     "//third_party/rust/cfg_if/v1:lib",
+     "//third_party/rust/libc/v0_2:lib",
+@@ -680,3 +683,22 @@ cargo_crate("lib") {
+   build_root = "crate/build.rs"
+   build_sources = [ "crate/build.rs" ]
+ }
++
++nasm_assemble("rav1d_asm") {
++  sources = x86_asm_sources
++
++  inputs = [
++    "crate/src/ext/x86/x86inc.asm",
++    "crate/src/x86/config.asm",
++  ]
++
++  include_dirs = [
++    "crate/src/",
++    "crate/src/x86/"
++  ]
++
++  nasm_flags = [
++    "-P",
++    rebase_path("crate/src/x86/config.asm", root_build_dir),
++  ]
++}
