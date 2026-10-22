@@ -244,7 +244,7 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "rav1d"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "assert_matches",
  "atomig",
@@ -265,7 +265,7 @@ dependencies = [
 
 [[package]]
 name = "rav1d-cli"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "cc",
  "cfg-if",
