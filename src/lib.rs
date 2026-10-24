@@ -142,6 +142,25 @@ mod refmvs;
 /// This API copies that of `dav1d-rs`, and should function as a drop-in replacement, aside from `dav1d::Error` being renamed to `Rav1dError`
 pub mod rust_api;
 mod scan;
+/// The `rav1d::src::*` paths from 1.1.0, before these items moved to the crate root.
+///
+/// `#[deprecated]` doesn't warn at use sites of a module or re-export,
+/// but it still marks these paths as deprecated in rustdoc and IDEs.
+#[deprecated(since = "1.1.1", note = "use the items at the crate root instead")]
+pub mod src {
+    pub use crate::{align, cpu, send_sync_non_null};
+
+    pub mod lib {
+        pub use crate::{
+            dav1d_apply_grain, dav1d_close, dav1d_data_create, dav1d_data_props_unref,
+            dav1d_data_unref, dav1d_data_wrap, dav1d_data_wrap_user_data, dav1d_default_settings,
+            dav1d_flush, dav1d_get_decode_error_data_props, dav1d_get_event_flags,
+            dav1d_get_frame_delay, dav1d_get_picture, dav1d_open, dav1d_parse_sequence_header,
+            dav1d_picture_unref, dav1d_send_data, dav1d_version, dav1d_version_api, rav1d_version,
+            DAV1D_API_VERSION_MAJOR, DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH,
+        };
+    }
+}
 mod tables;
 mod thread_task;
 mod warpmv;
