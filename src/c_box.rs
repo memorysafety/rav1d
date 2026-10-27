@@ -78,6 +78,7 @@ unsafe impl<T: Sync + ?Sized> Sync for Unique<T> {}
 /// That is, it is analogous to a [`Box`],
 /// but it lets you set a C-style `free` `fn` for deallocation
 /// instead of the normal [`Box`] (de)allocator.
+#[derive(Debug)]
 pub struct CBox<T: ?Sized> {
     /// # SAFETY:
     ///
@@ -143,6 +144,7 @@ impl<T: ?Sized> CBox<T> {
 }
 
 /// An owned reference, which may be a [`CBox`].
+#[derive(Debug)]
 pub enum CRef<T: ?Sized + 'static> {
     Ref(&'static T),
     Box(Box<T>),

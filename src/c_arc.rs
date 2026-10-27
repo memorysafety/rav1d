@@ -37,6 +37,7 @@ pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
 /// Furthermore, storing this stable ref ptr like this
 /// allows for provenance projections of [`Self::stable_ref`],
 /// such as slicing it for a `CArc<[T]>` (see [`Self::slice_in_place`]).
+#[derive(Debug)]
 pub struct CArc<T: ?Sized + 'static> {
     owner: Arc<Pin<CRef<T>>>,
 
