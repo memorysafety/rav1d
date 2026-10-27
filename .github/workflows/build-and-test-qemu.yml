@@ -62,6 +62,9 @@ jobs:
         run: |
           RUSTFLAGS="-C target-feature=+crt-static -C linker=${{ matrix.linker }}" \
             cargo +${{ steps.toolchain.outputs.name }} build --release --target ${{ matrix.target }}
+      - name: cargo package for ${{ matrix.target }}
+        # builds the crate from only the files that get published to crates.io
+        run: cargo +${{ steps.toolchain.outputs.name }} package -p rav1d --target ${{ matrix.target }}
       - name: Clippy
         run: cargo +${{ steps.toolchain.outputs.name }} clippy -- -D warnings
       - name: run tests
