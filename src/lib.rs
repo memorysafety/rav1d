@@ -16,7 +16,6 @@
     clippy::duplicate_underscore_argument,
     clippy::explicit_auto_deref,
     clippy::identity_op,
-    clippy::incompatible_msrv,
     clippy::int_plus_one,
     clippy::into_iter_on_ref,
     clippy::large_const_arrays,
