@@ -3,7 +3,6 @@
 use std::ffi::{c_int, c_uint};
 use std::{cmp, slice};
 
-use libc::ptrdiff_t;
 use strum::FromRepr;
 use zerocopy::{AsBytes, FromBytes};
 
@@ -28,6 +27,7 @@ use crate::levels::{
     DC_128_PRED, DC_PRED, FILTER_PRED, HOR_PRED, LEFT_DC_PRED, N_IMPL_INTRA_PRED_MODES, PAETH_PRED,
     SMOOTH_H_PRED, SMOOTH_PRED, SMOOTH_V_PRED, TOP_DC_PRED, VERT_PRED, Z1_PRED, Z2_PRED, Z3_PRED,
 };
+use crate::libc_compat::ptrdiff_t;
 use crate::strided::Strided as _;
 use crate::tables::{
     dav1d_dr_intra_derivative, dav1d_filter_intra_taps, dav1d_sm_weights, filter_fn, FLT_INCR,

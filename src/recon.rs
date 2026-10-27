@@ -6,7 +6,6 @@ use std::ops::BitOr;
 use std::{array, cmp, ptr};
 
 use assert_matches::debug_assert_matches;
-use libc::intptr_t;
 use to_method::To as _;
 
 use crate::cdef_apply::rav1d_cdef_brow;
@@ -34,6 +33,7 @@ use crate::levels::{
     WHT_WHT,
 };
 use crate::lf_apply::{rav1d_copy_lpf, rav1d_loopfilter_sbrow_cols, rav1d_loopfilter_sbrow_rows};
+use crate::libc_compat::intptr_t;
 use crate::lr_apply::rav1d_lr_sbrow;
 use crate::msac::{
     rav1d_msac_decode_bool_adapt, rav1d_msac_decode_bool_equi, rav1d_msac_decode_bools,

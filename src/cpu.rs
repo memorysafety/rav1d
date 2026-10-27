@@ -173,14 +173,11 @@ impl CpuFlags {
 
         #[cfg(target_arch = "arm")]
         {
-            if std::arch::is_arm_feature_detected!("neon") {
+            // `is_arm_feature_detected!` requires nightly on 32-bit ARM.
+            // Keep a stable-safe fallback by using compile-time target features.
+            #[cfg(target_feature = "neon")]
+            {
                 flags |= Self::NEON;
-            }
-            if std::arch::is_arm_feature_detected!("dotprod") {
-                flags |= Self::DOTPROD;
-            }
-            if std::arch::is_arm_feature_detected!("i8mm") {
-                flags |= Self::I8MM;
             }
         }
 
