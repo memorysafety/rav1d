@@ -37,6 +37,7 @@ use crate::include::common::bitdepth::BitDepth8;
 pub use crate::include::dav1d::dav1d::{
     Rav1dDecodeFrameType as DecodeFrameType, Rav1dInloopFilterType as InloopFilterType,
 };
+use crate::include::dav1d::headers::Rav1dColorRange;
 pub use crate::include::dav1d::headers::{
     Rav1dContentLightLevel as ContentLightLevel, Rav1dMasteringDisplay as MasteringDisplay,
     Rav1dPixelLayout as PixelLayout,
@@ -438,7 +439,7 @@ impl Picture {
 
     /// YUV color range.
     pub fn color_range(&self) -> pixel::YUVRange {
-        self.inner.seq_hdr.as_ref().unwrap().color_range.into()
+        Rav1dColorRange::from_dav1d(self.inner.seq_hdr.as_ref().unwrap().color_range).into()
     }
 
     /// Sample position for subsampled chroma.

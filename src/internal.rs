@@ -327,7 +327,7 @@ pub struct Rav1dState {
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
 
     /// This is ref-counted in C, but since we first accumulate the `Vec<Rav1dITUTT35>`
-    /// during [`parse_obus`] and then convert to an [`Arc`] in [`Rav1dITUTT35::to_immut`],
+    /// during [`parse_obus`] and then convert to an [`Arc`] in [`Rav1dITUTT35::vec_to_immut`],
     /// we don't need an [`Arc`] here.
     pub(crate) itut_t35: Vec<Rav1dITUTT35>,
 

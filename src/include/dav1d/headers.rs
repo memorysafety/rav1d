@@ -5,6 +5,7 @@ use std::ops::{BitAnd, Deref, Sub};
 use std::sync::Arc;
 
 use av_data::pixel;
+use parking_lot::Mutex;
 use strum::{EnumCount, FromRepr};
 
 use crate::align::ArrayDefault;
@@ -530,24 +531,29 @@ impl Rav1dFrameType {
 }
 
 pub type Dav1dColorPrimaries = c_uint;
-pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = Rav1dColorPrimaries::BT709.to_dav1d();
+pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = Rav1dColorPrimariesKind::BT709.to_dav1d();
 pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries =
-    Rav1dColorPrimaries::Unspecified.to_dav1d();
-pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470M.to_dav1d();
-pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = Rav1dColorPrimaries::BT470BG.to_dav1d();
-pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = Rav1dColorPrimaries::BT601.to_dav1d();
-pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries = Rav1dColorPrimaries::SMPTE240.to_dav1d();
-pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries = Rav1dColorPrimaries::Film.to_dav1d();
-pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries = Rav1dColorPrimaries::BT2020.to_dav1d();
-pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries = Rav1dColorPrimaries::XYZ.to_dav1d();
-pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries = Rav1dColorPrimaries::SMPTE431.to_dav1d();
-pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries = Rav1dColorPrimaries::SMPTE432.to_dav1d();
-pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = Rav1dColorPrimaries::EBU3213.to_dav1d();
+    Rav1dColorPrimariesKind::Unspecified.to_dav1d();
+pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = Rav1dColorPrimariesKind::BT470M.to_dav1d();
+pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries =
+    Rav1dColorPrimariesKind::BT470BG.to_dav1d();
+pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = Rav1dColorPrimariesKind::BT601.to_dav1d();
+pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries =
+    Rav1dColorPrimariesKind::SMPTE240.to_dav1d();
+pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries = Rav1dColorPrimariesKind::Film.to_dav1d();
+pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries = Rav1dColorPrimariesKind::BT2020.to_dav1d();
+pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries = Rav1dColorPrimariesKind::XYZ.to_dav1d();
+pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries =
+    Rav1dColorPrimariesKind::SMPTE431.to_dav1d();
+pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries =
+    Rav1dColorPrimariesKind::SMPTE432.to_dav1d();
+pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries =
+    Rav1dColorPrimariesKind::EBU3213.to_dav1d();
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
-pub enum Rav1dColorPrimaries {
+pub(crate) enum Rav1dColorPrimariesKind {
     BT709 = 1,
     #[default]
     Unspecified = 2,
@@ -563,15 +569,15 @@ pub enum Rav1dColorPrimaries {
     EBU3213 = 22,
 }
 
-impl Rav1dColorPrimaries {
+impl Rav1dColorPrimariesKind {
     const fn to_dav1d(self) -> Dav1dColorPrimaries {
         self as _
     }
 }
 
-impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
-    fn from(val: Rav1dColorPrimaries) -> Self {
-        use Rav1dColorPrimaries::*;
+impl From<Rav1dColorPrimariesKind> for pixel::ColorPrimaries {
+    fn from(val: Rav1dColorPrimariesKind) -> Self {
+        use Rav1dColorPrimariesKind::*;
         match val {
             BT709 => Self::BT709,
             Unspecified => Self::Unspecified,
@@ -589,13 +595,7 @@ impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
     }
 }
 
-impl From<Rav1dColorPrimaries> for Dav1dColorPrimaries {
-    fn from(value: Rav1dColorPrimaries) -> Self {
-        value.to_dav1d()
-    }
-}
-
-impl TryFrom<Dav1dColorPrimaries> for Rav1dColorPrimaries {
+impl TryFrom<Dav1dColorPrimaries> for Rav1dColorPrimariesKind {
     type Error = ();
 
     fn try_from(value: Dav1dColorPrimaries) -> Result<Self, Self::Error> {
@@ -603,46 +603,100 @@ impl TryFrom<Dav1dColorPrimaries> for Rav1dColorPrimaries {
     }
 }
 
+/// The `color_primaries` from the sequence header.
+///
+/// This stays a newtype with associated consts, as in 1.1.0, for compatibility.
+/// The decoder parses reserved values as [`Self::UNKNOWN`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Rav1dColorPrimaries(pub u8);
+
+impl Rav1dColorPrimaries {
+    pub const BT709: Self = Self(1);
+    pub const UNKNOWN: Self = Self(2);
+    pub const BT470M: Self = Self(4);
+    pub const BT470BG: Self = Self(5);
+    pub const BT601: Self = Self(6);
+    pub const SMPTE240: Self = Self(7);
+    pub const FILM: Self = Self(8);
+    pub const BT2020: Self = Self(9);
+    pub const XYZ: Self = Self(10);
+    pub const SMPTE431: Self = Self(11);
+    pub const SMPTE432: Self = Self(12);
+    pub const EBU3213: Self = Self(22);
+}
+
+impl From<Rav1dColorPrimaries> for Rav1dColorPrimariesKind {
+    fn from(value: Rav1dColorPrimaries) -> Self {
+        Self::from_repr(value.0 as _).unwrap_or_default()
+    }
+}
+
+impl From<Rav1dColorPrimariesKind> for Rav1dColorPrimaries {
+    fn from(value: Rav1dColorPrimariesKind) -> Self {
+        Self(value as _)
+    }
+}
+
+impl From<Rav1dColorPrimaries> for pixel::ColorPrimaries {
+    fn from(val: Rav1dColorPrimaries) -> Self {
+        Rav1dColorPrimariesKind::from(val).into()
+    }
+}
+
+impl From<Rav1dColorPrimaries> for Dav1dColorPrimaries {
+    fn from(value: Rav1dColorPrimaries) -> Self {
+        value.0 as Dav1dColorPrimaries
+    }
+}
+
+impl TryFrom<Dav1dColorPrimaries> for Rav1dColorPrimaries {
+    type Error = ();
+
+    fn try_from(value: Dav1dColorPrimaries) -> Result<Self, Self::Error> {
+        u8::try_from(value).map(Self).map_err(|_| ())
+    }
+}
+
 pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT709.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT709.to_dav1d();
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::Unspecified.to_dav1d();
+    Rav1dTransferCharacteristicsKind::Unspecified.to_dav1d();
 pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT470M.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT470M.to_dav1d();
 pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT470BG.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT470BG.to_dav1d();
 pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT601.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT601.to_dav1d();
 pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::SMPTE240.to_dav1d();
+    Rav1dTransferCharacteristicsKind::SMPTE240.to_dav1d();
 pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::Linear.to_dav1d();
+    Rav1dTransferCharacteristicsKind::Linear.to_dav1d();
 pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::Log100.to_dav1d();
+    Rav1dTransferCharacteristicsKind::Log100.to_dav1d();
 pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::Log100Sqrt10.to_dav1d();
+    Rav1dTransferCharacteristicsKind::Log100Sqrt10.to_dav1d();
 pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::IEC61966.to_dav1d();
+    Rav1dTransferCharacteristicsKind::IEC61966.to_dav1d();
 pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT1361.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT1361.to_dav1d();
 pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::SRGB.to_dav1d();
+    Rav1dTransferCharacteristicsKind::SRGB.to_dav1d();
 pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT2020_10Bit.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT2020_10Bit.to_dav1d();
 pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::BT2020_12Bit.to_dav1d();
+    Rav1dTransferCharacteristicsKind::BT2020_12Bit.to_dav1d();
 pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::SMPTE2084.to_dav1d();
+    Rav1dTransferCharacteristicsKind::SMPTE2084.to_dav1d();
 pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::SMPTE428.to_dav1d();
+    Rav1dTransferCharacteristicsKind::SMPTE428.to_dav1d();
 pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics =
-    Rav1dTransferCharacteristics::HLG.to_dav1d();
+    Rav1dTransferCharacteristicsKind::HLG.to_dav1d();
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
-pub enum Rav1dTransferCharacteristics {
+pub(crate) enum Rav1dTransferCharacteristicsKind {
     // `TC_RESERVED_0` from spec.
     BT709 = 1,
     #[default]
@@ -665,15 +719,15 @@ pub enum Rav1dTransferCharacteristics {
     HLG = 18,
 }
 
-impl Rav1dTransferCharacteristics {
+impl Rav1dTransferCharacteristicsKind {
     const fn to_dav1d(self) -> Dav1dTransferCharacteristics {
         self as _
     }
 }
 
-impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
-    fn from(val: Rav1dTransferCharacteristics) -> Self {
-        use Rav1dTransferCharacteristics::*;
+impl From<Rav1dTransferCharacteristicsKind> for pixel::TransferCharacteristic {
+    fn from(val: Rav1dTransferCharacteristicsKind) -> Self {
+        use Rav1dTransferCharacteristicsKind::*;
         match val {
             BT709 => Self::BT1886,
             Unspecified => Self::Unspecified,
@@ -696,13 +750,7 @@ impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
     }
 }
 
-impl From<Rav1dTransferCharacteristics> for Dav1dTransferCharacteristics {
-    fn from(value: Rav1dTransferCharacteristics) -> Self {
-        value.to_dav1d()
-    }
-}
-
-impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
+impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristicsKind {
     type Error = ();
 
     fn try_from(value: Dav1dTransferCharacteristics) -> Result<Self, Self::Error> {
@@ -710,33 +758,97 @@ impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
     }
 }
 
+/// The `transfer_characteristics` from the sequence header.
+///
+/// This stays a newtype with associated consts, as in 1.1.0, for compatibility.
+/// The decoder parses reserved values as [`Self::UNKNOWN`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Rav1dTransferCharacteristics(pub u8);
+
+impl Rav1dTransferCharacteristics {
+    pub const _RESERVED_0: Self = Self(0);
+    pub const BT709: Self = Self(1);
+    pub const UNKNOWN: Self = Self(2);
+    pub const _RESERVED_3: Self = Self(3);
+    pub const BT470M: Self = Self(4);
+    pub const BT470BG: Self = Self(5);
+    pub const BT601: Self = Self(6);
+    pub const SMPTE240: Self = Self(7);
+    pub const LINEAR: Self = Self(8);
+    pub const LOG100: Self = Self(9);
+    pub const LOG100_SQRT10: Self = Self(10);
+    pub const IEC61966: Self = Self(11);
+    pub const BT1361: Self = Self(12);
+    pub const SRGB: Self = Self(13);
+    pub const BT2020_10BIT: Self = Self(14);
+    pub const BT2020_12BIT: Self = Self(15);
+    pub const SMPTE2084: Self = Self(16);
+    pub const SMPTE428: Self = Self(17);
+    pub const HLG: Self = Self(18);
+}
+
+impl From<Rav1dTransferCharacteristics> for Rav1dTransferCharacteristicsKind {
+    fn from(value: Rav1dTransferCharacteristics) -> Self {
+        Self::from_repr(value.0 as _).unwrap_or_default()
+    }
+}
+
+impl From<Rav1dTransferCharacteristicsKind> for Rav1dTransferCharacteristics {
+    fn from(value: Rav1dTransferCharacteristicsKind) -> Self {
+        Self(value as _)
+    }
+}
+
+impl From<Rav1dTransferCharacteristics> for pixel::TransferCharacteristic {
+    fn from(val: Rav1dTransferCharacteristics) -> Self {
+        Rav1dTransferCharacteristicsKind::from(val).into()
+    }
+}
+
+impl From<Rav1dTransferCharacteristics> for Dav1dTransferCharacteristics {
+    fn from(value: Rav1dTransferCharacteristics) -> Self {
+        value.0 as Dav1dTransferCharacteristics
+    }
+}
+
+impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
+    type Error = ();
+
+    fn try_from(value: Dav1dTransferCharacteristics) -> Result<Self, Self::Error> {
+        u8::try_from(value).map(Self).map_err(|_| ())
+    }
+}
+
 pub type Dav1dMatrixCoefficients = c_uint;
-pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::Identity.to_dav1d();
-pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT709.to_dav1d();
+pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficientsKind::Identity.to_dav1d();
+pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = Rav1dMatrixCoefficientsKind::BT709.to_dav1d();
 pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::Unspecified.to_dav1d();
-pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::FCC.to_dav1d();
-pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT470BG.to_dav1d();
-pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT601.to_dav1d();
-pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::SMPTE240.to_dav1d();
+    Rav1dMatrixCoefficientsKind::Unspecified.to_dav1d();
+pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = Rav1dMatrixCoefficientsKind::FCC.to_dav1d();
+pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficientsKind::BT470BG.to_dav1d();
+pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = Rav1dMatrixCoefficientsKind::BT601.to_dav1d();
+pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficientsKind::SMPTE240.to_dav1d();
 pub const DAV1D_MC_SMPTE_YCGCO: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::SMPTE_YCgCo.to_dav1d();
+    Rav1dMatrixCoefficientsKind::SMPTE_YCgCo.to_dav1d();
 pub const DAV1D_MC_BT2020_NCL: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::BT2020NCL.to_dav1d();
+    Rav1dMatrixCoefficientsKind::BT2020NCL.to_dav1d();
 pub const DAV1D_MC_BT2020_CL: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::BT2020CL.to_dav1d();
+    Rav1dMatrixCoefficientsKind::BT2020CL.to_dav1d();
 pub const DAV1D_MC_SMPTE2085: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::SMPTE2085.to_dav1d();
+    Rav1dMatrixCoefficientsKind::SMPTE2085.to_dav1d();
 pub const DAV1D_MC_CHROMAT_NCL: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::ChromatNCL.to_dav1d();
+    Rav1dMatrixCoefficientsKind::ChromatNCL.to_dav1d();
 pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients =
-    Rav1dMatrixCoefficients::ChromatCL.to_dav1d();
-pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::ICtCp.to_dav1d();
+    Rav1dMatrixCoefficientsKind::ChromatCL.to_dav1d();
+pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = Rav1dMatrixCoefficientsKind::ICtCp.to_dav1d();
 // this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
-pub enum Rav1dMatrixCoefficients {
+pub(crate) enum Rav1dMatrixCoefficientsKind {
     Identity = 0,
     BT709 = 1,
     #[default]
@@ -756,15 +868,15 @@ pub enum Rav1dMatrixCoefficients {
     ICtCp = 14,
 }
 
-impl Rav1dMatrixCoefficients {
+impl Rav1dMatrixCoefficientsKind {
     const fn to_dav1d(self) -> Dav1dMatrixCoefficients {
         self as _
     }
 }
 
-impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
-    fn from(val: Rav1dMatrixCoefficients) -> Self {
-        use Rav1dMatrixCoefficients::*;
+impl From<Rav1dMatrixCoefficientsKind> for pixel::MatrixCoefficients {
+    fn from(val: Rav1dMatrixCoefficientsKind) -> Self {
+        use Rav1dMatrixCoefficientsKind::*;
         match val {
             Identity => Self::Identity,
             BT709 => Self::BT709,
@@ -784,9 +896,60 @@ impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
     }
 }
 
+impl TryFrom<Dav1dMatrixCoefficients> for Rav1dMatrixCoefficientsKind {
+    type Error = ();
+
+    fn try_from(value: Dav1dMatrixCoefficients) -> Result<Self, Self::Error> {
+        Self::from_repr(value as _).ok_or(())
+    }
+}
+
+/// The `matrix_coefficients` from the sequence header.
+///
+/// This stays a newtype with associated consts, as in 1.1.0, for compatibility.
+/// The decoder parses reserved values as [`Self::UNKNOWN`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Rav1dMatrixCoefficients(pub u8);
+
+impl Rav1dMatrixCoefficients {
+    pub const IDENTITY: Self = Self(0);
+    pub const BT709: Self = Self(1);
+    pub const UNKNOWN: Self = Self(2);
+    pub const _RESERVED_3: Self = Self(3);
+    pub const FCC: Self = Self(4);
+    pub const BT470BG: Self = Self(5);
+    pub const BT601: Self = Self(6);
+    pub const SMPTE240: Self = Self(7);
+    pub const SMPTE_YCGCO: Self = Self(8);
+    pub const BT2020_NCL: Self = Self(9);
+    pub const BT2020_CL: Self = Self(10);
+    pub const SMPTE2085: Self = Self(11);
+    pub const CHROMAT_NCL: Self = Self(12);
+    pub const CHROMAT_CL: Self = Self(13);
+    pub const ICTCP: Self = Self(14);
+}
+
+impl From<Rav1dMatrixCoefficients> for Rav1dMatrixCoefficientsKind {
+    fn from(value: Rav1dMatrixCoefficients) -> Self {
+        Self::from_repr(value.0 as _).unwrap_or_default()
+    }
+}
+
+impl From<Rav1dMatrixCoefficientsKind> for Rav1dMatrixCoefficients {
+    fn from(value: Rav1dMatrixCoefficientsKind) -> Self {
+        Self(value as _)
+    }
+}
+
+impl From<Rav1dMatrixCoefficients> for pixel::MatrixCoefficients {
+    fn from(val: Rav1dMatrixCoefficients) -> Self {
+        Rav1dMatrixCoefficientsKind::from(val).into()
+    }
+}
+
 impl From<Rav1dMatrixCoefficients> for Dav1dMatrixCoefficients {
     fn from(value: Rav1dMatrixCoefficients) -> Self {
-        value.to_dav1d()
+        value.0 as Dav1dMatrixCoefficients
     }
 }
 
@@ -794,7 +957,7 @@ impl TryFrom<Dav1dMatrixCoefficients> for Rav1dMatrixCoefficients {
     type Error = ();
 
     fn try_from(value: Dav1dMatrixCoefficients) -> Result<Self, Self::Error> {
-        Self::from_repr(value as _).ok_or(())
+        u8::try_from(value).map(Self).map_err(|_| ())
     }
 }
 
@@ -954,7 +1117,14 @@ impl From<&Rav1dITUTT35> for Dav1dITUTT35 {
 }
 
 impl Rav1dITUTT35 {
+    /// The 1.1.0 signature, kept for compatibility.
     pub fn to_immut(
+        mutable: Arc<Mutex<Vec<Rav1dITUTT35>>>,
+    ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
+        Self::vec_to_immut(Arc::into_inner(mutable).unwrap().into_inner())
+    }
+
+    pub(crate) fn vec_to_immut(
         mutable: Vec<Rav1dITUTT35>,
     ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
         let rav1d = mutable.into_boxed_slice();
@@ -1174,7 +1344,7 @@ pub struct Rav1dSequenceHeader {
     pub mtrx: Rav1dMatrixCoefficients,
     pub chr: Rav1dChromaSamplePosition,
     pub hbd: u8,
-    pub color_range: Rav1dColorRange,
+    pub color_range: u8,
     pub num_operating_points: u8,
     pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub still_picture: u8,
@@ -1217,7 +1387,7 @@ pub struct Rav1dSequenceHeader {
     pub ss_hor: u8,
     pub ss_ver: u8,
     pub monochrome: u8,
-    pub color_description_present: bool,
+    pub color_description_present: u8,
     pub separate_uv_delta_q: u8,
     pub film_grain_present: u8,
     pub operating_parameter_info:
@@ -1408,7 +1578,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
             hbd,
-            color_range: Rav1dColorRange::from_dav1d(color_range),
+            color_range,
             num_operating_points,
             operating_points: operating_points.map(|c| c.into()),
             still_picture,
@@ -1448,7 +1618,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             ss_hor,
             ss_ver,
             monochrome,
-            color_description_present: color_description_present != 0,
+            color_description_present,
             separate_uv_delta_q,
             film_grain_present,
             operating_parameter_info: operating_parameter_info.map(|c| c.into()),
@@ -1523,7 +1693,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             mtrx: mtrx.into(),
             chr: chr.into(),
             hbd,
-            color_range: color_range.to_dav1d(),
+            color_range,
             num_operating_points,
             operating_points: operating_points.map(|rust| rust.into()),
             still_picture,
@@ -1563,7 +1733,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             ss_hor,
             ss_ver,
             monochrome,
-            color_description_present: color_description_present.into(),
+            color_description_present,
             separate_uv_delta_q,
             film_grain_present,
             operating_parameter_info: operating_parameter_info.map(|rust| rust.into()),
