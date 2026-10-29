@@ -268,7 +268,7 @@ pub(crate) fn rav1d_thread_picture_alloc(
         &mut p.p,
         content_light,
         mastering_display,
-        Rav1dITUTT35::to_immut(itut_t35),
+        Rav1dITUTT35::vec_to_immut(itut_t35),
         f.tiles[0].data.m.clone(),
     );
 

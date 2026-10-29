@@ -16,16 +16,16 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::{
     DRav1d, Dav1dSequenceHeader, Rav1dAdaptiveBoolean, Rav1dChromaSamplePosition,
-    Rav1dColorPrimaries, Rav1dColorRange, Rav1dContentLightLevel, Rav1dFilmGrainData,
+    Rav1dColorPrimariesKind, Rav1dColorRange, Rav1dContentLightLevel, Rav1dFilmGrainData,
     Rav1dFilterMode, Rav1dFrameHeader, Rav1dFrameHeaderCdef, Rav1dFrameHeaderDelta,
     Rav1dFrameHeaderDeltaLF, Rav1dFrameHeaderDeltaQ, Rav1dFrameHeaderFilmGrain,
     Rav1dFrameHeaderLoopFilter, Rav1dFrameHeaderOperatingPoint, Rav1dFrameHeaderQuant,
     Rav1dFrameHeaderRestoration, Rav1dFrameHeaderSegmentation, Rav1dFrameHeaderSuperRes,
     Rav1dFrameHeaderTiling, Rav1dFrameSize, Rav1dFrameSkipMode, Rav1dFrameType, Rav1dITUTT35,
-    Rav1dLoopfilterModeRefDeltas, Rav1dMasteringDisplay, Rav1dMatrixCoefficients, Rav1dObuType,
+    Rav1dLoopfilterModeRefDeltas, Rav1dMasteringDisplay, Rav1dMatrixCoefficientsKind, Rav1dObuType,
     Rav1dPixelLayout, Rav1dProfile, Rav1dRestorationType, Rav1dSegmentationData,
     Rav1dSegmentationDataSet, Rav1dSequenceHeader, Rav1dSequenceHeaderOperatingParameterInfo,
-    Rav1dSequenceHeaderOperatingPoint, Rav1dTransferCharacteristics, Rav1dTxfmMode,
+    Rav1dSequenceHeaderOperatingPoint, Rav1dTransferCharacteristicsKind, Rav1dTxfmMode,
     Rav1dWarpedMotionParams, Rav1dWarpedMotionType, RAV1D_MAX_CDEF_STRENGTHS,
     RAV1D_MAX_OPERATING_POINTS, RAV1D_MAX_TILE_COLS, RAV1D_MAX_TILE_ROWS, RAV1D_PRIMARY_REF_NONE,
     RAV1D_REFS_PER_FRAME,
@@ -352,9 +352,9 @@ fn parse_seq_hdr(
         monochrome = Default::default();
     }
     let color_description_present = gb.get_bit();
-    let pri;
-    let trc;
-    let mtrx;
+    let pri: Rav1dColorPrimariesKind;
+    let trc: Rav1dTransferCharacteristicsKind;
+    let mtrx: Rav1dMatrixCoefficientsKind;
     if color_description_present {
         pri = gb.get_bits(8).try_into().unwrap_or_default();
         trc = gb.get_bits(8).try_into().unwrap_or_default();
@@ -375,9 +375,9 @@ fn parse_seq_hdr(
         ss_ver = 1;
         ss_hor = ss_ver;
         chr = Rav1dChromaSamplePosition::Unknown;
-    } else if pri == Rav1dColorPrimaries::BT709
-        && trc == Rav1dTransferCharacteristics::SRGB
-        && mtrx == Rav1dMatrixCoefficients::Identity
+    } else if pri == Rav1dColorPrimariesKind::BT709
+        && trc == Rav1dTransferCharacteristicsKind::SRGB
+        && mtrx == Rav1dMatrixCoefficientsKind::Identity
     {
         layout = Rav1dPixelLayout::I444;
         full_color_range = true;
@@ -438,7 +438,7 @@ fn parse_seq_hdr(
     }
     let color_range = Rav1dColorRange::from_is_full(full_color_range);
     if strict_std_compliance
-        && mtrx == Rav1dMatrixCoefficients::Identity
+        && mtrx == Rav1dMatrixCoefficientsKind::Identity
         && layout != Rav1dPixelLayout::I444
     {
         return Err(Rav1dError::InvalidArgument);
@@ -465,12 +465,12 @@ fn parse_seq_hdr(
         max_width,
         max_height,
         layout,
-        pri,
-        trc,
-        mtrx,
+        pri: pri.into(),
+        trc: trc.into(),
+        mtrx: mtrx.into(),
         chr,
         hbd,
-        color_range,
+        color_range: color_range.to_dav1d(),
         num_operating_points,
         operating_points,
         still_picture,
@@ -510,7 +510,7 @@ fn parse_seq_hdr(
         ss_hor,
         ss_ver,
         monochrome,
-        color_description_present,
+        color_description_present: color_description_present as u8,
         separate_uv_delta_q,
         film_grain_present,
         operating_parameter_info,
@@ -2479,7 +2479,7 @@ fn parse_obus(
                     state.content_light.clone(),
                     state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
+                    Rav1dITUTT35::vec_to_immut(mem::take(&mut state.itut_t35)),
                     props.clone(),
                 );
                 state.event_flags |= state.refs[frame_hdr.existing_frame_idx as usize]
@@ -2539,7 +2539,7 @@ fn parse_obus(
                     state.content_light.clone(),
                     state.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    Rav1dITUTT35::to_immut(mem::take(&mut state.itut_t35)),
+                    Rav1dITUTT35::vec_to_immut(mem::take(&mut state.itut_t35)),
                     props.clone(),
                 );
             }
