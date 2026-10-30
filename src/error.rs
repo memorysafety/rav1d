@@ -4,6 +4,27 @@ use std::fmt::{self, Display, Formatter};
 
 use strum::FromRepr;
 
+/// The `errno` values that [`Rav1dError`] is made of, from the C library.
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+mod errno {
+    pub use libc::{EAGAIN, EINVAL, ENOENT, ENOMEM, ENOPROTOOPT, ERANGE};
+}
+
+/// A target without a C library, such as `wasm32-unknown-unknown`,
+/// has no `errno` values. Nothing there can call the C API they are for,
+/// so [`Rav1dError`] only needs them distinct, and these are Linux's.
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+mod errno {
+    use std::ffi::c_int;
+
+    pub const ENOENT: c_int = 2;
+    pub const EAGAIN: c_int = 11;
+    pub const ENOMEM: c_int = 12;
+    pub const EINVAL: c_int = 22;
+    pub const ERANGE: c_int = 34;
+    pub const ENOPROTOOPT: c_int = 92;
+}
+
 /// Error enum return by various `rav1d` operations.
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, Debug)]
 #[repr(u8)]
@@ -22,7 +43,7 @@ pub enum Rav1dError {
     /// No entity.
     ///
     /// No Sequence Header OBUs were found in the buffer.
-    NoEntity = libc::ENOENT as u8,
+    NoEntity = errno::ENOENT as u8,
 
     /// Try again.
     ///
@@ -32,27 +53,27 @@ pub enum Rav1dError {
     ///
     /// If this is returned by [`rav1d_get_picture`], then no decoded frames are pending
     /// currently and more data needs to be sent to the decoder.
-    TryAgain = libc::EAGAIN as u8,
+    TryAgain = errno::EAGAIN as u8,
 
     /// Out of memory.
     ///
     /// Not enough memory is currently available for performing this operation.
-    OutOfMemory = libc::ENOMEM as u8,
+    OutOfMemory = errno::ENOMEM as u8,
 
     /// Invalid argument.
     ///
     /// One of the arguments passed to the function, including the bitstream, is invalid.
-    InvalidArgument = libc::EINVAL as u8,
+    InvalidArgument = errno::EINVAL as u8,
 
     /// Out of range.
     ///
     /// The frame size is larger than the limit.
-    OutOfRange = libc::ERANGE as u8,
+    OutOfRange = errno::ERANGE as u8,
 
     /// Unsupported bitstream.
     ///
     /// The provided bitstream is not supported by `rav1d`.
-    UnsupportedBitstream = libc::ENOPROTOOPT as u8,
+    UnsupportedBitstream = errno::ENOPROTOOPT as u8,
 }
 
 impl Rav1dError {

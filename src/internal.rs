@@ -6,12 +6,12 @@ use std::sync::{Arc, OnceLock};
 use std::thread::JoinHandle;
 
 use atomig::{Atom, Atomic};
-use libc::ptrdiff_t;
 use parking_lot::{Condvar, Mutex, RwLock, RwLockReadGuard};
 use strum::FromRepr;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 use crate::align::{Align16, Align64, AlignedVec2, AlignedVec64};
+use crate::c_types::ptrdiff_t;
 use crate::cdef::Rav1dCdefDSPContext;
 use crate::cdf::{CdfContext, CdfThreadContext};
 use crate::cpu::{rav1d_get_cpu_flags, CpuFlags};

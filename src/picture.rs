@@ -7,9 +7,9 @@ use std::sync::Arc;
 use std::{mem, ptr};
 
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 use to_method::To as _;
 
+use crate::c_types::ptrdiff_t;
 use crate::error::{Dav1dResult, Rav1dError, Rav1dResult};
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;

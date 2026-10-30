@@ -5,9 +5,9 @@ use std::ffi::c_int;
 
 use assert_matches::assert_matches;
 use bitflags::bitflags;
-use libc::ptrdiff_t;
 
 use crate::align::Align16;
+use crate::c_types::ptrdiff_t;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::{Rav1dPixelLayout, Rav1dRestorationType};
 use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
