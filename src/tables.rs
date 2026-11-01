@@ -1,3 +1,7 @@
+// The tables the assembly reads keep their C names, which are exported only
+// when the assembly links them (`asm`).
+#![allow(non_upper_case_globals)]
+
 use std::ffi::c_uint;
 
 use strum::EnumCount;
@@ -679,7 +683,7 @@ pub static DAV1D_SGR_PARAMS: Align4<[[u16; 2]; 16]> = Align4([
     [22, 0],
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
     255, 128, 85, 64, 51, 43, 37, 32, 28, 26, 23, 21, 20, 18, 17, 16, 15, 14, 13, 13, 12, 12, 11,
     11, 10, 10, 9, 9, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -692,7 +696,7 @@ pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
     1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
     [
         [0, 1, -3, 63, 4, -1, 0, 0],
@@ -798,7 +802,7 @@ pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
     ],
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 127, 1, 0, 0, 0, 0],
     [0, -1, 127, 2, 0, 0, 0, 0],
@@ -995,7 +999,7 @@ pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 0, 0, 2, 127, -1, 0],
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 0, -128, 0, 0, 0, 0],
     [0, 0, 1, -128, -2, 1, 0, 0],
@@ -1063,7 +1067,7 @@ pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 1, -2, -128, 1, 0, 0],
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
     0, 0, 255, 128, 255, 149, 85, 64, 255, 197, 146, 105, 73, 50, 37, 32, 255, 225, 196, 170, 145,
     123, 102, 84, 68, 54, 43, 33, 26, 20, 17, 16, 255, 240, 225, 210, 196, 182, 169, 157, 145, 133,
@@ -1073,7 +1077,7 @@ pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
     32, 29, 27, 25, 22, 20, 18, 16, 15, 13, 12, 10, 9, 8, 7, 6, 6, 5, 5, 4, 4, 4,
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_dr_intra_derivative: [u16; 44] = [
     0, 1023, 0, 547, 372, 0, 0, 273, 215, 0, 178, 151, 0, 132, 116, 0, 102, 0, 90, 80, 0, 71, 64,
     0, 57, 51, 0, 45, 0, 40, 35, 0, 31, 27, 0, 23, 19, 0, 15, 0, 11, 0, 7, 3,
@@ -1121,7 +1125,7 @@ const fn gen_filters(f: [[i8; 7]; 8]) -> Align64<[i8; 64]> {
     Align64(a)
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5] = [
     gen_filters([
         [-6, 10, 0, 0, 0, 12, 0],
@@ -1175,14 +1179,14 @@ pub static dav1d_filter_intra_taps: [Align64<[i8; 64]>; 5] = [
     ]),
 ];
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([
     0, 0, 19, 0, 25, 14, 5, 0, 28, 22, 16, 11, 7, 3, 0, 0, 30, 27, 24, 21, 18, 15, 12, 10, 8, 6, 4,
     3, 0, 0, 0, 0, 31, 29, 28, 26, 24, 23, 21, 20, 19, 17, 16, 14, 13, 12, 11, 9, 8, 7, 6, 5, 4, 4,
     3, 2, 0, 0, 0, 0, 0, 0, 0, 0,
 ]);
 
-#[no_mangle]
+#[cfg_attr(feature = "asm", no_mangle)]
 pub static dav1d_gaussian_sequence: [i16; 2048] = [
     56, 568, -180, 172, 124, -84, 172, -64, -900, 24, 820, 224, 1248, 996, 272, -8, -916, -388,
     -732, -104, -188, 800, 112, -652, -320, -376, 140, -252, 492, -168, 44, -788, 588, -584, 500,
