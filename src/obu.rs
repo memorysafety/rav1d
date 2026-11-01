@@ -615,6 +615,11 @@ fn parse_frame_size(
     if frame_size_override {
         width1 = gb.get_bits(seqhdr.width_n_bits.into()) as c_int + 1;
         height = gb.get_bits(seqhdr.height_n_bits.into()) as c_int + 1;
+        // §5.9.5: `frame_width_minus_1` and `frame_height_minus_1` must not pass
+        // the sequence header's maximums.
+        if width1 > seqhdr.max_width || height > seqhdr.max_height {
+            return Err(Rav1dError::OutOfRange);
+        }
     } else {
         width1 = seqhdr.max_width;
         height = seqhdr.max_height;
@@ -2624,4 +2629,104 @@ pub(crate) fn rav1d_parse_obus(
             );
         })
         .map(|_| gb.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Decoder, Rav1dError};
+
+    fn push(bits: &mut Vec<bool>, value: u32, n: u32) {
+        bits.extend((0..n).rev().map(|k| value >> k & 1 == 1));
+    }
+
+    /// An OBU of `kind` over `bits` and the trailing bits.
+    fn obu(kind: u8, mut bits: Vec<bool>) -> Vec<u8> {
+        bits.push(true);
+        bits.resize(bits.len().next_multiple_of(8), false);
+        let body: Vec<u8> = bits
+            .chunks(8)
+            .map(|c| c.iter().fold(0, |v, &b| (v << 1) | u8::from(b)))
+            .collect();
+        let mut out = vec![kind << 3 | 2, body.len() as u8];
+        out.extend(body);
+        out
+    }
+
+    /// A full sequence header (not the reduced form) of a still picture, 8-bit
+    /// 4:2:0, its largest frame 64 × 64 in 8 bits each way, superblocks of 64,
+    /// no filters, selectable screen content tools.
+    fn sequence_header() -> Vec<u8> {
+        let mut b = Vec::new();
+        push(&mut b, 0, 3); // profile
+        push(&mut b, 0b10, 2); // still picture, not reduced
+        push(&mut b, 0, 2); // timing info, initial display delay
+        push(&mut b, 0, 5); // one operating point
+        push(&mut b, 0, 12); // its idc
+        push(&mut b, 0, 5); // its level
+        push(&mut b, 7, 4); // frame_width_bits_minus_1
+        push(&mut b, 7, 4);
+        push(&mut b, 63, 8); // max_frame_width_minus_1
+        push(&mut b, 63, 8);
+        push(&mut b, 0, 1); // frame ids
+        push(&mut b, 0, 3); // 128 superblocks, filter intra, intra edge
+        push(&mut b, 0, 5); // inter-intra, masked, warped, dual, order hint
+        push(&mut b, 0b11, 2); // screen content tools, integer mv: selectable
+        push(&mut b, 0, 3); // superres, cdef, restoration
+        push(&mut b, 0, 3); // high bit depth, monochrome, no colour description
+        push(&mut b, 0, 1); // limited range
+        push(&mut b, 0, 2); // chroma sample position
+        push(&mut b, 0, 1); // separate uv delta q
+        push(&mut b, 0, 1); // film grain
+        obu(1, b)
+    }
+
+    /// A key frame's header (an OBU of its own, no tile group) stating its
+    /// size as `width × height`.
+    fn frame_header(width: u32, height: u32) -> Vec<u8> {
+        let mut b = Vec::new();
+        push(&mut b, 0b0001, 4); // not an existing frame, a key frame, shown
+        push(&mut b, 1, 1); // disable_cdf_update
+        push(&mut b, 0, 1); // allow_screen_content_tools
+        push(&mut b, 1, 1); // frame_size_override_flag
+        push(&mut b, width - 1, 8);
+        push(&mut b, height - 1, 8);
+        push(&mut b, 0, 1); // render_and_frame_size_different
+        push(&mut b, 1, 1); // uniform_tile_spacing_flag (one superblock)
+        push(&mut b, 100, 8); // base_q_idx
+        push(&mut b, 0, 3); // no deltas of luma dc, chroma dc, chroma ac
+        push(&mut b, 0, 1); // using_qmatrix
+        push(&mut b, 0, 1); // segmentation
+        push(&mut b, 0, 1); // delta_q_present
+        push(&mut b, 0, 12); // loop filter levels
+        push(&mut b, 0, 3); // sharpness
+        push(&mut b, 0, 1); // loop filter deltas
+        push(&mut b, 0, 1); // tx_mode_select
+        push(&mut b, 0, 1); // reduced_tx_set
+        obu(3, b)
+    }
+
+    /// What a decoder answers `sequence_header` and a frame header stating
+    /// `width × height`.
+    fn answer(width: u32, height: u32) -> Result<(), Rav1dError> {
+        let mut decoder = Decoder::new().unwrap();
+        let mut data = sequence_header();
+        data.extend(frame_header(width, height));
+        decoder.send_data(data.into_boxed_slice(), None, None, None)
+    }
+
+    #[test]
+    fn a_frame_size_at_the_largest_frame_parses() {
+        assert_eq!(answer(64, 64), Ok(()));
+        assert_eq!(answer(1, 1), Ok(()));
+        assert_eq!(answer(64, 1), Ok(()));
+        assert_eq!(answer(1, 64), Ok(()));
+    }
+
+    #[test]
+    fn a_frame_size_past_the_largest_frame_is_out_of_range() {
+        assert_eq!(answer(65, 64), Err(Rav1dError::OutOfRange));
+        assert_eq!(answer(64, 65), Err(Rav1dError::OutOfRange));
+        assert_eq!(answer(256, 1), Err(Rav1dError::OutOfRange));
+        assert_eq!(answer(1, 256), Err(Rav1dError::OutOfRange));
+    }
 }
