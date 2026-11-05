@@ -143,6 +143,14 @@ impl Settings {
     pub fn get_decode_frame_type(&self) -> DecodeFrameType {
         self.inner.decode_frame_type
     }
+
+    pub fn set_logger_enabled(&mut self, enabled: bool) {
+        self.inner.logger = if enabled {
+            Some(Default::default())
+        } else {
+            None
+        };
+    }
 }
 
 /// A `rav1d` decoder instance.
