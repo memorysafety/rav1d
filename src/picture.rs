@@ -82,6 +82,24 @@ impl Rav1dPictureParameters {
     }
 }
 
+/// The size of a (transparent) huge page on most targets.
+/// This is only a hint, so it need not be exact.
+const HUGE_PAGE_SIZE: usize = 1 << 21;
+const _: () = assert!(HUGE_PAGE_SIZE % RAV1D_PICTURE_ALIGNMENT == 0);
+
+/// Hint to the OS that `buf` should be backed by huge pages if possible.
+#[cfg_attr(not(target_os = "linux"), expect(unused_variables))]
+fn advise_huge_pages(buf: &mut [u8]) {
+    #[cfg(target_os = "linux")]
+    {
+        // SAFETY: `buf` is an exclusively borrowed, valid range of memory,
+        // and `MADV_HUGEPAGE` only changes how the kernel backs these pages,
+        // not their contents or validity.
+        // Errors (e.x. unaligned ranges, no THP support) are ignored, as this is only a hint.
+        let _ = unsafe { libc::madvise(buf.as_mut_ptr().cast(), buf.len(), libc::MADV_HUGEPAGE) };
+    }
+}
+
 /// # Safety
 ///
 /// * `p_c` must be from a `&mut Dav1dPicture`.
@@ -112,14 +130,26 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     // SAFETY: Guaranteed by safety preconditions.
     let pool = unsafe { pool.as_ref() };
     let pool = pool.clone();
-    let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
+    // Large pictures are aligned to and padded to a multiple of the huge page size
+    // so that the OS can back them entirely with huge pages.
+    // Motion compensation reads references at arbitrary offsets,
+    // so this avoids a lot of TLB misses.
+    let (pic_align, pic_cap) = if pic_size >= HUGE_PAGE_SIZE / 2 {
+        let padded_size = pic_size.next_multiple_of(HUGE_PAGE_SIZE);
+        (HUGE_PAGE_SIZE, padded_size + HUGE_PAGE_SIZE)
+    } else {
+        (RAV1D_PICTURE_ALIGNMENT, pic_size + RAV1D_PICTURE_ALIGNMENT)
+    };
     // TODO fallible allocation
     let buf = pool.pop_init(pic_cap, 0);
     // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
     let mut buf = Box::new(MemPoolBuf { pool, buf });
     let data = &mut buf.buf[..pic_cap];
     // SAFETY: `Rav1dPicAllocator::alloc_picture_callback` requires that these are `RAV1D_PICTURE_ALIGNMENT`-aligned.
-    let align_offset = data.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
+    let align_offset = data.as_ptr().align_offset(pic_align);
+    if pic_align == HUGE_PAGE_SIZE {
+        advise_huge_pages(&mut data[align_offset..][..pic_cap - HUGE_PAGE_SIZE]);
+    }
     let data = &mut data[align_offset..][..pic_size];
 
     let (data0, data12) = data.split_at_mut(y_sz);

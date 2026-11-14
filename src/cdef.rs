@@ -54,8 +54,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     _dst: FFISafeRav1dPictureDataComponentOffset,
-    _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+    _top: *const FFISafe<WithOffset<&DisjointMut<AlignedVec64<u8>>>>,
+    _bottom: *const FFISafe<WithOffset<&PicOrBuf<'_, AlignedVec64<u8>>>>,
 ) -> ());
 
 pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
@@ -89,9 +89,10 @@ impl cdef::Fn {
         let damping = damping as c_int;
         let bd = bd.into_c();
 
-        let dst = dst.into_ffi_safe();
-        let top = top.into_ffi_safe();
-        let bottom = bottom.as_ref().into_ffi_safe();
+        let dst = dst.as_ffi_safe();
+        let top = top.as_ffi_safe();
+        let bottom = bottom.as_ref();
+        let bottom = bottom.as_ffi_safe();
 
         // SAFETY: Rust fallback is safe, asm is assumed to do the same.
         unsafe {
@@ -133,7 +134,7 @@ impl cdef_dir::Fn {
         let dst_ptr = dst.as_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = dst.as_ffi_safe();
         // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, variance, bd, dst) }
     }
@@ -387,19 +388,19 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
     dst: FFISafeRav1dPictureDataComponentOffset,
-    top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+    top: *const FFISafe<WithOffset<&DisjointMut<AlignedVec64<u8>>>>,
+    bottom: *const FFISafe<WithOffset<&PicOrBuf<'_, AlignedVec64<u8>>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `cdef::Fn::call`.
     let dst = unsafe { FFISafe::from_with_offset(dst) };
 
     // SAFETY: Reverse of cast in `cdef::Fn::call`.
     let left = unsafe { &*left.cast() };
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `cdef::Fn::call`.
     let top = unsafe { FFISafe::from_with_offset(top) };
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `cdef::Fn::call`.
     let bottom = unsafe { FFISafe::from_with_offset(bottom) };
 
     let bd = BD::from_c(bitdepth_max);
@@ -430,7 +431,7 @@ unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
     bitdepth_max: c_int,
     img: FFISafeRav1dPictureDataComponentOffset,
 ) -> c_int {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef_dir::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `cdef_dir::Fn::call`.
     let img = unsafe { FFISafe::from_with_offset(img) };
     let bd = BD::from_c(bitdepth_max);
     cdef_find_dir_rust(img, variance, bd)
@@ -639,8 +640,8 @@ mod neon {
         edges: CdefEdgeFlags,
         bitdepth_max: c_int,
         _dst: FFISafeRav1dPictureDataComponentOffset,
-        _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-        _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+        _top: *const FFISafe<WithOffset<&DisjointMut<AlignedVec64<u8>>>>,
+        _bottom: *const FFISafe<WithOffset<&PicOrBuf<'_, AlignedVec64<u8>>>>,
     ) {
         use crate::align::Align16;
 

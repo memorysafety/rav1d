@@ -22,6 +22,7 @@ use crate::include::dav1d::picture::{
 };
 use crate::internal::Rav1dFrameData;
 use crate::lf_mask::Av1FilterLUT;
+use crate::pixels::Pixels as _;
 use crate::strided::Strided as _;
 use crate::with_offset::WithOffset;
 use crate::wrap_fn_ptr::wrap_fn_ptr;
@@ -36,7 +37,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     w: c_int,
     bitdepth_max: c_int,
     _dst: FFISafeRav1dPictureDataComponentOffset,
-    _lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
+    _lvl: *const FFISafe<WithOffset<&DisjointMut<AlignedVec2<u8>>>>,
 ) -> ());
 
 impl loopfilter_sb::Fn {
@@ -58,13 +59,103 @@ impl loopfilter_sb::Fn {
         let lut = &f.lf.lim_lut;
         let w = w as c_int;
         let bd = f.bitdepth_max;
-        let dst = dst.into_ffi_safe();
-        let lvl = lvl.into_ffi_safe();
+        let dst = dst.as_ffi_safe();
+        let lvl = lvl.as_ffi_safe();
         // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
                 dst_ptr, stride, mask, lvl_ptr, b4_stride, lut, w, bd, dst, lvl,
             )
+        }
+    }
+
+    /// The same as calling [`Self::call`] once for each of `masks`,
+    /// where for the `i`th of `masks`, `dst` is `dst + i * dst_step`,
+    /// `mask` is `mask(&masks[i])`, and `lvl` is `lvl + i * lvl_step`,
+    /// except that `dst` and `lvl` are bounds checked
+    /// once for all of the calls instead of once in each call.
+    #[inline]
+    pub fn call_seq<BD: BitDepth, M>(
+        &self,
+        f: &Rav1dFrameData,
+        dst: Rav1dPictureDataComponentOffset,
+        dst_step: isize,
+        masks: &[M],
+        mask: impl Fn(&M) -> [u32; 3],
+        lvl: WithOffset<&DisjointMut<AlignedVec2<u8>>>,
+        lvl_step: usize,
+        w: usize,
+    ) {
+        #[cold]
+        #[inline(never)]
+        fn out_of_bounds(n: usize, offset: usize, step: isize, len: usize) -> ! {
+            panic!(
+                "{n} offsets starting at {offset} with step {step} out of range for length {len}"
+            );
+        }
+
+        let n = masks.len();
+        if n == 0 {
+            return;
+        }
+        // `n - 1 <= isize::MAX` since it's less than the length of a slice.
+        let last_i = (n - 1) as isize;
+
+        // Without overflow, `offset + i * step` for `i in 0..n` is monotonic in `i`,
+        // so if the first and last offsets are in bounds, then all of them are.
+        let dst_len = dst.data.pixel_len::<BD>();
+        let dst_in_bounds = dst_step
+            .checked_mul(last_i)
+            .and_then(|span| dst.offset.checked_add_signed(span))
+            .is_some_and(|last| cmp::max(dst.offset, last) <= dst_len);
+        if !dst_in_bounds {
+            out_of_bounds(n, dst.offset, dst_step, dst_len);
+        }
+        let lvl_len = lvl.data.len();
+        let lvl_in_bounds = lvl_step
+            .checked_mul(n - 1)
+            .and_then(|span| lvl.offset.checked_add(span))
+            .is_some_and(|last| last <= lvl_len);
+        if !lvl_in_bounds {
+            out_of_bounds(n, lvl.offset, lvl_step as isize, lvl_len);
+        }
+
+        let dst_base = dst.data.as_mut_ptr::<BD>();
+        let lvl_base = lvl.data.as_mut_ptr();
+        let stride = dst.stride();
+        let b4_stride = f.b4_stride;
+        let lut = &f.lf.lim_lut;
+        let w = w as c_int;
+        let bd = f.bitdepth_max;
+        let f = self.get();
+        let mut dst = dst;
+        let mut lvl = lvl;
+        for m in masks {
+            let mask = mask(m);
+            // With an empty mask, there are no edges to filter, so the call wouldn't do anything.
+            if mask[0] | mask[1] | mask[2] != 0 {
+                // SAFETY: `dst.offset` is `i * dst_step` after the initial `dst.offset`
+                // for an `i < n`, which is `<= dst_len` (see the bounds check above),
+                // so this is in bounds of (or one past the end of) the pixels `dst_base` points to.
+                let dst_ptr = unsafe { dst_base.add(dst.offset) }.cast();
+                // SAFETY: `lvl.offset` is `i * lvl_step` after the initial `lvl.offset`
+                // for an `i < n`, which is `<= lvl_len` (see the bounds check above),
+                // so this is in bounds of (or one past the end of) the bytes `lvl_base` points to.
+                let lvl_ptr = unsafe { lvl_base.add(lvl.offset) }.cast::<[u8; 4]>();
+                let dst_ffi = dst.as_ffi_safe();
+                let lvl_ffi = lvl.as_ffi_safe();
+                // SAFETY: Fallback `fn loop_filter_sb128_rust` is safe; asm is supposed to do the same.
+                // These are the same args as in `Self::call`.
+                unsafe {
+                    f(
+                        dst_ptr, stride, &mask, lvl_ptr, b4_stride, lut, w, bd, dst_ffi, lvl_ffi,
+                    )
+                }
+            }
+            // These don't overflow for another iteration (see the bounds checks above);
+            // after the last iteration, they're unused.
+            dst.offset = dst.offset.wrapping_add_signed(dst_step);
+            lvl.offset = lvl.offset.wrapping_add(lvl_step);
         }
     }
 
@@ -369,11 +460,11 @@ unsafe extern "C" fn loop_filter_sb128_c_erased<BD: BitDepth, const HV: usize, c
     wh: c_int,
     bitdepth_max: c_int,
     dst: FFISafeRav1dPictureDataComponentOffset,
-    lvl: WithOffset<*const FFISafe<DisjointMut<AlignedVec2<u8>>>>,
+    lvl: *const FFISafe<WithOffset<&DisjointMut<AlignedVec2<u8>>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
     let dst = unsafe { FFISafe::from_with_offset(dst) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loopfilter_sb::Fn::call`.
     let lvl = unsafe { FFISafe::from_with_offset(lvl) };
     let b4_stride = b4_stride as usize;
     let bd = BD::from_c(bitdepth_max);

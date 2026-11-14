@@ -106,6 +106,56 @@ static AV1_INTRA_PREDICTION_EDGES: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MO
     b
 };
 
+/// Copy the column of pixels directly left of `dst` (top to bottom)
+/// into `left` in reverse order (`left.last()` being the top-most pixel).
+#[inline(always)]
+fn copy_left_edge<BD: BitDepth>(
+    left: &mut [BD::Pixel],
+    dst: Rav1dPictureDataComponentOffset,
+    stride: isize,
+) {
+    let n = left.len();
+    if n == 0 {
+        return;
+    }
+    if cfg!(debug_assertions) {
+        // Check bounds and disjointness of each pixel in debug mode.
+        for (i, left) in left.iter_mut().rev().enumerate() {
+            *left = *(dst + (i as isize * stride - 1)).index::<BD>();
+        }
+        return;
+    }
+    // Bounds check the whole column once by checking its first and last pixel.
+    let top = dst + -1isize;
+    let _ = *top.index::<BD>();
+    // Checked, so that `i * stride` can't wrap around for any `i < n` below.
+    let span = stride.checked_mul((n - 1) as isize).unwrap();
+    let _ = *(top + span).index::<BD>();
+    let top = top.as_ptr::<BD>();
+    // SAFETY (for all `read`s below): `i < n` always holds.
+    // The pixel offsets `i * stride` are monotonic in `i`,
+    // and the pixels at `i = 0` and `i = n - 1` were just bounds checked above
+    // to be in the same picture component allocation as `top`,
+    // so every pixel in between is in bounds, too.
+    // These are the same single pixel reads otherwise done through
+    // [`Rav1dPictureDataComponentOffset::index`]; no reference
+    // to any other pixel (which other threads may be writing) is created.
+    // SAFETY: See above.
+    let read = |i: usize| unsafe { top.offset(i as isize * stride).read() };
+    // `n` is a multiple of 4 in practice, so go 4 rows at a time.
+    let mut chunks = left.rchunks_exact_mut(4);
+    let mut i = 0;
+    for left in &mut chunks {
+        // `i + 3 < n` since this chunk is within `left`.
+        left.copy_from_slice(&[read(i + 3), read(i + 2), read(i + 1), read(i)]);
+        i += 4;
+    }
+    for left in chunks.into_remainder().iter_mut().rev() {
+        *left = read(i);
+        i += 1;
+    }
+}
+
 /// Luma intra edge preparation.
 ///
 /// `x`/`y`/`start`/`w`/`h` are in luma block (4px) units:
@@ -149,6 +199,7 @@ static AV1_INTRA_PREDICTION_EDGES: [Av1IntraPredictionEdge; N_IMPL_INTRA_PRED_MO
 /// If edges are not available (because the edge position
 /// is outside the tile dimensions or because edge_flags indicates lack of edge availability),
 /// they will be extended from nearby edges as defined by the AV1 spec.
+#[inline(always)]
 pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
     have_left: bool,
@@ -233,9 +284,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         let left = &mut topleft_out[topleft_out_offset - sz..];
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
-            for i in 0..px_have {
-                left[sz - 1 - i] = *(dst + (i as isize * stride - 1)).index::<BD>();
-            }
+            copy_left_edge::<BD>(&mut left[sz - px_have..sz], dst, stride);
             if px_have < sz {
                 BD::pixel_set(left, left[sz - px_have], sz - px_have);
             }

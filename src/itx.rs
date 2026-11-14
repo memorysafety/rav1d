@@ -249,13 +249,13 @@ unsafe extern "C" fn inv_txfm_add_c_erased<
     coeff: *mut DynCoef,
     eob: i32,
     bitdepth_max: i32,
-    coeff_len: u16,
+    coeff_len: usize,
     dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `itxfm::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `itxfm::Fn::call`.
     let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn itxfm::Fn::call` passes `coeff.len()` as `coeff_len`.
-    let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len.into()) };
+    let coeff = unsafe { slice::from_raw_parts_mut(coeff.cast(), coeff_len) };
     let bd = BD::from_c(bitdepth_max);
     inv_txfm_add_rust::<W, H, TYPE, BD>(dst, coeff, eob, bd)
 }
@@ -266,7 +266,7 @@ wrap_fn_ptr!(unsafe extern "C" fn itxfm(
     coeff: *mut DynCoef,
     eob: i32,
     bitdepth_max: i32,
-    _coeff_len: u16,
+    _coeff_len: usize,
     _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
@@ -280,10 +280,10 @@ impl itxfm::Fn {
     ) {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
-        let coeff_len = coeff.len() as u16;
+        let coeff_len = coeff.len();
         let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = dst.as_ffi_safe();
         // SAFETY: Fallback `fn inv_txfm_add_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, coeff, eob, bd, coeff_len, dst) }
     }

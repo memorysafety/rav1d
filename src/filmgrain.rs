@@ -126,8 +126,8 @@ impl fgy_32x32xn::Fn {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let bd = bd.into_c();
-        let dst_row = dst_row.into_ffi_safe();
-        let src_row = src_row.into_ffi_safe();
+        let dst_row = dst_row.as_ffi_safe();
+        let src_row = src_row.as_ffi_safe();
         // SAFETY: Fallback `fn fgy_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -203,9 +203,9 @@ impl fguv_32x32xn::Fn {
         let uv_pl = is_uv as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
-        let dst_row = dst_row.into_ffi_safe();
-        let src_row = src_row.into_ffi_safe();
-        let luma_row = luma_row.into_ffi_safe();
+        let dst_row = dst_row.as_ffi_safe();
+        let src_row = src_row.as_ffi_safe();
+        let luma_row = luma_row.as_ffi_safe();
         // SAFETY: Fallback `fn fguv_32x32xn_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -532,7 +532,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     dst_row: FFISafeRav1dPictureDataComponentOffset,
     src_row: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `fgy_32x32xn::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `fgy_32x32xn::Fn::call`.
     let [dst_row, src_row] = [dst_row, src_row].map(|it| unsafe { FFISafe::from_with_offset(it) });
     let data = &data.clone().into();
     // SAFETY: Casting back to the original type from the `fn` ptr call.
@@ -873,7 +873,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     luma_row: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let [dst_row, src_row, luma_row] = [dst_row, src_row, luma_row].map(|row| {
-        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `fguv_32x32xn::Fn::call`.
+        // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `fguv_32x32xn::Fn::call`.
         unsafe { FFISafe::from_with_offset(row) }
     });
     let data = &data.clone().into();
