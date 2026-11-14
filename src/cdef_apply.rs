@@ -280,7 +280,10 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                 // by iterating over the set bits of the mask instead of over all blocks.
                 // Bit `2 * i` is set if either of the two 4x4 columns of 8x8 block `i` is set.
                 let blocks = (noskip_mask | noskip_mask >> 1) & 0x5555_5555;
-                let mut blocks = (blocks >> (bx_start & 30)) & ((1 << (bx_end - bx_start)) - 1);
+                // `sb64w` is rounded up to a multiple of 128 pixels,
+                // so the last 64x64 superblock can start past the frame edge.
+                let nb = cmp::max(bx_end - bx_start, 0);
+                let mut blocks = (blocks >> (bx_start & 30)) & ((1 << nb) - 1);
                 // The block after the last filtered (i.e. not skipped) block.
                 let mut next_bx = bx_start;
                 while blocks != 0 {
