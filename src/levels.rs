@@ -6,7 +6,7 @@ use std::{fmt, mem};
 
 use bitflags::bitflags;
 use strum::{EnumCount, FromRepr};
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
+use zerocopy::{transmute, AsBytes, FromBytes, FromZeroes};
 
 use crate::align::ArrayDefault;
 use crate::enum_map::{DefaultValue, EnumKey};
@@ -396,7 +396,11 @@ impl PartialEq for Mv {
         // which isn't optimized well and isn't coalesced into wider loads.
         // Comparing all of the bytes at once optimizes better with wider loads.
         // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
+        // Comparing as a single integer by value (rather than as byte slices)
+        // also lets the operands stay in registers instead of being spilled.
+        let this: u32 = transmute!(*self);
+        let other: u32 = transmute!(*other);
+        this == other
     }
 }
 

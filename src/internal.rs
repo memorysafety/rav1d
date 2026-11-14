@@ -13,7 +13,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 use crate::align::{Align16, Align64, AlignedVec2, AlignedVec64};
 use crate::cdef::Rav1dCdefDSPContext;
-use crate::cdf::{CdfContext, CdfThreadContext};
+use crate::cdf::{CdfContext, CdfThreadContext, CdfThreadContextData};
 use crate::cpu::{rav1d_get_cpu_flags, CpuFlags};
 use crate::disjoint_mut::{DisjointImmutGuard, DisjointMut, DisjointMutArcSlice, DisjointMutGuard};
 use crate::env::BlockContext;
@@ -50,6 +50,7 @@ use crate::recon::{
 };
 use crate::refmvs::{Rav1dRefmvsDSPContext, RefMvsFrame, RefMvsTemporalBlock, RefmvsTile};
 use crate::relaxed_atomic::RelaxedAtomic;
+use crate::task_sync::TaskCondvar;
 use crate::thread_task::{Rav1dTaskIndex, Rav1dTasks};
 
 #[derive(Default)]
@@ -340,6 +341,16 @@ pub struct Rav1dState {
     // reference/entropy state
     pub(crate) refs: [Rav1dContextRefs; 8],
     pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
+
+    /// The [`CdfThreadContext::Cdf`]s allocated so far,
+    /// which are reused once no frame or reference refers to them anymore
+    /// instead of allocating and zeroing a new one for every frame.
+    pub(crate) cdf_pool: Vec<Arc<CdfThreadContextData>>,
+
+    /// The temporal motion vector buffers ([`Rav1dFrameData::mvs`]) allocated so far,
+    /// which are reused once no frame or reference refers to them anymore
+    /// instead of allocating and zeroing a new one for every frame.
+    pub(crate) mvs_pool: Vec<DisjointMutArcSlice<RefMvsTemporalBlock>>,
 
     pub(crate) operating_point_idc: c_uint,
     pub(crate) max_spatial_id: u8,
@@ -668,7 +679,7 @@ pub struct Rav1dFrameContextLf {
 #[repr(C)]
 pub(crate) struct Rav1dFrameContextTaskThread {
     pub lock: Mutex<()>,
-    pub cond: Condvar,
+    pub cond: TaskCondvar,
     pub ttd: Arc<TaskThreadData>,
     pub tasks: Rav1dTasks,
     pub init_done: AtomicI32,
@@ -829,6 +840,7 @@ pub struct Rav1dTileStateFrameThread {
 pub struct Rav1dTileStateContext {
     pub cdf: CdfContext,
     pub msac: MsacContext,
+    pub lr_ref: [Av1RestorationUnit; 3],
 }
 
 #[derive(Default)]
@@ -852,8 +864,6 @@ pub struct Rav1dTileState {
     pub last_delta_lf: RelaxedAtomic<[i8; 4]>,
     pub lflvlmem: RwLock<[Align16<[[[u8; 2]; 8]; 4]>; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub lflvl: RelaxedAtomic<TileStateRef>,
-
-    pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
 }
 
 #[derive(Clone, Copy, Default, FromRepr)]
@@ -1081,7 +1091,7 @@ pub struct Rav1dTaskContextFrameThread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContextTaskThread {
-    pub cond: Condvar,
+    pub cond: TaskCondvar,
     pub ttd: Arc<TaskThreadData>,
     pub flushed: RelaxedAtomic<bool>,
     pub die: RelaxedAtomic<bool>,
@@ -1091,7 +1101,7 @@ pub(crate) struct Rav1dTaskContextTaskThread {
 impl Rav1dTaskContextTaskThread {
     pub(crate) fn new(ttd: Arc<TaskThreadData>) -> Self {
         Self {
-            cond: Condvar::new(),
+            cond: TaskCondvar::new(),
             ttd,
             flushed: Default::default(),
             die: Default::default(),

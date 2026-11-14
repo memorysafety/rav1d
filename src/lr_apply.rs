@@ -130,13 +130,8 @@ fn backup_4xu<BD: BitDepth>(
 ) {
     let u = u as usize;
     let dst = &mut dst[..u];
-    for i in 0..u {
-        let dst = &mut dst[i];
-        let n = dst.len();
-        let src = src + (i as isize * src.pixel_stride::<BD>());
-        let src = &*src.slice::<BD>(n);
-        BD::pixel_copy(dst, src, n);
-    }
+    // Bounds check all of the rows once instead of each row separately.
+    src.rows::<BD>(u, 4).copy_cols_to_rows(0, dst);
 }
 
 fn lr_sbrow<BD: BitDepth>(
@@ -182,19 +177,16 @@ fn lr_sbrow<BD: BitDepth>(
     aligned_unit_pos <<= ss_ver;
     let sb_idx = (aligned_unit_pos >> 7) * f.sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
-    lr[0] = *f.lf.lr_mask[sb_idx as usize].lr[plane as usize][unit_idx as usize]
-        .try_read()
-        .unwrap();
+    lr[0] = f.lf.lr_mask[sb_idx as usize].lr[plane as usize][unit_idx as usize].get();
     let mut restore = lr[0].r#type != Rav1dRestorationType::None;
     let mut x = 0;
     let mut bit = false;
     while x + max_unit_size <= w {
         let next_x = x + unit_size;
         let next_u_idx = unit_idx + (next_x >> shift_hor - 1 & 1);
-        lr[!bit as usize] = *f.lf.lr_mask[(sb_idx + (next_x >> shift_hor)) as usize].lr
+        lr[!bit as usize] = f.lf.lr_mask[(sb_idx + (next_x >> shift_hor)) as usize].lr
             [plane as usize][next_u_idx as usize]
-            .try_read()
-            .unwrap();
+            .get();
         let restore_next = lr[!bit as usize].r#type != Rav1dRestorationType::None;
         if restore_next {
             backup_4xu::<BD>(

@@ -12,7 +12,7 @@ use crate::disjoint_mut::DisjointMut;
 use crate::include::common::bitdepth::{BitDepth, BPC};
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
+use crate::include::dav1d::picture::{PixelRows, Rav1dPictureDataComponentOffset};
 use crate::internal::{Rav1dContext, Rav1dFrameData, Rav1dTaskContext};
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::{Strided as _, WithStride};
@@ -76,46 +76,38 @@ fn backup2lines<BD: BitDepth>(
     }
 }
 
-#[inline(always)]
+/// Back up the 2 columns of pixels to the left of `x_off` (in luma pixels)
+/// of the 8 luma rows (and the corresponding chroma rows) in `src`.
+///
+/// `flag` must not contain [`Backup2x8Flags::UV`] for [`Rav1dPixelLayout::I400`],
+/// as there are no chroma rows to back up then.
+#[inline(never)]
 fn backup2x8<BD: BitDepth>(
     dst: &mut [[[BD::Pixel; 2]; 8]; 3],
-    src: &[Rav1dPictureDataComponentOffset; 3],
+    src: &[PixelRows<BD>; 3],
     x_off: c_int,
     layout: Rav1dPixelLayout,
     flag: Backup2x8Flags,
 ) {
-    let x_off = x_off as isize;
-    // Precomputing (only `stride[0]`) optimizes better.
-    let stride_0 = src[0].pixel_stride::<BD>();
+    let x_off = x_off as usize;
 
     if flag.contains(Backup2x8Flags::Y) {
-        for y in 0..8 {
-            let y_dst = &mut dst[0][y];
-            let y_src = src[0] + (y as isize * stride_0 + x_off - 2);
-            let y_len = y_dst.len();
-            BD::pixel_copy(y_dst, &y_src.slice::<BD>(y_len), y_len);
-        }
+        src[0].copy_cols_to::<2, 8>(x_off - 2, &mut dst[0]);
     }
 
-    if layout == Rav1dPixelLayout::I400 || !flag.contains(Backup2x8Flags::UV) {
+    if !flag.contains(Backup2x8Flags::UV) {
         return;
     }
 
-    let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_ver = layout == Rav1dPixelLayout::I420;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
-    let strides = [
-        stride_0,
-        src[1].pixel_stride::<BD>(),
-        src[2].pixel_stride::<BD>(),
-    ];
 
-    let x_off = x_off >> ss_hor;
-    for y in 0..8 >> ss_ver {
-        for pl in 1..3 {
-            let uv_dst = &mut dst[pl][y];
-            let uv_src = src[pl] + (y as isize * strides[pl] + x_off - 2);
-            let uv_len = uv_dst.len();
-            BD::pixel_copy(uv_dst, &uv_src.slice::<BD>(uv_len), uv_len);
+    let x_off = (x_off >> ss_hor) - 2;
+    for pl in 1..3 {
+        if ss_ver {
+            src[pl].copy_cols_to::<2, 4>(x_off, dst[pl].first_chunk_mut().unwrap());
+        } else {
+            src[pl].copy_cols_to::<2, 8>(x_off, &mut dst[pl]);
         }
     }
 }
@@ -175,6 +167,20 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
 
+    let bw = f.bw;
+
+    // Load the filter functions once instead of for every call.
+    let cdef_dir = f.dsp.cdef.dir;
+    let cdef_fb_y = f.dsp.cdef.fb[0];
+    // There is no chroma to filter for `I400` (where `uv_idx` is out of bounds), so this is unused then.
+    let cdef_fb_uv = match layout {
+        Rav1dPixelLayout::I400 => cdef_fb_y,
+        _ => f.dsp.cdef.fb[uv_idx as usize],
+    };
+
+    // Bounds check the superblocks of this row once instead of for every 64x64 superblock.
+    let lflvl = &f.lf.mask[lflvl_offset as usize..][..(sb64w as usize + 1) / 2];
+
     let mut bit = false;
 
     // In C, this is declared uninitialized inside the loop,
@@ -204,31 +210,59 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
             backup2lines::<BD>(&f.lf.cdef_line_buf, cdef_top_bak, ptrs, layout);
         }
 
-        let mut iptrs = ptrs;
+        // Bounds check the rows that `backup2x8` reads from once per row of blocks.
+        let uv_h = if layout == Rav1dPixelLayout::I400 {
+            0
+        } else {
+            8 >> ss_ver
+        };
+        let uv_w = (bw as usize * 4) >> ss_hor;
+        let rows = [
+            ptrs[0].rows::<BD>(8, bw as usize * 4),
+            ptrs[1].rows::<BD>(uv_h, uv_w),
+            ptrs[2].rows::<BD>(uv_h, uv_w),
+        ];
         edges.remove(CdefEdgeFlags::HAVE_LEFT);
         edges.insert(CdefEdgeFlags::HAVE_RIGHT);
         let mut prev_flag = Backup2x8Flags::empty();
         let mut last_skip = true;
-        for sbx in 0..sb64w {
-            let sb128x = sbx >> 1;
-            let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
-            let cdef_idx = f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
-                .get() as c_int;
-            if cdef_idx == -1
-                || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
-                    && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
-            {
+        let mut sbx = 0;
+        loop {
+            // Skip superblocks without CDEF in a tight loop,
+            // so that everything else is only calculated for superblocks that are filtered.
+            let found = loop {
+                if sbx >= sb64w {
+                    break None;
+                }
+                let lflvl = &lflvl[(sbx >> 1) as usize];
+                let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
+                let cdef_idx = lflvl.cdef_idx[sb64_idx as usize].get() as c_int;
+                if cdef_idx != -1
+                    && (frame_hdr.cdef.y_strength[cdef_idx as usize] != 0
+                        || frame_hdr.cdef.uv_strength[cdef_idx as usize] != 0)
+                {
+                    break Some((lflvl, cdef_idx));
+                }
                 last_skip = true;
-            } else {
+                sbx += 1;
+            };
+            let Some((lflvl, cdef_idx)) = found else {
+                break;
+            };
+            if sbx > 0 {
+                edges.insert(CdefEdgeFlags::HAVE_LEFT);
+            }
+            {
                 // Create a complete 32-bit mask for the sb row ahead of time.
-                let noskip_row =
-                    &f.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
+                let noskip_row = &lflvl.noskip_mask[by_idx as usize];
                 let noskip_mask = (noskip_row[1].get() as u32) << 16 | noskip_row[0].get() as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 let uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
-                let flag =
-                    Backup2x8Flags::Y.select(y_lvl != 0) | Backup2x8Flags::UV.select(uv_lvl != 0);
+                // There is no chroma to back up for `I400`,
+                // which is checked here once per superblock instead of in every `backup2x8` call.
+                let flag = Backup2x8Flags::Y.select(y_lvl != 0)
+                    | Backup2x8Flags::UV.select(uv_lvl != 0 && layout != Rav1dPixelLayout::I400);
 
                 let y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 let mut y_sec_lvl = y_lvl & 3;
@@ -240,17 +274,36 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                 uv_sec_lvl += (uv_sec_lvl == 3) as u8;
                 uv_sec_lvl <<= bitdepth_min_8;
 
-                let mut bptrs = iptrs;
-                for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, f.bw)).step_by(2) {
-                    if bx + 2 >= f.bw {
+                let bx_end = cmp::min((sbx + 1) * sbsz, bw);
+                let bx_start = sbx * sbsz;
+                // Only visit the 8x8 blocks that have any coded coefficients
+                // by iterating over the set bits of the mask instead of over all blocks.
+                // Bit `2 * i` is set if either of the two 4x4 columns of 8x8 block `i` is set.
+                let blocks = (noskip_mask | noskip_mask >> 1) & 0x5555_5555;
+                let mut blocks = (blocks >> (bx_start & 30)) & ((1 << (bx_end - bx_start)) - 1);
+                // The block after the last filtered (i.e. not skipped) block.
+                let mut next_bx = bx_start;
+                while blocks != 0 {
+                    let bx = bx_start + blocks.trailing_zeros() as c_int;
+                    blocks &= blocks - 1;
+                    if bx != next_bx {
+                        // There were skipped blocks in between.
+                        last_skip = true;
+                        edges.insert(CdefEdgeFlags::HAVE_LEFT);
+                    }
+                    if bx + 2 >= bw {
                         edges.remove(CdefEdgeFlags::HAVE_RIGHT);
                     }
-
-                    // check if this 8x8 block had any coded coefficients; if not, go to the next block
-                    let bx_mask: u32 = 3 << (bx & 30);
-                    if noskip_mask & bx_mask == 0 {
-                        last_skip = true;
-                    } else {
+                    {
+                        // `ptrs` is only advanced per row, so the block's pointers
+                        // are derived from `bx` here instead of being carried
+                        // (in memory) through all of the skipped blocks, too.
+                        let x_off = bx * 4;
+                        let bptrs = [
+                            ptrs[0] + x_off as usize,
+                            ptrs[1] + (x_off >> ss_hor) as usize,
+                            ptrs[2] + (x_off >> ss_hor) as usize,
+                        ];
                         let do_left = if last_skip {
                             flag
                         } else {
@@ -260,16 +313,28 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         if !do_left.is_empty() && edges.contains(CdefEdgeFlags::HAVE_LEFT) {
                             // we didn't backup the prefilter data because it wasn't
                             // there, so do it here instead
-                            backup2x8::<BD>(&mut lr_bak[bit as usize], &bptrs, 0, layout, do_left);
+                            backup2x8::<BD>(
+                                &mut lr_bak[bit as usize],
+                                &rows,
+                                x_off,
+                                layout,
+                                do_left,
+                            );
                         }
                         if edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
                             // backup pre-filter data for next iteration
-                            backup2x8::<BD>(&mut lr_bak[!bit as usize], &bptrs, 8, layout, flag);
+                            backup2x8::<BD>(
+                                &mut lr_bak[!bit as usize],
+                                &rows,
+                                x_off + 8,
+                                layout,
+                                flag,
+                            );
                         }
 
                         let mut variance = 0;
                         let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            f.dsp.cdef.dir.call::<BD>(bptrs[0], &mut variance, bd)
+                            cdef_dir.call::<BD>(bptrs[0], &mut variance, bd)
                         } else {
                             0
                         };
@@ -339,7 +404,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                f.dsp.cdef.fb[0].call::<BD>(
+                                cdef_fb_y.call::<BD>(
                                     bptrs[0],
                                     &lr_bak[bit as usize][0],
                                     top,
@@ -353,7 +418,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            f.dsp.cdef.fb[0].call::<BD>(
+                            cdef_fb_y.call::<BD>(
                                 bptrs[0],
                                 &lr_bak[bit as usize][0],
                                 top,
@@ -439,7 +504,7 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                                     (top, WithOffset::pic(bottom))
                                 });
 
-                                f.dsp.cdef.fb[uv_idx as usize].call::<BD>(
+                                cdef_fb_uv.call::<BD>(
                                     bptrs[pl],
                                     &lr_bak[bit as usize][pl],
                                     top,
@@ -455,17 +520,16 @@ pub(crate) fn rav1d_cdef_brow<BD: BitDepth>(
                         }
                         bit = !bit;
                         last_skip = false;
+                        next_bx = bx + 2;
+                        edges.insert(CdefEdgeFlags::HAVE_LEFT);
                     }
-                    bptrs[0] += 8usize;
-                    bptrs[1] += 8usize >> ss_hor;
-                    bptrs[2] += 8usize >> ss_hor;
-                    edges.insert(CdefEdgeFlags::HAVE_LEFT);
+                }
+                if next_bx < bx_end {
+                    last_skip = true;
                 }
             }
-            iptrs[0] += sbsz as usize * 4;
-            iptrs[1] += sbsz as usize * 4 >> ss_hor;
-            iptrs[2] += sbsz as usize * 4 >> ss_hor;
             edges.insert(CdefEdgeFlags::HAVE_LEFT);
+            sbx += 1;
         }
         ptrs[0] += 8 * ptrs[0].pixel_stride::<BD>();
         ptrs[1] += 8 * (ptrs[1].pixel_stride::<BD>() >> ss_ver);
