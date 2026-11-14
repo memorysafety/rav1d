@@ -37,21 +37,28 @@ impl<'a, T> FFISafe<'a, T> {
         // SAFETY: `this` originally was a `&'a mut T` in `Self::new_mut`.
         unsafe { &mut *this.cast() }
     }
+}
 
+impl<'a, T> FFISafe<'a, WithOffset<&'a T>> {
     /// # Safety
     ///
-    /// `this` must have been returned from [`WithOffset::into_ffi_safe`].
-    pub unsafe fn from_with_offset(this: WithOffset<*const FFISafe<'a, T>>) -> WithOffset<&'a T> {
-        // SAFETY: We required that the caller created `this` using `into_ffi_safe`, which uses `FFISafe::new`.
-        this.map(|data| unsafe { FFISafe::get(data) })
+    /// `this` must have been returned from [`WithOffset::as_ffi_safe`].
+    pub unsafe fn from_with_offset(this: *const Self) -> WithOffset<&'a T> {
+        // SAFETY: We required that the caller created `this` using `as_ffi_safe`, which uses `FFISafe::new`.
+        *unsafe { FFISafe::get(this) }
     }
 }
 
 impl<'a, T> WithOffset<&'a T> {
     /// Convert `self` into an FFI-safe type.
     ///
-    /// LLVM is able to better optimize the resulting type than a `*const FFISafe<'a, WithOffset<...>>`.
-    pub fn into_ffi_safe(self) -> WithOffset<*const FFISafe<'a, T>> {
-        self.map(FFISafe::new)
+    /// This is passed by pointer rather than by value, as a by-value 16-byte `struct`
+    /// that ends up being passed on the stack is first spilled as two 8-byte stores
+    /// and then copied with a 16-byte load, which is a store forwarding stall.
+    pub fn as_ffi_safe<'b>(&'b self) -> *const FFISafe<'b, WithOffset<&'b T>>
+    where
+        'a: 'b,
+    {
+        FFISafe::new(self)
     }
 }

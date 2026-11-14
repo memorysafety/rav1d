@@ -161,6 +161,7 @@ pub mod src {
     }
 }
 mod tables;
+mod task_sync;
 mod thread_task;
 mod warpmv;
 mod wedge;

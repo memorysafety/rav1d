@@ -2,7 +2,7 @@
 
 use std::cmp;
 use std::ffi::c_uint;
-use std::sync::atomic::AtomicU32;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
 use parking_lot::{RwLock, RwLockWriteGuard};
@@ -5102,11 +5102,33 @@ pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
     }
 }
 
-pub fn rav1d_cdf_thread_alloc(have_frame_mt: bool) -> Rav1dResult<CdfThreadContext> {
+/// Get a [`CdfThreadContext::Cdf`], reusing one from `pool` that is not referenced
+/// by anything but `pool` anymore, or else allocating a new one and adding it to `pool`.
+///
+/// The [`CdfContext`] of a reused one is not reset, so it still contains the (valid) CDFs
+/// last written to it, like the ones from the corresponding pool in C,
+/// which are not initialized at all.
+/// It is overwritten in [`rav1d_decode_frame_init_cdf`] before it is used.
+///
+/// [`rav1d_decode_frame_init_cdf`]: crate::decode::rav1d_decode_frame_init_cdf
+pub fn rav1d_cdf_thread_alloc(
+    pool: &mut Vec<Arc<CdfThreadContextData>>,
+    have_frame_mt: bool,
+) -> Rav1dResult<CdfThreadContext> {
+    // If `pool` holds the only reference, nothing else can create another one concurrently,
+    // and nothing else can observe the `progress` reset.
+    let reusable = pool.iter().find(|cdf| Arc::strong_count(cdf) == 1);
+    if let Some(cdf) = reusable {
+        if let Some(progress) = &cdf.progress {
+            progress.store(0, Ordering::SeqCst);
+        }
+        return Ok(CdfThreadContext::Cdf(cdf.clone()));
+    }
     // TODO fallible allocation
-    // Previously pooled.
-    Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContextData {
+    let cdf = Arc::new(CdfThreadContextData {
         cdf: Default::default(),
         progress: have_frame_mt.then_some(AtomicU32::new(0)),
-    })))
+    });
+    pool.push(cdf.clone());
+    Ok(CdfThreadContext::Cdf(cdf))
 }

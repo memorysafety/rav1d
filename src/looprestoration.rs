@@ -152,7 +152,7 @@ impl loop_restoration_filter::Fn {
             .wrapping_offset(lpf_off)
             .cast();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = dst.as_ffi_safe();
         let lpf = FFISafe::new(lpf);
         // SAFETY: Fallbacks `fn wiener_rust`, `fn sgr_{3x3,5x5,mix}_rust` are safe; asm is supposed to do the same.
         unsafe {
@@ -359,7 +359,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
     let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
@@ -775,7 +775,7 @@ unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
     p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
     let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
@@ -841,7 +841,7 @@ unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
     p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
     let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
@@ -902,7 +902,7 @@ unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
     p: FFISafeRav1dPictureDataComponentOffset,
     lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+    // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
     let p = unsafe { FFISafe::from_with_offset(p) };
     let left = left.cast();
     // SAFETY: Was passed as `FFISafe::new(_)` in `loop_restoration_filter::Fn::call`.
@@ -3323,7 +3323,7 @@ mod neon_erased {
         p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
         let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();
@@ -3352,7 +3352,7 @@ mod neon_erased {
         p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
         let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();
@@ -3381,7 +3381,7 @@ mod neon_erased {
         p: FFISafeRav1dPictureDataComponentOffset,
         _lpf: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
     ) {
-        // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
+        // SAFETY: Was passed as `WithOffset::as_ffi_safe(_)` in `loop_restoration_filter::Fn::call`.
         let p = unsafe { FFISafe::from_with_offset(p) };
         let left = left.cast();
         let lpf = lpf.cast();

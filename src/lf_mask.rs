@@ -1,17 +1,15 @@
-use std::cmp;
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
+use std::{cmp, iter};
 
 use libc::ptrdiff_t;
-use parking_lot::RwLock;
-use zerocopy::FromBytes;
 
 use crate::align::{Align16, AlignedVec2, ArrayDefault};
 use crate::ctx::CaseSet;
 use crate::disjoint_mut::DisjointMut;
 use crate::include::common::intops::{clip, iclip};
 use crate::include::dav1d::headers::{
-    Rav1dFrameHeader, Rav1dLoopfilterModeRefDeltas, Rav1dPixelLayout, Rav1dRestorationType,
+    Rav1dFrameHeader, Rav1dLoopfilterModeRefDeltas, Rav1dPixelLayout, Rav1dRestorationType, SgrIdx,
 };
 use crate::internal::Bxy;
 use crate::levels::{BlockSize, SegmentId, TxfmSize};
@@ -51,6 +49,51 @@ pub struct Av1RestorationUnit {
     pub sgr_weights: [i8; 2],
 }
 
+/// An [`Av1RestorationUnit`] that can be read and written through a shared reference
+/// without locking, as each unit is written by the single thread decoding its tile
+/// and read only after that tile's superblock row has been decoded.
+#[derive(Default)]
+pub struct Av1RestorationUnitCell {
+    r#type: RelaxedAtomic<u8>,
+    /// The last element is padding.
+    filter_h: RelaxedAtomic<[i8; 4]>,
+    /// The last element is padding.
+    filter_v: RelaxedAtomic<[i8; 4]>,
+    sgr_weights: RelaxedAtomic<[i8; 2]>,
+}
+
+impl Av1RestorationUnitCell {
+    #[inline]
+    pub fn get(&self) -> Av1RestorationUnit {
+        let r#type = match self.r#type.get() {
+            0 => Rav1dRestorationType::None,
+            1 => Rav1dRestorationType::Switchable,
+            2 => Rav1dRestorationType::Wiener,
+            sgr => Rav1dRestorationType::SgrProj(
+                SgrIdx::from_repr(sgr as usize - 3).unwrap_or(SgrIdx::I0),
+            ),
+        };
+        let [h0, h1, h2, _] = self.filter_h.get();
+        let [v0, v1, v2, _] = self.filter_v.get();
+        Av1RestorationUnit {
+            r#type,
+            filter_h: [h0, h1, h2],
+            filter_v: [v0, v1, v2],
+            sgr_weights: self.sgr_weights.get(),
+        }
+    }
+
+    #[inline]
+    pub fn set(&self, unit: Av1RestorationUnit) {
+        self.r#type.set(unit.r#type.to_repr() as u8);
+        let [h0, h1, h2] = unit.filter_h;
+        let [v0, v1, v2] = unit.filter_v;
+        self.filter_h.set([h0, h1, h2, 0]);
+        self.filter_v.set([v0, v1, v2, 0]);
+        self.sgr_weights.set(unit.sgr_weights);
+    }
+}
+
 /// each struct describes one 128x128 area (1 or 4 SBs), pre-superres-scaling
 #[derive(Default)]
 #[repr(C)]
@@ -68,7 +111,7 @@ pub struct Av1Filter {
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Restoration {
-    pub lr: [[RwLock<Av1RestorationUnit>; 4]; 3],
+    pub lr: [[Av1RestorationUnitCell; 4]; 3],
 }
 
 /// In `txa`, the array lengths represent from inner to outer:
@@ -134,17 +177,63 @@ fn decomp_tx(
         let lh = cmp::min(2, t_dim.lh);
 
         debug_assert!(t_dim.w == 1 << t_dim.lw && t_dim.w <= 16);
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
-            for y in 0..t_dim.h as usize {
-                case.set(&mut txa[0][0][y0 + y], MaybeUninit::new(lw));
-                case.set(&mut txa[1][0][y0 + y], MaybeUninit::new(lh));
-                txa[0][1][y0 + y][x0].write(t_dim.w);
-            }
-        });
-        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
-            case.set(&mut txa[1][1][y0], MaybeUninit::new(t_dim.h));
-        });
+        CaseSet::<16, false>::one(
+            (),
+            t_dim.w as usize,
+            x0,
+            #[inline(always)]
+            |case, ()| {
+                // Bounds check the rows once instead of for every row.
+                let h = t_dim.h as usize;
+                let [[txa00, txa01], [txa10, _]] = &mut *txa;
+                let txa00 = &mut txa00[y0..][..h];
+                let txa01 = &mut txa01[y0..][..h];
+                let txa10 = &mut txa10[y0..][..h];
+                for y in 0..h {
+                    case.set(&mut txa00[y], MaybeUninit::new(lw));
+                    case.set(&mut txa10[y], MaybeUninit::new(lh));
+                    txa01[y][x0].write(t_dim.w);
+                }
+            },
+        );
+        CaseSet::<16, false>::one(
+            (),
+            t_dim.w as usize,
+            x0,
+            #[inline(always)]
+            |case, ()| {
+                case.set(&mut txa[1][1][y0], MaybeUninit::new(t_dim.h));
+            },
+        );
     };
+}
+
+/// The same as `(start..end).step_by(step)`, except that it doesn't
+/// do a division up front to calculate the number of steps like [`StepBy`] does,
+/// which is expensive when `step` is not a constant and there are only a few steps.
+///
+/// [`StepBy`]: std::iter::StepBy
+#[inline(always)]
+fn range_step_by(start: usize, end: usize, step: usize) -> impl Iterator<Item = usize> {
+    assert!(step != 0);
+    let mut next = start;
+    iter::from_fn(move || {
+        let i = next;
+        if i < end {
+            next = i + step;
+            Some(i)
+        } else {
+            None
+        }
+    })
+}
+
+/// Split bit `i` of a 32-bit mask stored as 2 [`u16`] halves
+/// into the index of the half it is in and its bit mask in that half.
+#[inline(always)]
+fn split_mask_bit(i: usize) -> (usize, u16) {
+    debug_assert!(i < 32);
+    ((i >> 4) & 1, 1 << (i & 15))
 }
 
 #[inline]
@@ -162,12 +251,17 @@ fn mask_edges_inter(
 ) {
     let t_dim = &DAV1D_TXFM_DIMENSIONS[max_tx as usize];
 
+    // Check these once up front instead of on every loop iteration below.
+    assert!(w4 <= 32 && h4 <= 32);
+    let a = &mut a[..w4];
+    let l = &mut l[..h4];
+
     // See [`decomp_tx`]'s docs for the `txa` arg.
 
     let mut txa = Align16([[[[MaybeUninit::uninit(); 32]; 32]; 2]; 2]);
 
-    for (y_off, _) in (0..h4).step_by(t_dim.h as usize).enumerate() {
-        for (x_off, _) in (0..w4).step_by(t_dim.w as usize).enumerate() {
+    for (y_off, _) in range_step_by(0, h4, t_dim.h as usize).enumerate() {
+        for (x_off, _) in range_step_by(0, w4, t_dim.w as usize).enumerate() {
             decomp_tx(&mut txa.0, max_tx, 0, y_off as u8, x_off as u8, tx_masks);
         }
     }
@@ -180,29 +274,23 @@ fn mask_edges_inter(
 
     // left block edge
     for y in 0..h4 {
-        let mask = 1u32 << (by4 + y);
-        let sidx = (mask >= 0x10000) as usize;
-        let smask = mask >> (sidx << 4);
+        let (sidx, smask) = split_mask_bit(by4 + y);
         // SAFETY: y < h4 so txa[0][0][y][0] is initialized.
         let txa_y = unsafe { txa[0][0][y][0].assume_init() };
-        masks[0][bx4][cmp::min(txa_y, l[y]) as usize][sidx].update(|it| it | smask as u16);
+        masks[0][bx4][cmp::min(txa_y, l[y]) as usize][sidx].update(|it| it | smask);
     }
 
     // top block edge
     for x in 0..w4 {
-        let mask = 1u32 << (bx4 + x);
-        let sidx = (mask >= 0x10000) as usize;
-        let smask = mask >> (sidx << 4);
+        let (sidx, smask) = split_mask_bit(bx4 + x);
         // SAFETY: x < h4 so txa[1][0][0][x] is initialized.
         let txa_x = unsafe { txa[1][0][0][x].assume_init() };
-        masks[1][by4][cmp::min(txa_x, a[x]) as usize][sidx].update(|it| it | smask as u16);
+        masks[1][by4][cmp::min(txa_x, a[x]) as usize][sidx].update(|it| it | smask);
     }
     if !skip {
         // inner (tx) left|right edges
         for y in 0..h4 {
-            let mask = 1u32 << (by4 + y);
-            let sidx = (mask >= 0x10000) as usize;
-            let smask = mask >> (sidx << 4);
+            let (sidx, smask) = split_mask_bit(by4 + y);
             // SAFETY: y < h4 so txa[0][0][y][0] is initialized.
             let mut ltx = unsafe { txa[0][0][y][0].assume_init() };
             // SAFETY: y < h4 and x == 0 so txa[0][1][y][0] is initialized.
@@ -211,7 +299,7 @@ fn mask_edges_inter(
             while x < w4 {
                 // SAFETY: x < w4 and y < h4 so txa[0][0][y][x] is initialized.
                 let rtx = unsafe { txa[0][0][y][x].assume_init() };
-                masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx].update(|it| it | smask as u16);
+                masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx].update(|it| it | smask);
                 ltx = rtx;
                 // SAFETY: x is incremented by tdim.w from previously
                 // initialized element, so we know that this element is a block
@@ -225,9 +313,7 @@ fn mask_edges_inter(
         // inner (tx) --- edges
         //           bottom
         for x in 0..w4 {
-            let mask = 1u32 << (bx4 + x);
-            let sidx = (mask >= 0x10000) as usize;
-            let smask = mask >> (sidx << 4);
+            let (sidx, smask) = split_mask_bit(bx4 + x);
             // SAFETY: x < w4 so txa[1][0][0][x] is initialized.
             let mut ttx = unsafe { txa[1][0][0][x].assume_init() };
             // SAFETY: x < h4 and y == 0 so txa[1][1][0][x] is initialized.
@@ -236,7 +322,7 @@ fn mask_edges_inter(
             while y < h4 {
                 // SAFETY: x < w4 and y < h4 so txa[1][0][y][x] is initialized.
                 let btx = unsafe { txa[1][0][y][x].assume_init() };
-                masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx].update(|it| it | smask as u16);
+                masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx].update(|it| it | smask);
                 ttx = btx;
                 // SAFETY: y is incremented by tdim.h from previously
                 // initialized element, so we know that this element is a block
@@ -256,7 +342,7 @@ fn mask_edges_inter(
     // `MaybeUninit::slice_assume_init_ref` if it is stabilized.
     let txa_slice =
         unsafe { &*(&txa[1][0][h4 - 1][..w4] as *const [MaybeUninit<u8>] as *const [u8]) };
-    a[..w4].copy_from_slice(txa_slice);
+    a.copy_from_slice(txa_slice);
 }
 
 #[inline]
@@ -276,22 +362,22 @@ fn mask_edges_intra(
     let twl4c = cmp::min(2, twl4);
     let thl4c = cmp::min(2, thl4);
 
+    // Check these once up front instead of on every loop iteration below.
+    let a = &mut a[..w4];
+    let l = &mut l[..h4];
+
     // left block edge
     for y in 0..h4 {
-        let mask = 1u32 << (by4 + y);
-        let sidx = (mask >= 0x10000) as usize;
-        let smask = mask >> (sidx << 4);
-        masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx].update(|it| it | smask as u16);
+        let (sidx, smask) = split_mask_bit(by4 + y);
+        masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx].update(|it| it | smask);
     }
 
     // top block edge
     for x in 0..w4 {
-        let mask = 1u32 << (bx4 + x);
-        let sidx = (mask >= 0x10000) as usize;
-        let smask = mask >> (sidx << 4);
+        let (sidx, smask) = split_mask_bit(bx4 + x);
         // SAFETY: No other mutable references to this sub-slice exist on other
         // threads.
-        masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx].update(|it| it | smask as u16);
+        masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx].update(|it| it | smask);
     }
 
     // inner (tx) left|right edges
@@ -299,7 +385,7 @@ fn mask_edges_intra(
     let t = 1u32 << by4;
     let inner = (((t as u64) << h4) - (t as u64)) as u32;
     let inner = [inner as u16, (inner >> 16) as u16];
-    for x in (hstep..w4).step_by(hstep) {
+    for x in range_step_by(hstep, w4, hstep) {
         // SAFETY: No other mutable references to this sub-slice exist on other
         // threads.
         if inner[0] != 0 {
@@ -317,7 +403,7 @@ fn mask_edges_intra(
     let t = 1u32 << bx4;
     let inner = (((t as u64) << w4) - (t as u64)) as u32;
     let inner = [inner as u16, (inner >> 16) as u16];
-    for y in (vstep..h4).step_by(vstep) {
+    for y in range_step_by(vstep, h4, vstep) {
         if inner[0] != 0 {
             masks[1][by4 + y][thl4c as usize][0].update(|it| it | inner[0]);
         }
@@ -330,12 +416,14 @@ fn mask_edges_intra(
         [(a, thl4c), (l, twl4c)],
         [w4 as usize, h4 as usize],
         [0, 0],
+        #[inline(always)]
         |case, (dir, tl4c)| {
             case.set(dir, tl4c);
         },
     );
 }
 
+#[inline(always)]
 fn mask_edges_chroma(
     masks: &[[[[RelaxedAtomic<u16>; 2]; 2]; 32]; 2],
     cby4: usize,
@@ -361,6 +449,10 @@ fn mask_edges_chroma(
     let vmax = 1u32 << vmask;
     let hmax = 1u32 << hmask;
 
+    // Check these once up front instead of on every loop iteration below.
+    let a = &mut a[..cw4];
+    let l = &mut l[..ch4];
+
     // left block edge
     for y in 0..ch4 {
         let mask = 1u32 << (cby4 + y);
@@ -383,7 +475,7 @@ fn mask_edges_chroma(
         let t = 1u32 << cby4;
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
-        for x in (hstep..cw4).step_by(hstep) {
+        for x in range_step_by(hstep, cw4, hstep) {
             if inner[0] != 0 {
                 masks[0][cbx4 + x][twl4c as usize][0].update(|it| it | inner[0]);
             }
@@ -399,7 +491,7 @@ fn mask_edges_chroma(
         let t = 1u32 << cbx4;
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
-        for y in (vstep..ch4).step_by(vstep) {
+        for y in range_step_by(vstep, ch4, vstep) {
             if inner[0] != 0 {
                 masks[1][cby4 + y][thl4c as usize][0].update(|it| it | inner[0]);
             }
@@ -413,10 +505,41 @@ fn mask_edges_chroma(
         [(a, thl4c), (l, twl4c)],
         [cw4 as usize, ch4 as usize],
         [0, 0],
+        #[inline(always)]
         |case, (dir, tl4c)| {
             case.set(dir, tl4c);
         },
     );
+}
+
+/// Write `lvl` to the `n` 2-byte elements at `start`, `start + 4`, ...
+/// of `level_cache`.
+#[inline(always)]
+fn set_level_row(level_cache: &DisjointMut<AlignedVec2<u8>>, start: usize, n: usize, lvl: [u8; 2]) {
+    if n == 0 {
+        return;
+    }
+    // Bounds check the whole row once.
+    // Checked, so that the bounds check can't be passed by wrapping around.
+    let end = (n - 1)
+        .checked_mul(4)
+        .and_then(|span| span.checked_add(2))
+        .and_then(|span| start.checked_add(span));
+    assert!(end.is_some_and(|end| end <= level_cache.len()));
+    if cfg!(debug_assertions) {
+        // Check disjointness of each element in debug mode.
+        for x in 0..n {
+            let _ = &mut *level_cache.index_mut((start + 4 * x.., ..2));
+        }
+    }
+    let ptr = level_cache.as_mut_ptr();
+    for x in 0..n {
+        // SAFETY: `start + 4 * x + 2 <= end <= level_cache.len()`,
+        // and these are the same disjoint 2-byte ranges
+        // that are otherwise accessed through [`DisjointMut::index_mut`];
+        // the interleaved bytes that other threads may access are not touched.
+        unsafe { ptr.add(start + 4 * x).cast::<[u8; 2]>().write(lvl) };
+    }
 }
 
 // not inline in C, and inlining in Rust doesn't seem to improve performance
@@ -448,17 +571,14 @@ pub(crate) fn rav1d_create_lf_mask_intra(
     let by4 = by & 31;
 
     let filter_level_yuv = filter_level.0.map(|a| a[0][0]);
-    let [filter_level_y, filter_level_uv] = *<[u16; 2]>::ref_from(&filter_level_yuv).unwrap();
+    let [y0, y1, uv0, uv1] = filter_level_yuv;
+    let [filter_level_y, filter_level_uv] = [[y0, y1], [uv0, uv1]];
 
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
-            for x in 0..bw4 {
-                let idx = 4 * (level_cache_off + x);
-                // `0.., ..2` is for Y
-                let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                *u16::mut_from(lvl).unwrap() = filter_level_y;
-            }
+            // `0..2` is for Y
+            set_level_row(level_cache, 4 * level_cache_off + 0, bw4, filter_level_y);
             level_cache_off += b4_stride;
         }
 
@@ -490,12 +610,8 @@ pub(crate) fn rav1d_create_lf_mask_intra(
 
     let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
-        for x in 0..cbw4 {
-            let idx = 4 * (level_cache_off + x);
-            // `2.., ..2` is for UV
-            let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            *u16::mut_from(lvl).unwrap() = filter_level_uv;
-        }
+        // `2..4` is for UV
+        set_level_row(level_cache, 4 * level_cache_off + 2, cbw4, filter_level_uv);
         level_cache_off += b4_stride;
     }
 
@@ -546,18 +662,15 @@ pub(crate) fn rav1d_create_lf_mask_inter(
     let bx4 = bx & 31;
     let by4 = by & 31;
 
-    let filter_level_yuv = filter_level.0.map(|a| a[r#ref][is_gmv]);
-    let [filter_level_y, filter_level_uv] = *<[u16; 2]>::ref_from(&filter_level_yuv).unwrap();
+    // Index the 4 levels directly; mapping over the whole array copies it to the stack.
+    let level = |i: usize| filter_level.0[i][r#ref][is_gmv];
+    let [filter_level_y, filter_level_uv] = [[level(0), level(1)], [level(2), level(3)]];
 
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
-            for x in 0..bw4 {
-                let idx = 4 * (level_cache_off + x);
-                // `0.., ..2` is for Y
-                let lvl = &mut *level_cache.index_mut((idx + 0.., ..2));
-                *u16::mut_from(lvl).unwrap() = filter_level_y;
-            }
+            // `0..2` is for Y
+            set_level_row(level_cache, 4 * level_cache_off + 0, bw4, filter_level_y);
             level_cache_off += b4_stride;
         }
 
@@ -600,12 +713,8 @@ pub(crate) fn rav1d_create_lf_mask_inter(
 
     let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
-        for x in 0..cbw4 {
-            let idx = 4 * (level_cache_off + x);
-            // `2.., ..2` is for UV
-            let lvl = &mut *level_cache.index_mut((idx + 2.., ..2));
-            *u16::mut_from(lvl).unwrap() = filter_level_uv;
-        }
+        // `2..4` is for UV
+        set_level_row(level_cache, 4 * level_cache_off + 2, cbw4, filter_level_uv);
         level_cache_off += b4_stride;
     }
 

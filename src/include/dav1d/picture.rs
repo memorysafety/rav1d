@@ -4,7 +4,7 @@ use std::ffi::{c_int, c_void};
 use std::hint::assert_unchecked;
 use std::ptr::NonNull;
 use std::sync::Arc;
-use std::{array, mem};
+use std::{array, cmp, mem};
 
 use libc::{ptrdiff_t, uintptr_t};
 use to_method::To as _;
@@ -342,7 +342,7 @@ impl Rav1dPictureDataComponent {
 
 pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
 pub type FFISafeRav1dPictureDataComponentOffset<'a> =
-    WithOffset<*const FFISafe<'a, Rav1dPictureDataComponent>>;
+    *const FFISafe<'a, Rav1dPictureDataComponentOffset<'a>>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.
@@ -377,6 +377,227 @@ impl<'a> Rav1dPictureDataComponentOffset<'a> {
         len: usize,
     ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]> {
         self.data.slice_mut::<BD, _>((self.offset.., ..len))
+    }
+
+    /// Copy `W` pixels from each of `H` consecutive rows into `dst`,
+    /// where row `i` starts at `self + i * self.pixel_stride()`.
+    ///
+    /// This is equivalent to `dst[i] = (self + i * stride).slice::<BD>(W)` for each row,
+    /// but all rows are bounds checked at once instead of each row separately.
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn copy_rows_to<BD: BitDepth, const W: usize, const H: usize>(
+        &self,
+        dst: &mut [[BD::Pixel; W]; H],
+    ) {
+        #[cold]
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(offset: usize, rows: usize, stride: isize, pixel_len: usize) -> ! {
+            panic!(
+                "{rows} pixel rows of stride {stride} at offset {offset} \
+                out of range for slice of pixel length {pixel_len}"
+            );
+        }
+
+        let rows = H;
+        if rows == 0 {
+            return;
+        }
+        let stride = self.pixel_stride::<BD>();
+        let first = self.offset;
+        let pixel_len = self.data.pixel_len::<BD>();
+        // Without overflow, `first + i * stride` for `i in 0..rows`
+        // is monotonic in `i` and thus between `first` and `last`.
+        let in_bounds = stride
+            .checked_mul((rows - 1) as isize)
+            .and_then(|span| first.checked_add_signed(span))
+            .and_then(|last| cmp::max(first, last).checked_add(W))
+            .is_some_and(|end| end <= pixel_len);
+        if !in_bounds {
+            out_of_bounds(first, rows, stride, pixel_len);
+        }
+        if cfg!(debug_assertions) {
+            // Check disjointness of each row in debug mode.
+            for i in 0..rows {
+                let _ = &*(*self + i as isize * stride).slice::<BD>(W);
+            }
+        }
+        let ptr = self.data.as_ptr::<BD>();
+        for (i, row) in dst.iter_mut().enumerate() {
+            let offset = first.wrapping_add_signed(i as isize * stride);
+            // SAFETY: `i * stride` is between `0` and `(rows - 1) * stride`,
+            // which was checked above to not overflow, so `offset` is between
+            // `first` and `last`, and thus `offset + W <= end <= pixel_len`,
+            // i.e. the `W` pixels read are in bounds of the allocation `ptr` points to.
+            // These are the same ranges that are otherwise read through [`Self::slice`]
+            // (and are checked for overlapping borrows that way in debug mode above).
+            // `[BD::Pixel; W]` has no invalid bit patterns and `read_unaligned`
+            // has no alignment requirements.
+            *row = unsafe { ptr.add(offset).cast::<[BD::Pixel; W]>().read_unaligned() };
+        }
+    }
+    /// Bounds check `height` rows of `width` pixels once,
+    /// where row `i` starts at `self + i * self.pixel_stride()`,
+    /// so that blocks of pixels in these rows can then be read
+    /// with only a check of their columns (see [`PixelRows::copy_cols_to`]).
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn rows<BD: BitDepth>(&self, height: usize, width: usize) -> PixelRows<'a, BD> {
+        #[cold]
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(
+            offset: usize,
+            [height, width]: [usize; 2],
+            stride: isize,
+            pixel_len: usize,
+        ) -> ! {
+            panic!(
+                "{height} rows of {width} pixels with stride {stride} at offset {offset} \
+                out of range for slice of pixel length {pixel_len}"
+            );
+        }
+
+        let stride = self.pixel_stride::<BD>();
+        let first = self.offset;
+        let pixel_len = self.data.pixel_len::<BD>();
+        let (height, width) = if height == 0 { (0, 0) } else { (height, width) };
+        // Without overflow, `first + i * stride` for `i in 0..height`
+        // is monotonic in `i` and thus between `first` and `last`.
+        let in_bounds = height == 0
+            || isize::try_from(height - 1)
+                .ok()
+                .and_then(|rows| stride.checked_mul(rows))
+                .and_then(|span| first.checked_add_signed(span))
+                .and_then(|last| cmp::max(first, last).checked_add(width))
+                .is_some_and(|end| end <= pixel_len);
+        if !in_bounds {
+            out_of_bounds(first, [height, width], stride, pixel_len);
+        }
+        PixelRows {
+            first: *self,
+            // Not `add`, as `first` may be out of bounds if `height == 0`.
+            ptr: self.data.as_ptr::<BD>().wrapping_add(first),
+            stride,
+            height,
+            width,
+        }
+    }
+}
+
+/// `height` rows of `width` pixels of a [`Rav1dPictureDataComponent`]
+/// that have been bounds checked (once) by [`Rav1dPictureDataComponentOffset::rows`].
+pub struct PixelRows<'a, BD: BitDepth> {
+    /// The start of the first row.
+    first: Rav1dPictureDataComponentOffset<'a>,
+
+    /// `first.data.as_ptr::<BD>().wrapping_add(first.offset)`, i.e. a pointer to `first`.
+    ///
+    /// For every `i < height`, the `width` pixels starting at
+    /// `ptr.wrapping_offset(i * stride)`
+    /// are in bounds of the allocation `ptr` was derived from,
+    /// which stays allocated for `'a` as `first.data` borrows it.
+    ptr: *const BD::Pixel,
+
+    /// `first.pixel_stride::<BD>()`.
+    stride: isize,
+
+    height: usize,
+    width: usize,
+}
+
+impl<'a, BD: BitDepth> PixelRows<'a, BD> {
+    /// Copy the `W` pixels starting at column `x` from each of the first `H` rows into `dst`.
+    ///
+    /// This is equivalent to `dst[i] = (first + i * stride + x).slice::<BD>(W)` for each row,
+    /// but as the rows have already been bounds checked,
+    /// only the columns (and number of rows) are checked here.
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn copy_cols_to<const W: usize, const H: usize>(
+        &self,
+        x: usize,
+        dst: &mut [[BD::Pixel; W]; H],
+    ) {
+        #[cold]
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(x: usize, [w, h]: [usize; 2], [width, height]: [usize; 2]) -> ! {
+            panic!(
+                "{h} rows of {w} pixels at column {x} \
+                out of range for {height} rows of {width} pixels"
+            );
+        }
+
+        let in_bounds = H <= self.height && x.checked_add(W).is_some_and(|end| end <= self.width);
+        if !in_bounds {
+            out_of_bounds(x, [W, H], [self.width, self.height]);
+        }
+        if cfg!(debug_assertions) {
+            // Check disjointness of each row in debug mode.
+            for i in 0..H {
+                let _ = &*(self.first + (i as isize * self.stride + x as isize)).slice::<BD>(W);
+            }
+        }
+        for (i, row) in dst.iter_mut().enumerate() {
+            let row_ptr = self.ptr.wrapping_offset(i as isize * self.stride);
+            // SAFETY: `i < H <= self.height`, so by the invariant of `self.ptr`
+            // (established by the bounds check in `Rav1dPictureDataComponentOffset::rows`),
+            // the `self.width` pixels starting at `row_ptr` are in bounds
+            // of the allocation `self.ptr` was derived from, which is still allocated since
+            // `self.first.data` borrows it for `'a`. `x + W <= self.width` was checked above,
+            // so the `W` pixels read starting at column `x` of that row are in bounds, too.
+            // These are the same ranges that are otherwise read through
+            // [`Rav1dPictureDataComponentOffset::slice`]
+            // (and are checked for overlapping borrows that way in debug mode above).
+            // `[BD::Pixel; W]` has no invalid bit patterns and `read_unaligned`
+            // has no alignment requirements.
+            *row = unsafe { row_ptr.add(x).cast::<[BD::Pixel; W]>().read_unaligned() };
+        }
+    }
+
+    /// The same as [`Self::copy_cols_to`],
+    /// except that the number of rows, `dst.len()`, is not known at compile time.
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn copy_cols_to_rows<const W: usize>(&self, x: usize, dst: &mut [[BD::Pixel; W]]) {
+        #[cold]
+        #[inline(never)]
+        #[cfg_attr(debug_assertions, track_caller)]
+        fn out_of_bounds(x: usize, [w, h]: [usize; 2], [width, height]: [usize; 2]) -> ! {
+            panic!(
+                "{h} rows of {w} pixels at column {x} \
+                out of range for {height} rows of {width} pixels"
+            );
+        }
+
+        let h = dst.len();
+        let in_bounds = h <= self.height && x.checked_add(W).is_some_and(|end| end <= self.width);
+        if !in_bounds {
+            out_of_bounds(x, [W, h], [self.width, self.height]);
+        }
+        if cfg!(debug_assertions) {
+            // Check disjointness of each row in debug mode.
+            for i in 0..h {
+                let _ = &*(self.first + (i as isize * self.stride + x as isize)).slice::<BD>(W);
+            }
+        }
+        for (i, row) in dst.iter_mut().enumerate() {
+            let row_ptr = self.ptr.wrapping_offset(i as isize * self.stride);
+            // SAFETY: `i < dst.len() <= self.height`, so by the invariant of `self.ptr`
+            // (established by the bounds check in `Rav1dPictureDataComponentOffset::rows`),
+            // the `self.width` pixels starting at `row_ptr` are in bounds
+            // of the allocation `self.ptr` was derived from, which is still allocated since
+            // `self.first.data` borrows it for `'a`. `x + W <= self.width` was checked above,
+            // so the `W` pixels read starting at column `x` of that row are in bounds, too.
+            // These are the same ranges that are otherwise read through
+            // [`Rav1dPictureDataComponentOffset::slice`]
+            // (and are checked for overlapping borrows that way in debug mode above).
+            // `[BD::Pixel; W]` has no invalid bit patterns and `read_unaligned`
+            // has no alignment requirements.
+            *row = unsafe { row_ptr.add(x).cast::<[BD::Pixel; W]>().read_unaligned() };
+        }
     }
 }
 

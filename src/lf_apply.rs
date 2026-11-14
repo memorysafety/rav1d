@@ -373,15 +373,12 @@ fn filter_plane_cols_y<BD: BitDepth>(
     // filter edges between columns (e.g. block1 | block2)
     let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
-    let y_dst = |x| y_dst + x * 4;
-    y_dst(w).as_ptr::<BD>(); // Bounds check
-    let mask = &mask[..w];
-    for x in 0..w {
-        if !have_left && x == 0 {
-            continue;
-        }
-        let mask = &mask[x];
-        let hmask = if starty4 == 0 {
+    let lf_sb = lf_sb.y.h;
+    // Don't filter the left edge of the frame.
+    let first = !have_left as usize;
+    let mask = &mask[..w][first..];
+    let hmask = |mask: &[[RelaxedAtomic<u16>; 2]; 3]| {
+        if starty4 == 0 {
             if endy4 > 16 {
                 mask.each_ref()
                     .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16))
@@ -390,10 +387,18 @@ fn filter_plane_cols_y<BD: BitDepth>(
             }
         } else {
             mask.each_ref().map(|[_, b]| b.get() as u32)
-        };
-        let lvl = |y| lvl + (4 * x + y);
-        lf_sb.y.h.call::<BD>(f, y_dst(x), &hmask, lvl(0), len);
-    }
+        }
+    };
+    lf_sb.call_seq::<BD, _>(
+        f,
+        y_dst + first * 4,
+        4,
+        mask,
+        hmask,
+        lvl + 4 * first,
+        4,
+        len,
+    );
 }
 
 #[inline]
@@ -412,20 +417,26 @@ fn filter_plane_rows_y<BD: BitDepth>(
     // filter edges between rows (e.g. ------)
     //                                 block2
     let lf_sb = &f.dsp.lf.loop_filter_sb;
-    let len = endy4 - starty4;
-    let y_dst = |i| y_dst + (i as isize * 4 * y_dst.pixel_stride::<BD>());
-    y_dst(len - 1).as_ptr::<BD>(); // Bounds check
-    for i in 0..len {
-        let y = i + starty4;
-        if !have_top && y == 0 {
-            continue;
-        }
-        let vmask = mask[y % mask.len()] // To elide the bounds check.
-            .each_ref()
-            .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16));
-        let lvl = |y| lvl + (4 * i * b4_stride + y);
-        lf_sb.y.v.call::<BD>(f, y_dst(i), &vmask, lvl(1), w);
-    }
+    let y_step = 4 * y_dst.pixel_stride::<BD>();
+    let lvl_step = 4 * b4_stride;
+    let mask = &mask[starty4..endy4];
+    let lf_sb = lf_sb.y.v;
+    // Don't filter the top edge of the frame.
+    let first = (!have_top && starty4 == 0) as usize;
+    let vmask = |mask: &[[RelaxedAtomic<u16>; 2]; 3]| {
+        mask.each_ref()
+            .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << 16))
+    };
+    lf_sb.call_seq::<BD, _>(
+        f,
+        y_dst + first as isize * y_step,
+        y_step,
+        &mask[first..],
+        vmask,
+        lvl + (first * lvl_step + 1),
+        lvl_step,
+        w,
+    );
 }
 
 #[inline]
@@ -449,10 +460,9 @@ fn filter_plane_cols_uv<BD: BitDepth>(
     u_dst(w).as_ptr::<BD>(); // Bounds check
     v_dst(w).as_ptr::<BD>(); // Bounds check
     let mask = &mask[..w];
-    for x in 0..w {
-        if !have_left && x == 0 {
-            continue;
-        }
+    let lf_sb = lf_sb.uv.h;
+    // Don't filter the left edge of the frame.
+    for x in !have_left as usize..w {
         let mask = &mask[x];
         let hmask = if starty4 == 0 {
             if endy4 > 16 >> ss_ver {
@@ -466,8 +476,11 @@ fn filter_plane_cols_uv<BD: BitDepth>(
         };
         let hmask = [hmask[0], hmask[1], 0];
         let lvl = |y| lvl + (4 * x + y);
-        lf_sb.uv.h.call::<BD>(f, u_dst(x), &hmask, lvl(2), len);
-        lf_sb.uv.h.call::<BD>(f, v_dst(x), &hmask, lvl(3), len);
+        // With an empty mask, there are no edges to filter, so the calls wouldn't do anything.
+        if hmask[0] | hmask[1] != 0 {
+            lf_sb.call::<BD>(f, u_dst(x), &hmask, lvl(2), len);
+            lf_sb.call::<BD>(f, v_dst(x), &hmask, lvl(3), len);
+        }
     }
 }
 
@@ -490,22 +503,30 @@ fn filter_plane_rows_uv<BD: BitDepth>(
     //                                 block2
     let lf_sb = &f.dsp.lf.loop_filter_sb;
     let len = endy4 - starty4;
-    let u_dst = |i| u_dst + (i as isize * 4 * u_dst.pixel_stride::<BD>());
-    let v_dst = |i| v_dst + (i as isize * 4 * v_dst.pixel_stride::<BD>());
-    u_dst(len - 1).as_ptr::<BD>(); // Bounds check
-    v_dst(len - 1).as_ptr::<BD>(); // Bounds check
-    for i in 0..len {
-        let y = i + starty4;
-        if !have_top && y == 0 {
-            continue;
-        }
-        let vmask = mask[y % mask.len()] // To elide the bounds check.
+    let uv_step = 4 * u_dst.pixel_stride::<BD>();
+    let lvl_step = 4 * b4_stride;
+    (u_dst + (len - 1) as isize * uv_step).as_ptr::<BD>(); // Bounds check
+    (v_dst + (len - 1) as isize * uv_step).as_ptr::<BD>(); // Bounds check
+    let mask = &mask[starty4..endy4];
+    let lf_sb = lf_sb.uv.v;
+    // Don't filter the top edge of the frame.
+    let first = (!have_top && starty4 == 0) as usize;
+    let mut u_dst = u_dst + first as isize * uv_step;
+    let mut v_dst = v_dst + first as isize * uv_step;
+    let mut lvl = lvl + (first * lvl_step + 2);
+    for mask in &mask[first..] {
+        let vmask = mask
             .each_ref()
             .map(|[a, b]| a.get() as u32 | ((b.get() as u32) << (16 >> ss_hor)));
         let vmask = [vmask[0], vmask[1], 0];
-        let lvl = |y| lvl + (4 * i * b4_stride + y);
-        lf_sb.uv.v.call::<BD>(f, u_dst(i), &vmask, lvl(2), w);
-        lf_sb.uv.v.call::<BD>(f, v_dst(i), &vmask, lvl(3), w);
+        // With an empty mask, there are no edges to filter, so the calls wouldn't do anything.
+        if vmask[0] | vmask[1] != 0 {
+            lf_sb.call::<BD>(f, u_dst, &vmask, lvl, w);
+            lf_sb.call::<BD>(f, v_dst, &vmask, lvl + 1usize, w);
+        }
+        u_dst += uv_step;
+        v_dst += uv_step;
+        lvl += lvl_step;
     }
 }
 

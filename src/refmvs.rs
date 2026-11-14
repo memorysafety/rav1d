@@ -4,12 +4,12 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::{cmp, mem, ptr, slice};
 
-use zerocopy::{AsBytes, FromZeroes};
+use zerocopy::{transmute, AsBytes, FromZeroes};
 
 use crate::align::{Align16, AlignedVec64};
 use crate::cpu::CpuFlags;
 use crate::disjoint_mut::{DisjointMut, DisjointMutArcSlice, DisjointMutGuard, DisjointMutSlice};
-use crate::env::{fix_mv_precision, get_gmv_2d, get_poc_diff};
+use crate::env::{fix_int_mv_precision, get_gmv_2d, get_poc_diff};
 use crate::error::Rav1dResult;
 use crate::ffi_safe::FFISafe;
 use crate::include::common::intops::{apply_sign, iclip};
@@ -45,7 +45,11 @@ impl PartialEq for RefMvsRefPair {
         // which isn't optimized well and isn't coalesced into wider loads.
         // Comparing all of the bytes at once optimizes better with wider loads.
         // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
+        // Comparing as a single integer by value (rather than as byte slices)
+        // also lets the operands stay in registers instead of being spilled.
+        let this: u16 = transmute!(*self);
+        let other: u16 = transmute!(*other);
+        this == other
     }
 }
 
@@ -70,7 +74,11 @@ impl PartialEq for RefMvsMvPair {
         // which isn't optimized well and isn't coalesced into wider loads.
         // Comparing all of the bytes at once optimizes better with wider loads.
         // See <https://github.com/rust-lang/rust/issues/140167>.
-        self.as_bytes() == other.as_bytes()
+        // Comparing as a single integer by value (rather than as byte slices)
+        // also lets the operands stay in registers instead of being spilled.
+        let this: u64 = transmute!(*self);
+        let other: u64 = transmute!(*other);
+        this == other
     }
 }
 
@@ -402,20 +410,42 @@ impl splat_mv::Fn {
         // SAFETY: This `r_ptrs` slice will be fully initialized.
         let r_ptrs = &mut r_ptrs[offset..][..len];
 
-        for i in 0..len {
-            let ri = r_indices[i];
-            if ri < rf.r.len() - R_PAD {
-                // This is the range that will actually be accessed,
-                // but `splat_mv` expects a pointer offset `bx4` backwards.
-                let guard = rf.r.index_mut((ri + bx4.., ..bw4));
-                r_guards[i].write(guard);
-                // SAFETY: We just initialized it directly above.
-                let guard = unsafe { r_guards[i].assume_init_mut() };
-                // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
-                let ptr = unsafe { guard.as_mut_ptr().sub(bx4) };
+        if !mem::needs_drop::<Guard>() {
+            // There are no guards to keep alive (and thus no overlap checking),
+            // so only bounds check, and hoist as much of that out of the loop as possible.
+            let r_len = rf.r.len();
+            let r_ptr = rf.r.as_mut_ptr();
+            let pad_start = r_len - R_PAD;
+            // All `ri < in_bounds_end` satisfy `ri + bx4 + bw4 <= r_len`.
+            let in_bounds_end = cmp::min(pad_start, (r_len + 1).saturating_sub(bx4 + bw4));
+            for i in 0..len {
+                let ri = r_indices[i];
+                let ptr = if ri < in_bounds_end {
+                    // SAFETY: `ri + bx4 + bw4 <= r_len`, so `r_ptr.add(ri)` is in bounds,
+                    // as is the `[bx4..][..bw4]` range that `splat_mv` will access from it.
+                    unsafe { r_ptr.add(ri) }
+                } else {
+                    assert!(ri >= pad_start);
+                    ptr::null_mut()
+                };
                 r_ptrs[i].write(ptr);
-            } else {
-                r_ptrs[i].write(ptr::null_mut());
+            }
+        } else {
+            for i in 0..len {
+                let ri = r_indices[i];
+                if ri < rf.r.len() - R_PAD {
+                    // This is the range that will actually be accessed,
+                    // but `splat_mv` expects a pointer offset `bx4` backwards.
+                    let guard = rf.r.index_mut((ri + bx4.., ..bw4));
+                    r_guards[i].write(guard);
+                    // SAFETY: We just initialized it directly above.
+                    let guard = unsafe { r_guards[i].assume_init_mut() };
+                    // SAFETY: The above `index_mut` starts at `ri + bx4`, so we can safely index `bx4` backwards.
+                    let ptr = unsafe { guard.as_mut_ptr().sub(bx4) };
+                    r_ptrs[i].write(ptr);
+                } else {
+                    r_ptrs[i].write(ptr::null_mut());
+                }
             }
         }
 
@@ -460,223 +490,186 @@ pub struct Rav1dRefmvsDSPContext {
     pub splat_mv: splat_mv::Fn,
 }
 
-fn add_spatial_candidate(
-    mvstack: &mut [RefMvsCandidate],
-    cnt: &mut usize,
-    weight: i32,
-    b: RefMvsBlock,
+/// The state shared by all of the spatial candidate scans of one
+/// [`rav1d_refmvs_find`] call, bundled so that it is passed as one pointer
+/// instead of being marshalled as separate arguments on every call.
+struct SpatialScan<'a> {
+    mvstack: &'a mut [RefMvsCandidate; 8],
+    cnt: usize,
     r#ref: RefMvsRefPair,
-    gmv: &[Mv; 2],
-    have_newmv_match: &mut i32,
-    have_refmv_match: &mut i32,
-) {
-    if b.mv.mv[0].is_invalid() {
-        // intra block, no intrabc
-        return;
-    }
+    gmv: [Mv; 2],
+    r: &'a DisjointMut<AlignedVec64<RefMvsBlock>>,
+    have_newmv_match: i32,
+    /// Indexed by whether the candidate is from a column (left) scan.
+    have_refmv_match: [i32; 2],
+}
 
-    let mf_odd = b.mf & 1 != 0;
-    if r#ref.r#ref[1] == -1 {
-        for n in 0..2 {
-            if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
-                let cand_mv = if mf_odd && gmv[0] != Mv::INVALID {
-                    gmv[0]
-                } else {
-                    b.mv.mv[n]
-                };
-
-                *have_refmv_match = 1;
-                *have_newmv_match |= b.mf as i32 >> 1;
-
-                let last = *cnt;
-                for cand in &mut mvstack[..last] {
-                    if cand.mv.mv[0] == cand_mv {
-                        cand.weight += weight;
-                        return;
-                    }
-                }
-
-                if last < 8 {
-                    let cand = &mut mvstack[last];
-                    cand.mv.mv[0] = cand_mv;
-                    cand.weight = weight;
-                    *cnt = last + 1;
-                }
+impl SpatialScan<'_> {
+    #[inline(always)]
+    fn add_mv(&mut self, cand_mv: Mv, weight: i32) {
+        let last = self.cnt;
+        for cand in self.mvstack.iter_mut().take(last) {
+            if cand.mv.mv[0] == cand_mv {
+                cand.weight += weight;
                 return;
             }
         }
-    } else if b.r#ref == r#ref {
-        let cand_mv = RefMvsMvPair {
-            mv: [
-                if mf_odd && gmv[0] != Mv::INVALID {
-                    gmv[0]
-                } else {
-                    b.mv.mv[0]
-                },
-                if mf_odd && gmv[1] != Mv::INVALID {
-                    gmv[1]
-                } else {
-                    b.mv.mv[1]
-                },
-            ],
-        };
+        if let Some(cand) = self.mvstack.get_mut(last) {
+            cand.mv.mv[0] = cand_mv;
+            cand.weight = weight;
+            self.cnt = last + 1;
+        }
+    }
 
-        *have_refmv_match = 1;
-        *have_newmv_match |= b.mf as i32 >> 1;
-
-        let last = *cnt;
-        for cand in &mut mvstack[..last] {
+    #[inline(always)]
+    fn add_mv_pair(&mut self, cand_mv: RefMvsMvPair, weight: i32) {
+        let last = self.cnt;
+        for cand in self.mvstack.iter_mut().take(last) {
             if cand.mv == cand_mv {
                 cand.weight += weight;
                 return;
             }
         }
-
-        if last < 8 {
-            let cand = &mut mvstack[last];
+        if let Some(cand) = self.mvstack.get_mut(last) {
             cand.mv = cand_mv;
             cand.weight = weight;
-            *cnt = last + 1;
+            self.cnt = last + 1;
         }
     }
-}
 
-fn scan_row(
-    mvstack: &mut [RefMvsCandidate],
-    cnt: &mut usize,
-    r#ref: RefMvsRefPair,
-    gmv: &[Mv; 2],
-    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
-    b_offset: usize,
-    bw4: i32,
-    w4: i32,
-    max_rows: i32,
-    step: i32,
-    have_newmv_match: &mut i32,
-    have_refmv_match: &mut i32,
-) -> i32 {
-    let mut cand_b = *r.index(b_offset);
-    let first_cand_bs = cand_b.bs;
-    let first_cand_b_dim = first_cand_bs.dimensions();
-    let mut cand_bw4 = first_cand_b_dim[0] as i32;
-    let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
-
-    if bw4 <= cand_bw4 {
-        // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
-        // position of the first block has to be odd already, i.e. not just
-        // for row_offset=-3/-5
-        // FIXME why can this not be cand_bw4?
-        let weight = if bw4 == 1 {
-            2
-        } else {
-            cmp::max(2, cmp::min(2 * max_rows, first_cand_b_dim[1] as i32))
-        };
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            len * weight,
-            cand_b,
-            r#ref,
-            gmv,
-            have_newmv_match,
-            have_refmv_match,
-        );
-        return weight >> 1;
-    }
-
-    let mut x = 0;
-    loop {
-        // FIXME if we overhang above, we could fill a bitmask so we don't have
-        // to repeat the add_spatial_candidate() for the next row, but just increase
-        // the weight here
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            len * 2,
-            cand_b,
-            r#ref,
-            gmv,
-            have_newmv_match,
-            have_refmv_match,
-        );
-        x += len;
-        if x >= w4 {
-            return 1;
+    #[inline(never)]
+    fn add_spatial_candidate(&mut self, weight: i32, b: &RefMvsBlock, col: bool) {
+        if b.mv.mv[0].is_invalid() {
+            // intra block, no intrabc
+            return;
         }
-        cand_b = *r.index(b_offset + x as usize);
-        cand_bw4 = cand_b.bs.dimensions()[0] as i32;
-        assert!(cand_bw4 < bw4);
-        len = cmp::max(step, cand_bw4);
-    }
-}
 
-fn scan_col(
-    mvstack: &mut [RefMvsCandidate],
-    cnt: &mut usize,
-    r#ref: RefMvsRefPair,
-    gmv: &[Mv; 2],
-    r: &DisjointMut<AlignedVec64<RefMvsBlock>>,
-    b: &[usize],
-    bh4: i32,
-    h4: i32,
-    bx4: i32,
-    max_cols: i32,
-    step: i32,
-    have_newmv_match: &mut i32,
-    have_refmv_match: &mut i32,
-) -> i32 {
-    let mut cand_b = *r.index(b[0] + bx4 as usize);
-    let first_cand_bs = cand_b.bs;
-    let first_cand_b_dim = first_cand_bs.dimensions();
-    let mut cand_bh4 = first_cand_b_dim[1] as i32;
-    let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
+        let r#ref = self.r#ref;
+        let gmv = self.gmv;
+        let mf_odd = b.mf & 1 != 0;
+        if r#ref.r#ref[1] == -1 {
+            for n in 0..2 {
+                if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
+                    let cand_mv = if mf_odd && gmv[0] != Mv::INVALID {
+                        gmv[0]
+                    } else {
+                        b.mv.mv[n]
+                    };
 
-    if bh4 <= cand_bh4 {
-        // FIXME weight can be higher for odd blocks (by4 & 1), but then the
-        // position of the first block has to be odd already, i.e. not just
-        // for col_offset=-3/-5
-        // FIXME why can this not be cand_bh4?
-        let weight = if bh4 == 1 {
-            2
-        } else {
-            cmp::max(2, cmp::min(2 * max_cols, first_cand_b_dim[0] as i32))
-        };
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            len * weight,
-            cand_b,
-            r#ref,
-            gmv,
-            have_newmv_match,
-            have_refmv_match,
-        );
-        return weight >> 1;
-    }
+                    self.have_refmv_match[col as usize] = 1;
+                    self.have_newmv_match |= b.mf as i32 >> 1;
+                    self.add_mv(cand_mv, weight);
+                    return;
+                }
+            }
+        } else if b.r#ref == r#ref {
+            let cand_mv = RefMvsMvPair {
+                mv: [
+                    if mf_odd && gmv[0] != Mv::INVALID {
+                        gmv[0]
+                    } else {
+                        b.mv.mv[0]
+                    },
+                    if mf_odd && gmv[1] != Mv::INVALID {
+                        gmv[1]
+                    } else {
+                        b.mv.mv[1]
+                    },
+                ],
+            };
 
-    let mut y = 0;
-    loop {
-        // FIXME if we overhang above, we could fill a bitmask so we don't have
-        // to repeat the add_spatial_candidate() for the next row, but just increase
-        // the weight here
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            len * 2,
-            cand_b,
-            r#ref,
-            gmv,
-            have_newmv_match,
-            have_refmv_match,
-        );
-        y += len;
-        if y >= h4 {
-            return 1;
+            self.have_refmv_match[col as usize] = 1;
+            self.have_newmv_match |= b.mf as i32 >> 1;
+            self.add_mv_pair(cand_mv, weight);
         }
-        cand_b = *r.index(b[y as usize] + bx4 as usize);
-        cand_bh4 = cand_b.bs.dimensions()[1] as i32;
-        assert!(cand_bh4 < bh4);
-        len = cmp::max(step, cand_bh4);
+    }
+
+    #[inline(never)]
+    fn scan_row(&mut self, b_offset: usize, bw4: i32, w4: i32, max_rows: i32, step: i32) -> i32 {
+        let r = self.r;
+        let mut cand_b = r.index(b_offset);
+        let first_cand_bs = cand_b.bs;
+        let first_cand_b_dim = first_cand_bs.dimensions();
+        let mut cand_bw4 = first_cand_b_dim[0] as i32;
+        let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
+
+        if bw4 <= cand_bw4 {
+            // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
+            // position of the first block has to be odd already, i.e. not just
+            // for row_offset=-3/-5
+            // FIXME why can this not be cand_bw4?
+            let weight = if bw4 == 1 {
+                2
+            } else {
+                cmp::max(2, cmp::min(2 * max_rows, first_cand_b_dim[1] as i32))
+            };
+            self.add_spatial_candidate(len * weight, &cand_b, false);
+            return weight >> 1;
+        }
+
+        let mut x = 0;
+        loop {
+            // FIXME if we overhang above, we could fill a bitmask so we don't have
+            // to repeat the add_spatial_candidate() for the next row, but just increase
+            // the weight here
+            self.add_spatial_candidate(len * 2, &cand_b, false);
+            x += len;
+            if x >= w4 {
+                return 1;
+            }
+            cand_b = r.index(b_offset + x as usize);
+            cand_bw4 = cand_b.bs.dimensions()[0] as i32;
+            assert!(cand_bw4 < bw4);
+            len = cmp::max(step, cand_bw4);
+        }
+    }
+
+    #[inline(never)]
+    fn scan_col(
+        &mut self,
+        b: &[usize],
+        bh4: i32,
+        h4: i32,
+        bx4: i32,
+        max_cols: i32,
+        step: i32,
+    ) -> i32 {
+        let r = self.r;
+        let mut cand_b = r.index(b[0] + bx4 as usize);
+        let first_cand_bs = cand_b.bs;
+        let first_cand_b_dim = first_cand_bs.dimensions();
+        let mut cand_bh4 = first_cand_b_dim[1] as i32;
+        let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
+
+        if bh4 <= cand_bh4 {
+            // FIXME weight can be higher for odd blocks (by4 & 1), but then the
+            // position of the first block has to be odd already, i.e. not just
+            // for col_offset=-3/-5
+            // FIXME why can this not be cand_bh4?
+            let weight = if bh4 == 1 {
+                2
+            } else {
+                cmp::max(2, cmp::min(2 * max_cols, first_cand_b_dim[0] as i32))
+            };
+            self.add_spatial_candidate(len * weight, &cand_b, true);
+            return weight >> 1;
+        }
+
+        let mut y = 0;
+        loop {
+            // FIXME if we overhang above, we could fill a bitmask so we don't have
+            // to repeat the add_spatial_candidate() for the next row, but just increase
+            // the weight here
+            self.add_spatial_candidate(len * 2, &cand_b, true);
+            y += len;
+            if y >= h4 {
+                return 1;
+            }
+            cand_b = r.index(b[y as usize] + bx4 as usize);
+            cand_bh4 = cand_b.bs.dimensions()[1] as i32;
+            assert!(cand_bh4 < bh4);
+            len = cmp::max(step, cand_bh4);
+        }
     }
 }
 
@@ -686,9 +679,9 @@ fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
         0, 16384, 8192, 5461, 4096, 3276, 2730, 2340, 2048, 1820, 1638, 1489, 1365, 1260, 1170,
         1092, 1024, 963, 910, 862, 819, 780, 744, 712, 682, 655, 630, 606, 585, 564, 546, 528,
     ];
-    assert!(den > 0 && den < 32);
-    assert!(num > -32 && num < 32);
-    let frac = num * DIV_MULT[den as usize] as i32;
+    debug_assert!(den > 0 && den < 32);
+    debug_assert!(num > -32 && num < 32);
+    let frac = num * DIV_MULT[den as usize % DIV_MULT.len()] as i32;
     let y = mv.y as i32 * frac;
     let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
@@ -699,77 +692,115 @@ fn mv_projection(mv: Mv, num: i32, den: i32) -> Mv {
     };
 }
 
-fn add_temporal_candidate(
-    rf: &RefMvsFrame,
-    mvstack: &mut [RefMvsCandidate],
-    cnt: &mut usize,
-    rb: RefMvsTemporalBlock,
-    r#ref: RefMvsRefPair,
-    globalmv: Option<(&mut i32, &[Mv; 2])>,
-    frame_hdr: &Rav1dFrameHeader,
-) {
-    let rb_mv = rb.mv.into_aligned();
-    if rb_mv.is_invalid() {
-        return;
+/// The per-[`rav1d_refmvs_find`]-call constants of [`add_temporal_candidate`],
+/// looked up once instead of once per candidate.
+#[derive(Clone, Copy)]
+struct TemporalParams {
+    /// [`RefMvsFrame::pocdiff`] of each ref, [`None`] if the ref has none.
+    pocdiff: [Option<i8>; 2],
+    compound: bool,
+    force_integer_mv: bool,
+    hp: bool,
+}
+
+impl TemporalParams {
+    #[inline(always)]
+    fn new(rf: &RefMvsFrame, r#ref: RefMvsRefPair, frame_hdr: &Rav1dFrameHeader) -> Self {
+        let pocdiff = |r: i8| rf.pocdiff.get((r as usize).wrapping_sub(1)).copied();
+        Self {
+            pocdiff: r#ref.r#ref.map(pocdiff),
+            compound: r#ref.r#ref[1] != -1,
+            force_integer_mv: frame_hdr.force_integer_mv,
+            hp: frame_hdr.hp,
+        }
     }
 
-    let mut mv = mv_projection(
-        rb_mv,
-        rf.pocdiff[r#ref.r#ref[0] as usize - 1] as i32,
-        rb.r#ref as i32,
-    );
-    fix_mv_precision(frame_hdr, &mut mv);
+    #[inline(always)]
+    fn fix_mv_precision(&self, mv: &mut Mv) {
+        if self.force_integer_mv {
+            fix_int_mv_precision(mv);
+        } else if !self.hp {
+            mv.x = (mv.x - (mv.x >> 15)) & !1;
+            mv.y = (mv.y - (mv.y >> 15)) & !1;
+        }
+    }
+}
+
+#[inline(always)]
+fn add_temporal_candidate(
+    params: TemporalParams,
+    mvstack: &mut [RefMvsCandidate; 8],
+    cnt: &mut usize,
+    rb: &RefMvsTemporalBlock,
+    globalmv: Option<(&mut i32, &[Mv; 2])>,
+) -> usize {
+    let rb_mv = rb.mv.into_aligned();
+    if rb_mv.is_invalid() {
+        return usize::MAX;
+    }
+
+    let mut mv = mv_projection(rb_mv, params.pocdiff[0].unwrap() as i32, rb.r#ref as i32);
+    params.fix_mv_precision(&mut mv);
 
     let last = *cnt;
-    if r#ref.r#ref[1] == -1 {
+    if !params.compound {
         if let Some((globalmv_ctx, gmv)) = globalmv {
             *globalmv_ctx = ((mv.x - gmv[0].x).abs() | (mv.y - gmv[0].y).abs() >= 16) as i32;
         }
 
-        for cand in &mut mvstack[..last] {
+        for (i, cand) in mvstack.iter_mut().take(last).enumerate() {
             if cand.mv.mv[0] == mv {
                 cand.weight += 2;
-                return;
+                return i;
             }
         }
-        if last < 8 {
-            let cand = &mut mvstack[last];
+        if let Some(cand) = mvstack.get_mut(last) {
             cand.mv.mv[0] = mv;
             cand.weight = 2;
             *cnt = last + 1;
+            return last;
         }
     } else {
         let mut mvp = RefMvsMvPair {
             mv: [
                 mv,
-                mv_projection(
-                    rb_mv,
-                    rf.pocdiff[r#ref.r#ref[1] as usize - 1] as i32,
-                    rb.r#ref as i32,
-                ),
+                mv_projection(rb_mv, params.pocdiff[1].unwrap() as i32, rb.r#ref as i32),
             ],
         };
-        fix_mv_precision(frame_hdr, &mut mvp.mv[1]);
+        params.fix_mv_precision(&mut mvp.mv[1]);
 
-        for cand in &mut mvstack[..last] {
+        for (i, cand) in mvstack.iter_mut().take(last).enumerate() {
             if cand.mv == mvp {
                 cand.weight += 2;
-                return;
+                return i;
             }
         }
-        if last < 8 {
-            let cand = &mut mvstack[last];
+        if let Some(cand) = mvstack.get_mut(last) {
             cand.mv = mvp;
             cand.weight = 2;
             *cnt = last + 1;
+            return last;
         }
     };
+    usize::MAX
+}
+
+/// Out-of-line [`add_temporal_candidate`] for the less frequent call sites
+/// so that only the hot loop gets an inlined copy.
+#[inline(never)]
+fn add_temporal_candidate_outlined(
+    params: TemporalParams,
+    mvstack: &mut [RefMvsCandidate; 8],
+    cnt: &mut usize,
+    rb: &RefMvsTemporalBlock,
+) {
+    add_temporal_candidate(params, mvstack, cnt, rb, None);
 }
 
 fn add_compound_extended_candidate(
     same: &mut [RefMvsCandidate],
     same_count: &mut [usize; 4],
-    cand_b: RefMvsBlock,
+    cand_b: &RefMvsBlock,
     sign0: u8,
     sign1: u8,
     r#ref: RefMvsRefPair,
@@ -838,7 +869,7 @@ fn add_compound_extended_candidate(
 fn add_single_extended_candidate(
     mvstack: &mut [RefMvsCandidate; 8],
     cnt: &mut usize,
-    cand_b: RefMvsBlock,
+    cand_b: &RefMvsBlock,
     sign: u8,
     sign_bias: &[u8; 7],
 ) {
@@ -917,18 +948,9 @@ pub(crate) fn rav1d_refmvs_find(
         r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8 && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8
     );
     if r#ref.r#ref[0] > 0 {
-        tgmv[0] = get_gmv_2d(
-            &frame_hdr.gmv[r#ref.r#ref[0] as usize - 1],
-            bx4,
-            by4,
-            bw4,
-            bh4,
-            frame_hdr,
-        );
-
-        gmv[0] = if frame_hdr.gmv[r#ref.r#ref[0] as usize - 1].r#type
-            > Rav1dWarpedMotionType::Translation
-        {
+        let wm = &frame_hdr.gmv[r#ref.r#ref[0] as usize - 1];
+        tgmv[0] = get_gmv_2d(wm, bx4, by4, bw4, bh4, frame_hdr);
+        gmv[0] = if wm.r#type > Rav1dWarpedMotionType::Translation {
             tgmv[0]
         } else {
             Mv::INVALID
@@ -938,17 +960,9 @@ pub(crate) fn rav1d_refmvs_find(
         gmv[0] = Mv::INVALID;
     }
     if r#ref.r#ref[1] > 0 {
-        tgmv[1] = get_gmv_2d(
-            &frame_hdr.gmv[r#ref.r#ref[1] as usize - 1],
-            bx4,
-            by4,
-            bw4,
-            bh4,
-            frame_hdr,
-        );
-        gmv[1] = if frame_hdr.gmv[r#ref.r#ref[1] as usize - 1].r#type
-            > Rav1dWarpedMotionType::Translation
-        {
+        let wm = &frame_hdr.gmv[r#ref.r#ref[1] as usize - 1];
+        tgmv[1] = get_gmv_2d(wm, bx4, by4, bw4, bh4, frame_hdr);
+        gmv[1] = if wm.r#type > Rav1dWarpedMotionType::Translation {
             tgmv[1]
         } else {
             Mv::INVALID
@@ -956,41 +970,32 @@ pub(crate) fn rav1d_refmvs_find(
     }
 
     // top
-    let mut have_newmv = 0;
-    let mut have_col_mvs = 0;
-    let mut have_row_mvs = 0;
+    let mut sc = SpatialScan {
+        mvstack,
+        cnt: 0,
+        r#ref,
+        gmv,
+        r: &rf.r,
+        have_newmv_match: 0,
+        have_refmv_match: [0; 2],
+    };
     let max_rows;
     let n_rows;
     let b_top;
-    let b_top_offset;
     if by4 > rt.tile_row.start {
         max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as i32) as u32;
-        let i = rt.r[(by4 as usize & 31) + 5 - 1] + bx4 as usize;
-        // We can't offset below 0.
-        b_top_offset = match i {
-            0 => 0,
-            _ => 1,
-        };
-        b_top = i - b_top_offset;
-        n_rows = scan_row(
-            mvstack,
-            cnt,
-            r#ref,
-            &gmv,
-            &rf.r,
-            b_top + b_top_offset,
+        b_top = rt.r[(by4 as usize & 31) + 5 - 1] + bx4 as usize;
+        n_rows = sc.scan_row(
+            b_top,
             bw4,
             w4,
             max_rows as i32,
             if bw4 >= 16 { 4 } else { 1 },
-            &mut have_newmv,
-            &mut have_row_mvs,
         ) as u32;
     } else {
         max_rows = 0;
         n_rows = !0;
         b_top = Default::default(); // Never actually used
-        b_top_offset = 0;
     }
 
     // left
@@ -1000,20 +1005,13 @@ pub(crate) fn rav1d_refmvs_find(
     if bx4 > rt.tile_col.start {
         max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as i32) as u32;
         b_left = &rt.r[(by4 as usize & 31) + 5..];
-        n_cols = scan_col(
-            mvstack,
-            cnt,
-            r#ref,
-            &gmv,
-            &rf.r,
+        n_cols = sc.scan_col(
             b_left,
             bh4,
             h4,
             bx4 - 1,
             max_cols as i32,
             if bh4 >= 16 { 4 } else { 1 },
-            &mut have_newmv,
-            &mut have_col_mvs,
         ) as u32;
     } else {
         max_cols = 0;
@@ -1027,27 +1025,22 @@ pub(crate) fn rav1d_refmvs_find(
         && cmp::max(bw4, bh4) <= 16
         && bw4 + bx4 < rt.tile_col.end
     {
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            4,
-            *rf.r.index(b_top + bw4 as usize + b_top_offset),
-            r#ref,
-            &gmv,
-            &mut have_newmv,
-            &mut have_row_mvs,
-        );
+        let b = rf.r.index(b_top + bw4 as usize);
+        sc.add_spatial_candidate(4, &b, false);
     }
 
-    let nearest_match = have_col_mvs + have_row_mvs;
-    let nearest_cnt = *cnt;
-    for cand in &mut mvstack[..nearest_cnt] {
+    // Matches from the "secondary" scans below don't count as newmv matches.
+    let have_newmv = sc.have_newmv_match;
+    let nearest_match = sc.have_refmv_match[0] + sc.have_refmv_match[1];
+    let nearest_cnt = sc.cnt;
+    for cand in &mut sc.mvstack[..nearest_cnt] {
         cand.weight += 640;
     }
 
     // temporal
     let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs as i32;
     if rf.use_ref_frame_mvs != 0 {
+        let params = TemporalParams::new(rf, r#ref, frame_hdr);
         let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
@@ -1056,22 +1049,41 @@ pub(crate) fn rav1d_refmvs_find(
         let step_v = if bh4 >= 16 { 2 } else { 1 };
         let w8 = cmp::min(w4 + 1 >> 1, 8) as usize;
         let h8 = cmp::min(h4 + 1 >> 1, 8) as usize;
-        for y in (0..h8).step_by(step_v) {
-            for x in (0..w8).step_by(step_h) {
-                add_temporal_candidate(
-                    rf,
-                    mvstack,
-                    cnt,
-                    *rf.rp_proj.index(rbi + y * stride + x),
-                    r#ref,
-                    if x | y == 0 {
-                        Some((&mut globalmv_ctx, &tgmv))
-                    } else {
-                        None
-                    },
-                    frame_hdr,
-                );
+        // Plain `while` loops; `.step_by()` generates much worse code here.
+        let mut prev_rb = RefMvsTemporalBlock::default();
+        let mut prev_slot = usize::MAX;
+        let mut y = 0;
+        while y < h8 {
+            // Bounds check the row once instead of once per block.
+            let row = rbi + y * stride;
+            let rbs = rf.rp_proj.index(row..row + w8);
+            let rbs = &*rbs;
+            let mut x = 0;
+            while x < w8 {
+                let rb = rbs[x];
+                // Neighboring temporal blocks are very often identical,
+                // in which case they project to the same candidate as the previous one.
+                if rb == prev_rb && x | y != 0 {
+                    if let Some(cand) = sc.mvstack.get_mut(prev_slot) {
+                        cand.weight += 2;
+                    }
+                } else {
+                    prev_slot = add_temporal_candidate(
+                        params,
+                        sc.mvstack,
+                        &mut sc.cnt,
+                        &rb,
+                        if x | y == 0 {
+                            Some((&mut globalmv_ctx, &tgmv))
+                        } else {
+                            None
+                        },
+                    );
+                    prev_rb = rb;
+                }
+                x += step_h;
             }
+            y += step_v;
         }
         if cmp::min(bw4, bh4) >= 2 && cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
@@ -1079,36 +1091,28 @@ pub(crate) fn rav1d_refmvs_find(
             let rbi = rbi + bh8 as usize * stride;
             let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
             if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
-                let rb = *rf.rp_proj.index(rbi - 1);
-                add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
+                let rb = rf.rp_proj.index(rbi - 1);
+                add_temporal_candidate_outlined(params, sc.mvstack, &mut sc.cnt, &rb);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom {
-                    let rb = *rf.rp_proj.index(rbi + bw8 as usize);
-                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
+                    let rb = rf.rp_proj.index(rbi + bw8 as usize);
+                    add_temporal_candidate_outlined(params, sc.mvstack, &mut sc.cnt, &rb);
                 }
                 if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
-                    let rb = *rf.rp_proj.index(rbi + bw8 as usize - stride);
-                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
+                    let rb = rf.rp_proj.index(rbi + bw8 as usize - stride);
+                    add_temporal_candidate_outlined(params, sc.mvstack, &mut sc.cnt, &rb);
                 }
             }
         }
     }
-    assert!(*cnt <= 8);
+    assert!(sc.cnt <= 8);
 
     // top/left (which, confusingly, is part of "secondary" references)
-    let mut have_dummy_newmv_match = 0;
     if n_rows | n_cols != !0 {
-        add_spatial_candidate(
-            mvstack,
-            cnt,
-            4,
-            *rf.r.index(b_top + b_top_offset - 1),
-            r#ref,
-            &gmv,
-            &mut have_dummy_newmv_match,
-            &mut have_row_mvs,
-        );
+        // If `b_top` is 0 (or unused), this wraps and the index is out of bounds, so it panics.
+        let b = rf.r.index(b_top.wrapping_sub(1));
+        sc.add_spatial_candidate(4, &b, false);
     }
 
     // "secondary" (non-direct neighbour) top & left edges
@@ -1118,40 +1122,34 @@ pub(crate) fn rav1d_refmvs_find(
     for n in 2..=3 {
         if n > n_rows && n <= max_rows {
             let ri = rt.r[(((by4 & 31) - 2 * n as i32 + 1 | 1) + 5) as usize] + (bx4 as usize | 1);
-            n_rows = n_rows.wrapping_add(scan_row(
-                mvstack,
-                cnt,
-                r#ref,
-                &gmv,
-                &rf.r,
+            n_rows = n_rows.wrapping_add(sc.scan_row(
                 ri,
                 bw4,
                 w4,
                 (1 + max_rows - n) as _,
                 if bw4 >= 16 { 4 } else { 2 },
-                &mut have_dummy_newmv_match,
-                &mut have_row_mvs,
             ) as u32);
         }
         if n > n_cols && n <= max_cols {
-            n_cols = n_cols.wrapping_add(scan_col(
-                mvstack,
-                cnt,
-                r#ref,
-                &gmv,
-                &rf.r,
+            n_cols = n_cols.wrapping_add(sc.scan_col(
                 &rt.r[(by4 as usize & 31 | 1) + 5..],
                 bh4,
                 h4,
                 bx4 - n as i32 * 2 + 1 | 1,
                 (1 + max_cols - n) as _,
                 if bh4 >= 16 { 4 } else { 2 },
-                &mut have_dummy_newmv_match,
-                &mut have_col_mvs,
             ) as u32);
         }
     }
-    assert!(*cnt <= 8);
+    assert!(sc.cnt <= 8);
+
+    let SpatialScan {
+        mvstack,
+        cnt: spatial_cnt,
+        have_refmv_match: [have_row_mvs, have_col_mvs],
+        ..
+    } = sc;
+    *cnt = spatial_cnt;
 
     let ref_match_count = have_col_mvs + have_row_mvs;
 
@@ -1164,10 +1162,24 @@ pub(crate) fn rav1d_refmvs_find(
     };
 
     // sorting (nearest, then "secondary")
-    // Previously used bubble sort; now we use Rust's stable sort,
-    // which for small slices is insertion sort.
-    mvstack[..nearest_cnt].sort_by_key(|cand| -cand.weight);
-    mvstack[nearest_cnt..*cnt].sort_by_key(|cand| -cand.weight);
+    // This is a stable bubble sort, as these are at most 8 elements
+    // and it is much cheaper inlined than a call into `[_]::sort_by_key`.
+    #[inline(always)]
+    fn sort_by_weight(mvstack: &mut [RefMvsCandidate]) {
+        let mut len = mvstack.len();
+        while len > 0 {
+            let mut last = 0;
+            for n in 1..len {
+                if mvstack[n - 1].weight < mvstack[n].weight {
+                    mvstack.swap(n - 1, n);
+                    last = n;
+                }
+            }
+            len = last;
+        }
+    }
+    sort_by_weight(&mut mvstack[..nearest_cnt]);
+    sort_by_weight(&mut mvstack[nearest_cnt..*cnt]);
 
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
@@ -1182,11 +1194,11 @@ pub(crate) fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
+                    let cand_b = rf.r.index(b_top + x as usize);
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
-                        cand_b,
+                        &cand_b,
                         sign0,
                         sign1,
                         r#ref,
@@ -1200,11 +1212,11 @@ pub(crate) fn rav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
+                    let cand_b = rf.r.index(b_left[y as usize] + bx4 as usize - 1);
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
-                        cand_b,
+                        &cand_b,
                         sign0,
                         sign1,
                         r#ref,
@@ -1290,8 +1302,8 @@ pub(crate) fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
-                add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
+                let cand_b = rf.r.index(b_top + x as usize);
+                add_single_extended_candidate(mvstack, cnt, &cand_b, sign, &rf.sign_bias);
                 x += cand_b.bs.dimensions()[0] as i32;
             }
         }
@@ -1300,8 +1312,8 @@ pub(crate) fn rav1d_refmvs_find(
         if n_cols != !0 {
             let mut y = 0;
             while y < sz4 && *cnt < 2 {
-                let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
-                add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
+                let cand_b = rf.r.index(b_left[y as usize] + bx4 as usize - 1);
+                add_single_extended_candidate(mvstack, cnt, &cand_b, sign, &rf.sign_bias);
                 y += cand_b.bs.dimensions()[1] as i32;
             }
         }

@@ -142,7 +142,7 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
     ytxtp
 }
 
-#[inline]
+#[inline(always)]
 pub fn get_filter_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -152,13 +152,14 @@ pub fn get_filter_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
-    let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+    let ctx = |al: &BlockContext, b4: c_int| {
         if *al.r#ref[0].index(b4 as usize) == r#ref || *al.r#ref[1].index(b4 as usize) == r#ref {
             *al.filter[dir as usize].index(b4 as usize)
         } else {
             Rav1dFilterMode::N_SWITCHABLE_FILTERS
         }
-    });
+    };
+    let [a_filter, l_filter] = [ctx(a, xb4), ctx(l, yb4)];
 
     (comp as u8) * 4
         + (if a_filter == l_filter {
@@ -172,7 +173,7 @@ pub fn get_filter_ctx(
         } as u8)
 }
 
-#[inline]
+#[inline(always)]
 pub fn get_comp_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -298,7 +299,7 @@ pub fn get_poc_diff(order_hint_n_bits: u8, poc0: c_int, poc1: c_int) -> c_int {
     return (diff & mask - 1) - (diff & mask);
 }
 
-#[inline]
+#[inline(always)]
 pub fn get_jnt_comp_ctx(
     order_hint_n_bits: u8,
     poc: c_uint,
@@ -312,17 +313,18 @@ pub fn get_jnt_comp_ctx(
     let d0 = get_poc_diff(order_hint_n_bits, ref0poc as c_int, poc as c_int).abs();
     let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
-    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+    let ctx = |al: &BlockContext, b4: c_int| {
         (*al.comp_type.index(b4 as usize) >= Some(CompInterType::Avg)
             || *al.r#ref[0].index(b4 as usize) == 6) as u8
-    });
+    };
+    let [a_ctx, l_ctx] = [ctx(a, xb4), ctx(l, yb4)];
 
     3 * offset + a_ctx + l_ctx
 }
 
 #[inline]
 pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
-    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+    let ctx = |al: &BlockContext, b4: c_int| {
         if *al.comp_type.index(b4 as usize) >= Some(CompInterType::Seg) {
             1
         } else if *al.r#ref[0].index(b4 as usize) == 6 {
@@ -330,9 +332,36 @@ pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_
         } else {
             0
         }
-    });
+    };
+    let [a_ctx, l_ctx] = [ctx(a, xb4), ctx(l, yb4)];
 
     cmp::min(a_ctx + l_ctx, 5)
+}
+
+/// Up to 4 small (`< 256`) counters packed into one register,
+/// which avoids a stack-allocated `[u8; N]` and its partial stores/loads.
+#[derive(Clone, Copy, Default)]
+struct Counts(u32);
+
+impl Counts {
+    #[inline(always)]
+    fn inc(&mut self, i: usize) {
+        debug_assert!(i < 4);
+        self.0 += 1 << (8 * (i & 3));
+    }
+
+    /// Increment counter `i` if `i < N`.
+    #[inline(always)]
+    fn inc_checked<const N: usize>(&mut self, i: usize) {
+        if i < N {
+            self.inc(i);
+        }
+    }
+
+    #[inline(always)]
+    fn get(&self, i: usize) -> u8 {
+        (self.0 >> (8 * (i & 3))) as u8
+    }
 }
 
 fn cmp_counts(c1: u8, c2: u8) -> u8 {
@@ -344,7 +373,7 @@ fn cmp_counts(c1: u8, c2: u8) -> u8 {
     }
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -353,26 +382,26 @@ pub fn av1_get_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 2];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
-        cnt[(*a.r#ref[0].index(xb4 as usize) >= 4) as usize] += 1;
+        cnt.inc((*a.r#ref[0].index(xb4 as usize) >= 4) as usize);
         if a.comp_type.index(xb4 as usize).is_some() {
-            cnt[(*a.r#ref[1].index(xb4 as usize) >= 4) as usize] += 1;
+            cnt.inc((*a.r#ref[1].index(xb4 as usize) >= 4) as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
-        cnt[(*l.r#ref[0].index(yb4 as usize) >= 4) as usize] += 1;
+        cnt.inc((*l.r#ref[0].index(yb4 as usize) >= 4) as usize);
         if l.comp_type.index(yb4 as usize).is_some() {
-            cnt[(*l.r#ref[1].index(yb4 as usize) >= 4) as usize] += 1;
+            cnt.inc((*l.r#ref[1].index(yb4 as usize) >= 4) as usize);
         }
     }
 
-    cmp_counts(cnt[0], cnt[1])
+    cmp_counts(cnt.get(0), cnt.get(1))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_fwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -381,37 +410,34 @@ pub fn av1_get_fwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 4];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
         let ref0 = *a.r#ref[0].index(xb4 as usize);
         if ref0 < 4 {
-            cnt[ref0 as usize] += 1;
+            cnt.inc(ref0 as usize);
         }
         let ref1 = *a.r#ref[1].index(xb4 as usize);
         if a.comp_type.index(xb4 as usize).is_some() && ref1 < 4 {
-            cnt[ref1 as usize] += 1;
+            cnt.inc(ref1 as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
         let ref0 = *l.r#ref[0].index(yb4 as usize);
         if ref0 < 4 {
-            cnt[ref0 as usize] += 1;
+            cnt.inc(ref0 as usize);
         }
         let ref1 = *l.r#ref[1].index(yb4 as usize);
         if l.comp_type.index(yb4 as usize).is_some() && ref1 < 4 {
-            cnt[ref1 as usize] += 1;
+            cnt.inc(ref1 as usize);
         }
     }
 
-    cnt[0] += cnt[1];
-    cnt[2] += cnt[3];
-
-    cmp_counts(cnt[0], cnt[2])
+    cmp_counts(cnt.get(0) + cnt.get(1), cnt.get(2) + cnt.get(3))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_fwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -420,34 +446,34 @@ pub fn av1_get_fwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 2];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
         let ref0 = *a.r#ref[0].index(xb4 as usize);
         if ref0 < 2 {
-            cnt[ref0 as usize] += 1;
+            cnt.inc(ref0 as usize);
         }
         let ref1 = *a.r#ref[1].index(xb4 as usize);
         if a.comp_type.index(xb4 as usize).is_some() && ref1 < 2 {
-            cnt[ref1 as usize] += 1;
+            cnt.inc(ref1 as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
         let ref0 = *l.r#ref[0].index(yb4 as usize);
         if ref0 < 2 {
-            cnt[ref0 as usize] += 1;
+            cnt.inc(ref0 as usize);
         }
         let ref1 = *l.r#ref[1].index(yb4 as usize);
         if l.comp_type.index(yb4 as usize).is_some() && ref1 < 2 {
-            cnt[ref1 as usize] += 1;
+            cnt.inc(ref1 as usize);
         }
     }
 
-    cmp_counts(cnt[0], cnt[1])
+    cmp_counts(cnt.get(0), cnt.get(1))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_fwd_ref_2_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -456,34 +482,34 @@ pub fn av1_get_fwd_ref_2_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 2];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
         let ref0 = *a.r#ref[0].index(xb4 as usize);
         if (ref0 ^ 2) < 2 {
-            cnt[(ref0 - 2) as usize] += 1;
+            cnt.inc((ref0 - 2) as usize);
         }
         let ref1 = *a.r#ref[1].index(xb4 as usize);
         if a.comp_type.index(xb4 as usize).is_some() && (ref1 ^ 2) < 2 {
-            cnt[(ref1 - 2) as usize] += 1;
+            cnt.inc((ref1 - 2) as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
         let ref0 = *l.r#ref[0].index(yb4 as usize);
         if (ref0 ^ 2) < 2 {
-            cnt[(ref0 - 2) as usize] += 1;
+            cnt.inc((ref0 - 2) as usize);
         }
         let ref1 = *l.r#ref[1].index(yb4 as usize);
         if l.comp_type.index(yb4 as usize).is_some() && (ref1 ^ 2) < 2 {
-            cnt[(ref1 - 2) as usize] += 1;
+            cnt.inc((ref1 - 2) as usize);
         }
     }
 
-    cmp_counts(cnt[0], cnt[1])
+    cmp_counts(cnt.get(0), cnt.get(1))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_bwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -492,36 +518,34 @@ pub fn av1_get_bwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 3];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
         let ref0 = *a.r#ref[0].index(xb4 as usize);
         if ref0 >= 4 {
-            cnt[(ref0 - 4) as usize] += 1;
+            cnt.inc((ref0 - 4) as usize);
         }
         let ref1 = *a.r#ref[1].index(xb4 as usize);
         if a.comp_type.index(xb4 as usize).is_some() && ref1 >= 4 {
-            cnt[(ref1 - 4) as usize] += 1;
+            cnt.inc((ref1 - 4) as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
         let ref0 = *l.r#ref[0].index(yb4 as usize);
         if ref0 >= 4 {
-            cnt[(ref0 - 4) as usize] += 1;
+            cnt.inc((ref0 - 4) as usize);
         }
         let ref1 = *l.r#ref[1].index(yb4 as usize);
         if l.comp_type.index(yb4 as usize).is_some() && ref1 >= 4 {
-            cnt[(ref1 - 4) as usize] += 1;
+            cnt.inc((ref1 - 4) as usize);
         }
     }
 
-    cnt[1] += cnt[0];
-
-    cmp_counts(cnt[1], cnt[2])
+    cmp_counts(cnt.get(0) + cnt.get(1), cnt.get(2))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_bwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -530,34 +554,34 @@ pub fn av1_get_bwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 3];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
         let ref0 = *a.r#ref[0].index(xb4 as usize);
         if ref0 >= 4 {
-            cnt[(ref0 - 4) as usize] += 1;
+            cnt.inc((ref0 - 4) as usize);
         }
         let ref1 = *a.r#ref[1].index(xb4 as usize);
         if a.comp_type.index(xb4 as usize).is_some() && ref1 >= 4 {
-            cnt[(ref1 - 4) as usize] += 1;
+            cnt.inc((ref1 - 4) as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
         let ref0 = *l.r#ref[0].index(yb4 as usize);
         if ref0 >= 4 {
-            cnt[(ref0 - 4) as usize] += 1;
+            cnt.inc((ref0 - 4) as usize);
         }
         let ref1 = *l.r#ref[1].index(yb4 as usize);
         if l.comp_type.index(yb4 as usize).is_some() && ref1 >= 4 {
-            cnt[(ref1 - 4) as usize] += 1;
+            cnt.inc((ref1 - 4) as usize);
         }
     }
 
-    cmp_counts(cnt[0], cnt[1])
+    cmp_counts(cnt.get(0), cnt.get(1))
 }
 
-#[inline]
+#[inline(always)]
 pub fn av1_get_uni_p1_ctx(
     a: &BlockContext,
     l: &BlockContext,
@@ -566,33 +590,23 @@ pub fn av1_get_uni_p1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let mut cnt = [0; 3];
+    let mut cnt = Counts::default();
 
     if have_top && *a.intra.index(xb4 as usize) == 0 {
-        if let Some(cnt) = cnt.get_mut((*a.r#ref[0].index(xb4 as usize) - 1) as usize) {
-            *cnt += 1;
-        }
+        cnt.inc_checked::<3>((*a.r#ref[0].index(xb4 as usize) - 1) as usize);
         if a.comp_type.index(xb4 as usize).is_some() {
-            if let Some(cnt) = cnt.get_mut((*a.r#ref[1].index(xb4 as usize) - 1) as usize) {
-                *cnt += 1;
-            }
+            cnt.inc_checked::<3>((*a.r#ref[1].index(xb4 as usize) - 1) as usize);
         }
     }
 
     if have_left && *l.intra.index(yb4 as usize) == 0 {
-        if let Some(cnt) = cnt.get_mut((*l.r#ref[0].index(yb4 as usize) - 1) as usize) {
-            *cnt += 1;
-        }
+        cnt.inc_checked::<3>((*l.r#ref[0].index(yb4 as usize) - 1) as usize);
         if l.comp_type.index(yb4 as usize).is_some() {
-            if let Some(cnt) = cnt.get_mut((*l.r#ref[1].index(yb4 as usize) - 1) as usize) {
-                *cnt += 1;
-            }
+            cnt.inc_checked::<3>((*l.r#ref[1].index(yb4 as usize) - 1) as usize);
         }
     }
 
-    cnt[1] += cnt[2];
-
-    cmp_counts(cnt[0], cnt[1])
+    cmp_counts(cnt.get(0), cnt.get(1) + cnt.get(2))
 }
 
 #[inline]
@@ -637,7 +651,7 @@ pub fn get_cur_frame_segid(
 }
 
 #[inline]
-fn fix_int_mv_precision(mv: &mut Mv) {
+pub(crate) fn fix_int_mv_precision(mv: &mut Mv) {
     mv.x = (mv.x - (mv.x >> 15) + 3) & !7;
     mv.y = (mv.y - (mv.y >> 15) + 3) & !7;
 }
@@ -652,8 +666,24 @@ pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut Mv) {
     }
 }
 
-#[inline]
+/// The common identity case is checked inline so that it doesn't need a call.
+#[inline(always)]
 pub(crate) fn get_gmv_2d(
+    gmv: &Rav1dWarpedMotionParams,
+    bx4: c_int,
+    by4: c_int,
+    bw4: c_int,
+    bh4: c_int,
+    hdr: &Rav1dFrameHeader,
+) -> Mv {
+    if gmv.r#type == Rav1dWarpedMotionType::Identity {
+        return Mv::ZERO;
+    }
+    get_gmv_2d_non_identity(gmv, bx4, by4, bw4, bh4, hdr)
+}
+
+#[inline(never)]
+fn get_gmv_2d_non_identity(
     gmv: &Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,
