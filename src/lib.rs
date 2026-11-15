@@ -1074,3 +1074,36 @@ pub unsafe extern "C" fn dav1d_data_props_unref(props: Option<NonNull<Dav1dDataP
     let props = unsafe { props.as_mut() };
     let _ = mem::take(props).to::<Rav1dDataProps>();
 }
+
+#[cfg(test)]
+mod tests {
+    use std::ptr::NonNull;
+
+    use crate::dav1d_data_create;
+    use crate::dav1d_data_unref;
+    use crate::include::dav1d::data::Dav1dData;
+
+    /// Test the `dav1d_data_create` contract that the caller writes the OBUs
+    /// into the returned buffer after the call has already wrapped it (#1514).
+    ///
+    /// Writing through the returned pointer used to be UB
+    /// (a Stacked Borrows/Tree Borrows `SharedReadOnly` violation),
+    /// since the pointer was derived from a shared reference;
+    /// it is now derived from the uniquely-owned `Box` while wrapping.
+    /// Miri is needed to detect the UB; this test exercises the API.
+    #[test]
+    fn test_data_create_write_after_wrap() {
+        let mut buf = Dav1dData::default();
+        // SAFETY: `buf` is safe to write to.
+        let ptr = unsafe { dav1d_data_create(NonNull::new(&mut buf), 16) };
+        assert!(!ptr.is_null());
+        assert_eq!(buf.sz, 16);
+        // Simulate the C caller filling the buffer with OBUs.
+        for i in 0..16 {
+            // SAFETY: `ptr` is the start of a 16-byte buffer.
+            unsafe { ptr.add(i).write(i as u8) };
+        }
+        // SAFETY: `buf` was filled by `dav1d_data_create`.
+        unsafe { dav1d_data_unref(NonNull::new(&mut buf)) };
+    }
+}
