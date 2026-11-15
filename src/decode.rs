@@ -2060,7 +2060,6 @@ fn decode_b(
             comp_type: Default::default(),
             inter_mode: Default::default(),
             motion_mode: Default::default(),
-            drl_idx: Default::default(),
             r#ref: Default::default(),
             max_ytx,
             filter2d,
@@ -2135,7 +2134,6 @@ fn decode_b(
             comp_type: Option<CompInterType>,
             inter_mode: u8,
             motion_mode: MotionMode,
-            drl_idx: DrlProximity,
             r#ref: [i8; 2],
             interintra_type: Option<InterIntraType>,
         }
@@ -2144,7 +2142,6 @@ fn decode_b(
             comp_type,
             inter_mode,
             motion_mode,
-            drl_idx,
             r#ref,
             interintra_type,
         } = if b.skip_mode != 0 {
@@ -2154,7 +2151,6 @@ fn decode_b(
             ];
             let comp_type = CompInterType::Avg;
             let inter_mode = NEARESTMV_NEARESTMV;
-            let drl_idx = DrlProximity::Nearest;
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
@@ -2194,7 +2190,6 @@ fn decode_b(
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
-                drl_idx,
                 r#ref,
                 interintra_type: None,
             }
@@ -2509,7 +2504,6 @@ fn decode_b(
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
-                drl_idx,
                 r#ref,
                 interintra_type: None,
             }
@@ -2709,7 +2703,6 @@ fn decode_b(
                     );
                 }
             }
-            let drl_idx = drl_idx;
             let mv1d0 = mv1d0;
 
             // interintra flags
@@ -2879,7 +2872,6 @@ fn decode_b(
                 comp_type: None,
                 inter_mode,
                 motion_mode,
-                drl_idx,
                 r#ref,
                 interintra_type,
             }
@@ -2947,7 +2939,6 @@ fn decode_b(
             comp_type,
             inter_mode,
             motion_mode,
-            drl_idx,
             r#ref,
             max_ytx,
             filter2d,
