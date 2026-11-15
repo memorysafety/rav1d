@@ -1,7 +1,5 @@
 use std::ptr::NonNull;
 
-use to_method::To as _;
-
 use crate::c_arc::{CArc, RawCArc};
 use crate::include::dav1d::common::{Dav1dDataProps, Rav1dDataProps};
 
@@ -43,9 +41,12 @@ impl From<Rav1dData> for Dav1dData {
     fn from(value: Rav1dData) -> Self {
         let Rav1dData { data, m } = value;
         Self {
-            data: data
-                .as_ref()
-                .map(|data| data.as_ref().to::<NonNull<[u8]>>().cast()),
+            // Use the stable pointer instead of going through `as_ref()`,
+            // which would return a pointer derived from a shared reference,
+            // making any subsequent write by the C caller UB (#1514).
+            // In particular, `dav1d_data_create` hands this pointer out
+            // for the caller to fill the buffer with the OBUs.
+            data: data.as_ref().map(|data| data.stable_ptr().cast()),
             sz: data.as_ref().map(|data| data.len()).unwrap_or_default(),
             r#ref: data.map(|data| data.into_raw()),
             m: m.into(),

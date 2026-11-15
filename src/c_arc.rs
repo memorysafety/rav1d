@@ -154,9 +154,29 @@ impl<T: ?Sized> From<Arc<Pin<CRef<T>>>> for CArc<T> {
 }
 
 impl<T: ?Sized> CArc<T> {
-    pub fn wrap(owner: CRef<T>) -> Rav1dResult<Self> {
+    /// Returns the stored stable pointer to the data without materializing
+    /// any reference, preserving its provenance (mutable for `CRef::Box`,
+    /// which C callers writing through the `dav1d_data_create`-returned
+    /// pointer rely on; see [`CRef::stable_ptr`]).
+    pub fn stable_ptr(&self) -> NonNull<T> {
+        self.stable_ref.0
+    }
+}
+
+impl<T: ?Sized> CArc<T> {
+    pub fn wrap(mut owner: CRef<T>) -> Rav1dResult<Self> {
+        // Capture the stable ref while we still uniquely own `owner`,
+        // so that the pointer has mutable provenance when possible
+        // (e.g. for `CRef::Box`), which C callers writing through the
+        // `dav1d_data_create`-returned pointer rely on (#1514).
+        let stable_ref = StableRef(owner.stable_ptr());
         let owner = Arc::new(owner.into_pin()); // TODO fallible allocation
-        Ok(owner.into())
+        Ok(Self {
+            owner,
+            #[cfg(debug_assertions)]
+            base_stable_ref: stable_ref,
+            stable_ref,
+        })
     }
 }
 

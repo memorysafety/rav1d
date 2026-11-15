@@ -175,6 +175,29 @@ impl<T: ?Sized> Deref for CRef<T> {
 }
 
 impl<T: ?Sized> CRef<T> {
+    /// Returns a pointer to the data with the strongest provenance available,
+    /// to be stored as a [`CArc`]'s stable ref.
+    ///
+    /// This must be called while `self` is still uniquely owned,
+    /// i.e. before wrapping it in an [`Arc`],
+    /// so that for [`Self::Box`] the pointer derives from the `Box`
+    /// and thus has mutable provenance.
+    /// That mutable provenance is required by the `dav1d_data_create`
+    /// contract, where the C caller writes the data through the returned
+    /// pointer after we've wrapped the buffer, and writing through a pointer
+    /// derived from a shared reference would be UB (#1514).
+    ///
+    /// For [`Self::Ref`] and [`Self::Arc`], the data is never uniquely owned,
+    /// so the pointer only has shared provenance and must not be written to.
+    pub(crate) fn stable_ptr(&mut self) -> NonNull<T> {
+        match self {
+            Self::Ref(data) => NonNull::from(&**data),
+            Self::Box(data) => NonNull::from(&mut **data),
+            Self::Arc(data) => NonNull::from(&**data),
+            Self::C(data) => data.data.pointer,
+        }
+    }
+
     pub fn into_pin(self) -> Pin<Self> {
         // SAFETY:
         // `&'static`, `Box`, `Rc`, `Arc` are all pinnable as they have stable references.
