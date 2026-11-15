@@ -323,10 +323,16 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
     {
         let bounds = index.clone().into();
+        // In debug mode, check and register the disjointness of this borrow
+        // BEFORE materializing the mutable reference below, so that
+        // overlapping borrows panic before incurring UB (#1355).
+        #[cfg(debug_assertions)]
+        let bounds = self.add_mut_bounds(bounds);
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
         // that the indexed region we are mutably borrowing is not concurrently
         // borrowed and will not be borrowed during the lifetime of the returned
-        // reference.
+        // reference. In debug mode, this has just been checked (and panicked
+        // on violation) above, before the reference is materialized.
         let slice = unsafe { &mut *index.get_mut(self.as_mut_slice()) };
         DisjointMutGuard::new(self, slice, bounds)
     }
@@ -359,10 +365,17 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
     {
         let bounds = index.clone().into();
+        // In debug mode, check and register this borrow BEFORE materializing
+        // the immutable reference below, so that overlapping mutable borrows
+        // panic before incurring UB (#1355).
+        #[cfg(debug_assertions)]
+        let bounds = self.add_immut_bounds(bounds);
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
         // that the indexed region we are immutably borrowing is not
-        // concurrently mutably borrowed and will not be mutably borrowed during
-        // the lifetime of the returned reference.
+        // concurrently mutably borrowed and will not be mutably borrowed
+        // during the lifetime of the returned reference. In debug mode,
+        // this has just been checked (and panicked on violation) above,
+        // before the reference is materialized.
         let slice = unsafe { &*index.get_mut(self.as_mut_slice()).cast_const() };
         DisjointImmutGuard::new(self, slice, bounds)
     }
@@ -877,8 +890,16 @@ mod debug {
     }
 
     impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
+        /// Checks that a mutable borrow of `bounds` doesn't overlap any
+        /// existing borrow, registering it and panicking on any overlap,
+        /// and returns the registered bounds for the [`DisjointMutGuard`]
+        /// to store for its eventual deregistration.
+        ///
+        /// This must be called BEFORE the mutable reference is materialized,
+        /// so that an overlapping borrow panics before any UB occurs (#1355).
         #[track_caller]
-        fn add_mut_bounds(&self, current: DisjointMutBounds) {
+        pub(super) fn add_mut_bounds(&self, bounds: Bounds) -> DisjointMutBounds {
+            let current = DisjointMutBounds::new(bounds.clone(), true);
             for existing in self.bounds.immutable.lock().iter() {
                 current.check_overlaps(existing);
             }
@@ -887,15 +908,24 @@ mod debug {
                 current.check_overlaps(existing);
             }
             mut_bounds.push(current);
+            // Return a fresh, equal instance for the guard, since `current`
+            // was moved into the `Vec`. `PartialEq` intentionally ignores the
+            // (differently captured) backtrace, and the `Location` and thread
+            // are the same, so removal at `Drop` still finds it.
+            DisjointMutBounds::new(bounds, true)
         }
 
+        /// Same as [`Self::add_mut_bounds`], but for an immutable borrow,
+        /// which only needs to be checked against existing mutable borrows.
         #[track_caller]
-        fn add_immut_bounds(&self, current: DisjointMutBounds) {
+        pub(super) fn add_immut_bounds(&self, bounds: Bounds) -> DisjointMutBounds {
+            let current = DisjointMutBounds::new(bounds.clone(), false);
             let mut_bounds = self.bounds.mutable.lock();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
             }
             self.bounds.immutable.lock().push(current);
+            DisjointMutBounds::new(bounds, false)
         }
 
         fn remove_bound(&self, bounds: &DisjointMutBounds) {
@@ -913,10 +943,14 @@ mod debug {
     }
 
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
-        #[track_caller]
-        pub fn new(parent: &'a DisjointMut<T>, slice: &'a mut V, bounds: Bounds) -> Self {
-            parent.add_mut_bounds(DisjointMutBounds::new(bounds.clone(), true));
-            let bounds = DisjointMutBounds::new(bounds, true);
+        /// The `bounds` must have already been registered with
+        /// [`DisjointMut::add_mut_bounds`] BEFORE `slice` was materialized,
+        /// which is what makes this sound (#1355).
+        pub(super) fn new(
+            parent: &'a DisjointMut<T>,
+            slice: &'a mut V,
+            bounds: DisjointMutBounds,
+        ) -> Self {
             Self {
                 parent,
                 slice,
@@ -933,10 +967,14 @@ mod debug {
     }
 
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
-        #[track_caller]
-        pub fn new(parent: &'a DisjointMut<T>, slice: &'a V, bounds: Bounds) -> Self {
-            parent.add_immut_bounds(DisjointMutBounds::new(bounds.clone(), false));
-            let bounds = DisjointMutBounds::new(bounds, false);
+        /// The `bounds` must have already been registered with
+        /// [`DisjointMut::add_immut_bounds`] BEFORE `slice` was materialized,
+        /// which is what makes this sound (#1355).
+        pub(super) fn new(
+            parent: &'a DisjointMut<T>,
+            slice: &'a V,
+            bounds: DisjointMutBounds,
+        ) -> Self {
             Self {
                 parent,
                 slice,
@@ -1060,6 +1098,25 @@ fn test_overlapping_mut() {
 
     guard2[0] = 42;
     assert_eq!(guard1[2], 42);
+}
+
+/// The overlapping `index_mut` must panic BEFORE materializing its mutable
+/// reference, so that the first guard is still valid and usable after
+/// catching the panic, instead of having UB'd beforehand (#1355).
+#[test]
+#[cfg(debug_assertions)]
+fn test_overlapping_mut_panics_before_materializing() {
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+
+    let mut v: DisjointMut<Vec<u8>> = Default::default();
+    v.resize(10, 0u8);
+
+    let mut guard1 = v.index_mut(0..5);
+    let res = catch_unwind(AssertUnwindSafe(|| v.index_mut(2..)));
+    assert!(res.is_err(), "overlapping `index_mut` should panic");
+
+    guard1[0] = 42;
+    assert_eq!(guard1[0], 42);
 }
 
 #[allow(clippy::undocumented_unsafe_blocks)]
