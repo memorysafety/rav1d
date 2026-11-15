@@ -9,8 +9,12 @@ fn main() {
 
     match (os, env) {
         ("windows", "msvc") => {
-            if !cfg!(all(target_os = "windows", target_env = "msvc")) {
-                panic!("Cannot cross compile to *-windows-msvc");
+            // `cfg!` is a compile-time constant, so assert in a const block.
+            const {
+                assert!(
+                    cfg!(all(target_os = "windows", target_env = "msvc")),
+                    "Cannot cross compile to *-windows-msvc"
+                );
             }
         }
         #[allow(clippy::needless_return)]
@@ -35,7 +39,7 @@ fn main() {
             .expect("LIB path not found")
             .1;
         for path in lib_paths.to_str().unwrap().split(';') {
-            if path != "" {
+            if !path.is_empty() {
                 println!("cargo:rustc-link-search={path}");
             }
         }
@@ -45,7 +49,7 @@ fn main() {
             .files([&"../tools/compat/getopt.c"])
             .include("../src/include/compat")
             .debug(cfg!(debug_assertions))
-            .compile(&getopt);
+            .compile(getopt);
         // cc automatically outputs the following line
         // println!("cargo:rustc-link-lib=static={getopt}");
     }

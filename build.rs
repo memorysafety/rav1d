@@ -54,10 +54,11 @@ mod asm {
         }
 
         pub fn bool(name: &'static str, value: bool) -> Self {
-            Self::new(name, value as u8)
+            Self::new(name, u8::from(value))
         }
     }
 
+    #[allow(clippy::too_many_lines)] // A build script is inherently linear.
     pub fn main() {
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
