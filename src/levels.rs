@@ -559,7 +559,6 @@ pub struct Av1BlockInter {
     pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
     pub motion_mode: MotionMode,
-    pub drl_idx: DrlProximity,
     pub r#ref: [i8; 2],
     pub max_ytx: TxfmSize,
     pub filter2d: Filter2d,
