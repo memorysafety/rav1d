@@ -1,6 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::ffi::{c_int, c_uint};
+use std::mem;
 use std::{cmp, slice};
 
 use libc::ptrdiff_t;
@@ -9,7 +10,7 @@ use zerocopy::{AsBytes, FromBytes};
 
 use crate::cpu::CpuFlags;
 use crate::enum_map::{enum_map, enum_map_ty, DefaultValue};
-use crate::ffi_safe::FFISafe;
+
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
@@ -20,9 +21,7 @@ use crate::include::common::bitdepth::bpc_fn;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel, BPC};
 use crate::include::common::intops::{apply_sign, iclip};
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
-use crate::include::dav1d::picture::{
-    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
-};
+use crate::include::dav1d::picture::Rav1dPictureDataComponentOffset;
 use crate::internal::{SCRATCH_AC_TXTP_LEN, SCRATCH_EDGE_LEN};
 use crate::levels::{
     DC_128_PRED, DC_PRED, FILTER_PRED, HOR_PRED, LEFT_DC_PRED, N_IMPL_INTRA_PRED_MODES, PAETH_PRED,
@@ -45,7 +44,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     max_height: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl angular_ipred::Fn {
@@ -65,7 +63,6 @@ impl angular_ipred::Fn {
         let stride = dst.stride();
         let topleft = topleft[topleft_off..].as_ptr().cast();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
         // SAFETY: Fallbacks are safe; asm is supposed to do the same, where the fallbacks are:
         // * `fn splat_dc`
         // * `fn ipred_{v,h}_rust`
@@ -86,7 +83,6 @@ impl angular_ipred::Fn {
                 max_height,
                 bd,
                 topleft_off,
-                dst,
             )
         }
     }
@@ -100,7 +96,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
-    _y: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl cfl_ac::Fn {
@@ -115,9 +110,8 @@ impl cfl_ac::Fn {
     ) {
         let y_ptr = y.as_ptr::<BD>().cast();
         let stride = y.stride();
-        let y = y.into_ffi_safe();
         // SAFETY: Fallback `fn cfl_ac_rust` is safe; asm is supposed to do the same.
-        unsafe { self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y) }
+        unsafe { self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch) }
     }
 }
 
@@ -131,7 +125,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     alpha: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl cfl_pred::Fn {
@@ -150,7 +143,6 @@ impl cfl_pred::Fn {
         let stride = dst.stride();
         let topleft = topleft[topleft_off..].as_ptr().cast();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn cfl_pred` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -163,7 +155,6 @@ impl cfl_pred::Fn {
                 alpha,
                 bd,
                 topleft_off,
-                dst,
             )
         }
     }
@@ -176,7 +167,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     idx: *const u8,
     w: c_int,
     h: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
 ) -> ());
 
 impl pal_pred::Fn {
@@ -188,15 +178,12 @@ impl pal_pred::Fn {
         w: c_int,
         h: c_int,
     ) {
-        // SAFETY: `DisjointMut` is unchecked for asm `fn`s,
-        // but passed through as an extra arg for the fallback `fn`.
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let stride = dst.stride();
         let pal = pal.as_ptr().cast();
         let idx = idx[..(w * h) as usize / 2].as_ptr();
-        let dst = dst.into_ffi_safe();
         // SAFETY: Fallback `fn pal_pred_rust` is safe; asm is supposed to do the same.
-        unsafe { self.get()(dst_ptr, stride, pal, idx, w, h, dst) }
+        unsafe { self.get()(dst_ptr, stride, pal, idx, w, h) }
     }
 }
 
@@ -209,7 +196,8 @@ pub struct Rav1dIntraPredDSPContext {
 
 #[inline(never)]
 fn splat_dc<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     width: c_int,
     height: c_int,
     dc: c_int,
@@ -219,17 +207,27 @@ fn splat_dc<BD: BitDepth>(
     let width = width as usize;
     assert!(dc <= bd.bitdepth_max().as_::<c_int>());
     let dc = dc.as_::<BD::Pixel>();
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
     if BD::BPC == BPC::BPC8 && width > 4 {
         for y in 0..height {
-            let dst = dst + y * dst.pixel_stride::<BD>();
-            let dst = &mut *dst.slice_mut::<BD>(width);
+            let dst = unsafe {
+                slice::from_raw_parts_mut(
+                    (dst_ptr as *mut BD::Pixel).offset(y * px_stride),
+                    width,
+                )
+            };
             let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
             dst.fill([dc; 8]);
         }
     } else {
         for y in 0..height {
-            let dst = dst + y * dst.pixel_stride::<BD>();
-            let dst = &mut *dst.slice_mut::<BD>(width);
+            let dst = unsafe {
+                slice::from_raw_parts_mut(
+                    (dst_ptr as *mut BD::Pixel).offset(y * px_stride),
+                    width,
+                )
+            };
             let dst = FromBytes::mut_slice_from(AsBytes::as_bytes_mut(dst)).unwrap();
             dst.fill([dc; 4]);
         }
@@ -238,7 +236,8 @@ fn splat_dc<BD: BitDepth>(
 
 #[inline(never)]
 fn cfl_pred<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     width: c_int,
     height: c_int,
     dc: c_int,
@@ -248,10 +247,16 @@ fn cfl_pred<BD: BitDepth>(
 ) {
     let width = width as usize;
     let height = height as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
     let mut ac = &ac[..width * height];
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let diff = alpha * ac[x] as c_int;
             dst[x] = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
@@ -370,8 +375,8 @@ unsafe fn reconstruct_topleft<'a, BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -380,17 +385,14 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     _max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     let dc = dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int;
     let bd = BD::from_c(bitdepth_max);
-    splat_dc(dst, width, height, dc, bd)
+    splat_dc::<BD>(dst_ptr, dst_stride, width, height, dc, bd)
 }
 
 /// # Safety
@@ -398,8 +400,8 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
 /// Must be called by [`cfl_pred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -407,17 +409,14 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     alpha: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_pred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn cfl_pred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
     let dc = dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int;
     let bd = BD::from_c(bitdepth_max);
-    cfl_pred(dst, width, height, dc, ac, alpha, bd)
+    cfl_pred::<BD>(dst_ptr, dst_stride, width, height, dc, ac, alpha, bd)
 }
 
 /// # Safety
@@ -425,8 +424,8 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -435,13 +434,10 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     _max_height: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
-    splat_dc(dst, width, height, dc, bd)
+    splat_dc::<BD>(dst_ptr, dst_stride, width, height, dc, bd)
 }
 
 /// # Safety
@@ -449,8 +445,8 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
 /// Must be called by [`cfl_pred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -458,17 +454,15 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     alpha: c_int,
     bitdepth_max: c_int,
     _topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_pred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
-    cfl_pred(dst, width, height, dc, ac, alpha, bd)
+    cfl_pred::<BD>(dst_ptr, dst_stride, width, height, dc, ac, alpha, bd)
 }
 
 fn ipred_v_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
@@ -476,14 +470,17 @@ fn ipred_v_rust<BD: BitDepth>(
 ) {
     let width = width as usize;
     let height = height as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        BD::pixel_copy(
-            &mut *dst.slice_mut::<BD>(width),
-            &topleft[topleft_off + 1..][..width],
-            width,
-        );
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
+        BD::pixel_copy(dst, &topleft[topleft_off + 1..][..width], width);
     }
 }
 
@@ -492,8 +489,8 @@ fn ipred_v_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -502,17 +499,15 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    ipred_v_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_v_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 fn ipred_h_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
@@ -520,14 +515,17 @@ fn ipred_h_rust<BD: BitDepth>(
 ) {
     let width = width as usize;
     let height = height as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        BD::pixel_set(
-            &mut *dst.slice_mut::<BD>(width),
-            topleft[topleft_off - (1 + y)],
-            width,
-        );
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
+        BD::pixel_set(dst, topleft[topleft_off - (1 + y)], width);
     }
 }
 
@@ -536,8 +534,8 @@ fn ipred_h_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -546,17 +544,15 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    ipred_h_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_h_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 fn ipred_paeth_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     tl: &[BD::Pixel; SCRATCH_EDGE_LEN],
     tl_off: usize,
     width: c_int,
@@ -564,12 +560,18 @@ fn ipred_paeth_rust<BD: BitDepth>(
 ) {
     let width = width as usize;
     let height = height as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let topleft = tl[tl_off].as_::<c_int>();
     for y in 0..height {
         let left = tl[tl_off - (y + 1)].as_::<c_int>();
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let top = tl[tl_off + 1 + x].as_::<c_int>();
             let base = left + top - topleft;
@@ -594,8 +596,8 @@ fn ipred_paeth_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     tl_ptr: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -604,23 +606,23 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(tl_ptr, topleft_off) };
-    ipred_paeth_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_paeth_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 fn ipred_smooth_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
     height: c_int,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let weights_hor = &dav1d_sm_weights.0[width..][..width];
     let weights_ver = &dav1d_sm_weights.0[height..][..height];
@@ -628,8 +630,12 @@ fn ipred_smooth_rust<BD: BitDepth>(
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
                 + (256 - weights_ver[y] as c_int) * bottom
@@ -645,8 +651,8 @@ fn ipred_smooth_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -655,30 +661,34 @@ unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    ipred_smooth_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_smooth_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 fn ipred_smooth_v_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
     height: c_int,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let weights_ver = &dav1d_sm_weights.0[height..][..height];
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
                 + (256 - weights_ver[y] as c_int) * bottom;
@@ -692,8 +702,8 @@ fn ipred_smooth_v_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -702,30 +712,34 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    ipred_smooth_v_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_smooth_v_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 fn ipred_smooth_h_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
     height: c_int,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let weights_hor = &dav1d_sm_weights.0[width..][..width];
     let right = topleft[topleft_off + width].as_::<c_int>();
 
     for y in 0..height {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let pred = weights_hor[x] as c_int * topleft[topleft_off - (y + 1)].as_::<c_int>()
                 + (256 - weights_hor[x] as c_int) * right;
@@ -739,8 +753,8 @@ fn ipred_smooth_h_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -749,13 +763,10 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     _max_height: c_int,
     _bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft, topleft_off) };
-    ipred_smooth_h_rust::<BD>(dst, topleft, topleft_off, width, height)
+    ipred_smooth_h_rust::<BD>(dst_ptr, dst_stride, topleft, topleft_off, width, height)
 }
 
 #[inline(never)]
@@ -858,7 +869,8 @@ fn upsample_edge<BD: BitDepth>(
 }
 
 fn ipred_z1_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
     width: c_int,
@@ -921,12 +933,18 @@ fn ipred_z1_rust<BD: BitDepth>(
     let width = width as usize;
     let max_base_x = max_base_x as usize;
     let base_inc = 1 + upsample_above as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
     for y in 0..height {
         let xpos = (y + 1) * dx;
         let frac = xpos & 0x3e;
 
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let base = (xpos >> 6) as usize + base_inc * x;
             if base < max_base_x {
@@ -942,7 +960,8 @@ fn ipred_z1_rust<BD: BitDepth>(
 }
 
 fn ipred_z2_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
     width: c_int,
@@ -1052,13 +1071,19 @@ fn ipred_z2_rust<BD: BitDepth>(
     let base_inc_x = 1 + upsample_above as usize;
     let left = topleft - (1 + upsample_left as usize);
     let width = width as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
     for y in 0..height {
         let xpos = (1 + (upsample_above as c_int) << 6) - (dx * (y + 1));
         let base_x = xpos >> 6;
         let frac_x = xpos & 0x3e;
 
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
-        let dst = &mut *dst.slice_mut::<BD>(width);
+        let dst = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                width,
+            )
+        };
         for x in 0..width {
             let ypos = (y << 6 + upsample_left as c_int) - (dy * (x + 1) as c_int);
             let base_x = base_x + (base_inc_x * x) as c_int;
@@ -1078,7 +1103,8 @@ fn ipred_z2_rust<BD: BitDepth>(
 }
 
 fn ipred_z3_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_in_off: usize,
     width: c_int,
@@ -1148,6 +1174,8 @@ fn ipred_z3_rust<BD: BitDepth>(
     let width = width as usize;
     let height = height as usize;
     let max_base_y = max_base_y as usize;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
     for x in 0..width {
         let ypos = dy * (x + 1);
         let frac = (ypos & 0x3e) as i32;
@@ -1157,12 +1185,17 @@ fn ipred_z3_rust<BD: BitDepth>(
             if base < max_base_y {
                 let v = left[left_off - base].as_::<i32>() * (64 - frac)
                     + left[left_off - (base + 1)].as_::<i32>() * frac;
-                *(dst + y as isize * dst.pixel_stride::<BD>() + x).index_mut::<BD>() =
-                    (v + 32 >> 6).as_::<BD::Pixel>();
+                unsafe {
+                    *(dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride + x as isize) =
+                        (v + 32 >> 6).as_::<BD::Pixel>();
+                }
             } else {
+                let fill = left[left_off - max_base_y];
                 for y in y..height {
-                    *(dst + y as isize * dst.pixel_stride::<BD>() + x).index_mut::<BD>() =
-                        left[left_off - max_base_y];
+                    unsafe {
+                        *(dst_ptr as *mut BD::Pixel)
+                            .offset(y as isize * px_stride + x as isize) = fill;
+                    }
                 }
                 break;
             }
@@ -1175,8 +1208,8 @@ fn ipred_z3_rust<BD: BitDepth>(
 /// Must be called by [`angular_ipred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft_in: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -1185,15 +1218,13 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft_in = unsafe { reconstruct_topleft::<BD>(topleft_in, topleft_off) };
     let bd = BD::from_c(bitdepth_max);
     [ipred_z1_rust, ipred_z2_rust, ipred_z3_rust][Z - 1](
-        dst,
+        dst_ptr,
+        dst_stride,
         topleft_in,
         topleft_off,
         width,
@@ -1206,7 +1237,8 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
 }
 
 fn ipred_filter_rust<BD: BitDepth>(
-    mut dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
     topleft_off: usize,
     width: c_int,
@@ -1218,13 +1250,13 @@ fn ipred_filter_rust<BD: BitDepth>(
 ) {
     let width = width as usize / 4 * 4; // To elide bounds checks.
     let height = height as usize;
-    let filt_idx = filt_idx as usize;
-    let stride = dst.pixel_stride::<BD>();
-    let filt_idx = filt_idx & 511;
+    let filt_idx = filt_idx as usize & 511;
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let filter = &dav1d_filter_intra_taps[filt_idx];
-    let mut top = &topleft_in[topleft_off + 1..][..width];
-    let mut top_guard;
+    let mut base_ptr = dst_ptr as *mut BD::Pixel;
+    let mut top: &[BD::Pixel] = &topleft_in[topleft_off + 1..][..width];
     for y in (0..height).step_by(2) {
         let topleft_off = topleft_off - y;
         let mut topleft = topleft_in[topleft_off];
@@ -1238,35 +1270,35 @@ fn ipred_filter_rust<BD: BitDepth>(
                 p5 = left[1];
                 p6 = left[0];
             } else {
-                let left = dst + (x - 1);
-                p5 = *left.index::<BD>();
-                p6 = *(left + stride).index::<BD>();
+                unsafe {
+                    p5 = *base_ptr.offset(x as isize - 1);
+                    p6 = *base_ptr.offset(px_stride + x as isize - 1);
+                }
             }
             let p = [p0, p1, p2, p3, p4, p5, p6].map(|p| p.as_::<i32>());
-            let mut ptr = dst + x;
+            let mut row_ptr = unsafe { base_ptr.offset(x as isize) };
             let mut flt_ptr = filter.0.as_slice();
 
             for _yy in 0..2 {
-                let ptr_slice = &mut *ptr.slice_mut::<BD>(4);
+                let ptr_slice = unsafe { slice::from_raw_parts_mut(row_ptr, 4) };
                 for xx in ptr_slice {
                     let acc = filter_fn(flt_ptr, p);
                     *xx = bd.iclip_pixel(acc + 8 >> 4);
                     flt_ptr = &flt_ptr[FLT_INCR..];
                 }
-                ptr += stride;
+                row_ptr = unsafe { row_ptr.offset(px_stride) };
             }
             topleft = p4;
         }
-        dst += stride;
-        top_guard = dst.slice::<BD>(width);
-        top = &*top_guard;
-        dst += stride;
+        base_ptr = unsafe { base_ptr.offset(px_stride) };
+        top = unsafe { slice::from_raw_parts(base_ptr as *const BD::Pixel, width) };
+        base_ptr = unsafe { base_ptr.offset(px_stride) };
     }
 }
 
 unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     topleft_in: *const DynPixel,
     width: c_int,
     height: c_int,
@@ -1275,15 +1307,13 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
     topleft_off: usize,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `angular_ipred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: `fn angular_ipred::Fn::call` makes `topleft` `topleft_off` from the beginning of the array.
     let topleft = unsafe { reconstruct_topleft::<BD>(topleft_in, topleft_off) };
     let bd = BD::from_c(bitdepth_max);
     ipred_filter_rust(
-        dst,
+        dst_ptr,
+        dst_stride,
         topleft,
         topleft_off,
         width,
@@ -1298,7 +1328,8 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
 #[inline(never)]
 fn cfl_ac_rust<BD: BitDepth>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-    y_src: Rav1dPictureDataComponentOffset,
+    y_ptr: *const DynPixel,
+    y_stride: isize,
     w_pad: c_int,
     h_pad: c_int,
     width: usize,
@@ -1311,12 +1342,15 @@ fn cfl_ac_rust<BD: BitDepth>(
     assert!(w_pad < width);
     assert!(h_pad < height);
     let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
-    let y_pxstride = y_src.pixel_stride::<BD>();
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let y_px_stride = y_stride / pixel_bytes;
 
     for y in 0..height - h_pad {
-        let y_src = y_src + (y as isize * y_pxstride << ss_ver);
+        let row_off = y as isize * (y_px_stride << ss_ver);
         let aci = y * width;
-        let y_src = |i: isize| (*(y_src + i).index::<BD>()).as_::<i32>();
+        let y_src = |i: isize| unsafe {
+            (*(y_ptr as *const BD::Pixel).offset(row_off + i)).as_::<i32>()
+        };
         for x in 0..width - w_pad {
             let sx = (x << ss_hor) as isize;
             let mut ac_sum = y_src(sx);
@@ -1324,9 +1358,9 @@ fn cfl_ac_rust<BD: BitDepth>(
                 ac_sum += y_src(sx + 1);
             }
             if is_ss_ver {
-                ac_sum += y_src(sx + y_pxstride);
+                ac_sum += y_src(sx + y_px_stride);
                 if is_ss_hor {
-                    ac_sum += y_src(sx + y_pxstride + 1);
+                    ac_sum += y_src(sx + y_px_stride + 1);
                 }
             }
             ac[aci + x] = (ac_sum << 1 + !is_ss_ver as u8 + !is_ss_hor as u8) as i16;
@@ -1366,23 +1400,21 @@ fn cfl_ac_rust<BD: BitDepth>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-    _y_ptr: *const DynPixel,
-    _stride: ptrdiff_t,
+    y_ptr: *const DynPixel,
+    y_stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
-    y: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cfl_ac::Fn::call`.
-    let y = unsafe { FFISafe::from_with_offset(y) };
     let cw = cw as usize;
     let ch = ch as usize;
-    cfl_ac_rust::<BD>(ac, y, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
+    cfl_ac_rust::<BD>(ac, y_ptr, y_stride, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
 }
 
 fn pal_pred_rust<BD: BitDepth>(
-    dst: Rav1dPictureDataComponentOffset,
+    dst_ptr: *mut DynPixel,
+    dst_stride: isize,
     pal: &[BD::Pixel; 8],
     idx: &[u8],
     w: c_int,
@@ -1391,17 +1423,23 @@ fn pal_pred_rust<BD: BitDepth>(
     let w = w as usize;
     let h = h as usize;
     let idx = &idx[..w * h / 2];
+    let pixel_bytes = mem::size_of::<BD::Pixel>() as isize;
+    let px_stride = dst_stride / pixel_bytes;
 
     let mut j = 0;
     for y in 0..h {
-        let dst = dst + (y as isize * dst.pixel_stride::<BD>());
+        let row = unsafe {
+            slice::from_raw_parts_mut(
+                (dst_ptr as *mut BD::Pixel).offset(y as isize * px_stride),
+                w,
+            )
+        };
         for x in (0..w).step_by(2) {
             let i = idx[j];
             j += 1;
             assert!((i & 0x88) == 0);
-            let dst = &mut *(dst + x).slice_mut::<BD>(2);
-            dst[0] = pal[(i & 7) as usize];
-            dst[1] = pal[(i >> 4) as usize];
+            row[x] = pal[(i & 7) as usize];
+            row[x + 1] = pal[(i >> 4) as usize];
         }
     }
 }
@@ -1411,21 +1449,18 @@ fn pal_pred_rust<BD: BitDepth>(
 /// Must be called by [`pal_pred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
-    _stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    dst_stride: ptrdiff_t,
     pal: *const [DynPixel; 8],
     idx: *const u8,
     w: c_int,
     h: c_int,
-    dst: FFISafeRav1dPictureDataComponentOffset,
 ) {
-    // SAFETY: Was passed as `FFISafe::new(dst)` in `pal_pred::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
     // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
     let pal = unsafe { &*pal.cast() };
     // SAFETY: Length sliced in `pal_pred::Fn::call`.
     let idx = unsafe { slice::from_raw_parts(idx, (w * h) as usize / 2) };
-    pal_pred_rust::<BD>(dst, pal, idx, w, h)
+    pal_pred_rust::<BD>(dst_ptr, dst_stride, pal, idx, w, h)
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
