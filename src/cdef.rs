@@ -22,7 +22,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel, LeftPixelRow2px};
 use crate::include::common::intops::{apply_sign, iclip};
 use crate::include::dav1d::picture::{
-    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponentOffset,
+    FFISafeRav1dPictureDataComponent, Rav1dPictureDataComponentOffset,
 };
 use crate::pic_or_buf::PicOrBuf;
 use crate::strided::Strided as _;
@@ -53,9 +53,9 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef(
     damping: c_int,
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+    _dst: FFISafeRav1dPictureDataComponent,
+    _top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    _bottom: *const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>,
 ) -> ());
 
 pub type CdefTop<'a> = WithOffset<&'a DisjointMut<AlignedVec64<u8>>>;
@@ -89,9 +89,9 @@ impl cdef::Fn {
         let damping = damping as c_int;
         let bd = bd.into_c();
 
-        let dst = dst.into_ffi_safe();
-        let top = top.into_ffi_safe();
-        let bottom = bottom.as_ref().into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
+        let top = FFISafe::new(top.data);
+        let bottom = FFISafe::new(&bottom.data);
 
         // SAFETY: Rust fallback is safe, asm is assumed to do the same.
         unsafe {
@@ -120,7 +120,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
     dst_stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> c_int);
 
 impl cdef_dir::Fn {
@@ -133,7 +133,7 @@ impl cdef_dir::Fn {
         let dst_ptr = dst.as_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn cdef_find_dir_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, variance, bd, dst) }
     }
@@ -375,32 +375,32 @@ fn cdef_filter_block_rust<BD: BitDepth>(
 /// Must be called by [`cdef::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
     left: *const [LeftPixelRow2px<DynPixel>; 8],
-    _top_ptr: *const DynPixel,
-    _bottom_ptr: *const DynPixel,
+    top_ptr: *const DynPixel,
+    bottom_ptr: *const DynPixel,
     pri_strength: c_int,
     sec_strength: c_int,
     dir: c_int,
     damping: c_int,
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-    bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+    dst: FFISafeRav1dPictureDataComponent,
+    top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+    bottom: *const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `cdef::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
 
     // SAFETY: Reverse of cast in `cdef::Fn::call`.
     let left = unsafe { &*left.cast() };
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let top = unsafe { FFISafe::from_with_offset(top) };
+    // SAFETY: `top` was passed as `FFISafe::new(_)` and `top_ptr` was computed from the same `WithOffset` in `cdef::Fn::call`.
+    let top = unsafe { FFISafe::with_offset_of(top, top_ptr.cast::<BD::Pixel>()) };
 
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef::Fn::call`.
-    let bottom = unsafe { FFISafe::from_with_offset(bottom) };
+    // SAFETY: `bottom` was passed as `FFISafe::new(_)` and `bottom_ptr` was computed from the same `WithOffset` in `cdef::Fn::call`.
+    let bottom = unsafe { FFISafe::with_offset_of(bottom, bottom_ptr.cast::<BD::Pixel>()) };
 
     let bd = BD::from_c(bitdepth_max);
     cdef_filter_block_rust(
@@ -424,14 +424,14 @@ unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, co
 /// Must be called by [`cdef_dir::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
-    _img_ptr: *const DynPixel,
+    img_ptr: *const DynPixel,
     _stride: ptrdiff_t,
     variance: &mut c_uint,
     bitdepth_max: c_int,
-    img: FFISafeRav1dPictureDataComponentOffset,
+    img: FFISafeRav1dPictureDataComponent,
 ) -> c_int {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `cdef_dir::Fn::call`.
-    let img = unsafe { FFISafe::from_with_offset(img) };
+    // SAFETY: `img` was passed as `FFISafe::new(_)` and `img_ptr` was computed from the same `WithOffset` in `cdef_dir::Fn::call`.
+    let img = unsafe { FFISafe::with_offset_of(img, img_ptr.cast::<BD::Pixel>()) };
     let bd = BD::from_c(bitdepth_max);
     cdef_find_dir_rust(img, variance, bd)
 }
@@ -638,9 +638,9 @@ mod neon {
         damping: c_int,
         edges: CdefEdgeFlags,
         bitdepth_max: c_int,
-        _dst: FFISafeRav1dPictureDataComponentOffset,
-        _top: WithOffset<*const FFISafe<DisjointMut<AlignedVec64<u8>>>>,
-        _bottom: WithOffset<*const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>>,
+        _dst: FFISafeRav1dPictureDataComponent,
+        _top: *const FFISafe<DisjointMut<AlignedVec64<u8>>>,
+        _bottom: *const FFISafe<PicOrBuf<'_, AlignedVec64<u8>>>,
     ) {
         use crate::align::Align16;
 

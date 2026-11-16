@@ -341,8 +341,7 @@ impl Rav1dPictureDataComponent {
 }
 
 pub type Rav1dPictureDataComponentOffset<'a> = WithOffset<&'a Rav1dPictureDataComponent>;
-pub type FFISafeRav1dPictureDataComponentOffset<'a> =
-    WithOffset<*const FFISafe<'a, Rav1dPictureDataComponent>>;
+pub type FFISafeRav1dPictureDataComponent<'a> = *const FFISafe<'a, Rav1dPictureDataComponent>;
 
 impl<'a> Rav1dPictureDataComponentOffset<'a> {
     #[inline] // Inline to see bounds checks in order to potentially elide them.

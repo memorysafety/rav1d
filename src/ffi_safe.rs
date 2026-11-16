@@ -1,12 +1,18 @@
 use std::marker::PhantomData;
-use std::ptr;
+use std::{mem, ptr};
 
+use crate::pixels::Pixels;
 use crate::with_offset::WithOffset;
 
 /// A type that bypasses `#[warn(improper_ctypes)]` checks of FFI safe types.
 /// This type is meant to roundtrip a reference to a type `T` with lifetime `'a`
 /// through an `extern "C" fn` ptr from a Rust caller to Rust callee.
 /// Non-Rust callees should not access this type.
+///
+/// A `WithOffset<&'a T>` is roundtripped by passing `FFISafe::new(data)`
+/// alongside the raw element ptr the caller already computed from it
+/// (`base + offset`, e.g. [`WithOffset::as_ptr`]); the callee recomputes
+/// the offset from that ptr with [`Self::with_offset_of`].
 #[repr(C)]
 pub struct FFISafe<'a, T> {
     phantom: PhantomData<&'a T>,
@@ -38,20 +44,30 @@ impl<'a, T> FFISafe<'a, T> {
         unsafe { &mut *this.cast() }
     }
 
+    /// Reconstruct the `WithOffset<&'a T>` that `ptr` was computed from.
+    ///
+    /// Only the address of `ptr` is used; the returned reference carries the
+    /// provenance of `this`. The offset is recovered with wrapping arithmetic,
+    /// so a `ptr` computed with [`WithOffset::wrapping_as_ptr`] that lies
+    /// outside the buffer still yields the original offset.
+    ///
     /// # Safety
     ///
-    /// `this` must have been returned from [`WithOffset::into_ffi_safe`].
-    pub unsafe fn from_with_offset(this: WithOffset<*const FFISafe<'a, T>>) -> WithOffset<&'a T> {
-        // SAFETY: We required that the caller created `this` using `into_ffi_safe`, which uses `FFISafe::new`.
-        this.map(|data| unsafe { FFISafe::get(data) })
-    }
-}
-
-impl<'a, T> WithOffset<&'a T> {
-    /// Convert `self` into an FFI-safe type.
-    ///
-    /// LLVM is able to better optimize the resulting type than a `*const FFISafe<'a, WithOffset<...>>`.
-    pub fn into_ffi_safe(self) -> WithOffset<*const FFISafe<'a, T>> {
-        self.map(FFISafe::new)
+    /// `this` must have been returned from [`Self::new`], and `ptr` must have been
+    /// computed from the same `WithOffset<&'a T>` as `base + offset`
+    /// (e.g. [`WithOffset::as_ptr`]), where `base` is [`Pixels::as_byte_mut_ptr`]
+    /// of the same `T` and `E` is the element type `offset` counts in.
+    pub unsafe fn with_offset_of<E>(this: *const Self, ptr: *const E) -> WithOffset<&'a T>
+    where
+        T: Pixels,
+    {
+        // SAFETY: `this` was a `&'a T` in `Self::new`.
+        let data = unsafe { Self::get(this) };
+        let byte_offset = (ptr as usize).wrapping_sub(data.as_byte_mut_ptr() as usize);
+        debug_assert_eq!(byte_offset % mem::size_of::<E>(), 0);
+        WithOffset {
+            data,
+            offset: byte_offset / mem::size_of::<E>(),
+        }
     }
 }

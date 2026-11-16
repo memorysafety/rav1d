@@ -25,8 +25,7 @@ use crate::include::common::bitdepth::{AsPrimitive, BitDepth, DynPixel};
 use crate::include::common::intops::{clip, iclip};
 use crate::include::dav1d::headers::{Rav1dFilterMode, Rav1dPixelLayoutSubSampled};
 use crate::include::dav1d::picture::{
-    FFISafeRav1dPictureDataComponentOffset, Rav1dPictureDataComponent,
-    Rav1dPictureDataComponentOffset,
+    FFISafeRav1dPictureDataComponent, Rav1dPictureDataComponent, Rav1dPictureDataComponentOffset,
 };
 use crate::internal::{
     COMPINTER_LEN, EMU_EDGE_LEN, SCRATCH_INTER_INTRA_BUF_LEN, SCRATCH_LAP_LEN, SEG_MASK_LEN,
@@ -1036,8 +1035,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc(
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl mc::Fn {
@@ -1056,8 +1055,8 @@ impl mc::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
-        let src = src.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallbacks `fn put_{8tpap,bilin}_rust` are safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -1079,8 +1078,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl mc_scaled::Fn {
@@ -1101,8 +1100,8 @@ impl mc_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
-        let src = src.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallbacks `fn put_{8tpap,bilin}_scaled_rust` are safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -1121,8 +1120,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8(
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl warp8x8::Fn {
@@ -1140,8 +1139,8 @@ impl warp8x8::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
-        let src = src.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallback `fn prep_c_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -1160,7 +1159,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct(
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl mct::Fn {
@@ -1178,7 +1177,7 @@ impl mct::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let src = src.into_ffi_safe();
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallbacks `fn prep_{8tpap,bilin}_rust` are safe; asm is supposed to do the same.
         unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, bd, src) }
     }
@@ -1195,7 +1194,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct_scaled(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl mct_scaled::Fn {
@@ -1215,7 +1214,7 @@ impl mct_scaled::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let src = src.into_ffi_safe();
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallbacks `fn prep_{8tpap,bilin}_scaled_rust` are safe; asm is supposed to do the same.
         unsafe { self.get()(tmp, src_ptr, src_stride, w, h, mx, my, dx, dy, bd, src) }
     }
@@ -1231,7 +1230,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
     my: i32,
     bitdepth_max: i32,
     _tmp_len: usize,
-    _src: FFISafeRav1dPictureDataComponentOffset,
+    _src: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl warp8x8t::Fn {
@@ -1250,7 +1249,7 @@ impl warp8x8t::Fn {
         let src_ptr = src.as_ptr::<BD>().cast();
         let src_stride = src.stride();
         let bd = bd.into_c();
-        let src = src.into_ffi_safe();
+        let src = FFISafe::new(src.data);
         // SAFETY: Fallback `fn warp_affine_8x8t_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -1268,7 +1267,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn avg(
     w: i32,
     h: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl avg::Fn {
@@ -1284,7 +1283,7 @@ impl avg::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn avg_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, bd, dst) }
     }
@@ -1299,7 +1298,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn w_avg(
     h: i32,
     weight: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl w_avg::Fn {
@@ -1316,7 +1315,7 @@ impl w_avg::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn w_avg_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, weight, bd, dst) }
     }
@@ -1331,7 +1330,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mask(
     h: i32,
     mask: *const u8,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl mask::Fn {
@@ -1349,7 +1348,7 @@ impl mask::Fn {
         let dst_stride = dst.stride();
         let mask = mask[..(w * h) as usize].as_ptr();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn mask_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, mask, bd, dst) }
     }
@@ -1365,7 +1364,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
     mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl w_mask::Fn {
@@ -1383,7 +1382,7 @@ impl w_mask::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let bd = bd.into_c();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn w_mask_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp1, tmp2, w, h, mask, sign, bd, dst) }
     }
@@ -1396,7 +1395,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn blend(
     w: i32,
     h: i32,
     mask: *const u8,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl blend::Fn {
@@ -1412,7 +1411,7 @@ impl blend::Fn {
         let dst_stride = dst.stride();
         let tmp = ptr::from_ref(tmp).cast();
         let mask = mask[..(w * h) as usize].as_ptr();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn blend_rust` is safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp, w, h, mask, dst) }
     }
@@ -1424,7 +1423,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn blend_dir(
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
-    _dst: FFISafeRav1dPictureDataComponentOffset,
+    _dst: FFISafeRav1dPictureDataComponent,
 ) -> ());
 
 impl blend_dir::Fn {
@@ -1438,7 +1437,7 @@ impl blend_dir::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().cast();
         let dst_stride = dst.stride();
         let tmp = ptr::from_ref(tmp).cast();
-        let dst = dst.into_ffi_safe();
+        let dst = FFISafe::new(dst.data);
         // SAFETY: Fallback `fn blend_{h,v}_rust` are safe; asm is supposed to do the same.
         unsafe { self.get()(dst_ptr, dst_stride, tmp, w, h, dst) }
     }
@@ -1496,8 +1495,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn resize(
     dx: i32,
     mx: i32,
     bitdepth_max: i32,
-    _src: FFISafeRav1dPictureDataComponentOffset,
-    _dst: WithOffset<*const FFISafe<PicOrBuf<AlignedVec64<u8>>>>,
+    _src: FFISafeRav1dPictureDataComponent,
+    _dst: *const FFISafe<PicOrBuf<AlignedVec64<u8>>>,
 ) -> ());
 
 impl resize::Fn {
@@ -1520,8 +1519,8 @@ impl resize::Fn {
         let h = h as c_int;
         let src_w = src_w as c_int;
         let bd = bd.into_c();
-        let src = src.into_ffi_safe();
-        let dst = dst.as_ref().into_ffi_safe();
+        let src = FFISafe::new(src.data);
+        let dst = FFISafe::new(&dst.data);
         // SAFETY: Fallback `fn resize_rust` is safe; asm is supposed to do the same.
         unsafe {
             self.get()(
@@ -1554,22 +1553,22 @@ pub struct Rav1dMCDSPContext {
 /// Must be called by [`mc::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn put_c_erased<BD: BitDepth, const FILTER: usize>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mc::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mc::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `mc::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `mc::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     let mx = mx as usize;
@@ -1588,9 +1587,9 @@ unsafe extern "C" fn put_c_erased<BD: BitDepth, const FILTER: usize>(
 /// Must be called by [`mc_scaled::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     w: i32,
     h: i32,
@@ -1599,13 +1598,13 @@ unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mc_scaled::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mc_scaled::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `mc_scaled::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `mc_scaled::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     let mx = mx as usize;
@@ -1627,17 +1626,17 @@ unsafe extern "C" fn put_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn prep_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     w: i32,
     h: i32,
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mct::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `mct::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `mct::Fn::call`.
@@ -1659,7 +1658,7 @@ unsafe extern "C" fn prep_c_erased<BD: BitDepth, const FILTER: usize>(
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     tmp: *mut i16,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     w: i32,
     h: i32,
@@ -1668,10 +1667,10 @@ unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
     dx: i32,
     dy: i32,
     bitdepth_max: i32,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mct_scaled::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `mct_scaled::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `mct_scaled::Fn::call`.
@@ -1694,17 +1693,17 @@ unsafe extern "C" fn prep_scaled_c_erased<BD: BitDepth, const FILTER: usize>(
 /// Must be called by [`avg::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: i32,
     h: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `avg::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `avg::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     let bd = BD::from_c(bitdepth_max);
@@ -1716,7 +1715,7 @@ unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
 /// Must be called by [`w_avg::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
@@ -1724,10 +1723,10 @@ unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     h: i32,
     weight: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `w_avg::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `w_avg::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     let bd = BD::from_c(bitdepth_max);
@@ -1739,7 +1738,7 @@ unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
 /// Must be called by [`mask::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
@@ -1747,10 +1746,10 @@ unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     h: i32,
     mask: *const u8,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `mask::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `mask::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     // SAFETY: Length sliced in `mask::Fn::call`.
@@ -1764,7 +1763,7 @@ unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
 /// Must be called by [`w_mask::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
@@ -1773,10 +1772,10 @@ unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD:
     mask: &mut [u8; SEG_MASK_LEN],
     sign: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `w_mask::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `w_mask::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     let w = w as usize;
     let h = h as usize;
     debug_assert!(sign == 1 || sign == 0);
@@ -1790,16 +1789,16 @@ unsafe extern "C" fn w_mask_c_erased<const SS_HOR: bool, const SS_VER: bool, BD:
 /// Must be called by [`blend::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_INTER_INTRA_BUF_LEN],
     w: i32,
     h: i32,
     mask: *const u8,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `blend::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `blend::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     // SAFETY: Reverse of cast in `blend::Fn::call`.
     let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
@@ -1814,15 +1813,15 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
 /// Must be called by [`blend_dir::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `blend_dir::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `blend_dir::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     // SAFETY: Reverse of cast in `blend_dir::Fn::call`.
     let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
@@ -1835,15 +1834,15 @@ unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
 /// Must be called by [`blend_dir::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
     tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: i32,
     h: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `blend_dir::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `blend_dir::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     // SAFETY: Reverse of cast in `blend_dir::Fn::call`.
     let tmp = unsafe { &*tmp.cast() };
     let w = w as usize;
@@ -1856,21 +1855,21 @@ unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
 /// Must be called by [`warp8x8::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     abcd: &[i16; 4],
     mx: i32,
     my: i32,
     bitdepth_max: i32,
-    dst: FFISafeRav1dPictureDataComponentOffset,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    dst: FFISafeRav1dPictureDataComponent,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `warp_8x8::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `warp_8x8::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `warp_8x8::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `warp_8x8::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let bd = BD::from_c(bitdepth_max);
     warp_affine_8x8_rust(dst, src, abcd, mx, my, bd)
 }
@@ -1882,19 +1881,19 @@ unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
 unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp: *mut i16,
     tmp_stride: usize,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     abcd: &[i16; 4],
     mx: i32,
     my: i32,
     bitdepth_max: i32,
     tmp_len: usize,
-    src: FFISafeRav1dPictureDataComponentOffset,
+    src: FFISafeRav1dPictureDataComponent,
 ) {
     // SAFETY: `warp8x8t::Fn::call` passed `tmp.len()` as `tmp_len`.
     let tmp = unsafe { slice::from_raw_parts_mut(tmp, tmp_len) };
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `warp8x8t::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `warp8x8t::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let bd = BD::from_c(bitdepth_max);
     warp_affine_8x8t_rust(tmp, tmp_stride, src, abcd, mx, my, bd)
 }
@@ -1923,9 +1922,9 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
 }
 
 unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
-    _dst_ptr: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     _dst_stride: isize,
-    _src_ptr: *const DynPixel,
+    src_ptr: *const DynPixel,
     _src_stride: isize,
     dst_w: i32,
     h: i32,
@@ -1933,14 +1932,14 @@ unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     dx: i32,
     mx0: i32,
     bitdepth_max: i32,
-    src: FFISafeRav1dPictureDataComponentOffset,
-    dst: WithOffset<*const FFISafe<PicOrBuf<AlignedVec64<u8>>>>,
+    src: FFISafeRav1dPictureDataComponent,
+    dst: *const FFISafe<PicOrBuf<AlignedVec64<u8>>>,
 ) {
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `resize::Fn::call`.
-    let dst = unsafe { FFISafe::from_with_offset(dst) };
+    // SAFETY: `dst` was passed as `FFISafe::new(_)` and `dst_ptr` was computed from the same `WithOffset` in `resize::Fn::call`.
+    let dst = unsafe { FFISafe::with_offset_of(dst, dst_ptr.cast::<BD::Pixel>()) };
     let dst = dst.map(|data| *data);
-    // SAFETY: Was passed as `WithOffset::into_ffi_safe(_)` in `resize::Fn::call`.
-    let src = unsafe { FFISafe::from_with_offset(src) };
+    // SAFETY: `src` was passed as `FFISafe::new(_)` and `src_ptr` was computed from the same `WithOffset` in `resize::Fn::call`.
+    let src = unsafe { FFISafe::with_offset_of(src, src_ptr.cast::<BD::Pixel>()) };
     let dst_w = dst_w as usize;
     let h = h as usize;
     let src_w = src_w as usize;
