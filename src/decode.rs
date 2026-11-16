@@ -42,12 +42,12 @@ use crate::internal::{
 };
 use crate::intra_edge::{EdgeFlags, EdgeIndex, IntraEdges};
 use crate::levels::{
-    Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd, Av1BlockIntra,
-    Av1BlockIntraInter, BlockLevel, BlockPartition, BlockSize, CompInterType, DrlProximity,
-    Filter2d, InterIntraPredMode, InterIntraType, MVJoint, MotionMode, Mv, SegmentId, TxfmSize,
-    CFL_PRED, DC_PRED, FILTER_PRED, GLOBALMV, GLOBALMV_GLOBALMV, NEARESTMV, NEARESTMV_NEARESTMV,
-    NEARMV, NEWMV, NEWMV_NEWMV, N_COMP_INTER_PRED_MODES, N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES,
-    VERT_LEFT_PRED, VERT_PRED,
+    Av1Block, Av1BlockInter, Av1BlockInter1d, Av1BlockInter2d, Av1BlockInterNd,
+    Av1BlockInterRefIndex, Av1BlockIntra, Av1BlockIntraInter, BlockLevel, BlockPartition,
+    BlockSize, CompInterPredMode, CompInterType, DrlProximity, Filter2d, InterIntraPredMode,
+    InterIntraType, InterPredMode, MVJoint, MotionMode, Mv, SegmentId, TxfmSize, WedgeIdx,
+    CFL_PRED, DC_PRED, FILTER_PRED, N_INTRA_PRED_MODES, N_UV_INTRA_PRED_MODES, VERT_LEFT_PRED,
+    VERT_PRED,
 };
 use crate::lf_mask::{
     rav1d_calc_eih, rav1d_calc_lf_values, rav1d_create_lf_mask_inter, rav1d_create_lf_mask_intra,
@@ -71,10 +71,10 @@ use crate::refmvs::{
 };
 use crate::relaxed_atomic::RelaxedAtomic;
 use crate::tables::{
-    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_COMP_INTER_PRED_MODES,
-    DAV1D_FILTER_2D, DAV1D_FILTER_DIR, DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS,
-    DAV1D_PARTITION_TYPE_COUNT, DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT,
-    DAV1D_YMODE_SIZE_CONTEXT, INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
+    CFL_ALLOWED_MASK, DAV1D_AL_PART_CTX, DAV1D_BLOCK_SIZES, DAV1D_FILTER_2D, DAV1D_FILTER_DIR,
+    DAV1D_INTRA_MODE_CONTEXT, DAV1D_MAX_TXFM_SIZE_FOR_BS, DAV1D_PARTITION_TYPE_COUNT,
+    DAV1D_SGR_PARAMS, DAV1D_TXFM_DIMENSIONS, DAV1D_WEDGE_CTX_LUT, DAV1D_YMODE_SIZE_CONTEXT,
+    INTERINTRA_ALLOWED_MASK, WEDGE_ALLOWED_MASK,
 };
 use crate::thread_task::{
     rav1d_task_create_tile_sbrow, rav1d_task_frame_init, FRAME_ERROR, TILE_ERROR,
@@ -707,8 +707,7 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4)
-    {
+    if !b.skip && (frame_hdr.segmentation.lossless[b.seg_id.get()] || max_ytx == TxfmSize::S4x4) {
         uvtx = TxfmSize::S4x4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -721,7 +720,7 @@ fn read_vartx_tree(
                 },
             );
         }
-    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
+    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip {
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&t.l, 1), (&f.a[t.a], 0)],
@@ -815,12 +814,13 @@ fn splat_oneref_mv(
         },
         r#ref: RefMvsRefPair {
             r#ref: [
-                inter.r#ref[0] + 1,
+                inter.r#ref[0].get() + 1,
                 inter.interintra_type.map(|_| 0).unwrap_or(-1),
             ],
         },
         bs,
-        mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
+        mf: (mode == InterPredMode::GlobalMv.into() && cmp::min(bw4, bh4) >= 2) as u8
+            | (mode == InterPredMode::NewMv.into()) as u8 * 2,
     });
 
     c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
@@ -864,10 +864,11 @@ fn splat_tworef_mv(
             mv: inter.nd.one_d.mv,
         },
         r#ref: RefMvsRefPair {
-            r#ref: [inter.r#ref[0] + 1, inter.r#ref[1] + 1],
+            r#ref: [inter.r#ref[0].get() + 1, inter.r#ref[1].get() + 1],
         },
         bs,
-        mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
+        mf: (mode == CompInterPredMode::GlobalMvGlobalMv) as u8
+            | (1 << (mode as u8) & 0xbc != 0) as u8 * 2,
     });
     c.dsp.refmvs.splat_mv.call(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
@@ -1198,14 +1199,14 @@ fn decode_b(
                     let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
                     let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
                     for block in r {
-                        block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
+                        block.r#ref.r#ref[0] = inter.r#ref[0].get() + 1;
                         block.mv.mv[0] = inter.nd.one_d.mv[0];
                         block.bs = bs;
                     }
                     let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                     for r in rr {
                         let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
-                        block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
+                        block.r#ref.r#ref[0] = inter.r#ref[0].get() + 1;
                         block.mv.mv[0] = inter.nd.one_d.mv[0];
                         block.bs = bs;
                     }
@@ -1234,7 +1235,7 @@ fn decode_b(
 
     b.bl = bl;
     b.bp = bp;
-    b.bs = bs as u8;
+    b.bs = bs;
 
     let mut seg = None;
 
@@ -1315,25 +1316,23 @@ fn decode_b(
         && frame_hdr.skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
-        let smctx = *ta.skip_mode.index(bx4 as usize) + *t.l.skip_mode.index(by4 as usize);
-        b.skip_mode = rav1d_msac_decode_bool_adapt(
-            &mut ts_c.msac,
-            &mut ts_c.cdf.mi.skip_mode.0[smctx as usize],
-        ) as u8;
+        let smctx = *ta.skip_mode.index(bx4 as usize) as usize
+            + *t.l.skip_mode.index(by4 as usize) as usize;
+        b.skip_mode =
+            rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.mi.skip_mode.0[smctx]);
         if debug_block_info!(f, t.b) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts_c.msac.rng);
         }
     } else {
-        b.skip_mode = 0;
+        b.skip_mode = false;
     }
 
     // skip
-    if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
-        b.skip = 1;
+    if b.skip_mode || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
+        b.skip = true;
     } else {
-        let sctx = *ta.skip.index(bx4 as usize) + *t.l.skip.index(by4 as usize);
-        b.skip =
-            rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx as usize]) as u8;
+        let sctx = *ta.skip.index(bx4 as usize) as usize + *t.l.skip.index(by4 as usize) as usize;
+        b.skip = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, &mut ts_c.cdf.m.skip[sctx]);
         if debug_block_info!(f, t.b) {
             println!("Post-skip[{}]: r={}", b.skip, ts_c.msac.rng);
         }
@@ -1344,7 +1343,7 @@ fn decode_b(
         && frame_hdr.segmentation.update_map != 0
         && frame_hdr.segmentation.seg_data.preskip == 0
     {
-        if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
+        if !b.skip && frame_hdr.segmentation.temporal != 0 && {
             let index = *ta.seg_pred.index(bx4 as usize) + *t.l.seg_pred.index(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts_c.msac,
@@ -1368,7 +1367,7 @@ fn decode_b(
                 &f.cur_segmap.as_ref().unwrap().inner,
                 f.b4_stride as usize,
             );
-            b.seg_id = if b.skip != 0 {
+            b.seg_id = if b.skip {
                 pred_seg_id
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
@@ -1395,7 +1394,7 @@ fn decode_b(
     }
 
     // cdef index
-    if b.skip == 0 {
+    if !b.skip {
         let idx = if seq_hdr.sb128 != 0 {
             ((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)
         } else {
@@ -1437,7 +1436,7 @@ fn decode_b(
                 } else {
                     BlockSize::Bs64x64
                 })
-                || b.skip == 0);
+                || !b.skip);
 
         let prev_delta_lf = ts.last_delta_lf.get();
 
@@ -1528,7 +1527,7 @@ fn decode_b(
         }
     }
 
-    let intra = if b.skip_mode != 0 {
+    let intra = if b.skip_mode {
         false
     } else if frame_hdr.frame_type.is_inter_or_switch() {
         if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
@@ -1881,7 +1880,7 @@ fn decode_b(
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
                 case.set_disjoint(&dir.pal_sz, pal_sz[0]);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
+                case.set_disjoint(&dir.skip_mode, false);
                 case.set_disjoint(&dir.intra, 1);
                 case.set_disjoint(&dir.skip, b.skip);
                 // see aomedia bug 2183 for why we use luma coordinates here
@@ -2057,16 +2056,11 @@ fn decode_b(
                 ..Default::default()
             }
             .into(),
-            comp_type: Default::default(),
-            inter_mode: Default::default(),
-            motion_mode: Default::default(),
-            drl_idx: Default::default(),
-            r#ref: Default::default(),
             max_ytx,
             filter2d,
-            interintra_type: Default::default(),
             tx_split0,
             tx_split1,
+            ..Default::default()
         };
         b.ii = Av1BlockIntraInter::Inter(inter.clone()); // Cheap 24-byte clone
 
@@ -2090,7 +2084,7 @@ fn decode_b(
                 // see aomedia bug 2183 for why this is outside `if has_chroma {}`
                 case.set(&mut t.pal_sz_uv[dir_index], 0);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
-                case.set_disjoint(&dir.skip_mode, 0);
+                case.set_disjoint(&dir.skip_mode, false);
                 case.set_disjoint(&dir.intra, 0);
                 case.set_disjoint(&dir.skip, b.skip);
             },
@@ -2111,7 +2105,7 @@ fn decode_b(
 
         let mut has_subpel_filter;
 
-        let is_comp = if b.skip_mode != 0 {
+        let is_comp = if b.skip_mode {
             true
         } else if seg
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
@@ -2133,10 +2127,10 @@ fn decode_b(
         struct Inter {
             nd: Av1BlockInterNd,
             comp_type: Option<CompInterType>,
-            inter_mode: u8,
+            inter_mode: CompInterPredMode,
             motion_mode: MotionMode,
             drl_idx: DrlProximity,
-            r#ref: [i8; 2],
+            r#ref: [Av1BlockInterRefIndex; 2],
             interintra_type: Option<InterIntraType>,
         }
         let Inter {
@@ -2147,13 +2141,13 @@ fn decode_b(
             drl_idx,
             r#ref,
             interintra_type,
-        } = if b.skip_mode != 0 {
+        } = if b.skip_mode {
             let r#ref = [
-                frame_hdr.skip_mode.refs[0] as i8,
-                frame_hdr.skip_mode.refs[1] as i8,
+                Av1BlockInterRefIndex::new(frame_hdr.skip_mode.refs[0]).unwrap(),
+                Av1BlockInterRefIndex::new(frame_hdr.skip_mode.refs[1]).unwrap(),
             ];
             let comp_type = CompInterType::Avg;
-            let inter_mode = NEARESTMV_NEARESTMV;
+            let inter_mode = CompInterPredMode::NearestMvNearestMv;
             let drl_idx = DrlProximity::Nearest;
             has_subpel_filter = false;
 
@@ -2166,7 +2160,7 @@ fn decode_b(
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
-                [r#ref[0] + 1, r#ref[1] + 1].into(),
+                [r#ref[0].get() + 1, r#ref[1].get() + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.b.y,
@@ -2211,16 +2205,20 @@ fn decode_b(
                     &mut ts_c.cdf.mi.comp_fwd_ref[0][ctx1 as usize],
                 ) {
                     let ctx2 = av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                    2 + rav1d_msac_decode_bool_adapt(
-                        &mut ts_c.msac,
-                        &mut ts_c.cdf.mi.comp_fwd_ref[2][ctx2 as usize],
-                    ) as i8
+                    Av1BlockInterRefIndex::new(
+                        2 + rav1d_msac_decode_bool_adapt(
+                            &mut ts_c.msac,
+                            &mut ts_c.cdf.mi.comp_fwd_ref[2][ctx2 as usize],
+                        ) as i8,
+                    )
+                    .unwrap()
                 } else {
                     let ctx2 = av1_get_fwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                    rav1d_msac_decode_bool_adapt(
+                    Av1BlockInterRefIndex::new(rav1d_msac_decode_bool_adapt(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.comp_fwd_ref[1][ctx2 as usize],
-                    ) as i8
+                    ) as i8)
+                    .unwrap()
                 };
 
                 // second reference (bw)
@@ -2229,13 +2227,16 @@ fn decode_b(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.comp_bwd_ref[0][ctx3 as usize],
                 ) {
-                    6
+                    Av1BlockInterRefIndex::new(6).unwrap()
                 } else {
                     let ctx4 = av1_get_bwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                    4 + rav1d_msac_decode_bool_adapt(
-                        &mut ts_c.msac,
-                        &mut ts_c.cdf.mi.comp_bwd_ref[1][ctx4 as usize],
-                    ) as i8
+                    Av1BlockInterRefIndex::new(
+                        4 + rav1d_msac_decode_bool_adapt(
+                            &mut ts_c.msac,
+                            &mut ts_c.cdf.mi.comp_bwd_ref[1][ctx4 as usize],
+                        ) as i8,
+                    )
+                    .unwrap()
                 };
 
                 [ref0, ref1]
@@ -2246,24 +2247,33 @@ fn decode_b(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.comp_uni_ref[0][uctx_p as usize],
                 ) {
-                    [4, 6]
+                    [
+                        Av1BlockInterRefIndex::new(4).unwrap(),
+                        Av1BlockInterRefIndex::new(6).unwrap(),
+                    ]
                 } else {
                     let uctx_p1 = av1_get_uni_p1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                     let mut r#ref = [
-                        0,
-                        1 + rav1d_msac_decode_bool_adapt(
-                            &mut ts_c.msac,
-                            &mut ts_c.cdf.mi.comp_uni_ref[1][uctx_p1 as usize],
-                        ) as i8,
+                        Av1BlockInterRefIndex::new(0).unwrap(),
+                        Av1BlockInterRefIndex::new(
+                            1 + rav1d_msac_decode_bool_adapt(
+                                &mut ts_c.msac,
+                                &mut ts_c.cdf.mi.comp_uni_ref[1][uctx_p1 as usize],
+                            ) as i8,
+                        )
+                        .unwrap(),
                     ];
 
-                    if r#ref[1] == 2 {
+                    if r#ref[1].get() == 2 {
                         let uctx_p2 =
                             av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                        r#ref[1] += rav1d_msac_decode_bool_adapt(
-                            &mut ts_c.msac,
-                            &mut ts_c.cdf.mi.comp_uni_ref[2][uctx_p2 as usize],
-                        ) as i8;
+                        r#ref[1] = Av1BlockInterRefIndex::new(
+                            2 + rav1d_msac_decode_bool_adapt(
+                                &mut ts_c.msac,
+                                &mut ts_c.cdf.mi.comp_uni_ref[2][uctx_p2 as usize],
+                            ) as i8,
+                        )
+                        .unwrap();
                     }
 
                     r#ref
@@ -2282,7 +2292,7 @@ fn decode_b(
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
-                [r#ref[0] + 1, r#ref[1] + 1].into(),
+                [r#ref[0].get() + 1, r#ref[1].get() + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.b.y,
@@ -2290,21 +2300,25 @@ fn decode_b(
                 frame_hdr,
             );
 
-            let inter_mode = rav1d_msac_decode_symbol_adapt8(
-                &mut ts_c.msac,
-                &mut ts_c.cdf.mi.comp_inter_mode[ctx as usize],
-                N_COMP_INTER_PRED_MODES as u8 - 1,
-            );
+            let inter_mode = CompInterPredMode::from_repr(
+                rav1d_msac_decode_symbol_adapt8(
+                    &mut ts_c.msac,
+                    &mut ts_c.cdf.mi.comp_inter_mode[ctx as usize],
+                    CompInterPredMode::COUNT as u8 - 1,
+                )
+                .into(),
+            )
+            .unwrap();
             if debug_block_info!(f, t.b) {
                 println!(
-                    "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
+                    "Post-compintermode[{:?},ctx={},n_mvs={}]: r={}",
                     inter_mode, ctx, n_mvs, ts_c.msac.rng,
                 );
             }
 
-            let im = &DAV1D_COMP_INTER_PRED_MODES[inter_mode as usize];
+            let im = inter_mode.split();
             let mut drl_idx = DrlProximity::Nearest;
-            if inter_mode == NEWMV_NEWMV {
+            if inter_mode == CompInterPredMode::NewMvNewMv {
                 if n_mvs > 1 {
                     // `Nearer` or `Near`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -2331,7 +2345,7 @@ fn decode_b(
                         );
                     }
                 }
-            } else if im[0] == NEARMV || im[1] == NEARMV {
+            } else if im[0] == InterPredMode::NearMv || im[1] == InterPredMode::NearMv {
                 drl_idx = DrlProximity::Nearer;
                 if n_mvs > 2 {
                     // `Near` or `Nearish`
@@ -2362,18 +2376,19 @@ fn decode_b(
             }
             let drl_idx = drl_idx;
 
-            has_subpel_filter = cmp::min(bw4, bh4) == 1 || inter_mode != GLOBALMV_GLOBALMV;
+            has_subpel_filter =
+                cmp::min(bw4, bh4) == 1 || inter_mode != CompInterPredMode::GlobalMvGlobalMv;
             let mv1d = array::from_fn(|i| match im[i] {
-                NEARMV | NEARESTMV => {
+                InterPredMode::NearMv | InterPredMode::NearestMv => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
                     fix_mv_precision(frame_hdr, &mut mv1d);
                     mv1d
                 }
-                GLOBALMV => {
-                    has_subpel_filter |= frame_hdr.gmv[r#ref[i] as usize].r#type
+                InterPredMode::GlobalMv => {
+                    has_subpel_filter |= frame_hdr.gmv[r#ref[i].get() as usize].r#type
                         == Rav1dWarpedMotionType::Translation;
                     get_gmv_2d(
-                        &frame_hdr.gmv[r#ref[i] as usize],
+                        &frame_hdr.gmv[r#ref[i].get() as usize],
                         t.b.x,
                         t.b.y,
                         bw4,
@@ -2381,12 +2396,11 @@ fn decode_b(
                         frame_hdr,
                     )
                 }
-                NEWMV => {
+                InterPredMode::NewMv => {
                     let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
                     read_mv_residual(ts_c, &mut mv1d, mv_prec());
                     mv1d
                 }
-                _ => unreachable!(),
             });
             if debug_block_info!(f, t.b) {
                 println!(
@@ -2419,7 +2433,7 @@ fn decode_b(
             if !is_segwedge {
                 if seq_hdr.jnt_comp != 0 {
                     let [ref0poc, ref1poc] = r#ref.map(|r#ref| {
-                        f.refp[r#ref as usize]
+                        f.refp[r#ref.get() as usize]
                             .p
                             .frame_hdr
                             .as_ref()
@@ -2474,11 +2488,12 @@ fn decode_b(
                         CompInterType::Wedge
                     };
                     if comp_type == CompInterType::Wedge {
-                        wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                        wedge_idx = WedgeIdx::new(rav1d_msac_decode_symbol_adapt16(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.wedge_idx[ctx],
                             15,
-                        ) as u8;
+                        ))
+                        .unwrap();
                     }
                     comp_type
                 } else {
@@ -2516,9 +2531,9 @@ fn decode_b(
         } else {
             // ref
             let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
-                seg.r#ref as i8 - 1
+                Av1BlockInterRefIndex::new(seg.r#ref - 1).unwrap()
             } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
-                0
+                Av1BlockInterRefIndex::new(0).unwrap()
             } else {
                 let ctx1 = av1_get_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
                 let ref0 = if rav1d_msac_decode_bool_adapt(
@@ -2530,13 +2545,16 @@ fn decode_b(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.r#ref[1][ctx2 as usize],
                     ) {
-                        6
+                        Av1BlockInterRefIndex::new(6).unwrap()
                     } else {
                         let ctx3 = av1_get_bwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                        4 + rav1d_msac_decode_bool_adapt(
-                            &mut ts_c.msac,
-                            &mut ts_c.cdf.mi.r#ref[5][ctx3 as usize],
-                        ) as i8
+                        Av1BlockInterRefIndex::new(
+                            4 + rav1d_msac_decode_bool_adapt(
+                                &mut ts_c.msac,
+                                &mut ts_c.cdf.mi.r#ref[5][ctx3 as usize],
+                            ) as i8,
+                        )
+                        .unwrap()
                     }
                 } else {
                     let ctx2 = av1_get_fwd_ref_ctx(ta, &t.l, by4, bx4, have_top, have_left);
@@ -2545,16 +2563,20 @@ fn decode_b(
                         &mut ts_c.cdf.mi.r#ref[2][ctx2 as usize],
                     ) {
                         let ctx3 = av1_get_fwd_ref_2_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                        2 + rav1d_msac_decode_bool_adapt(
-                            &mut ts_c.msac,
-                            &mut ts_c.cdf.mi.r#ref[4][ctx3 as usize],
-                        ) as i8
+                        Av1BlockInterRefIndex::new(
+                            2 + rav1d_msac_decode_bool_adapt(
+                                &mut ts_c.msac,
+                                &mut ts_c.cdf.mi.r#ref[4][ctx3 as usize],
+                            ) as i8,
+                        )
+                        .unwrap()
                     } else {
                         let ctx3 = av1_get_fwd_ref_1_ctx(ta, &t.l, by4, bx4, have_top, have_left);
-                        rav1d_msac_decode_bool_adapt(
+                        Av1BlockInterRefIndex::new(rav1d_msac_decode_bool_adapt(
                             &mut ts_c.msac,
                             &mut ts_c.cdf.mi.r#ref[3][ctx3 as usize],
-                        ) as i8
+                        ) as i8)
+                        .unwrap()
                     }
                 };
                 if debug_block_info!(f, t.b) {
@@ -2562,7 +2584,7 @@ fn decode_b(
                 }
                 ref0
             };
-            let r#ref = [ref0, -1];
+            let r#ref = [ref0, Av1BlockInterRefIndex::new(-1).unwrap()];
 
             let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
@@ -2574,7 +2596,7 @@ fn decode_b(
                 &mut n_mvs,
                 &mut ctx,
                 RefMvsRefPair {
-                    r#ref: [r#ref[0] + 1, -1],
+                    r#ref: [r#ref[0].get() + 1, -1],
                 },
                 bs,
                 intra_edge_flags,
@@ -2603,9 +2625,9 @@ fn decode_b(
                         &mut ts_c.cdf.mi.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
-                    inter_mode = GLOBALMV;
+                    inter_mode = InterPredMode::GlobalMv;
                     mv1d0 = get_gmv_2d(
-                        &frame_hdr.gmv[r#ref[0] as usize],
+                        &frame_hdr.gmv[r#ref[0].get() as usize],
                         t.b.x,
                         t.b.y,
                         bw4,
@@ -2613,7 +2635,7 @@ fn decode_b(
                         frame_hdr,
                     );
                     has_subpel_filter = cmp::min(bw4, bh4) == 1
-                        || frame_hdr.gmv[r#ref[0] as usize].r#type
+                        || frame_hdr.gmv[r#ref[0].get() as usize].r#type
                             == Rav1dWarpedMotionType::Translation;
 
                     drl_idx = Default::default();
@@ -2624,7 +2646,7 @@ fn decode_b(
                         &mut ts_c.cdf.mi.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
                         // `Nearer`, `Near` or `Nearish`
-                        inter_mode = NEARMV;
+                        inter_mode = InterPredMode::NearMv;
                         drl_idx = DrlProximity::Nearer;
                         if n_mvs > 2 {
                             // `Nearer`, `Near` or `Nearish`
@@ -2648,7 +2670,7 @@ fn decode_b(
                             }
                         }
                     } else {
-                        inter_mode = NEARESTMV;
+                        inter_mode = InterPredMode::NearestMv;
                         drl_idx = DrlProximity::Nearest;
                     }
                     mv1d0 = mvstack[drl_idx as usize].mv.mv[0];
@@ -2659,13 +2681,13 @@ fn decode_b(
 
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
+                        "Post-intermode[{:?},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
                         inter_mode, drl_idx, mv1d0.y, mv1d0.x, n_mvs, ts_c.msac.rng,
                     );
                 }
             } else {
                 has_subpel_filter = true;
-                inter_mode = NEWMV;
+                inter_mode = InterPredMode::NewMv;
                 drl_idx = DrlProximity::Nearest;
                 if n_mvs > 1 {
                     // `Nearer`, `Near` or `Nearish`
@@ -2697,7 +2719,7 @@ fn decode_b(
                 }
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={:?}]: r={}",
+                        "Post-intermode[{:?},drl={:?}]: r={}",
                         inter_mode, drl_idx, ts_c.msac.rng,
                     );
                 }
@@ -2741,11 +2763,12 @@ fn decode_b(
                 };
                 interintra_type = Some(ii_type);
                 if ii_type == InterIntraType::Wedge {
-                    wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                    wedge_idx = WedgeIdx::new(rav1d_msac_decode_symbol_adapt16(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.mi.wedge_idx[wedge_ctx as usize],
                         15,
-                    ) as u8;
+                    ))
+                    .unwrap();
                 }
             } else {
                 interintra_mode = Default::default();
@@ -2770,8 +2793,8 @@ fn decode_b(
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(!frame_hdr.force_integer_mv
-                    && inter_mode == GLOBALMV
-                    && frame_hdr.gmv[r#ref[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
+                    && inter_mode == InterPredMode::GlobalMv
+                    && frame_hdr.gmv[r#ref[0].get() as usize].r#type > Rav1dWarpedMotionType::Translation)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.index(by4 as usize..(by4 + h4) as usize))
                     || have_top && findoddzero(&ta.intra.index(bx4 as usize..(bx4 + w4) as usize)))
@@ -2789,10 +2812,10 @@ fn decode_b(
                     h4,
                     have_left,
                     have_top,
-                    r#ref[0],
+                    r#ref[0].get(),
                     &mut mask,
                 );
-                let allow_warp = (f.svc[r#ref[0] as usize][0].scale == 0
+                let allow_warp = (f.svc[r#ref[0].get() as usize][0].scale == 0
                     && !frame_hdr.force_integer_mv
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as c_int;
@@ -2877,7 +2900,7 @@ fn decode_b(
                     .into(),
                 },
                 comp_type: None,
-                inter_mode,
+                inter_mode: inter_mode.into(),
                 motion_mode,
                 drl_idx,
                 r#ref,
@@ -2889,7 +2912,7 @@ fn decode_b(
         let filter = if frame_hdr.subpel_filter_mode == Rav1dFilterMode::Switchable {
             if has_subpel_filter {
                 let comp = comp_type.is_some();
-                let ctx1 = get_filter_ctx(ta, &t.l, comp, false, r#ref[0], by4, bx4);
+                let ctx1 = get_filter_ctx(ta, &t.l, comp, false, r#ref[0].get(), by4, bx4);
                 let filter0 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.mi.filter.0[0][ctx1 as usize],
@@ -2897,7 +2920,7 @@ fn decode_b(
                 ) as usize)
                 .unwrap();
                 if seq_hdr.dual_filter != 0 {
-                    let ctx2 = get_filter_ctx(ta, &t.l, comp, true, r#ref[0], by4, bx4);
+                    let ctx2 = get_filter_ctx(ta, &t.l, comp, true, r#ref[0].get(), by4, bx4);
                     if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter1[{:?},ctx={}]: r={}",
@@ -2966,8 +2989,12 @@ fn decode_b(
 
         let frame_hdr = f.frame_hdr();
         if frame_hdr.loopfilter.level_y != [0, 0] {
-            let is_globalmv =
-                (inter_mode == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV }) as c_int;
+            let is_globalmv = inter_mode
+                == if is_comp {
+                    CompInterPredMode::GlobalMvGlobalMv
+                } else {
+                    InterPredMode::GlobalMv.into()
+                };
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
@@ -2991,12 +3018,12 @@ fn decode_b(
                 // Dereferencing this in Rust is UB, so instead
                 // we pass the indices as args, which are then applied at the use sites.
                 &lflvl[b.seg_id.get()],
-                (r#ref[0] + 1) as usize,
-                is_globalmv == 0,
+                (r#ref[0].get() + 1) as usize,
+                !is_globalmv,
                 t.b,
                 f.w4,
                 f.h4,
-                b.skip != 0,
+                b.skip,
                 bs,
                 ytx,
                 &tx_split,
@@ -3037,9 +3064,9 @@ fn decode_b(
                 case.set_disjoint(&dir.comp_type, comp_type);
                 case.set_disjoint(&dir.filter[0], filter[0]);
                 case.set_disjoint(&dir.filter[1], filter[1]);
-                case.set_disjoint(&dir.mode, inter_mode);
-                case.set_disjoint(&dir.r#ref[0], r#ref[0]);
-                case.set_disjoint(&dir.r#ref[1], r#ref[1]);
+                case.set_disjoint(&dir.mode, inter_mode as u8);
+                case.set_disjoint(&dir.r#ref[0], r#ref[0].get());
+                case.set_disjoint(&dir.r#ref[1], r#ref[1].get());
             },
         );
 
@@ -3070,7 +3097,7 @@ fn decode_b(
             }
         });
     }
-    if b.skip == 0 {
+    if !b.skip {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
@@ -3094,29 +3121,29 @@ fn decode_b(
             if inter.comp_type.is_none() {
                 // y
                 if cmp::min(bw4, bh4) > 1
-                    && (inter.inter_mode == GLOBALMV
-                        && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                    && (inter.inter_mode == InterPredMode::GlobalMv.into()
+                        && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                         || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
                     affine_lowest_px_luma(
                         t,
-                        &mut lowest_px[inter.r#ref[0] as usize][0],
+                        &mut lowest_px[inter.r#ref[0].get() as usize][0],
                         b_dim,
                         if inter.motion_mode == MotionMode::Warp {
                             &t.warpmv
                         } else {
-                            &frame_hdr.gmv[inter.r#ref[0] as usize]
+                            &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                         },
                     );
                 } else {
                     mc_lowest_px(
-                        &mut lowest_px[inter.r#ref[0] as usize][0],
+                        &mut lowest_px[inter.r#ref[0].get() as usize][0],
                         t.b.y,
                         bh4,
                         inter.nd.one_d.mv[0].y,
                         0,
-                        &f.svc[inter.r#ref[0] as usize][1],
+                        &f.svc[inter.r#ref[0].get() as usize][1],
                     );
                     if inter.motion_mode == MotionMode::Obmc {
                         obmc_lowest_px(
@@ -3196,38 +3223,38 @@ fn decode_b(
                             );
                         }
                         mc_lowest_px(
-                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            &mut lowest_px[inter.r#ref[0].get() as usize][1],
                             t.b.y,
                             bh4,
                             inter.nd.one_d.mv[0].y,
                             ss_ver,
-                            &f.svc[inter.r#ref[0] as usize][1],
+                            &f.svc[inter.r#ref[0].get() as usize][1],
                         );
                     } else if cmp::min(cbw4, cbh4) > 1
-                        && (inter.inter_mode == GLOBALMV
-                            && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                        && (inter.inter_mode == InterPredMode::GlobalMv.into()
+                            && f.gmv_warp_allowed[inter.r#ref[0].get() as usize] != 0
                             || inter.motion_mode == MotionMode::Warp
                                 && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                     {
                         affine_lowest_px_chroma(
                             t,
                             f.cur.p.layout,
-                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            &mut lowest_px[inter.r#ref[0].get() as usize][1],
                             b_dim,
                             if inter.motion_mode == MotionMode::Warp {
                                 &t.warpmv
                             } else {
-                                &frame_hdr.gmv[inter.r#ref[0] as usize]
+                                &frame_hdr.gmv[inter.r#ref[0].get() as usize]
                             },
                         );
                     } else {
                         mc_lowest_px(
-                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            &mut lowest_px[inter.r#ref[0].get() as usize][1],
                             t.b.y & !ss_ver,
                             bh4 << (bh4 == ss_ver) as c_int,
                             inter.nd.one_d.mv[0].y,
                             ss_ver,
-                            &f.svc[inter.r#ref[0] as usize][1],
+                            &f.svc[inter.r#ref[0].get() as usize][1],
                         );
                         if inter.motion_mode == MotionMode::Obmc {
                             obmc_lowest_px(
@@ -3251,10 +3278,12 @@ fn decode_b(
                 // y
                 let refmvs = || {
                     std::iter::zip(inter.r#ref, inter.nd.one_d.mv)
-                        .map(|(r#ref, mv)| (r#ref as usize, mv))
+                        .map(|(r#ref, mv)| (r#ref.get() as usize, mv))
                 };
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
+                        && f.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -3273,7 +3302,9 @@ fn decode_b(
                     }
                 }
                 for (r#ref, mv) in refmvs() {
-                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                    if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
+                        && f.gmv_warp_allowed[r#ref] != 0
+                    {
                         affine_lowest_px_luma(
                             t,
                             &mut lowest_px[r#ref][0],
@@ -3295,7 +3326,7 @@ fn decode_b(
                 // uv
                 if has_chroma {
                     for (r#ref, mv) in refmvs() {
-                        if inter.inter_mode == GLOBALMV_GLOBALMV
+                        if inter.inter_mode == CompInterPredMode::GlobalMvGlobalMv
                             && cmp::min(cbw4, cbh4) > 1
                             && f.gmv_warp_allowed[r#ref] != 0
                         {
@@ -3710,8 +3741,8 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     }
 
     ctx.partition.get_mut().0.fill(0);
-    ctx.skip.get_mut().0.fill(0);
-    ctx.skip_mode.get_mut().0.fill(0);
+    ctx.skip.get_mut().0.fill(false);
+    ctx.skip_mode.get_mut().0.fill(false);
     ctx.tx_lpf_y.get_mut().0.fill(2);
     ctx.tx_lpf_uv.get_mut().0.fill(1);
     ctx.tx_intra.get_mut().0.fill(-1);
@@ -3721,7 +3752,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
             r#ref.get_mut().0.fill(-1);
         }
         ctx.comp_type.get_mut().0.fill(None);
-        ctx.mode.get_mut().0.fill(NEARESTMV);
+        ctx.mode.get_mut().0.fill(InterPredMode::NearestMv as u8);
     }
     ctx.lcoef.get_mut().0.fill(0x40);
     for ccoef in &mut ctx.ccoef {

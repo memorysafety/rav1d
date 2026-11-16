@@ -9,7 +9,7 @@ use strum::{EnumCount, FromRepr};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 use crate::align::ArrayDefault;
-use crate::enum_map::{DefaultValue, EnumKey};
+use crate::enum_map::{enum_map, DefaultValue, EnumKey};
 use crate::in_range::InRange;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 
@@ -206,9 +206,10 @@ impl BlockPartition {
     pub const N_SUB8X8_PARTITIONS: usize = 4;
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, FromZeroes, Default)]
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, FromZeroes)]
 pub enum BlockSize {
+    #[default]
     Bs128x128 = 0,
     Bs128x64 = 1,
     Bs64x128 = 2,
@@ -302,12 +303,18 @@ bitflags! {
     }
 }
 
-pub type InterPredMode = u8;
-pub const _N_INTER_PRED_MODES: usize = 4;
-pub const NEWMV: InterPredMode = 3;
-pub const GLOBALMV: InterPredMode = 2;
-pub const NEARMV: InterPredMode = 1;
-pub const NEARESTMV: InterPredMode = 0;
+#[expect(clippy::enum_variant_names, reason = "match dav1d naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterPredMode {
+    NearestMv = 0,
+    NearMv = 1,
+    GlobalMv = 2,
+    NewMv = 3,
+}
+
+impl DefaultValue for InterPredMode {
+    const DEFAULT: Self = Self::NearestMv;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum DrlProximity {
@@ -318,16 +325,59 @@ pub enum DrlProximity {
     Nearish,
 }
 
-pub type CompInterPredMode = u8;
-pub const N_COMP_INTER_PRED_MODES: usize = 8;
-pub const NEWMV_NEWMV: CompInterPredMode = 7;
-pub const GLOBALMV_GLOBALMV: CompInterPredMode = 6;
-pub const NEWMV_NEARMV: CompInterPredMode = 5;
-pub const NEARMV_NEWMV: CompInterPredMode = 4;
-pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
-pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
-pub const NEARMV_NEARMV: CompInterPredMode = 1;
-pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+/// Sometimes this can store a [`InterPredMode`] instead, which is smaller.
+#[expect(clippy::enum_variant_names, reason = "match dav1d naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, Default)]
+pub enum CompInterPredMode {
+    #[default]
+    NearestMvNearestMv = 0,
+    NearMvNearMv = 1,
+    NearestMvNewMv = 2,
+    NewMvNearestMv = 3,
+    NearMvNewMv = 4,
+    NewMvNearMv = 5,
+    GlobalMvGlobalMv = 6,
+    NewMvNewMv = 7,
+}
+
+impl From<InterPredMode> for CompInterPredMode {
+    fn from(value: InterPredMode) -> Self {
+        CompInterPredMode::from_repr(value as usize).unwrap()
+    }
+}
+
+impl EnumKey<{ Self::COUNT }> for CompInterPredMode {
+    const VALUES: [Self; Self::COUNT] = [
+        Self::NearestMvNearestMv,
+        Self::NearMvNearMv,
+        Self::NearestMvNewMv,
+        Self::NewMvNearestMv,
+        Self::NearMvNewMv,
+        Self::NewMvNearMv,
+        Self::GlobalMvGlobalMv,
+        Self::NewMvNewMv,
+    ];
+
+    fn as_usize(self) -> usize {
+        self as usize
+    }
+}
+
+impl CompInterPredMode {
+    pub fn split(self) -> [InterPredMode; 2] {
+        use InterPredMode::*;
+        enum_map!(CompInterPredMode => [InterPredMode; 2]; match key {
+            NearestMvNearestMv => [NearestMv, NearestMv],
+            NearMvNearMv => [NearMv, NearMv],
+            NearestMvNewMv => [NearestMv, NewMv],
+            NewMvNearestMv => [NewMv, NearestMv],
+            NearMvNewMv => [NearMv, NewMv],
+            NewMvNearMv => [NewMv, NearMv],
+            GlobalMvGlobalMv => [GlobalMv, GlobalMv],
+            NewMvNewMv => [NewMv, NewMv],
+        })[self]
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompInterType {
@@ -484,11 +534,13 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
     }
 }
 
+pub type WedgeIdx = InRange<u8, 0, 15>;
+
 #[derive(Clone, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
     pub mv: [Mv; 2],
-    pub wedge_idx: u8,
+    pub wedge_idx: WedgeIdx,
 
     /// Stored as a [`u8`] since [`bool`] is not [`FromBytes`].
     pub mask_sign: u8,
@@ -515,7 +567,7 @@ pub struct Av1BlockInter2d {
     pub matrix: [i16; 4],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockInterNd {
     /// Make [`Av1BlockInter1d`] the field instead of [`Av1BlockInter2d`]
@@ -552,15 +604,17 @@ impl From<Av1BlockInter2d> for Av1BlockInterNd {
     }
 }
 
-#[derive(Clone)]
+pub type Av1BlockInterRefIndex = InRange<i8, -1, 6>;
+
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
     pub comp_type: Option<CompInterType>,
-    pub inter_mode: u8,
+    pub inter_mode: CompInterPredMode,
     pub motion_mode: MotionMode,
     pub drl_idx: DrlProximity,
-    pub r#ref: [i8; 2],
+    pub r#ref: [Av1BlockInterRefIndex; 2],
     pub max_ytx: TxfmSize,
     pub filter2d: Filter2d,
     pub interintra_type: Option<InterIntraType>,
@@ -594,7 +648,7 @@ impl Default for Av1BlockIntraInter {
 /// Within range `0..`[`SegmentId::COUNT`].
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SegmentId {
-    id: InRange<u8, 0, { Self::COUNT as u128 - 1 }>,
+    id: InRange<u8, 0, { Self::COUNT as i128 - 1 }>,
 }
 
 impl SegmentId {
@@ -629,11 +683,11 @@ impl Display for SegmentId {
 #[repr(C)]
 pub struct Av1Block {
     pub bl: BlockLevel,
-    pub bs: u8,
+    pub bs: BlockSize,
     pub bp: BlockPartition,
     pub seg_id: SegmentId,
-    pub skip_mode: u8,
-    pub skip: u8,
+    pub skip_mode: bool,
+    pub skip: bool,
     pub uvtx: TxfmSize,
     pub ii: Av1BlockIntraInter,
 }
