@@ -44,10 +44,28 @@ pub use crate::include::dav1d::headers::{
 use crate::include::dav1d::picture::Rav1dPicture;
 pub use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT as PICTURE_ALIGNMENT;
 use crate::internal::Rav1dContext;
+use crate::log::Rav1dLogger;
 use crate::{
     rav1d_close, rav1d_flush, rav1d_get_frame_delay, rav1d_get_picture, rav1d_open,
     rav1d_send_data, CRef, Rav1dData, Rav1dSettings,
 };
+
+/// Where a [`Decoder`] writes its log messages.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Logger {
+    Stdout,
+    #[default]
+    Stderr,
+}
+
+impl From<Logger> for Rav1dLogger {
+    fn from(logger: Logger) -> Self {
+        match logger {
+            Logger::Stdout => Self::Stdout,
+            Logger::Stderr => Self::Stderr,
+        }
+    }
+}
 
 /// Settings for creating a new [`Decoder`] instance.
 /// See documentation for native `Dav1dSettings` struct.
@@ -142,6 +160,12 @@ impl Settings {
 
     pub fn get_decode_frame_type(&self) -> DecodeFrameType {
         self.inner.decode_frame_type
+    }
+
+    /// Sets where log messages go, or turns logging off with [`None`].
+    /// Defaults to [`Logger::Stderr`].
+    pub fn set_logger(&mut self, logger: Option<Logger>) {
+        self.inner.logger = logger.map(Into::into);
     }
 }
 
