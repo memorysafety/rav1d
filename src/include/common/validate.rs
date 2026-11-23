@@ -62,14 +62,17 @@ macro_rules! validate_input {
         let func_name = func_name!();
 
         $condition.into_result().map_err(|e| {
-            eprintln!(
-                "Input validation check `{}` failed in `fn {}` in `{}:{}:{}`!",
-                stringify!($condition),
-                func_name,
-                file!(),
-                line!(),
-                column!(),
-            );
+            // Release builds report the failure only through the returned error.
+            if cfg!(debug_assertions) {
+                eprintln!(
+                    "Input validation check `{}` failed in `fn {}` in `{}:{}:{}`!",
+                    stringify!($condition),
+                    func_name,
+                    file!(),
+                    line!(),
+                    column!(),
+                );
+            }
             $block;
             debug_abort();
             e
